@@ -1,7 +1,7 @@
 module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs._commons;
-  exports systems.glam.sdk.idl.programs.glam.protocol.anchor.types;
-  exports systems.glam.sdk.idl.programs.glam.protocol.anchor;
+  exports systems.glam.sdk.idl.programs.glam.protocol.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.protocol.gen;
   requires java.base;
   requires java.net.http;
   requires org.bouncycastle.provider;
