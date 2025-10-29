@@ -7,7 +7,7 @@ public enum TimeUnit implements Borsh.Enum {
   Second,
   Slot;
 
-  public static TimeUnit read(final byte[] _data, final int offset) {
-    return Borsh.read(TimeUnit.values(), _data, offset);
+  public static TimeUnit read(final byte[] _data, final int _offset) {
+    return Borsh.read(TimeUnit.values(), _data, _offset);
   }
 }

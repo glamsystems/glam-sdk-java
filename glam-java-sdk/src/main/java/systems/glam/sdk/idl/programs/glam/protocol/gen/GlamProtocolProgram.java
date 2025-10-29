@@ -30,10 +30,21 @@ import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt32LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
-import static software.sava.core.programs.Discriminator.createDiscriminator;
+import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
 public final class GlamProtocolProgram {
+
+  public static final Discriminator CANCEL_TIMELOCK_DISCRIMINATOR = toDiscriminator(158, 180, 47, 81, 133, 231, 168, 238);
+
+  public static Instruction cancelTimelock(final AccountMeta invokedGlamProtocolProgramMeta, final PublicKey glamStateKey, final PublicKey glamSignerKey) {
+    final var keys = List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey)
+    );
+
+    return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, CANCEL_TIMELOCK_DISCRIMINATOR);
+  }
 
   public static final Discriminator CLOSE_STATE_DISCRIMINATOR = toDiscriminator(25, 1, 184, 101, 200, 245, 210, 246);
 
@@ -87,12 +98,12 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
-    public static CpiProxyIxData read(final byte[] _data, final int offset) {
+    public static CpiProxyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var data = Borsh.readbyteVector(_data, i);
       i += Borsh.lenVector(data);
       final var extraParams = Borsh.readVector(ExtraParams.class, ExtraParams::read, _data, i);
@@ -100,16 +111,16 @@ public final class GlamProtocolProgram {
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       i += Borsh.writeVector(data, _data, i);
       i += Borsh.writeVector(extraParams, _data, i);
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
     public int l() {
-      return discriminator.length() + Borsh.lenVector(data) + Borsh.lenVector(extraParams);
+      return 8 + Borsh.lenVector(data) + Borsh.lenVector(extraParams);
     }
   }
 
@@ -141,26 +152,26 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
-    public static EmergencyAccessUpdateIxData read(final byte[] _data, final int offset) {
+    public static EmergencyAccessUpdateIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var args = EmergencyAccessUpdateArgs.read(_data, i);
       return new EmergencyAccessUpdateIxData(discriminator, args);
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       i += Borsh.write(args, _data, i);
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
     public int l() {
-      return discriminator.length() + Borsh.len(args);
+      return 8 + Borsh.len(args);
     }
   }
 
@@ -199,12 +210,12 @@ public final class GlamProtocolProgram {
 
     public static final int BYTES = 43;
 
-    public static EnableDisableProtocolsIxData read(final byte[] _data, final int offset) {
+    public static EnableDisableProtocolsIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var integrationProgram = readPubKey(_data, i);
       i += 32;
       final var protocolsBitmask = getInt16LE(_data, i);
@@ -214,15 +225,15 @@ public final class GlamProtocolProgram {
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       integrationProgram.write(_data, i);
       i += 32;
       putInt16LE(_data, i, protocolsBitmask);
       i += 2;
       _data[i] = (byte) (setEnabled ? 1 : 0);
       ++i;
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
@@ -259,22 +270,22 @@ public final class GlamProtocolProgram {
 
     public static final int BYTES = 12;
 
-    public static ExtendStateIxData read(final byte[] _data, final int offset) {
+    public static ExtendStateIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var bytes = getInt32LE(_data, i);
       return new ExtendStateIxData(discriminator, bytes);
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       putInt32LE(_data, i, bytes);
       i += 4;
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
@@ -326,12 +337,12 @@ public final class GlamProtocolProgram {
 
     public static final int BYTES = 83;
 
-    public static GrantRevokeDelegatePermissionsIxData read(final byte[] _data, final int offset) {
+    public static GrantRevokeDelegatePermissionsIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var delegate = readPubKey(_data, i);
       i += 32;
       final var integrationProgram = readPubKey(_data, i);
@@ -350,8 +361,8 @@ public final class GlamProtocolProgram {
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       delegate.write(_data, i);
       i += 32;
       integrationProgram.write(_data, i);
@@ -362,7 +373,7 @@ public final class GlamProtocolProgram {
       i += 8;
       _data[i] = (byte) (setGranted ? 1 : 0);
       ++i;
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
@@ -399,26 +410,26 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
-    public static InitializeStateIxData read(final byte[] _data, final int offset) {
+    public static InitializeStateIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var state = StateModel.read(_data, i);
       return new InitializeStateIxData(discriminator, state);
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       i += Borsh.write(state, _data, i);
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
     public int l() {
-      return discriminator.length() + Borsh.len(state);
+      return 8 + Borsh.len(state);
     }
   }
 
@@ -468,26 +479,26 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
-    public static JupiterSwapIxData read(final byte[] _data, final int offset) {
+    public static JupiterSwapIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var data = Borsh.readbyteVector(_data, i);
       return new JupiterSwapIxData(discriminator, data);
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       i += Borsh.writeVector(data, _data, i);
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
     public int l() {
-      return discriminator.length() + Borsh.lenVector(data);
+      return 8 + Borsh.lenVector(data);
     }
   }
 
@@ -520,22 +531,22 @@ public final class GlamProtocolProgram {
 
     public static final int BYTES = 9;
 
-    public static LinkUnlinkMintByMintAuthorityIxData read(final byte[] _data, final int offset) {
+    public static LinkUnlinkMintByMintAuthorityIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var link = _data[i] == 1;
       return new LinkUnlinkMintByMintAuthorityIxData(discriminator, link);
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       _data[i] = (byte) (link ? 1 : 0);
       ++i;
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
@@ -580,26 +591,26 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
-    public static SetJupiterSwapPolicyIxData read(final byte[] _data, final int offset) {
+    public static SetJupiterSwapPolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var policy = JupiterSwapPolicy.read(_data, i);
       return new SetJupiterSwapPolicyIxData(discriminator, policy);
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       i += Borsh.write(policy, _data, i);
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
     public int l() {
-      return discriminator.length() + Borsh.len(policy);
+      return 8 + Borsh.len(policy);
     }
   }
 
@@ -636,12 +647,12 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
-    public static SetProtocolPolicyIxData read(final byte[] _data, final int offset) {
+    public static SetProtocolPolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var integrationProgram = readPubKey(_data, i);
       i += 32;
       final var protocolBitflag = getInt16LE(_data, i);
@@ -651,19 +662,19 @@ public final class GlamProtocolProgram {
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       integrationProgram.write(_data, i);
       i += 32;
       putInt16LE(_data, i, protocolBitflag);
       i += 2;
       i += Borsh.writeVector(data, _data, i);
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
     public int l() {
-      return discriminator.length() + 32 + 2 + Borsh.lenVector(data);
+      return 8 + 32 + 2 + Borsh.lenVector(data);
     }
   }
 
@@ -691,26 +702,26 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
-    public static SetSystemTransferPolicyIxData read(final byte[] _data, final int offset) {
+    public static SetSystemTransferPolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var policy = TransferPolicy.read(_data, i);
       return new SetSystemTransferPolicyIxData(discriminator, policy);
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       i += Borsh.write(policy, _data, i);
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
     public int l() {
-      return discriminator.length() + Borsh.len(policy);
+      return 8 + Borsh.len(policy);
     }
   }
 
@@ -751,12 +762,12 @@ public final class GlamProtocolProgram {
 
     public static final int BYTES = 44;
 
-    public static StakeAuthorizeIxData read(final byte[] _data, final int offset) {
+    public static StakeAuthorizeIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var newAuthority = readPubKey(_data, i);
       i += 32;
       final var stakerOrWithdrawer = getInt32LE(_data, i);
@@ -764,13 +775,13 @@ public final class GlamProtocolProgram {
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       newAuthority.write(_data, i);
       i += 32;
       putInt32LE(_data, i, stakerOrWithdrawer);
       i += 4;
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
@@ -933,22 +944,22 @@ public final class GlamProtocolProgram {
 
     public static final int BYTES = 16;
 
-    public static StakeSplitIxData read(final byte[] _data, final int offset) {
+    public static StakeSplitIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var lamports = getInt64LE(_data, i);
       return new StakeSplitIxData(discriminator, lamports);
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       putInt64LE(_data, i, lamports);
       i += 8;
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
@@ -993,22 +1004,22 @@ public final class GlamProtocolProgram {
 
     public static final int BYTES = 16;
 
-    public static StakeWithdrawIxData read(final byte[] _data, final int offset) {
+    public static StakeWithdrawIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var lamports = getInt64LE(_data, i);
       return new StakeWithdrawIxData(discriminator, lamports);
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       putInt64LE(_data, i, lamports);
       i += 8;
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
@@ -1049,22 +1060,22 @@ public final class GlamProtocolProgram {
 
     public static final int BYTES = 16;
 
-    public static SystemTransferIxData read(final byte[] _data, final int offset) {
+    public static SystemTransferIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var lamports = getInt64LE(_data, i);
       return new SystemTransferIxData(discriminator, lamports);
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       putInt64LE(_data, i, lamports);
       i += 8;
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
@@ -1115,12 +1126,12 @@ public final class GlamProtocolProgram {
 
     public static final int BYTES = 17;
 
-    public static TokenTransferCheckedByMintAuthorityIxData read(final byte[] _data, final int offset) {
+    public static TokenTransferCheckedByMintAuthorityIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var amount = getInt64LE(_data, i);
       i += 8;
       final var decimals = _data[i] & 0xFF;
@@ -1128,13 +1139,13 @@ public final class GlamProtocolProgram {
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       putInt64LE(_data, i, amount);
       i += 8;
       _data[i] = (byte) decimals;
       ++i;
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
@@ -1167,26 +1178,26 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
-    public static UpdateMintParamsIxData read(final byte[] _data, final int offset) {
+    public static UpdateMintParamsIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var params = Borsh.readVector(EngineField.class, EngineField::read, _data, i);
       return new UpdateMintParamsIxData(discriminator, params);
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       i += Borsh.writeVector(params, _data, i);
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
     public int l() {
-      return discriminator.length() + Borsh.lenVector(params);
+      return 8 + Borsh.lenVector(params);
     }
   }
 
@@ -1217,26 +1228,26 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
-    public static UpdateMintParamsByMintAuthorityIxData read(final byte[] _data, final int offset) {
+    public static UpdateMintParamsByMintAuthorityIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var params = Borsh.readVector(EngineField.class, EngineField::read, _data, i);
       return new UpdateMintParamsByMintAuthorityIxData(discriminator, params);
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       i += Borsh.writeVector(params, _data, i);
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
     public int l() {
-      return discriminator.length() + Borsh.lenVector(params);
+      return 8 + Borsh.lenVector(params);
     }
   }
 
@@ -1265,26 +1276,26 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
-    public static UpdatePricedProtocolIxData read(final byte[] _data, final int offset) {
+    public static UpdatePricedProtocolIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var pricedProtocol = PricedProtocol.read(_data, i);
       return new UpdatePricedProtocolIxData(discriminator, pricedProtocol);
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       i += Borsh.write(pricedProtocol, _data, i);
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
     public int l() {
-      return discriminator.length() + Borsh.len(pricedProtocol);
+      return 8 + Borsh.len(pricedProtocol);
     }
   }
 
@@ -1312,26 +1323,26 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
-    public static UpdateStateIxData read(final byte[] _data, final int offset) {
+    public static UpdateStateIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var discriminator = createDiscriminator(_data, offset, 8);
-      int i = offset + discriminator.length();
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
       final var state = StateModel.read(_data, i);
       return new UpdateStateIxData(discriminator, state);
     }
 
     @Override
-    public int write(final byte[] _data, final int offset) {
-      int i = offset + discriminator.write(_data, offset);
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
       i += Borsh.write(state, _data, i);
-      return i - offset;
+      return i - _offset;
     }
 
     @Override
     public int l() {
-      return discriminator.length() + Borsh.len(state);
+      return 8 + Borsh.len(state);
     }
   }
 

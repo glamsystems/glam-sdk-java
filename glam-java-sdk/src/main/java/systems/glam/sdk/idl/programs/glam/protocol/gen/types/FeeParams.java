@@ -21,11 +21,11 @@ public record FeeParams(int yearInSeconds,
 
   public static final int BYTES = 76;
 
-  public static FeeParams read(final byte[] _data, final int offset) {
+  public static FeeParams read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    int i = offset;
+    int i = _offset;
     final var yearInSeconds = getInt32LE(_data, i);
     i += 4;
     final var paHighWaterMark = getInt128LE(_data, i);
@@ -49,8 +49,8 @@ public record FeeParams(int yearInSeconds,
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     putInt32LE(_data, i, yearInSeconds);
     i += 4;
     putInt128LE(_data, i, paHighWaterMark);
@@ -65,7 +65,7 @@ public record FeeParams(int yearInSeconds,
     i += 8;
     putInt64LE(_data, i, lastProtocolFeeCrystallized);
     i += 8;
-    return i - offset;
+    return i - _offset;
   }
 
   @Override

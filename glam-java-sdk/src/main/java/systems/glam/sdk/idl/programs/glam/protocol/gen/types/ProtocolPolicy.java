@@ -9,11 +9,11 @@ import static software.sava.core.encoding.ByteUtil.putInt16LE;
 // Integration programs serialize/deserialize this data.
 public record ProtocolPolicy(int protocolBitflag, byte[] data) implements Borsh {
 
-  public static ProtocolPolicy read(final byte[] _data, final int offset) {
+  public static ProtocolPolicy read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    int i = offset;
+    int i = _offset;
     final var protocolBitflag = getInt16LE(_data, i);
     i += 2;
     final var data = Borsh.readbyteVector(_data, i);
@@ -21,12 +21,12 @@ public record ProtocolPolicy(int protocolBitflag, byte[] data) implements Borsh 
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     putInt16LE(_data, i, protocolBitflag);
     i += 2;
     i += Borsh.writeVector(data, _data, i);
-    return i - offset;
+    return i - _offset;
   }
 
   @Override

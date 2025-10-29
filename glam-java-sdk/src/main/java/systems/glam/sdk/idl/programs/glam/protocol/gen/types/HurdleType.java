@@ -7,7 +7,7 @@ public enum HurdleType implements Borsh.Enum {
   Hard,
   Soft;
 
-  public static HurdleType read(final byte[] _data, final int offset) {
-    return Borsh.read(HurdleType.values(), _data, offset);
+  public static HurdleType read(final byte[] _data, final int _offset) {
+    return Borsh.read(HurdleType.values(), _data, _offset);
   }
 }

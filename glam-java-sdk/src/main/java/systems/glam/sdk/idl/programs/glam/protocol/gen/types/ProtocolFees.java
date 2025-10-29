@@ -9,11 +9,11 @@ public record ProtocolFees(int baseFeeBps, int flowFeeBps) implements Borsh {
 
   public static final int BYTES = 4;
 
-  public static ProtocolFees read(final byte[] _data, final int offset) {
+  public static ProtocolFees read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    int i = offset;
+    int i = _offset;
     final var baseFeeBps = getInt16LE(_data, i);
     i += 2;
     final var flowFeeBps = getInt16LE(_data, i);
@@ -21,13 +21,13 @@ public record ProtocolFees(int baseFeeBps, int flowFeeBps) implements Borsh {
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     putInt16LE(_data, i, baseFeeBps);
     i += 2;
     putInt16LE(_data, i, flowFeeBps);
     i += 2;
-    return i - offset;
+    return i - _offset;
   }
 
   @Override

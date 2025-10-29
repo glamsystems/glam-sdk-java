@@ -22,7 +22,7 @@ public enum EngineFieldName implements Borsh.Enum {
   ClaimedFees,
   OracleConfigs;
 
-  public static EngineFieldName read(final byte[] _data, final int offset) {
-    return Borsh.read(EngineFieldName.values(), _data, offset);
+  public static EngineFieldName read(final byte[] _data, final int _offset) {
+    return Borsh.read(EngineFieldName.values(), _data, _offset);
   }
 }

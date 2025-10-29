@@ -21,11 +21,11 @@ public record PricedProtocol(long rent,
                              int protocolBitflag,
                              PublicKey[] positions) implements Borsh {
 
-  public static PricedProtocol read(final byte[] _data, final int offset) {
+  public static PricedProtocol read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    int i = offset;
+    int i = _offset;
     final var rent = getInt64LE(_data, i);
     i += 8;
     final var amount = getInt128LE(_data, i);
@@ -49,8 +49,8 @@ public record PricedProtocol(long rent,
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     putInt64LE(_data, i, rent);
     i += 8;
     putInt128LE(_data, i, amount);
@@ -64,7 +64,7 @@ public record PricedProtocol(long rent,
     putInt16LE(_data, i, protocolBitflag);
     i += 2;
     i += Borsh.writeVector(positions, _data, i);
-    return i - offset;
+    return i - _offset;
   }
 
   @Override

@@ -21,11 +21,12 @@ public record NotifyAndSettle(ValuationModel model,
   public static final int BYTES = 56;
   public static final int PADDING_LEN = 3;
 
-  public static NotifyAndSettle read(final byte[] _data, final int offset) {
+
+  public static NotifyAndSettle read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    int i = offset;
+    int i = _offset;
     final var model = ValuationModel.read(_data, i);
     i += Borsh.len(model);
     final var permissionlessFulfillment = _data[i] == 1;
@@ -65,8 +66,8 @@ public record NotifyAndSettle(ValuationModel model,
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     i += Borsh.write(model, _data, i);
     _data[i] = (byte) (permissionlessFulfillment ? 1 : 0);
     ++i;
@@ -86,7 +87,7 @@ public record NotifyAndSettle(ValuationModel model,
     i += 8;
     i += Borsh.write(timeUnit, _data, i);
     i += Borsh.writeArrayChecked(padding, 3, _data, i);
-    return i - offset;
+    return i - _offset;
   }
 
   @Override

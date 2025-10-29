@@ -5,19 +5,19 @@ import software.sava.core.borsh.Borsh;
 
 public record TransferPolicy(PublicKey[] allowlist) implements Borsh {
 
-  public static TransferPolicy read(final byte[] _data, final int offset) {
+  public static TransferPolicy read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    final var allowlist = Borsh.readPublicKeyVector(_data, offset);
+    final var allowlist = Borsh.readPublicKeyVector(_data, _offset);
     return new TransferPolicy(allowlist);
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     i += Borsh.writeVector(allowlist, _data, i);
-    return i - offset;
+    return i - _offset;
   }
 
   @Override

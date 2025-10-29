@@ -8,11 +8,11 @@ import static software.sava.core.accounts.PublicKey.readPubKey;
 // Stores delegate permissions for an integration program.
 public record IntegrationPermissions(PublicKey integrationProgram, ProtocolPermissions[] protocolPermissions) implements Borsh {
 
-  public static IntegrationPermissions read(final byte[] _data, final int offset) {
+  public static IntegrationPermissions read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    int i = offset;
+    int i = _offset;
     final var integrationProgram = readPubKey(_data, i);
     i += 32;
     final var protocolPermissions = Borsh.readVector(ProtocolPermissions.class, ProtocolPermissions::read, _data, i);
@@ -20,12 +20,12 @@ public record IntegrationPermissions(PublicKey integrationProgram, ProtocolPermi
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     integrationProgram.write(_data, i);
     i += 32;
     i += Borsh.writeVector(protocolPermissions, _data, i);
-    return i - offset;
+    return i - _offset;
   }
 
   @Override

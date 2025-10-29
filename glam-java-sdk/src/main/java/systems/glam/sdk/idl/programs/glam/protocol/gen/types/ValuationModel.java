@@ -7,7 +7,7 @@ public enum ValuationModel implements Borsh.Enum {
   Continuous,
   Periodic;
 
-  public static ValuationModel read(final byte[] _data, final int offset) {
-    return Borsh.read(ValuationModel.values(), _data, offset);
+  public static ValuationModel read(final byte[] _data, final int _offset) {
+    return Borsh.read(ValuationModel.values(), _data, _offset);
   }
 }

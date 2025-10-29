@@ -8,20 +8,26 @@ import static software.sava.core.encoding.ByteUtil.putInt16LE;
 
 public record JupiterSwapPolicy(int maxSlippageBps, PublicKey[] swapAllowlist) implements Borsh {
 
-  public static JupiterSwapPolicy read(final byte[] _data, final int offset) {
+  public static JupiterSwapPolicy read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    int i = offset;
+    int i = _offset;
     final var maxSlippageBps = getInt16LE(_data, i);
     i += 2;
-    final var swapAllowlist = _data[i++] == 0 ? null : Borsh.readPublicKeyVector(_data, i);
+    final PublicKey[] swapAllowlist;
+    if (_data[i] == 0) {
+      swapAllowlist = null;
+    } else {
+      ++i;
+      swapAllowlist = Borsh.readPublicKeyVector(_data, i);
+    }
     return new JupiterSwapPolicy(maxSlippageBps, swapAllowlist);
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     putInt16LE(_data, i, maxSlippageBps);
     i += 2;
     if (swapAllowlist == null || swapAllowlist.length == 0) {
@@ -30,7 +36,7 @@ public record JupiterSwapPolicy(int maxSlippageBps, PublicKey[] swapAllowlist) i
       _data[i++] = 1;
       i += Borsh.writeVector(swapAllowlist, _data, i);
     }
-    return i - offset;
+    return i - _offset;
   }
 
   @Override

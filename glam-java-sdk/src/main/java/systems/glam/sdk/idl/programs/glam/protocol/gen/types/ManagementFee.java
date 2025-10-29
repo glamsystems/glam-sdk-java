@@ -9,20 +9,20 @@ public record ManagementFee(int feeBps) implements Borsh {
 
   public static final int BYTES = 2;
 
-  public static ManagementFee read(final byte[] _data, final int offset) {
+  public static ManagementFee read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    final var feeBps = getInt16LE(_data, offset);
+    final var feeBps = getInt16LE(_data, _offset);
     return new ManagementFee(feeBps);
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     putInt16LE(_data, i, feeBps);
     i += 2;
-    return i - offset;
+    return i - _offset;
   }
 
   @Override

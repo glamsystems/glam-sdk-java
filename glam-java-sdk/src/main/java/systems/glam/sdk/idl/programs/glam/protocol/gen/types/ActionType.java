@@ -11,7 +11,7 @@ public enum ActionType implements Borsh.Enum {
   AddAsset,
   DeleteAsset;
 
-  public static ActionType read(final byte[] _data, final int offset) {
-    return Borsh.read(ActionType.values(), _data, offset);
+  public static ActionType read(final byte[] _data, final int _offset) {
+    return Borsh.read(ActionType.values(), _data, _offset);
   }
 }

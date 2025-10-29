@@ -18,11 +18,11 @@ public record AccruedFees(BigInteger vaultSubscriptionFee,
 
   public static final int BYTES = 128;
 
-  public static AccruedFees read(final byte[] _data, final int offset) {
+  public static AccruedFees read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    int i = offset;
+    int i = _offset;
     final var vaultSubscriptionFee = getInt128LE(_data, i);
     i += 16;
     final var vaultRedemptionFee = getInt128LE(_data, i);
@@ -49,8 +49,8 @@ public record AccruedFees(BigInteger vaultSubscriptionFee,
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     putInt128LE(_data, i, vaultSubscriptionFee);
     i += 16;
     putInt128LE(_data, i, vaultRedemptionFee);
@@ -67,7 +67,7 @@ public record AccruedFees(BigInteger vaultSubscriptionFee,
     i += 16;
     putInt128LE(_data, i, protocolFlowFee);
     i += 16;
-    return i - offset;
+    return i - _offset;
   }
 
   @Override

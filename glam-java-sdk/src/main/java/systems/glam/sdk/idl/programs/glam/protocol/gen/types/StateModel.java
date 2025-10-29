@@ -50,56 +50,117 @@ public record StateModel(AccountType accountType,
                           delegateAcls);
   }
 
-  public static StateModel read(final byte[] _data, final int offset) {
+  public static StateModel read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    int i = offset;
-    final var accountType = _data[i++] == 0 ? null : AccountType.read(_data, i);
-    if (accountType != null) {
+    int i = _offset;
+    final AccountType accountType;
+    if (_data[i] == 0) {
+      accountType = null;
+      ++i;
+    } else {
+      ++i;
+      accountType = AccountType.read(_data, i);
       i += Borsh.len(accountType);
     }
-    final var name = _data[i++] == 0 ? null : new byte[32];
-    if (name != null) {
+    final byte[] name;
+    if (_data[i] == 0) {
+      name = null;
+      ++i;
+    } else {
+      ++i;
+      name = new byte[32];
       i += Borsh.readArray(name, _data, i);
     }
-    final var uri = _data[i++] == 0 ? null : Borsh.string(_data, i);
-    if (uri != null) {
+    final String uri;
+    if (_data[i] == 0) {
+      uri = null;
+      ++i;
+    } else {
+      ++i;
+      uri = Borsh.string(_data, i);
       i += (Integer.BYTES + getInt32LE(_data, i));
     }
-    final var enabled = _data[i++] == 0 ? null : _data[i] == 1;
-    if (enabled != null) {
+    final Boolean enabled;
+    if (_data[i] == 0) {
+      enabled = null;
+      ++i;
+    } else {
+      ++i;
+      enabled = _data[i] == 1;
       ++i;
     }
-    final var assets = _data[i++] == 0 ? null : Borsh.readPublicKeyVector(_data, i);
-    if (assets != null) {
+    final PublicKey[] assets;
+    if (_data[i] == 0) {
+      assets = null;
+      ++i;
+    } else {
+      ++i;
+      assets = Borsh.readPublicKeyVector(_data, i);
       i += Borsh.lenVector(assets);
     }
-    final var created = _data[i++] == 0 ? null : CreatedModel.read(_data, i);
-    if (created != null) {
+    final CreatedModel created;
+    if (_data[i] == 0) {
+      created = null;
+      ++i;
+    } else {
+      ++i;
+      created = CreatedModel.read(_data, i);
       i += Borsh.len(created);
     }
-    final var owner = _data[i++] == 0 ? null : readPubKey(_data, i);
-    if (owner != null) {
+    final PublicKey owner;
+    if (_data[i] == 0) {
+      owner = null;
+      ++i;
+    } else {
+      ++i;
+      owner = readPubKey(_data, i);
       i += 32;
     }
-    final var portfolioManagerName = _data[i++] == 0 ? null : new byte[32];
-    if (portfolioManagerName != null) {
+    final byte[] portfolioManagerName;
+    if (_data[i] == 0) {
+      portfolioManagerName = null;
+      ++i;
+    } else {
+      ++i;
+      portfolioManagerName = new byte[32];
       i += Borsh.readArray(portfolioManagerName, _data, i);
     }
-    final var borrowable = _data[i++] == 0 ? null : Borsh.readPublicKeyVector(_data, i);
-    if (borrowable != null) {
+    final PublicKey[] borrowable;
+    if (_data[i] == 0) {
+      borrowable = null;
+      ++i;
+    } else {
+      ++i;
+      borrowable = Borsh.readPublicKeyVector(_data, i);
       i += Borsh.lenVector(borrowable);
     }
-    final var timelockDuration = _data[i++] == 0 ? OptionalInt.empty() : OptionalInt.of(getInt32LE(_data, i));
-    if (timelockDuration.isPresent()) {
+    final OptionalInt timelockDuration;
+    if (_data[i] == 0) {
+      timelockDuration = OptionalInt.empty();
+      ++i;
+    } else {
+      ++i;
+      timelockDuration = OptionalInt.of(getInt32LE(_data, i));
       i += 4;
     }
-    final var integrationAcls = _data[i++] == 0 ? null : Borsh.readVector(IntegrationAcl.class, IntegrationAcl::read, _data, i);
-    if (integrationAcls != null) {
+    final IntegrationAcl[] integrationAcls;
+    if (_data[i] == 0) {
+      integrationAcls = null;
+      ++i;
+    } else {
+      ++i;
+      integrationAcls = Borsh.readVector(IntegrationAcl.class, IntegrationAcl::read, _data, i);
       i += Borsh.lenVector(integrationAcls);
     }
-    final var delegateAcls = _data[i++] == 0 ? null : Borsh.readVector(DelegateAcl.class, DelegateAcl::read, _data, i);
+    final DelegateAcl[] delegateAcls;
+    if (_data[i] == 0) {
+      delegateAcls = null;
+    } else {
+      ++i;
+      delegateAcls = Borsh.readVector(DelegateAcl.class, DelegateAcl::read, _data, i);
+    }
     return new StateModel(accountType,
                           name,
                           uri, Borsh.getBytes(uri),
@@ -115,8 +176,8 @@ public record StateModel(AccountType accountType,
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     i += Borsh.writeOptional(accountType, _data, i);
     if (name == null || name.length == 0) {
       _data[i++] = 0;
@@ -159,7 +220,7 @@ public record StateModel(AccountType accountType,
       _data[i++] = 1;
       i += Borsh.writeVector(delegateAcls, _data, i);
     }
-    return i - offset;
+    return i - _offset;
   }
 
   @Override

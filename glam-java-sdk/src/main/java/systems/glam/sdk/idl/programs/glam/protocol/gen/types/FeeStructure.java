@@ -10,11 +10,11 @@ public record FeeStructure(EntryExitFees vault,
 
   public static final int BYTES = 19;
 
-  public static FeeStructure read(final byte[] _data, final int offset) {
+  public static FeeStructure read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    int i = offset;
+    int i = _offset;
     final var vault = EntryExitFees.read(_data, i);
     i += Borsh.len(vault);
     final var manager = EntryExitFees.read(_data, i);
@@ -32,14 +32,14 @@ public record FeeStructure(EntryExitFees vault,
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     i += Borsh.write(vault, _data, i);
     i += Borsh.write(manager, _data, i);
     i += Borsh.write(management, _data, i);
     i += Borsh.write(performance, _data, i);
     i += Borsh.write(protocol, _data, i);
-    return i - offset;
+    return i - _offset;
   }
 
   @Override

@@ -8,7 +8,7 @@ public enum AccountType implements Borsh.Enum {
   TokenizedVault,
   Mint;
 
-  public static AccountType read(final byte[] _data, final int offset) {
-    return Borsh.read(AccountType.values(), _data, offset);
+  public static AccountType read(final byte[] _data, final int _offset) {
+    return Borsh.read(AccountType.values(), _data, _offset);
   }
 }

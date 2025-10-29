@@ -13,11 +13,11 @@ public record IntegrationAcl(PublicKey integrationProgram,
                              int protocolsBitmask,
                              ProtocolPolicy[] protocolPolicies) implements Borsh {
 
-  public static IntegrationAcl read(final byte[] _data, final int offset) {
+  public static IntegrationAcl read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    int i = offset;
+    int i = _offset;
     final var integrationProgram = readPubKey(_data, i);
     i += 32;
     final var protocolsBitmask = getInt16LE(_data, i);
@@ -27,14 +27,14 @@ public record IntegrationAcl(PublicKey integrationProgram,
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     integrationProgram.write(_data, i);
     i += 32;
     putInt16LE(_data, i, protocolsBitmask);
     i += 2;
     i += Borsh.writeVector(protocolPolicies, _data, i);
-    return i - offset;
+    return i - _offset;
   }
 
   @Override

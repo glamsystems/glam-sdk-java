@@ -12,27 +12,33 @@ public record ExtraParams(ActionType actionType,
                           PublicKey pubkey,
                           OptionalLong amount) implements Borsh {
 
-  public static ExtraParams read(final byte[] _data, final int offset) {
+  public static ExtraParams read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    int i = offset;
+    int i = _offset;
     final var actionType = ActionType.read(_data, i);
     i += Borsh.len(actionType);
     final var pubkey = readPubKey(_data, i);
     i += 32;
-    final var amount = _data[i++] == 0 ? OptionalLong.empty() : OptionalLong.of(getInt64LE(_data, i));
+    final OptionalLong amount;
+    if (_data[i] == 0) {
+      amount = OptionalLong.empty();
+    } else {
+      ++i;
+      amount = OptionalLong.of(getInt64LE(_data, i));
+    }
     return new ExtraParams(actionType, pubkey, amount);
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     i += Borsh.write(actionType, _data, i);
     pubkey.write(_data, i);
     i += 32;
     i += Borsh.writeOptional(amount, _data, i);
-    return i - offset;
+    return i - _offset;
   }
 
   @Override

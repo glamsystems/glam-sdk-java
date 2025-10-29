@@ -12,11 +12,11 @@ public record ProtocolPermissions(int protocolBitflag, long permissionsBitmask) 
 
   public static final int BYTES = 10;
 
-  public static ProtocolPermissions read(final byte[] _data, final int offset) {
+  public static ProtocolPermissions read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    int i = offset;
+    int i = _offset;
     final var protocolBitflag = getInt16LE(_data, i);
     i += 2;
     final var permissionsBitmask = getInt64LE(_data, i);
@@ -24,13 +24,13 @@ public record ProtocolPermissions(int protocolBitflag, long permissionsBitmask) 
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     putInt16LE(_data, i, protocolBitflag);
     i += 2;
     putInt64LE(_data, i, permissionsBitmask);
     i += 8;
-    return i - offset;
+    return i - _offset;
   }
 
   @Override

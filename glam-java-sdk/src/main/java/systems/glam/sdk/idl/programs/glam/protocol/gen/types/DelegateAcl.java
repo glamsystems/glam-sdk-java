@@ -11,11 +11,11 @@ public record DelegateAcl(PublicKey pubkey,
                           IntegrationPermissions[] integrationPermissions,
                           long expiresAt) implements Borsh {
 
-  public static DelegateAcl read(final byte[] _data, final int offset) {
+  public static DelegateAcl read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    int i = offset;
+    int i = _offset;
     final var pubkey = readPubKey(_data, i);
     i += 32;
     final var integrationPermissions = Borsh.readVector(IntegrationPermissions.class, IntegrationPermissions::read, _data, i);
@@ -25,14 +25,14 @@ public record DelegateAcl(PublicKey pubkey,
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     pubkey.write(_data, i);
     i += 32;
     i += Borsh.writeVector(integrationPermissions, _data, i);
     putInt64LE(_data, i, expiresAt);
     i += 8;
-    return i - offset;
+    return i - _offset;
   }
 
   @Override

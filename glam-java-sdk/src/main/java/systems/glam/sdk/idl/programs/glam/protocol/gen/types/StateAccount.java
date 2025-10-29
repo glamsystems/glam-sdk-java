@@ -13,7 +13,7 @@ import static software.sava.core.encoding.ByteUtil.getInt32LE;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt32LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
-import static software.sava.core.programs.Discriminator.createDiscriminator;
+import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
 public record StateAccount(PublicKey _address,
@@ -40,6 +40,7 @@ public record StateAccount(PublicKey _address,
 
   public static final int PORTFOLIO_MANAGER_NAME_LEN = 32;
   public static final int NAME_LEN = 32;
+
   public static final Discriminator DISCRIMINATOR = toDiscriminator(142, 247, 54, 95, 85, 133, 249, 103);
   public static final Filter DISCRIMINATOR_FILTER = Filter.createMemCompFilter(0, DISCRIMINATOR.data());
 
@@ -106,8 +107,8 @@ public record StateAccount(PublicKey _address,
     return Filter.createMemCompFilter(MINT_OFFSET, mint);
   }
 
-  public static StateAccount read(final byte[] _data, final int offset) {
-    return read(null, _data, offset);
+  public static StateAccount read(final byte[] _data, final int _offset) {
+    return read(null, _data, _offset);
   }
 
   public static StateAccount read(final AccountInfo<byte[]> accountInfo) {
@@ -120,12 +121,12 @@ public record StateAccount(PublicKey _address,
 
   public static final BiFunction<PublicKey, byte[], StateAccount> FACTORY = StateAccount::read;
 
-  public static StateAccount read(final PublicKey _address, final byte[] _data, final int offset) {
+  public static StateAccount read(final PublicKey _address, final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    final var discriminator = createDiscriminator(_data, offset, 8);
-    int i = offset + discriminator.length();
+    final var discriminator = createAnchorDiscriminator(_data, _offset);
+    int i = _offset + discriminator.length();
     final var accountType = AccountType.read(_data, i);
     i += Borsh.len(accountType);
     final var enabled = _data[i] == 1;
@@ -187,8 +188,8 @@ public record StateAccount(PublicKey _address,
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset + discriminator.write(_data, offset);
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset + discriminator.write(_data, _offset);
     i += Borsh.write(accountType, _data, i);
     _data[i] = (byte) (enabled ? 1 : 0);
     ++i;
@@ -217,12 +218,12 @@ public record StateAccount(PublicKey _address,
     i += Borsh.writeVector(externalPositions, _data, i);
     i += Borsh.writeVector(pricedProtocols, _data, i);
     i += Borsh.writeVector(params, _data, i);
-    return i - offset;
+    return i - _offset;
   }
 
   @Override
   public int l() {
-    return discriminator.length() + Borsh.len(accountType)
+    return 8 + Borsh.len(accountType)
          + 1
          + 32
          + 32

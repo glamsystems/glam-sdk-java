@@ -14,11 +14,12 @@ public record CreatedModel(byte[] key,
   public static final int BYTES = 48;
   public static final int KEY_LEN = 8;
 
-  public static CreatedModel read(final byte[] _data, final int offset) {
+
+  public static CreatedModel read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    int i = offset;
+    int i = _offset;
     final var key = new byte[8];
     i += Borsh.readArray(key, _data, i);
     final var createdBy = readPubKey(_data, i);
@@ -28,14 +29,14 @@ public record CreatedModel(byte[] key,
   }
 
   @Override
-  public int write(final byte[] _data, final int offset) {
-    int i = offset;
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
     i += Borsh.writeArrayChecked(key, 8, _data, i);
     createdBy.write(_data, i);
     i += 32;
     putInt64LE(_data, i, createdAt);
     i += 8;
-    return i - offset;
+    return i - _offset;
   }
 
   @Override
