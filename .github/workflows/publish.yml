@@ -21,11 +21,11 @@ jobs:
           jdk-src: ${{ vars.JDK_SRC }}
           gradle-java-version: ${{ vars.GRADLE_JAVA_VERSION }}
 
-      - name: Checkout Anchor Source Generator
+      - name: Checkout IDL Source Generator
         uses: actions/checkout@v4
         with:
           repository: sava-software/idl-src-gen
-          token: ${{ secrets.GH_READ_PROJECTS }}
+          token: ${{ secrets.READ_SAVA_SRC_GEN }}
           path: idl-src-gen
 
       - name: Generate Source & Check
