@@ -1,4 +1,4 @@
-rootProject.name = "glam-java-sdk"
+rootProject.name = "glam-sdk-java"
 
 pluginManagement {
   repositories {

@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-  nmcpAggregation(project(":glam-java-sdk"))
+  nmcpAggregation(project(":sdk"))
 }
 
 tasks.register("publishToGitHubPackages") {
