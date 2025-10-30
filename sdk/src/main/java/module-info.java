@@ -1,4 +1,5 @@
 module systems.glam.sdk {
+  exports systems.glam.sdk;
   exports systems.glam.sdk.idl.programs._commons;
   exports systems.glam.sdk.idl.programs.glam.protocol.gen.types;
   exports systems.glam.sdk.idl.programs.glam.protocol.gen;
