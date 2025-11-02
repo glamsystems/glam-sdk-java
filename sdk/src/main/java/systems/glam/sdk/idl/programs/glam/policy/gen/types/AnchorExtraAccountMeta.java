@@ -10,7 +10,6 @@ public record AnchorExtraAccountMeta(int discriminator,
   public static final int BYTES = 35;
   public static final int ADDRESS_CONFIG_LEN = 32;
 
-
   public static AnchorExtraAccountMeta read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

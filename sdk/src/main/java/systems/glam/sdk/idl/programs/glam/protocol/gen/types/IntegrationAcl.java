@@ -7,8 +7,9 @@ import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 
-// An integration program can have multiple protocols supported.
-// Enabled protocols are stored in a bitmask, and each protocol can have its own policy.
+/// An integration program can have multiple protocols supported.
+/// Enabled protocols are stored in a bitmask, and each protocol can have its own policy.
+///
 public record IntegrationAcl(PublicKey integrationProgram,
                              int protocolsBitmask,
                              ProtocolPolicy[] protocolPolicies) implements Borsh {

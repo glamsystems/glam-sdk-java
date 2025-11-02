@@ -5,7 +5,8 @@ import software.sava.core.borsh.Borsh;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
 
-// Stores delegate permissions for an integration program.
+/// Stores delegate permissions for an integration program.
+///
 public record IntegrationPermissions(PublicKey integrationProgram, ProtocolPermissions[] protocolPermissions) implements Borsh {
 
   public static IntegrationPermissions read(final byte[] _data, final int _offset) {

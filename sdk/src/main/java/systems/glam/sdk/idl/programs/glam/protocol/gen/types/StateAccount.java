@@ -40,7 +40,6 @@ public record StateAccount(PublicKey _address,
 
   public static final int PORTFOLIO_MANAGER_NAME_LEN = 32;
   public static final int NAME_LEN = 32;
-
   public static final Discriminator DISCRIMINATOR = toDiscriminator(142, 247, 54, 95, 85, 133, 249, 103);
   public static final Filter DISCRIMINATOR_FILTER = Filter.createMemCompFilter(0, DISCRIMINATOR.data());
 

@@ -473,12 +473,12 @@ final class GlamProgramAccountClientImpl implements GlamProgramAccountClient {
                                           final int decimals,
                                           final PublicKey tokenMint) {
     return ExtSplProgram.tokenTransferChecked(
-        glamAccounts.invokedSplExtensionProgram(),
+        glamAccounts.invokedSplIntegrationProgram(),
         solanaAccounts,
         glamVaultAccounts.glamPublicKey(),
         glamVaultAccounts.vaultPublicKey(),
         feePayer.publicKey(),
-        glamAccounts.readSplExtensionAuthority().publicKey(),
+        glamAccounts.readSplIntegrationAuthority().publicKey(),
         invokedProtocolProgram.publicKey(),
         invokedTokenProgram.publicKey(),
         fromTokenAccount,
@@ -492,12 +492,12 @@ final class GlamProgramAccountClientImpl implements GlamProgramAccountClient {
   @Override
   public Instruction closeTokenAccount(final AccountMeta invokedTokenProgram, final PublicKey tokenAccount) {
     return ExtSplProgram.tokenCloseAccount(
-        glamAccounts.invokedSplExtensionProgram(),
+        glamAccounts.invokedSplIntegrationProgram(),
         solanaAccounts,
         glamVaultAccounts.glamPublicKey(),
         glamVaultAccounts.vaultPublicKey(),
         feePayer.publicKey(),
-        glamAccounts.readSplExtensionAuthority().publicKey(),
+        glamAccounts.readSplIntegrationAuthority().publicKey(),
         invokedTokenProgram.publicKey(),
         invokedProtocolProgram.publicKey(),
         tokenAccount
@@ -587,17 +587,22 @@ final class GlamProgramAccountClientImpl implements GlamProgramAccountClient {
   @Override
   public Instruction priceVaultTokens(final PublicKey solUsdOracleKey,
                                       final PublicKey baseAssetUsdOracleKey,
-                                      final short[][] aggIndexes) {
+                                      final short[][] aggIndexes,
+                                      final boolean cpiEmitEvents) {
+    final var invoked = glamAccounts.invokedMintIntegrationProgram();
+    final var mintProgram = invoked.publicKey();
     return GlamMintProgram.priceVaultTokens(
-        glamAccounts.invokedMintExtensionProgram(),
+        invoked,
         glamVaultAccounts.glamPublicKey(),
         glamVaultAccounts.vaultPublicKey(),
         feePayer.publicKey(),
         solUsdOracleKey,
         baseAssetUsdOracleKey,
-        glamAccounts.readMintExtensionAuthority().publicKey(),
+        glamAccounts.readMintIntegrationAuthority().publicKey(),
         globalConfigKey,
         invokedProtocolProgram.publicKey(),
+        cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
+        mintProgram,
         aggIndexes
     );
   }
@@ -605,17 +610,22 @@ final class GlamProgramAccountClientImpl implements GlamProgramAccountClient {
   @Override
   public Instruction priceDriftUsers(final PublicKey solUSDOracleKey,
                                      final PublicKey baseAssetUsdOracleKey,
-                                     final int numUsers) {
+                                     final int numUsers,
+                                     final boolean cpiEmitEvents) {
+    final var invoked = glamAccounts.invokedMintIntegrationProgram();
+    final var mintProgram = invoked.publicKey();
     return GlamMintProgram.priceDriftUsers(
-        glamAccounts.invokedMintExtensionProgram(),
+        invoked,
         glamVaultAccounts.glamPublicKey(),
         glamVaultAccounts.vaultPublicKey(),
         feePayer.publicKey(),
         solUSDOracleKey,
         baseAssetUsdOracleKey,
-        glamAccounts.readMintExtensionAuthority().publicKey(),
+        glamAccounts.readMintIntegrationAuthority().publicKey(),
         globalConfigKey,
         invokedProtocolProgram.publicKey(),
+        cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
+        mintProgram,
         numUsers
     );
   }
@@ -625,17 +635,22 @@ final class GlamProgramAccountClientImpl implements GlamProgramAccountClient {
                                                final PublicKey baseAssetUsdOracleKey,
                                                final int numVaultDepositors,
                                                final int numSpotMarkets,
-                                               final int numPerpMarkets) {
+                                               final int numPerpMarkets,
+                                               final boolean cpiEmitEvents) {
+    final var invoked = glamAccounts.invokedMintIntegrationProgram();
+    final var mintProgram = invoked.publicKey();
     return GlamMintProgram.priceDriftVaultDepositors(
-        glamAccounts.invokedMintExtensionProgram(),
+        invoked,
         glamVaultAccounts.glamPublicKey(),
         glamVaultAccounts.vaultPublicKey(),
         feePayer.publicKey(),
         solOracleKey,
         baseAssetUsdOracleKey,
-        glamAccounts.readMintExtensionAuthority().publicKey(),
+        glamAccounts.readMintIntegrationAuthority().publicKey(),
         globalConfigKey,
         invokedProtocolProgram.publicKey(),
+        cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
+        mintProgram,
         numVaultDepositors,
         numSpotMarkets,
         numPerpMarkets
@@ -652,18 +667,23 @@ final class GlamProgramAccountClientImpl implements GlamProgramAccountClient {
                                             final PublicKey scopePricesKey,
                                             final int numObligations,
                                             final int numMarkets,
-                                            final int numReserves) {
+                                            final int numReserves,
+                                            final boolean cpiEmitEvents) {
+    final var invoked = glamAccounts.invokedMintIntegrationProgram();
+    final var mintProgram = invoked.publicKey();
     return GlamMintProgram.priceKaminoObligations(
-        glamAccounts.invokedMintExtensionProgram(),
+        invoked,
         glamVaultAccounts.glamPublicKey(),
         glamVaultAccounts.vaultPublicKey(),
         feePayer.publicKey(),
         kaminoLendingProgramKey,
         solUSDOracleKey,
         baseAssetUsdOracleKey,
-        glamAccounts.readMintExtensionAuthority().publicKey(),
+        glamAccounts.readMintIntegrationAuthority().publicKey(),
         globalConfigKey,
         invokedProtocolProgram.publicKey(),
+        cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
+        mintProgram,
         pythOracleKey,
         switchboardPriceOracleKey,
         switchboardTwapOracleKey,
@@ -677,17 +697,22 @@ final class GlamProgramAccountClientImpl implements GlamProgramAccountClient {
   @Override
   public Instruction priceKaminoVaultShares(final PublicKey solUSDOracleKey,
                                             final PublicKey baseAssetUsdOracleKey,
-                                            final int numVaults) {
+                                            final int numVaults,
+                                            final boolean cpiEmitEvents) {
+    final var invoked = glamAccounts.invokedMintIntegrationProgram();
+    final var mintProgram = invoked.publicKey();
     return GlamMintProgram.priceKaminoVaultShares(
-        glamAccounts.invokedMintExtensionProgram(),
+        invoked,
         glamVaultAccounts.glamPublicKey(),
         glamVaultAccounts.vaultPublicKey(),
         feePayer.publicKey(),
         solUSDOracleKey,
         baseAssetUsdOracleKey,
-        glamAccounts.readMintExtensionAuthority().publicKey(),
+        glamAccounts.readMintIntegrationAuthority().publicKey(),
         globalConfigKey,
         invokedProtocolProgram.publicKey(),
+        cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
+        mintProgram,
         numVaults
     );
   }

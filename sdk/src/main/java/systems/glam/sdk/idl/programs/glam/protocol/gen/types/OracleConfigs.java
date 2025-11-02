@@ -2,11 +2,11 @@ package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 
 import software.sava.core.borsh.Borsh;
 
-// Vault-specific oracle configs. If available, these configs are preferred over the global config.
+/// Vault-specific oracle configs. If available, these configs are preferred over the global config.
+///
 public record OracleConfigs(short[][] maxAgesSeconds, byte[] padding) implements Borsh {
 
   public static final int PADDING_LEN = 12;
-
   public static OracleConfigs read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

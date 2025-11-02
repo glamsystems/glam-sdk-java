@@ -1,8 +1,15 @@
 module systems.glam.sdk {
-  exports systems.glam.sdk;
   exports systems.glam.sdk.idl.programs._commons;
+  exports systems.glam.sdk.idl.programs.glam.config.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.config.gen;
+  exports systems.glam.sdk.idl.programs.glam.mint.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.mint.gen;
+  exports systems.glam.sdk.idl.programs.glam.policy.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.policy.gen;
   exports systems.glam.sdk.idl.programs.glam.protocol.gen.types;
   exports systems.glam.sdk.idl.programs.glam.protocol.gen;
+  exports systems.glam.sdk.idl.programs.glam.spl.gen;
+  exports systems.glam.sdk;
   requires java.base;
   requires java.net.http;
   requires org.bouncycastle.provider;

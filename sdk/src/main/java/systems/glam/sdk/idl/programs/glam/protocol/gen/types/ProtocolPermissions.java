@@ -7,7 +7,8 @@ import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
-// Represents a delegate's permissions for a specific protocol
+/// Represents a delegate's permissions for a specific protocol
+///
 public record ProtocolPermissions(int protocolBitflag, long permissionsBitmask) implements Borsh {
 
   public static final int BYTES = 10;

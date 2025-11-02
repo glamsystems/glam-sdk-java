@@ -15,7 +15,6 @@ import software.sava.solana.programs.stake.LockUp;
 import software.sava.solana.programs.stake.StakeAccount;
 import software.sava.solana.programs.stake.StakeAuthorize;
 import software.sava.solana.programs.stake.StakeState;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolProgram;
 
 import java.time.Instant;
 import java.util.List;
@@ -186,16 +185,17 @@ final class GlamNativeProgramClientImpl implements GlamNativeProgramClient {
     if (stakeAuthorize != StakeAuthorize.Staker) {
       throw new IllegalStateException("Only the Staker authority may be changed.");
     }
-    return GlamProtocolProgram.stakeAuthorize(
-        invokedProgram,
-        solanaAccounts,
-        glamVaultAccounts.glamPublicKey(),
-        glamVaultAccounts.vaultPublicKey(),
-        feePayer.publicKey(),
-        stakeAccount,
-        stakeOrWithdrawAuthority,
-        0
-    );
+    throw new UnsupportedOperationException("Not yet audited");
+//    return GlamProtocolProgram.stakeAuthorize(
+//        invokedProgram,
+//        solanaAccounts,
+//        glamVaultAccounts.glamPublicKey(),
+//        glamVaultAccounts.vaultPublicKey(),
+//        feePayer.publicKey(),
+//        stakeAccount,
+//        stakeOrWithdrawAuthority,
+//        0
+//    );
   }
 
   @Override
@@ -232,14 +232,15 @@ final class GlamNativeProgramClientImpl implements GlamNativeProgramClient {
                                             final PublicKey staker,
                                             final PublicKey withdrawer,
                                             final LockUp lockUp) {
-    return GlamProtocolProgram.stakeInitialize(
-        invokedProgram,
-        solanaAccounts,
-        glamVaultAccounts.glamPublicKey(),
-        glamVaultAccounts.vaultPublicKey(),
-        feePayer.publicKey(),
-        unInitializedStakeAccount
-    );
+    throw new UnsupportedOperationException("Not yet audited");
+//    return GlamProtocolProgram.stakeInitialize(
+//        invokedProgram,
+//        solanaAccounts,
+//        glamVaultAccounts.glamPublicKey(),
+//        glamVaultAccounts.vaultPublicKey(),
+//        feePayer.publicKey(),
+//        unInitializedStakeAccount
+//    );
   }
 
   @Override
@@ -253,88 +254,94 @@ final class GlamNativeProgramClientImpl implements GlamNativeProgramClient {
   public Instruction delegateStakeAccount(final PublicKey initializedStakeAccount,
                                           final PublicKey validatorVoteAccount,
                                           final PublicKey stakeAuthority) {
-    return GlamProtocolProgram.stakeDelegateStake(
-        invokedProgram,
-        solanaAccounts,
-        glamVaultAccounts.glamPublicKey(),
-        glamVaultAccounts.vaultPublicKey(),
-        feePayer.publicKey(),
-        initializedStakeAccount,
-        validatorVoteAccount,
-        solanaAccounts.stakeConfig()
-    );
+    throw new UnsupportedOperationException("Not yet audited");
+//    return GlamProtocolProgram.stakeDelegateStake(
+//        invokedProgram,
+//        solanaAccounts,
+//        glamVaultAccounts.glamPublicKey(),
+//        glamVaultAccounts.vaultPublicKey(),
+//        feePayer.publicKey(),
+//        initializedStakeAccount,
+//        validatorVoteAccount,
+//        solanaAccounts.stakeConfig()
+//    );
   }
 
   @Override
   public Instruction reDelegateStakeAccount(final StakeAccount delegatedStakeAccount,
                                             final PublicKey uninitializedStakeAccount,
                                             final PublicKey validatorVoteAccount) {
-    return GlamProtocolProgram.stakeRedelegate(
-        invokedProgram,
-        solanaAccounts,
-        glamVaultAccounts.glamPublicKey(),
-        glamVaultAccounts.vaultPublicKey(),
-        feePayer.publicKey(),
-        delegatedStakeAccount.address(),
-        uninitializedStakeAccount,
-        validatorVoteAccount,
-        solanaAccounts.stakeConfig()
-    );
+    throw new UnsupportedOperationException("Not yet audited");
+//    return GlamProtocolProgram.stakeRedelegate(
+//        invokedProgram,
+//        solanaAccounts,
+//        glamVaultAccounts.glamPublicKey(),
+//        glamVaultAccounts.vaultPublicKey(),
+//        feePayer.publicKey(),
+//        delegatedStakeAccount.address(),
+//        uninitializedStakeAccount,
+//        validatorVoteAccount,
+//        solanaAccounts.stakeConfig()
+//    );
   }
 
   @Override
   public Instruction splitStakeAccount(final StakeAccount splitStakeAccount,
                                        final PublicKey unInitializedStakeAccount,
                                        final long lamports) {
-    return GlamProtocolProgram.stakeSplit(
-        invokedProgram,
-        solanaAccounts,
-        glamVaultAccounts.glamPublicKey(),
-        glamVaultAccounts.vaultPublicKey(),
-        feePayer.publicKey(),
-        splitStakeAccount.address(),
-        unInitializedStakeAccount,
-        lamports
-    );
+    throw new UnsupportedOperationException("Not yet audited");
+//    return GlamProtocolProgram.stakeSplit(
+//        invokedProgram,
+//        solanaAccounts,
+//        glamVaultAccounts.glamPublicKey(),
+//        glamVaultAccounts.vaultPublicKey(),
+//        feePayer.publicKey(),
+//        splitStakeAccount.address(),
+//        unInitializedStakeAccount,
+//        lamports
+//    );
   }
 
   @Override
   public Instruction mergeStakeAccounts(final StakeAccount destinationStakeAccount, final PublicKey srcStakeAccount) {
-    return GlamProtocolProgram.stakeMerge(
-        invokedProgram,
-        solanaAccounts,
-        glamVaultAccounts.glamPublicKey(),
-        glamVaultAccounts.vaultPublicKey(),
-        feePayer.publicKey(),
-        destinationStakeAccount.address(),
-        srcStakeAccount
-    );
+    throw new UnsupportedOperationException("Not yet audited");
+//    return GlamProtocolProgram.stakeMerge(
+//        invokedProgram,
+//        solanaAccounts,
+//        glamVaultAccounts.glamPublicKey(),
+//        glamVaultAccounts.vaultPublicKey(),
+//        feePayer.publicKey(),
+//        destinationStakeAccount.address(),
+//        srcStakeAccount
+//    );
   }
 
   @Override
   public Instruction withdrawStakeAccount(final StakeAccount stakeAccount,
                                           final PublicKey recipient,
                                           final long lamports) {
-    return GlamProtocolProgram.stakeWithdraw(
-        invokedProgram,
-        solanaAccounts,
-        glamVaultAccounts.glamPublicKey(),
-        glamVaultAccounts.vaultPublicKey(),
-        feePayer.publicKey(),
-        stakeAccount.address(),
-        lamports
-    );
+    throw new UnsupportedOperationException("Not yet audited");
+//    return GlamProtocolProgram.stakeWithdraw(
+//        invokedProgram,
+//        solanaAccounts,
+//        glamVaultAccounts.glamPublicKey(),
+//        glamVaultAccounts.vaultPublicKey(),
+//        feePayer.publicKey(),
+//        stakeAccount.address(),
+//        lamports
+//    );
   }
 
   private Instruction deactivateStakeAccount(final PublicKey delegatedStakeAccount) {
-    return GlamProtocolProgram.stakeDeactivate(
-        invokedProgram,
-        solanaAccounts,
-        glamVaultAccounts.glamPublicKey(),
-        glamVaultAccounts.vaultPublicKey(),
-        feePayer.publicKey(),
-        delegatedStakeAccount
-    );
+    throw new UnsupportedOperationException("Not yet audited");
+//    return GlamProtocolProgram.stakeDeactivate(
+//        invokedProgram,
+//        solanaAccounts,
+//        glamVaultAccounts.glamPublicKey(),
+//        glamVaultAccounts.vaultPublicKey(),
+//        feePayer.publicKey(),
+//        delegatedStakeAccount
+//    );
   }
 
   @Override

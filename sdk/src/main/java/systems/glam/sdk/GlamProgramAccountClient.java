@@ -77,17 +77,40 @@ public interface GlamProgramAccountClient extends NativeProgramAccountClient {
 
   Instruction priceVaultTokens(final PublicKey solUsdOracleKey,
                                final PublicKey baseAssetUsdOracleKey,
-                               final short[][] aggIndexes);
+                               final short[][] aggIndexes,
+                               final boolean cpiEmitEvents);
+
+  default Instruction priceVaultTokens(final PublicKey solUsdOracleKey,
+                                       final PublicKey baseAssetUsdOracleKey,
+                                       final short[][] aggIndexes) {
+    return priceVaultTokens(solUsdOracleKey, baseAssetUsdOracleKey, aggIndexes, false);
+  }
 
   Instruction priceDriftUsers(final PublicKey solUSDOracleKey,
                               final PublicKey baseAssetUsdOracleKey,
-                              final int numUsers);
+                              final int numUsers,
+                              final boolean cpiEmitEvents);
+
+  default Instruction priceDriftUsers(final PublicKey solUSDOracleKey,
+                                      final PublicKey baseAssetUsdOracleKey,
+                                      final int numUsers) {
+    return priceDriftUsers(solUSDOracleKey, baseAssetUsdOracleKey, numUsers, false);
+  }
 
   Instruction priceDriftVaultDepositors(final PublicKey solOracleKey,
                                         final PublicKey baseAssetUsdOracleKey,
                                         final int numVaultDepositors,
                                         final int numSpotMarkets,
-                                        final int numPerpMarkets);
+                                        final int numPerpMarkets,
+                                        final boolean cpiEmitEvents);
+
+  default Instruction priceDriftVaultDepositors(final PublicKey solOracleKey,
+                                                final PublicKey baseAssetUsdOracleKey,
+                                                final int numVaultDepositors,
+                                                final int numSpotMarkets,
+                                                final int numPerpMarkets) {
+    return priceDriftVaultDepositors(solOracleKey, baseAssetUsdOracleKey, numVaultDepositors, numSpotMarkets, numPerpMarkets, false);
+  }
 
   Instruction priceKaminoObligations(final PublicKey kaminoLendingProgramKey,
                                      final PublicKey solUSDOracleKey,
@@ -98,11 +121,37 @@ public interface GlamProgramAccountClient extends NativeProgramAccountClient {
                                      final PublicKey scopePricesKey,
                                      final int numObligations,
                                      final int numMarkets,
-                                     final int numReserves);
+                                     final int numReserves,
+                                     final boolean cpiEmitEvents);
+
+  default Instruction priceKaminoObligations(final PublicKey kaminoLendingProgramKey,
+                                             final PublicKey solUSDOracleKey,
+                                             final PublicKey baseAssetUsdOracleKey,
+                                             final PublicKey pythOracleKey,
+                                             final PublicKey switchboardPriceOracleKey,
+                                             final PublicKey switchboardTwapOracleKey,
+                                             final PublicKey scopePricesKey,
+                                             final int numObligations,
+                                             final int numMarkets,
+                                             final int numReserves) {
+    return priceKaminoObligations(kaminoLendingProgramKey, solUSDOracleKey, baseAssetUsdOracleKey, pythOracleKey, switchboardPriceOracleKey, switchboardTwapOracleKey, scopePricesKey, numObligations, numMarkets, numReserves, false);
+  }
 
   Instruction priceKaminoVaultShares(final PublicKey solUSDOracleKey,
                                      final PublicKey baseAssetUsdOracleKey,
-                                     final int numVaults);
+                                     final int numVaults,
+                                     final boolean cpiEmitEvents);
+
+  default Instruction priceKaminoVaultShares(final PublicKey solUSDOracleKey,
+                                             final PublicKey baseAssetUsdOracleKey,
+                                             final int numVaults) {
+    return priceKaminoVaultShares(
+        solUSDOracleKey,
+        baseAssetUsdOracleKey,
+        numVaults,
+        false
+    );
+  }
 
   Instruction updateState(StateModel state);
 }

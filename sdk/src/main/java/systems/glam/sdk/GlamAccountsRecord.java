@@ -14,13 +14,14 @@ public record GlamAccountsRecord(PublicKey program,
                                  AccountMeta invokedProtocolProgram,
                                  PublicKey configProgram,
                                  PublicKey policyProgram,
-                                 AccountMeta invokedMintExtensionProgram,
-                                 AccountMeta readMintExtensionAuthority,
-                                 AccountMeta invokedSplExtensionProgram,
-                                 AccountMeta readSplExtensionAuthority,
-                                 AccountMeta invokedDriftExtensionProgram,
-                                 AccountMeta invokedKaminoExtensionProgram,
-                                 Map<PublicKey, AccountMeta> extensionAuthorities) implements GlamAccounts {
+                                 AccountMeta invokedMintIntegrationProgram,
+                                 AccountMeta readMintIntegrationAuthority,
+                                 PublicKey mintEventAuthority,
+                                 AccountMeta invokedSplIntegrationProgram,
+                                 AccountMeta readSplIntegrationAuthority,
+                                 AccountMeta invokedDriftIntegrationProgram,
+                                 AccountMeta invokedKaminoIntegrationProgram,
+                                 Map<PublicKey, AccountMeta> integrationAuthorities) implements GlamAccounts {
 
   @Override
   public ProgramDerivedAddress mintPDA(final PublicKey glamPublicKey, final int shareClassId) {

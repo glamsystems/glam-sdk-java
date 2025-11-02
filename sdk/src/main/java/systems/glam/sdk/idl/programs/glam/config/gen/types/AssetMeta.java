@@ -18,7 +18,6 @@ public record AssetMeta(PublicKey asset,
   public static final int BYTES = 72;
   public static final int PADDING_LEN = 3;
 
-
   public static AssetMeta read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

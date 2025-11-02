@@ -21,7 +21,6 @@ public record NotifyAndSettle(ValuationModel model,
   public static final int BYTES = 56;
   public static final int PADDING_LEN = 3;
 
-
   public static NotifyAndSettle read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

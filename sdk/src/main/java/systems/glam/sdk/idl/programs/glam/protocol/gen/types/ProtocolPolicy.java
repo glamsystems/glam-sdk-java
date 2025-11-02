@@ -5,8 +5,9 @@ import software.sava.core.borsh.Borsh;
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 
-// Stores policy data for an integrated protocol.
-// Integration programs serialize/deserialize this data.
+/// Stores policy data for an integrated protocol.
+/// Integration programs serialize/deserialize this data.
+///
 public record ProtocolPolicy(int protocolBitflag, byte[] data) implements Borsh {
 
   public static ProtocolPolicy read(final byte[] _data, final int _offset) {

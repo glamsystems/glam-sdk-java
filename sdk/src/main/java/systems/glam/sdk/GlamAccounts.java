@@ -34,18 +34,18 @@ public interface GlamAccounts {
                                      final PublicKey configProgram,
                                      final PublicKey mintProgram,
                                      final PublicKey policyProgram,
-                                     final PublicKey splExtensionProgram,
-                                     final PublicKey driftExtensionProgram,
-                                     final PublicKey kaminoExtensionProgram) {
-    final var mintExtensionAuthority = createRead(GlamMintPDAs.integrationAuthorityPDA(mintProgram).publicKey());
-    final var splExtensionAuthority = createRead(ExtSplPDAs.integrationAuthorityPDA(splExtensionProgram).publicKey());
-//    final var driftExtensionAuthority = createRead(ExtDriftPDAs.integrationAuthorityPDA(driftExtensionProgram).publicKey());
-//    final var kaminoExtensionAuthority = createRead(ExtKaminoPDAs.integrationAuthorityPDA(kaminoExtensionProgram).publicKey());
-    final var extensionAuthorities = Map.of(
-        mintProgram, mintExtensionAuthority,
-        splExtensionProgram, splExtensionAuthority
-//        driftExtensionProgram, driftExtensionAuthority,
-//        kaminoExtensionProgram, kaminoExtensionAuthority
+                                     final PublicKey splIntegrationProgram,
+                                     final PublicKey driftIntegrationProgram,
+                                     final PublicKey kaminoIntegrationProgram) {
+    final var mintIntegrationAuthority = createRead(GlamMintPDAs.integrationAuthorityPDA(mintProgram).publicKey());
+    final var splIntegrationAuthority = createRead(ExtSplPDAs.integrationAuthorityPDA(splIntegrationProgram).publicKey());
+//    final var driftIntegrationAuthority = createRead(ExtDriftPDAs.integrationAuthorityPDA(driftIntegrationProgram).publicKey());
+//    final var kaminoIntegrationAuthority = createRead(ExtKaminoPDAs.integrationAuthorityPDA(kaminoIntegrationProgram).publicKey());
+    final var IntegrationAuthorities = Map.of(
+        mintProgram, mintIntegrationAuthority,
+        splIntegrationProgram, splIntegrationAuthority
+//        driftIntegrationProgram, driftIntegrationAuthority,
+//        kaminoIntegrationProgram, kaminoIntegrationAuthority
     );
     return new GlamAccountsRecord(
         program,
@@ -54,14 +54,15 @@ public interface GlamAccounts {
         configProgram,
         policyProgram,
         AccountMeta.createInvoked(mintProgram),
-        mintExtensionAuthority,
-        AccountMeta.createInvoked(splExtensionProgram),
-        splExtensionAuthority,
-        AccountMeta.createInvoked(driftExtensionProgram),
-//        driftExtensionAuthority,
-        AccountMeta.createInvoked(kaminoExtensionProgram),
-//        kaminoExtensionAuthority,
-        extensionAuthorities
+        mintIntegrationAuthority,
+        GlamMintPDAs.eventAuthorityPDA(mintProgram).publicKey(),
+        AccountMeta.createInvoked(splIntegrationProgram),
+        splIntegrationAuthority,
+        AccountMeta.createInvoked(driftIntegrationProgram),
+//        driftIntegrationAuthority,
+        AccountMeta.createInvoked(kaminoIntegrationProgram),
+//        kaminoIntegrationAuthority,
+        IntegrationAuthorities
     );
   }
 
@@ -70,18 +71,18 @@ public interface GlamAccounts {
                                      final String configProgram,
                                      final String mintProgram,
                                      final String policyProgram,
-                                     final String splExtensionProgram,
-                                     final String driftExtensionProgram,
-                                     final String kaminoExtensionProgram) {
+                                     final String splIntegrationProgram,
+                                     final String driftIntegrationProgram,
+                                     final String kaminoIntegrationProgram) {
     return createAccounts(
         PublicKey.fromBase58Encoded(program),
         PublicKey.fromBase58Encoded(protocolProgram),
         PublicKey.fromBase58Encoded(configProgram),
         PublicKey.fromBase58Encoded(mintProgram),
         PublicKey.fromBase58Encoded(policyProgram),
-        PublicKey.fromBase58Encoded(splExtensionProgram),
-        PublicKey.fromBase58Encoded(driftExtensionProgram),
-        PublicKey.fromBase58Encoded(kaminoExtensionProgram)
+        PublicKey.fromBase58Encoded(splIntegrationProgram),
+        PublicKey.fromBase58Encoded(driftIntegrationProgram),
+        PublicKey.fromBase58Encoded(kaminoIntegrationProgram)
     );
   }
 
@@ -114,39 +115,41 @@ public interface GlamAccounts {
     return GlamVaultAccounts.createMapper(invokedProtocolProgram(), mappingsDirectory, dynamicGlamAccountFactory);
   }
 
-  AccountMeta invokedMintExtensionProgram();
+  AccountMeta invokedMintIntegrationProgram();
 
   default AccountMeta invokedMintProgram() {
-    return invokedMintExtensionProgram();
+    return invokedMintIntegrationProgram();
   }
 
-  default PublicKey mintExtensionProgram() {
-    return invokedMintExtensionProgram().publicKey();
+  default PublicKey mintIntegrationProgram() {
+    return invokedMintIntegrationProgram().publicKey();
   }
 
-  AccountMeta readMintExtensionAuthority();
+  AccountMeta readMintIntegrationAuthority();
 
-  AccountMeta invokedSplExtensionProgram();
+  PublicKey mintEventAuthority();
 
-  default PublicKey splExtensionProgram() {
-    return invokedSplExtensionProgram().publicKey();
+  AccountMeta invokedSplIntegrationProgram();
+
+  default PublicKey splIntegrationProgram() {
+    return invokedSplIntegrationProgram().publicKey();
   }
 
-  AccountMeta readSplExtensionAuthority();
+  AccountMeta readSplIntegrationAuthority();
 
-  AccountMeta invokedDriftExtensionProgram();
+  AccountMeta invokedDriftIntegrationProgram();
 
-  default PublicKey driftExtensionProgram() {
-    return invokedDriftExtensionProgram().publicKey();
+  default PublicKey driftIntegrationProgram() {
+    return invokedDriftIntegrationProgram().publicKey();
   }
 
-  AccountMeta invokedKaminoExtensionProgram();
+  AccountMeta invokedKaminoIntegrationProgram();
 
-  default PublicKey kaminoExtensionProgram() {
-    return invokedKaminoExtensionProgram().publicKey();
+  default PublicKey kaminoIntegrationProgram() {
+    return invokedKaminoIntegrationProgram().publicKey();
   }
 
-  Map<PublicKey, AccountMeta> extensionAuthorities();
+  Map<PublicKey, AccountMeta> integrationAuthorities();
 
   static boolean usesIntegration(final StateAccount stateAccount,
                                  final PublicKey program,

@@ -23,17 +23,34 @@ public final class ExtSplProgram {
 
   public static final Discriminator SET_TOKEN_TRANSFER_POLICY_DISCRIMINATOR = toDiscriminator(0, 144, 15, 4, 149, 22, 95, 50);
 
+  public static List<AccountMeta> setTokenTransferPolicyKeys(final AccountMeta invokedExtSplProgramMeta                                                             ,
+                                                             final PublicKey glamStateKey,
+                                                             final PublicKey glamSignerKey,
+                                                             final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
   public static Instruction setTokenTransferPolicy(final AccountMeta invokedExtSplProgramMeta,
                                                    final PublicKey glamStateKey,
                                                    final PublicKey glamSignerKey,
                                                    final PublicKey glamProtocolProgramKey,
                                                    final TransferPolicy policy) {
-    final var keys = List.of(
-      createWrite(glamStateKey),
-      createWritableSigner(glamSignerKey),
-      createRead(glamProtocolProgramKey)
+    final var keys = setTokenTransferPolicyKeys(
+      invokedExtSplProgramMeta,
+      glamStateKey,
+      glamSignerKey,
+      glamProtocolProgramKey
     );
+    return setTokenTransferPolicy(invokedExtSplProgramMeta, keys, policy);
+  }
 
+  public static Instruction setTokenTransferPolicy(final AccountMeta invokedExtSplProgramMeta                                                   ,
+                                                   final List<AccountMeta> keys,
+                                                   final TransferPolicy policy) {
     final byte[] _data = new byte[8 + Borsh.len(policy)];
     int i = SET_TOKEN_TRANSFER_POLICY_DISCRIMINATOR.write(_data, 0);
     Borsh.write(policy, _data, i);
@@ -72,16 +89,16 @@ public final class ExtSplProgram {
 
   public static final Discriminator TOKEN_CLOSE_ACCOUNT_DISCRIMINATOR = toDiscriminator(240, 32, 179, 154, 96, 110, 43, 79);
 
-  public static Instruction tokenCloseAccount(final AccountMeta invokedExtSplProgramMeta,
-                                              final SolanaAccounts solanaAccounts,
-                                              final PublicKey glamStateKey,
-                                              final PublicKey glamVaultKey,
-                                              final PublicKey glamSignerKey,
-                                              final PublicKey integrationAuthorityKey,
-                                              final PublicKey cpiProgramKey,
-                                              final PublicKey glamProtocolProgramKey,
-                                              final PublicKey tokenAccountKey) {
-    final var keys = List.of(
+  public static List<AccountMeta> tokenCloseAccountKeys(final AccountMeta invokedExtSplProgramMeta                                                        ,
+                                                        final SolanaAccounts solanaAccounts,
+                                                        final PublicKey glamStateKey,
+                                                        final PublicKey glamVaultKey,
+                                                        final PublicKey glamSignerKey,
+                                                        final PublicKey integrationAuthorityKey,
+                                                        final PublicKey cpiProgramKey,
+                                                        final PublicKey glamProtocolProgramKey,
+                                                        final PublicKey tokenAccountKey) {
+    return List.of(
       createWrite(glamStateKey),
       createWrite(glamVaultKey),
       createWritableSigner(glamSignerKey),
@@ -91,11 +108,62 @@ public final class ExtSplProgram {
       createRead(solanaAccounts.systemProgram()),
       createWrite(tokenAccountKey)
     );
+  }
 
+  public static Instruction tokenCloseAccount(final AccountMeta invokedExtSplProgramMeta,
+                                              final SolanaAccounts solanaAccounts,
+                                              final PublicKey glamStateKey,
+                                              final PublicKey glamVaultKey,
+                                              final PublicKey glamSignerKey,
+                                              final PublicKey integrationAuthorityKey,
+                                              final PublicKey cpiProgramKey,
+                                              final PublicKey glamProtocolProgramKey,
+                                              final PublicKey tokenAccountKey) {
+    final var keys = tokenCloseAccountKeys(
+      invokedExtSplProgramMeta,
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      tokenAccountKey
+    );
+    return tokenCloseAccount(invokedExtSplProgramMeta, keys);
+  }
+
+  public static Instruction tokenCloseAccount(final AccountMeta invokedExtSplProgramMeta                                              ,
+                                              final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedExtSplProgramMeta, keys, TOKEN_CLOSE_ACCOUNT_DISCRIMINATOR);
   }
 
   public static final Discriminator TOKEN_TRANSFER_CHECKED_DISCRIMINATOR = toDiscriminator(169, 178, 117, 156, 169, 191, 199, 116);
+
+  public static List<AccountMeta> tokenTransferCheckedKeys(final AccountMeta invokedExtSplProgramMeta                                                           ,
+                                                           final SolanaAccounts solanaAccounts,
+                                                           final PublicKey glamStateKey,
+                                                           final PublicKey glamVaultKey,
+                                                           final PublicKey glamSignerKey,
+                                                           final PublicKey integrationAuthorityKey,
+                                                           final PublicKey cpiProgramKey,
+                                                           final PublicKey glamProtocolProgramKey,
+                                                           final PublicKey fromKey,
+                                                           final PublicKey mintKey,
+                                                           final PublicKey toKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createWrite(fromKey),
+      createRead(mintKey),
+      createWrite(toKey)
+    );
+  }
 
   public static Instruction tokenTransferChecked(final AccountMeta invokedExtSplProgramMeta,
                                                  final SolanaAccounts solanaAccounts,
@@ -110,19 +178,26 @@ public final class ExtSplProgram {
                                                  final PublicKey toKey,
                                                  final long amount,
                                                  final int decimals) {
-    final var keys = List.of(
-      createWrite(glamStateKey),
-      createWrite(glamVaultKey),
-      createWritableSigner(glamSignerKey),
-      createRead(integrationAuthorityKey),
-      createRead(cpiProgramKey),
-      createRead(glamProtocolProgramKey),
-      createRead(solanaAccounts.systemProgram()),
-      createWrite(fromKey),
-      createRead(mintKey),
-      createWrite(toKey)
+    final var keys = tokenTransferCheckedKeys(
+      invokedExtSplProgramMeta,
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      fromKey,
+      mintKey,
+      toKey
     );
+    return tokenTransferChecked(invokedExtSplProgramMeta, keys, amount, decimals);
+  }
 
+  public static Instruction tokenTransferChecked(final AccountMeta invokedExtSplProgramMeta                                                 ,
+                                                 final List<AccountMeta> keys,
+                                                 final long amount,
+                                                 final int decimals) {
     final byte[] _data = new byte[17];
     int i = TOKEN_TRANSFER_CHECKED_DISCRIMINATOR.write(_data, 0);
     putInt64LE(_data, i, amount);

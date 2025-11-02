@@ -14,11 +14,11 @@ import static software.sava.core.encoding.ByteUtil.putInt16LE;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
+/// @param admin The authority that can modify the config
+/// @param feeAuthority The authority that can modify fee structure of individual glam state and claim protocol fees
 public record GlobalConfig(PublicKey _address,
                            Discriminator discriminator,
-                           // The authority that can modify the config
                            PublicKey admin,
-                           // The authority that can modify fee structure of individual glam state and claim protocol fees
                            PublicKey feeAuthority,
                            PublicKey referrer,
                            int baseFeeBps,

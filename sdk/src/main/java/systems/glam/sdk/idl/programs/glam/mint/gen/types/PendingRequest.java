@@ -19,7 +19,6 @@ public record PendingRequest(PublicKey user,
   public static final int BYTES = 72;
   public static final int RESERVED_LEN = 6;
 
-
   public static PendingRequest read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
