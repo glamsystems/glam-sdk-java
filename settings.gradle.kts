@@ -17,7 +17,7 @@ plugins {
 
 javaModules {
   directory(".") {
-    group = "software.sava"
+    group = "systems.glam"
     plugin("software.sava.build.java-module")
   }
 }
