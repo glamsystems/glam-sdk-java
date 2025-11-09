@@ -1,63 +1,85 @@
-[
-  {
-    "name": "Glam Config",
-    "program": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
-    "package": "glam.config",
-    "typeRefs": [
-      {
-        "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
-        "srcMismatch": "WARN_KEEP_LOCAL",
-        "matchOnTypeName": true,
-        "excludeTypes": [],
-        "explicitRules": []
-      }
-    ]
+{
+  "basePackage": "systems.glam.sdk.idl.programs",
+  "baseModuleName": "systems.glam",
+  "commons": {
+    "external": true,
+    "module": "software.sava.idl.clients.core",
+    "package": "software.sava.idl.clients.core.gen"
   },
-  {
-    "name": "Glam Mint",
-    "program": "GM1NtvvnSXUptTrMCqbogAdZJydZSNv98DoU5AZVLmGh",
-    "package": "glam.mint",
-    "typeRefs": [
-      {
-        "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
-        "srcMismatch": "WARN_KEEP_LOCAL",
-        "matchOnTypeName": true,
-        "excludeTypes": [],
-        "explicitRules": []
-      }
-    ]
-  },
-  {
-    "name": "Glam Protocol",
-    "program": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
-    "package": "glam.protocol"
-  },
-  {
-    "name": "GLAM Policy Program",
-    "program": "po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY",
-    "package": "glam.policy",
-    "typeRefs": [
-      {
-        "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
-        "srcMismatch": "WARN_KEEP_LOCAL",
-        "matchOnTypeName": true,
-        "excludeTypes": [],
-        "explicitRules": []
-      }
-    ]
-  },
-  {
-    "name": "GLAM SPL",
-    "program": "G1NTsQ36mjPe89HtPYqxKsjY5HmYsDR6CbD2gd2U2pta",
-    "package": "glam.spl",
-    "typeRefs": [
-      {
-        "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
-        "srcMismatch": "WARN_KEEP_LOCAL",
-        "matchOnTypeName": true,
-        "excludeTypes": [],
-        "explicitRules": []
-      }
-    ]
-  }
-]
+  "genPackageName": "gen",
+  "exportPackages": true,
+  "tabLength": 2,
+  "programs": [
+    {
+      "name": "Glam Config",
+      "source": "sdk",
+      "package": "glam.config",
+      "module": "sdk",
+      "program": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
+      "typeRefs": [
+        {
+          "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
+      "name": "Glam Mint",
+      "source": "sdk",
+      "package": "glam.mint",
+      "module": "sdk",
+      "program": "GM1NtvvnSXUptTrMCqbogAdZJydZSNv98DoU5AZVLmGh",
+      "typeRefs": [
+        {
+          "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
+      "name": "Glam Protocol",
+      "source": "sdk",
+      "package": "glam.protocol",
+      "module": "sdk",
+      "program": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"
+    },
+    {
+      "name": "GLAM Policy Program",
+      "source": "sdk",
+      "package": "glam.policy",
+      "module": "sdk",
+      "program": "po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY",
+      "typeRefs": [
+        {
+          "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
+      "name": "GLAM SPL",
+      "source": "sdk",
+      "package": "glam.spl",
+      "module": "sdk",
+      "program": "G1NTsQ36mjPe89HtPYqxKsjY5HmYsDR6CbD2gd2U2pta",
+      "typeRefs": [
+        {
+          "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 package systems.glam.sdk.idl.programs.glam.config.gen;
 
-import systems.glam.sdk.idl.programs._commons.ProgramError;
+import software.sava.idl.clients.core.gen.ProgramError;
 
 public sealed interface GlamConfigError extends ProgramError permits
     GlamConfigError.InvalidAuthority,
@@ -14,7 +14,7 @@ public sealed interface GlamConfigError extends ProgramError permits
       case 6001 -> InvalidAssetMeta.INSTANCE;
       case 6002 -> AssetMetaAlreadyExists.INSTANCE;
       case 6003 -> InvalidParameters.INSTANCE;
-      default -> throw new IllegalStateException("Unexpected GlamConfig error code: " + errorCode);
+      default -> null;
     };
   }
 

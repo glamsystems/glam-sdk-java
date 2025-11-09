@@ -1,6 +1,6 @@
 package systems.glam.sdk.idl.programs.glam.protocol.gen;
 
-import systems.glam.sdk.idl.programs._commons.ProgramError;
+import software.sava.idl.clients.core.gen.ProgramError;
 
 public sealed interface GlamProtocolError extends ProgramError permits
     GlamProtocolError.UnauthorizedSigner,
@@ -118,7 +118,7 @@ public sealed interface GlamProtocolError extends ProgramError permits
       case 52001 -> InvalidPolicyAccount.INSTANCE;
       case 52002 -> AmountTooBig.INSTANCE;
       case 52003 -> LockUp.INSTANCE;
-      default -> throw new IllegalStateException("Unexpected GlamProtocol error code: " + errorCode);
+      default -> null;
     };
   }
 

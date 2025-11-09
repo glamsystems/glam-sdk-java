@@ -1,5 +1,4 @@
 module systems.glam.sdk {
-  exports systems.glam.sdk.idl.programs._commons;
   exports systems.glam.sdk.idl.programs.glam.config.gen.types;
   exports systems.glam.sdk.idl.programs.glam.config.gen;
   exports systems.glam.sdk.idl.programs.glam.mint.gen.types;
@@ -14,6 +13,7 @@ module systems.glam.sdk {
   requires java.net.http;
   requires org.bouncycastle.provider;
   requires transitive software.sava.core;
+  requires transitive software.sava.idl.clients.core;
   requires transitive software.sava.rpc;
   requires transitive software.sava.solana_programs;
   requires transitive software.sava.solana_web2;

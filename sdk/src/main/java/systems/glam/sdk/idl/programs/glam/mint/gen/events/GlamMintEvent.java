@@ -15,4 +15,16 @@ public sealed interface GlamMintEvent extends Borsh permits
       return null;
     }
   }
+
+  static GlamMintEvent read(final byte[] _data) {
+    return read(_data, 0);
+  }
+
+  static GlamMintEvent readCPI(final byte[] _data, final int _offset) {
+    return read(_data, _offset + 8);
+  }
+
+  static GlamMintEvent readCPI(final byte[] _data) {
+    return read(_data, 8);
+  }
 }

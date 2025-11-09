@@ -1,6 +1,6 @@
 package systems.glam.sdk.idl.programs.glam.mint.gen;
 
-import systems.glam.sdk.idl.programs._commons.ProgramError;
+import software.sava.idl.clients.core.gen.ProgramError;
 
 public sealed interface GlamMintError extends ProgramError permits
     GlamMintError.InvalidAuthority,
@@ -34,7 +34,7 @@ public sealed interface GlamMintError extends ProgramError permits
       case 6011 -> InvalidRequestQueueData.INSTANCE;
       case 6012 -> RequestQueueFull.INSTANCE;
       case 6013 -> ProtocolFeesNotCrystallized.INSTANCE;
-      default -> throw new IllegalStateException("Unexpected GlamMint error code: " + errorCode);
+      default -> null;
     };
   }
 

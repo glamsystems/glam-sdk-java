@@ -1,6 +1,6 @@
 package systems.glam.sdk.idl.programs.glam.policy.gen;
 
-import systems.glam.sdk.idl.programs._commons.ProgramError;
+import software.sava.idl.clients.core.gen.ProgramError;
 
 public sealed interface GlamPoliciesError extends ProgramError permits
     GlamPoliciesError.InvalidSourcePolicyAccount,
@@ -12,7 +12,7 @@ public sealed interface GlamPoliciesError extends ProgramError permits
       case 6000 -> InvalidSourcePolicyAccount.INSTANCE;
       case 6001 -> LockUp.INSTANCE;
       case 6002 -> NotAuthorized.INSTANCE;
-      default -> throw new IllegalStateException("Unexpected GlamPolicies error code: " + errorCode);
+      default -> null;
     };
   }
 
