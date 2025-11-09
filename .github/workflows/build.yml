@@ -31,7 +31,7 @@ jobs:
       - name: Gradle Check
         run: |
           cd ./idl-src-gen
-          ./genSrc.sh --bdm=200 --mc=2 --config='/Users/jim/src/glam-java-sdk/main_net_programs.json' --rpc="${{ secrets.RPC_URL }}"
+          ./genSrc.sh --bdm=200 --mc=2 --config='../main_net_programs.json' --rpc="${{ secrets.RPC_URL }}"
           cd ..
           ./gradlew --stacktrace -PjavaVersion=${{ steps.setup.outputs.java-version }} check
         env:
