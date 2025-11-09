@@ -153,5 +153,5 @@ public interface GlamProgramAccountClient extends NativeProgramAccountClient {
     );
   }
 
-  Instruction updateState(StateModel state);
+  Instruction updateState(final StateModel state);
 }

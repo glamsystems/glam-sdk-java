@@ -9,6 +9,6 @@ dependencies {
 tasks.register("publishToGitHubPackages") {
   group = "publishing"
   dependsOn(
-    ":anchor-programs:publishMavenJavaPublicationToSavaGithubPackagesRepository"
+    ":sdk:publishMavenJavaPublicationToSavaGithubPackagesRepository"
   )
 }

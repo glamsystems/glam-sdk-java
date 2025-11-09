@@ -8,6 +8,7 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.protocol.gen.types;
   exports systems.glam.sdk.idl.programs.glam.protocol.gen;
   exports systems.glam.sdk.idl.programs.glam.spl.gen;
+  exports systems.glam.sdk.proxy;
   exports systems.glam.sdk;
   requires java.base;
   requires java.net.http;
