@@ -3,6 +3,7 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.config.gen;
   exports systems.glam.sdk.idl.programs.glam.drift.gen.types;
   exports systems.glam.sdk.idl.programs.glam.drift.gen;
+  exports systems.glam.sdk.idl.programs.glam.jupiter;
   exports systems.glam.sdk.idl.programs.glam.kamino.gen.types;
   exports systems.glam.sdk.idl.programs.glam.kamino.gen;
   exports systems.glam.sdk.idl.programs.glam.mint.gen.types;
