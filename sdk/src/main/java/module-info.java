@@ -1,6 +1,10 @@
 module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.config.gen.types;
   exports systems.glam.sdk.idl.programs.glam.config.gen;
+  exports systems.glam.sdk.idl.programs.glam.drift.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.drift.gen;
+  exports systems.glam.sdk.idl.programs.glam.kamino.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.kamino.gen;
   exports systems.glam.sdk.idl.programs.glam.mint.gen.types;
   exports systems.glam.sdk.idl.programs.glam.mint.gen;
   exports systems.glam.sdk.idl.programs.glam.policy.gen.types;
@@ -15,6 +19,8 @@ module systems.glam.sdk {
   requires org.bouncycastle.provider;
   requires transitive software.sava.core;
   requires transitive software.sava.idl.clients.core;
+  requires transitive software.sava.idl.clients.drift;
+  requires transitive software.sava.idl.clients.kamino;
   requires transitive software.sava.rpc;
   requires transitive software.sava.solana_programs;
   requires transitive software.sava.solana_web2;

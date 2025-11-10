@@ -11,6 +11,64 @@
   "tabLength": 2,
   "programs": [
     {
+      "name": "Drift",
+      "external": true,
+      "module": "software.sava.idl.clients.drift",
+      "package": "software.sava.idl.clients.drift.gen",
+      "program": "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH"
+    },
+    {
+      "name": "Drift Merkle Distributor",
+      "external": true,
+      "module": "software.sava.idl.clients.drift",
+      "package": "software.sava.idl.clients.drift.merkle.distributor.gen",
+      "program": "E7HtfkEMhmn9uwL7EFNydcXBWy5WCYN1vFmKKjipEH1x"
+    },
+    {
+      "name": "Drift Vaults",
+      "external": true,
+      "module": "software.sava.idl.clients.drift",
+      "package": "software.sava.idl.clients.drift.vaults.gen",
+      "program": "vAuLTsyrvSfZRuRB3XgvkPwNGgYSs9YRYymVebLKoxR",
+      "typeRefs": [
+        {
+          "refProgram": "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH",
+          "srcMismatch": "ERROR",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
+      "name": "Kamino Farms",
+      "external": true,
+      "module": "software.sava.idl.clients.kamino",
+      "package": "software.sava.idl.clients.kamino.farms.gen",
+      "program": "FarmsPZpWu9i7Kky8tPN37rs2TpmMrAZrC7S7vJa91Hr"
+    },
+    {
+      "name": "Kamino Lend",
+      "external": true,
+      "module": "software.sava.idl.clients.kamino",
+      "package": "software.sava.idl.clients.kamino.lend.gen",
+      "program": "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD"
+    },
+    {
+      "name": "Kamino Scope",
+      "external": true,
+      "module": "software.sava.idl.clients.kamino",
+      "package": "software.sava.idl.clients.kamino.scope.gen",
+      "program": "HFn8GnPADiny6XqUoWE8uRPPxb29ikn4yTuPa9MF2fWJ"
+    },
+    {
+      "name": "Kamino Vaults",
+      "external": true,
+      "module": "software.sava.idl.clients.kamino",
+      "package": "software.sava.idl.clients.kamino.vaults.gen",
+      "program": "KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd"
+    },
+    {
       "name": "Glam Config",
       "source": "sdk",
       "package": "glam.config",
@@ -27,6 +85,86 @@
       ]
     },
     {
+      "name": "GLAM Drift",
+      "source": "sdk",
+      "package": "glam.drift",
+      "module": "sdk",
+      "program": "G1NTdrBmBpW43msRQmsf7qXSw3MFBNaqJcAkGiRmRq2F",
+      "typeRefs": [
+        {
+          "refProgram": "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH",
+          "srcMismatch": "ERROR",
+          "matchOnTypeName": true,
+          "excludeTypes": [
+            "FeeStructure"
+          ],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "vAuLTsyrvSfZRuRB3XgvkPwNGgYSs9YRYymVebLKoxR",
+          "srcMismatch": "ERROR",
+          "matchOnTypeName": true,
+          "excludeTypes": [
+            "FeeStructure"
+          ],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
+          "srcMismatch": "ERROR",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
+      "name": "GLAM Kamino",
+      "source": "sdk",
+      "package": "glam.kamino",
+      "module": "sdk",
+      "program": "G1NTkDEUR3pkEqGCKZtmtmVzCUEdYa86pezHkwYbLyde",
+      "typeRefs": [
+        {
+          "refProgram": "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD",
+          "srcMismatch": "ERROR",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "HFn8GnPADiny6XqUoWE8uRPPxb29ikn4yTuPa9MF2fWJ",
+          "srcMismatch": "ERROR",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "FarmsPZpWu9i7Kky8tPN37rs2TpmMrAZrC7S7vJa91Hr",
+          "srcMismatch": "ERROR",
+          "matchOnTypeName": true,
+          "excludeTypes": [
+            "TimeUnit"
+          ],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd",
+          "srcMismatch": "ERROR",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
+          "srcMismatch": "ERROR",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
       "name": "Glam Mint",
       "source": "sdk",
       "package": "glam.mint",
@@ -35,6 +173,13 @@
       "typeRefs": [
         {
           "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
           "srcMismatch": "WARN_KEEP_LOCAL",
           "matchOnTypeName": true,
           "excludeTypes": [],
