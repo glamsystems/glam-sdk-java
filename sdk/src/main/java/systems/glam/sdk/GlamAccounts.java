@@ -5,6 +5,8 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
 import systems.glam.ix.proxy.TransactionMapper;
 import systems.glam.sdk.idl.programs.glam.config.gen.GlamConfigPDAs;
+import systems.glam.sdk.idl.programs.glam.drift.gen.ExtDriftPDAs;
+import systems.glam.sdk.idl.programs.glam.kamino.gen.ExtKaminoPDAs;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintPDAs;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplPDAs;
@@ -39,13 +41,13 @@ public interface GlamAccounts {
                                      final PublicKey kaminoIntegrationProgram) {
     final var mintIntegrationAuthority = createRead(GlamMintPDAs.integrationAuthorityPDA(mintProgram).publicKey());
     final var splIntegrationAuthority = createRead(ExtSplPDAs.integrationAuthorityPDA(splIntegrationProgram).publicKey());
-//    final var driftIntegrationAuthority = createRead(ExtDriftPDAs.integrationAuthorityPDA(driftIntegrationProgram).publicKey());
-//    final var kaminoIntegrationAuthority = createRead(ExtKaminoPDAs.integrationAuthorityPDA(kaminoIntegrationProgram).publicKey());
+    final var driftIntegrationAuthority = createRead(ExtDriftPDAs.integrationAuthorityPDA(driftIntegrationProgram).publicKey());
+    final var kaminoIntegrationAuthority = createRead(ExtKaminoPDAs.integrationAuthorityPDA(kaminoIntegrationProgram).publicKey());
     final var IntegrationAuthorities = Map.of(
         mintProgram, mintIntegrationAuthority,
-        splIntegrationProgram, splIntegrationAuthority
-//        driftIntegrationProgram, driftIntegrationAuthority,
-//        kaminoIntegrationProgram, kaminoIntegrationAuthority
+        splIntegrationProgram, splIntegrationAuthority,
+        driftIntegrationProgram, driftIntegrationAuthority,
+        kaminoIntegrationProgram, kaminoIntegrationAuthority
     );
     return new GlamAccountsRecord(
         program,
@@ -59,9 +61,9 @@ public interface GlamAccounts {
         AccountMeta.createInvoked(splIntegrationProgram),
         splIntegrationAuthority,
         AccountMeta.createInvoked(driftIntegrationProgram),
-//        driftIntegrationAuthority,
+        driftIntegrationAuthority,
         AccountMeta.createInvoked(kaminoIntegrationProgram),
-//        kaminoIntegrationAuthority,
+        kaminoIntegrationAuthority,
         IntegrationAuthorities
     );
   }

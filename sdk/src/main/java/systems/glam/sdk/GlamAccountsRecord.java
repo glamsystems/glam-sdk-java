@@ -20,7 +20,9 @@ public record GlamAccountsRecord(PublicKey program,
                                  AccountMeta invokedSplIntegrationProgram,
                                  AccountMeta readSplIntegrationAuthority,
                                  AccountMeta invokedDriftIntegrationProgram,
+                                 AccountMeta readDriftIntegrationAuthority,
                                  AccountMeta invokedKaminoIntegrationProgram,
+                                 AccountMeta readKaminoIntegrationAuthority,
                                  Map<PublicKey, AccountMeta> integrationAuthorities) implements GlamAccounts {
 
   @Override
