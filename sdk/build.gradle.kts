@@ -10,7 +10,3 @@ tasks.named<Copy>("processResources") {
     include("glam/remapping_v1/**")
   }
 }
-
-dependencies {
-  implementation("software.sava:idl-clients-core:25.0.2")
-}
