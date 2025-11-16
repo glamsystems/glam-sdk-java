@@ -23,8 +23,7 @@ public final class GlamPoliciesProgram {
 
   public static final Discriminator CLOSE_EXTRA_METAS_ACCOUNT_DISCRIMINATOR = toDiscriminator(67, 72, 24, 239, 222, 207, 240, 177);
 
-  public static List<AccountMeta> closeExtraMetasAccountKeys(final AccountMeta invokedGlamPoliciesProgramMeta                                                             ,
-                                                             final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> closeExtraMetasAccountKeys(final SolanaAccounts solanaAccounts,
                                                              final PublicKey extraMetasAccountKey,
                                                              final PublicKey mintKey,
                                                              final PublicKey authorityKey,
@@ -45,7 +44,6 @@ public final class GlamPoliciesProgram {
                                                    final PublicKey authorityKey,
                                                    final PublicKey destinationKey) {
     final var keys = closeExtraMetasAccountKeys(
-      invokedGlamPoliciesProgramMeta,
       solanaAccounts,
       extraMetasAccountKey,
       mintKey,
@@ -55,7 +53,7 @@ public final class GlamPoliciesProgram {
     return closeExtraMetasAccount(invokedGlamPoliciesProgramMeta, keys);
   }
 
-  public static Instruction closeExtraMetasAccount(final AccountMeta invokedGlamPoliciesProgramMeta                                                   ,
+  public static Instruction closeExtraMetasAccount(final AccountMeta invokedGlamPoliciesProgramMeta,
                                                    final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedGlamPoliciesProgramMeta, keys, CLOSE_EXTRA_METAS_ACCOUNT_DISCRIMINATOR);
   }
@@ -63,8 +61,7 @@ public final class GlamPoliciesProgram {
   public static final Discriminator CLOSE_POLICY_DISCRIMINATOR = toDiscriminator(55, 42, 248, 229, 222, 138, 26, 252);
 
   /// @param policyAccountKey lamports will be refunded to the owner
-  public static List<AccountMeta> closePolicyKeys(final AccountMeta invokedGlamPoliciesProgramMeta                                                  ,
-                                                  final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> closePolicyKeys(final SolanaAccounts solanaAccounts,
                                                   final PublicKey policyAccountKey,
                                                   final PublicKey signerKey,
                                                   final PublicKey subjectKey) {
@@ -83,7 +80,6 @@ public final class GlamPoliciesProgram {
                                         final PublicKey signerKey,
                                         final PublicKey subjectKey) {
     final var keys = closePolicyKeys(
-      invokedGlamPoliciesProgramMeta,
       solanaAccounts,
       policyAccountKey,
       signerKey,
@@ -92,7 +88,7 @@ public final class GlamPoliciesProgram {
     return closePolicy(invokedGlamPoliciesProgramMeta, keys);
   }
 
-  public static Instruction closePolicy(final AccountMeta invokedGlamPoliciesProgramMeta                                        ,
+  public static Instruction closePolicy(final AccountMeta invokedGlamPoliciesProgramMeta,
                                         final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedGlamPoliciesProgramMeta, keys, CLOSE_POLICY_DISCRIMINATOR);
   }
@@ -100,8 +96,7 @@ public final class GlamPoliciesProgram {
   public static final Discriminator CREATE_POLICY_DISCRIMINATOR = toDiscriminator(27, 81, 33, 27, 196, 103, 246, 53);
 
   /// @param authorityKey Must be the mint authority or permanent delegate
-  public static List<AccountMeta> createPolicyKeys(final AccountMeta invokedGlamPoliciesProgramMeta                                                   ,
-                                                   final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> createPolicyKeys(final SolanaAccounts solanaAccounts,
                                                    final PublicKey policyAccountKey,
                                                    final PublicKey authorityKey,
                                                    final PublicKey subjectKey,
@@ -130,7 +125,6 @@ public final class GlamPoliciesProgram {
                                          final PublicKey subjectTokenAccountKey,
                                          final long lockedUntilTs) {
     final var keys = createPolicyKeys(
-      invokedGlamPoliciesProgramMeta,
       solanaAccounts,
       policyAccountKey,
       authorityKey,
@@ -142,7 +136,7 @@ public final class GlamPoliciesProgram {
     return createPolicy(invokedGlamPoliciesProgramMeta, keys, lockedUntilTs);
   }
 
-  public static Instruction createPolicy(final AccountMeta invokedGlamPoliciesProgramMeta                                         ,
+  public static Instruction createPolicy(final AccountMeta invokedGlamPoliciesProgramMeta,
                                          final List<AccountMeta> keys,
                                          final long lockedUntilTs) {
     final byte[] _data = new byte[16];
@@ -186,8 +180,7 @@ public final class GlamPoliciesProgram {
 
   public static final Discriminator EXECUTE_DISCRIMINATOR = toDiscriminator(105, 37, 101, 197, 75, 251, 102, 26);
 
-  public static List<AccountMeta> executeKeys(final AccountMeta invokedGlamPoliciesProgramMeta                                              ,
-                                              final PublicKey srcAccountKey,
+  public static List<AccountMeta> executeKeys(final PublicKey srcAccountKey,
                                               final PublicKey mintKey,
                                               final PublicKey dstAccountKey,
                                               final PublicKey srcAccountAuthorityKey,
@@ -215,7 +208,6 @@ public final class GlamPoliciesProgram {
                                     final PublicKey dstPolicyAccountKey,
                                     final long amount) {
     final var keys = executeKeys(
-      invokedGlamPoliciesProgramMeta,
       srcAccountKey,
       mintKey,
       dstAccountKey,
@@ -227,7 +219,7 @@ public final class GlamPoliciesProgram {
     return execute(invokedGlamPoliciesProgramMeta, keys, amount);
   }
 
-  public static Instruction execute(final AccountMeta invokedGlamPoliciesProgramMeta                                    ,
+  public static Instruction execute(final AccountMeta invokedGlamPoliciesProgramMeta,
                                     final List<AccountMeta> keys,
                                     final long amount) {
     final byte[] _data = new byte[16];
@@ -271,8 +263,7 @@ public final class GlamPoliciesProgram {
 
   public static final Discriminator INITIALIZE_EXTRA_METAS_ACCOUNT_DISCRIMINATOR = toDiscriminator(43, 34, 13, 49, 167, 88, 235, 235);
 
-  public static List<AccountMeta> initializeExtraMetasAccountKeys(final AccountMeta invokedGlamPoliciesProgramMeta                                                                  ,
-                                                                  final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> initializeExtraMetasAccountKeys(final SolanaAccounts solanaAccounts,
                                                                   final PublicKey extraMetasAccountKey,
                                                                   final PublicKey mintKey,
                                                                   final PublicKey authorityKey,
@@ -294,7 +285,6 @@ public final class GlamPoliciesProgram {
                                                         final PublicKey payerKey,
                                                         final AnchorExtraAccountMeta[] metas) {
     final var keys = initializeExtraMetasAccountKeys(
-      invokedGlamPoliciesProgramMeta,
       solanaAccounts,
       extraMetasAccountKey,
       mintKey,
@@ -304,7 +294,7 @@ public final class GlamPoliciesProgram {
     return initializeExtraMetasAccount(invokedGlamPoliciesProgramMeta, keys, metas);
   }
 
-  public static Instruction initializeExtraMetasAccount(final AccountMeta invokedGlamPoliciesProgramMeta                                                        ,
+  public static Instruction initializeExtraMetasAccount(final AccountMeta invokedGlamPoliciesProgramMeta,
                                                         final List<AccountMeta> keys,
                                                         final AnchorExtraAccountMeta[] metas) {
     final byte[] _data = new byte[8 + Borsh.lenVector(metas)];

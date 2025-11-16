@@ -21,23 +21,23 @@ public interface GlamVaultAccounts {
 
   static GlamVaultAccounts createAccounts(final GlamAccounts glamAccounts,
                                           final PublicKey feePayer,
-                                          final PublicKey glamPublicKey) {
+                                          final PublicKey glamStateKey) {
     final var protocolProgram = glamAccounts.protocolProgram();
-    final var vaultPDA = GlamProtocolPDAs.glamVaultPDA(protocolProgram, glamPublicKey);
+    final var vaultPDA = GlamProtocolPDAs.glamVaultPDA(protocolProgram, glamStateKey);
     return new GlamVaultAccountsRecord(
         glamAccounts,
         AccountMeta.createReadOnlySigner(feePayer),
         AccountMeta.createWritableSigner(feePayer),
-        AccountMeta.createRead(glamPublicKey),
-        AccountMeta.createWrite(glamPublicKey),
+        AccountMeta.createRead(glamStateKey),
+        AccountMeta.createWrite(glamStateKey),
         vaultPDA,
         AccountMeta.createRead(vaultPDA.publicKey()),
         AccountMeta.createWrite(vaultPDA.publicKey())
     );
   }
 
-  static GlamVaultAccounts createAccounts(final PublicKey feePayer, final PublicKey glamPublicKey) {
-    return GlamVaultAccounts.createAccounts(GlamAccounts.MAIN_NET, feePayer, glamPublicKey);
+  static GlamVaultAccounts createAccounts(final PublicKey feePayer, final PublicKey glamStatePublicKey) {
+    return GlamVaultAccounts.createAccounts(GlamAccounts.MAIN_NET, feePayer, glamStatePublicKey);
   }
 
   static List<ProgramMapConfig> loadMappingConfigs(final Path mappingsDirectory) {
@@ -84,7 +84,7 @@ public interface GlamVaultAccounts {
 
   PublicKey feePayer();
 
-  PublicKey glamPublicKey();
+  PublicKey glamStateKey();
 
   AccountMeta writeGlamState();
 

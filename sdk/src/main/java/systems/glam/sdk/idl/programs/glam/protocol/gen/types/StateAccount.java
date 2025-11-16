@@ -127,7 +127,7 @@ public record StateAccount(PublicKey _address,
     final var discriminator = createAnchorDiscriminator(_data, _offset);
     int i = _offset + discriminator.length();
     final var accountType = AccountType.read(_data, i);
-    i += Borsh.len(accountType);
+    i += accountType.l();
     final var enabled = _data[i] == 1;
     ++i;
     final var vault = readPubKey(_data, i);
@@ -137,7 +137,7 @@ public record StateAccount(PublicKey _address,
     final var portfolioManagerName = new byte[32];
     i += Borsh.readArray(portfolioManagerName, _data, i);
     final var created = CreatedModel.read(_data, i);
-    i += Borsh.len(created);
+    i += created.l();
     final var baseAssetMint = readPubKey(_data, i);
     i += 32;
     final var baseAssetDecimals = _data[i] & 0xFF;
@@ -189,7 +189,7 @@ public record StateAccount(PublicKey _address,
   @Override
   public int write(final byte[] _data, final int _offset) {
     int i = _offset + discriminator.write(_data, _offset);
-    i += Borsh.write(accountType, _data, i);
+    i += accountType.write(_data, i);
     _data[i] = (byte) (enabled ? 1 : 0);
     ++i;
     vault.write(_data, i);
@@ -197,7 +197,7 @@ public record StateAccount(PublicKey _address,
     owner.write(_data, i);
     i += 32;
     i += Borsh.writeArrayChecked(portfolioManagerName, 32, _data, i);
-    i += Borsh.write(created, _data, i);
+    i += created.write(_data, i);
     baseAssetMint.write(_data, i);
     i += 32;
     _data[i] = (byte) baseAssetDecimals;
@@ -222,12 +222,12 @@ public record StateAccount(PublicKey _address,
 
   @Override
   public int l() {
-    return 8 + Borsh.len(accountType)
+    return 8 + accountType.l()
          + 1
          + 32
          + 32
          + Borsh.lenArray(portfolioManagerName)
-         + Borsh.len(created)
+         + created.l()
          + 32
          + 1
          + 1

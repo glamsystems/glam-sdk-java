@@ -30,7 +30,7 @@ public record AssetMeta(PublicKey asset,
     final var oracle = readPubKey(_data, i);
     i += 32;
     final var oracleSource = OracleSource.read(_data, i);
-    i += Borsh.len(oracleSource);
+    i += oracleSource.l();
     final var maxAgeSeconds = getInt16LE(_data, i);
     i += 2;
     final var priority = _data[i] & 0xFF;
@@ -55,7 +55,7 @@ public record AssetMeta(PublicKey asset,
     ++i;
     oracle.write(_data, i);
     i += 32;
-    i += Borsh.write(oracleSource, _data, i);
+    i += oracleSource.write(_data, i);
     putInt16LE(_data, i, maxAgeSeconds);
     i += 2;
     _data[i] = (byte) priority;

@@ -3,9 +3,10 @@ package systems.glam.sdk;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.tx.Instruction;
+import software.sava.idl.clients.spl.SPLAccountClient;
 import software.sava.rpc.json.http.client.SolanaRpcClient;
 import software.sava.rpc.json.http.response.AccountInfo;
-import software.sava.solana.programs.clients.NativeProgramAccountClient;
+import software.sava.solana.programs.clients.NativeProgramClient;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateModel;
 
@@ -13,21 +14,26 @@ import java.util.List;
 import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 
-public interface GlamProgramAccountClient extends NativeProgramAccountClient {
+public interface GlamAccountClient extends SPLAccountClient {
 
-  static GlamProgramAccountClient createClient(final SolanaAccounts solanaAccounts,
-                                               final GlamVaultAccounts glamVaultAccounts) {
-    return new GlamProgramAccountClientImpl(solanaAccounts, glamVaultAccounts);
+  static GlamAccountClient createClient(final NativeProgramClient nativeProgramClient,
+                                        final GlamVaultAccounts glamVaultAccounts) {
+    return new GlamAccountClientImpl(nativeProgramClient, glamVaultAccounts);
   }
 
-  static GlamProgramAccountClient createClient(final SolanaAccounts solanaAccounts,
-                                               final GlamAccounts glamAccounts,
-                                               final PublicKey signerPublicKey,
-                                               final PublicKey glamPublicKey) {
+  static GlamAccountClient createClient(final SolanaAccounts solanaAccounts,
+                                        final GlamVaultAccounts glamVaultAccounts) {
+    return new GlamAccountClientImpl(NativeProgramClient.createClient(solanaAccounts), glamVaultAccounts);
+  }
+
+  static GlamAccountClient createClient(final SolanaAccounts solanaAccounts,
+                                        final GlamAccounts glamAccounts,
+                                        final PublicKey signerPublicKey,
+                                        final PublicKey glamPublicKey) {
     return createClient(solanaAccounts, GlamVaultAccounts.createAccounts(glamAccounts, signerPublicKey, glamPublicKey));
   }
 
-  static GlamProgramAccountClient createClient(final PublicKey signerPublicKey, final PublicKey glamPublicKey) {
+  static GlamAccountClient createClient(final PublicKey signerPublicKey, final PublicKey glamPublicKey) {
     return createClient(SolanaAccounts.MAIN_NET, GlamAccounts.MAIN_NET, signerPublicKey, glamPublicKey);
   }
 
@@ -61,8 +67,6 @@ public interface GlamProgramAccountClient extends NativeProgramAccountClient {
     }
     return false;
   }
-
-  NativeProgramAccountClient delegatedNativeProgramAccountClient();
 
   GlamVaultAccounts vaultAccounts();
 
@@ -134,7 +138,19 @@ public interface GlamProgramAccountClient extends NativeProgramAccountClient {
                                              final int numObligations,
                                              final int numMarkets,
                                              final int numReserves) {
-    return priceKaminoObligations(kaminoLendingProgramKey, solUSDOracleKey, baseAssetUsdOracleKey, pythOracleKey, switchboardPriceOracleKey, switchboardTwapOracleKey, scopePricesKey, numObligations, numMarkets, numReserves, false);
+    return priceKaminoObligations(
+        kaminoLendingProgramKey,
+        solUSDOracleKey,
+        baseAssetUsdOracleKey,
+        pythOracleKey,
+        switchboardPriceOracleKey,
+        switchboardTwapOracleKey,
+        scopePricesKey,
+        numObligations,
+        numMarkets,
+        numReserves,
+        false
+    );
   }
 
   Instruction priceKaminoVaultShares(final PublicKey solUSDOracleKey,

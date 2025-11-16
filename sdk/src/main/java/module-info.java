@@ -23,6 +23,7 @@ module systems.glam.sdk {
   requires transitive software.sava.idl.clients.drift;
   requires transitive software.sava.idl.clients.jupiter;
   requires transitive software.sava.idl.clients.kamino;
+  requires transitive software.sava.idl.clients.spl;
   requires transitive software.sava.rpc;
   requires transitive software.sava.solana_programs;
   requires transitive software.sava.solana_web2;

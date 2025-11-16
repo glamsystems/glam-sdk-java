@@ -37,8 +37,7 @@ public final class GlamProtocolProgram {
 
   public static final Discriminator CANCEL_TIMELOCK_DISCRIMINATOR = toDiscriminator(158, 180, 47, 81, 133, 231, 168, 238);
 
-  public static List<AccountMeta> cancelTimelockKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                     ,
-                                                     final PublicKey glamStateKey,
+  public static List<AccountMeta> cancelTimelockKeys(final PublicKey glamStateKey,
                                                      final PublicKey glamSignerKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -46,23 +45,24 @@ public final class GlamProtocolProgram {
     );
   }
 
-  public static Instruction cancelTimelock(final AccountMeta invokedGlamProtocolProgramMeta, final PublicKey glamStateKey, final PublicKey glamSignerKey) {     final var keys = cancelTimelockKeys(
-      invokedGlamProtocolProgramMeta,
+  public static Instruction cancelTimelock(final AccountMeta invokedGlamProtocolProgramMeta,
+                                           final PublicKey glamStateKey,
+                                           final PublicKey glamSignerKey) {
+    final var keys = cancelTimelockKeys(
       glamStateKey,
       glamSignerKey
     );
     return cancelTimelock(invokedGlamProtocolProgramMeta, keys);
   }
 
-  public static Instruction cancelTimelock(final AccountMeta invokedGlamProtocolProgramMeta                                           ,
+  public static Instruction cancelTimelock(final AccountMeta invokedGlamProtocolProgramMeta,
                                            final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, CANCEL_TIMELOCK_DISCRIMINATOR);
   }
 
   public static final Discriminator CLOSE_STATE_DISCRIMINATOR = toDiscriminator(25, 1, 184, 101, 200, 245, 210, 246);
 
-  public static List<AccountMeta> closeStateKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                 ,
-                                                 final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> closeStateKeys(final SolanaAccounts solanaAccounts,
                                                  final PublicKey glamStateKey,
                                                  final PublicKey glamVaultKey,
                                                  final PublicKey glamSignerKey) {
@@ -80,7 +80,6 @@ public final class GlamProtocolProgram {
                                        final PublicKey glamVaultKey,
                                        final PublicKey glamSignerKey) {
     final var keys = closeStateKeys(
-      invokedGlamProtocolProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -89,7 +88,7 @@ public final class GlamProtocolProgram {
     return closeState(invokedGlamProtocolProgramMeta, keys);
   }
 
-  public static Instruction closeState(final AccountMeta invokedGlamProtocolProgramMeta                                       ,
+  public static Instruction closeState(final AccountMeta invokedGlamProtocolProgramMeta,
                                        final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, CLOSE_STATE_DISCRIMINATOR);
   }
@@ -98,8 +97,7 @@ public final class GlamProtocolProgram {
 
   /// Only accessible by integration programs
   ///
-  public static List<AccountMeta> cpiProxyKeys(final AccountMeta invokedGlamProtocolProgramMeta                                               ,
-                                               final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> cpiProxyKeys(final SolanaAccounts solanaAccounts,
                                                final PublicKey glamStateKey,
                                                final PublicKey glamVaultKey,
                                                final PublicKey glamSignerKey,
@@ -127,7 +125,6 @@ public final class GlamProtocolProgram {
                                      final byte[] data,
                                      final ExtraParams[] extraParams) {
     final var keys = cpiProxyKeys(
-      invokedGlamProtocolProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -140,7 +137,7 @@ public final class GlamProtocolProgram {
 
   /// Only accessible by integration programs
   ///
-  public static Instruction cpiProxy(final AccountMeta invokedGlamProtocolProgramMeta                                     ,
+  public static Instruction cpiProxy(final AccountMeta invokedGlamProtocolProgramMeta,
                                      final List<AccountMeta> keys,
                                      final byte[] data,
                                      final ExtraParams[] extraParams) {
@@ -191,8 +188,7 @@ public final class GlamProtocolProgram {
   /// - removing a delegate
   /// - enabling/disabling glam state
   ///
-  public static List<AccountMeta> emergencyAccessUpdateKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                            ,
-                                                            final PublicKey glamStateKey,
+  public static List<AccountMeta> emergencyAccessUpdateKeys(final PublicKey glamStateKey,
                                                             final PublicKey glamSignerKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -210,7 +206,6 @@ public final class GlamProtocolProgram {
                                                   final PublicKey glamSignerKey,
                                                   final EmergencyAccessUpdateArgs args) {
     final var keys = emergencyAccessUpdateKeys(
-      invokedGlamProtocolProgramMeta,
       glamStateKey,
       glamSignerKey
     );
@@ -222,12 +217,12 @@ public final class GlamProtocolProgram {
   /// - removing a delegate
   /// - enabling/disabling glam state
   ///
-  public static Instruction emergencyAccessUpdate(final AccountMeta invokedGlamProtocolProgramMeta                                                  ,
+  public static Instruction emergencyAccessUpdate(final AccountMeta invokedGlamProtocolProgramMeta,
                                                   final List<AccountMeta> keys,
                                                   final EmergencyAccessUpdateArgs args) {
-    final byte[] _data = new byte[8 + Borsh.len(args)];
+    final byte[] _data = new byte[8 + args.l()];
     int i = EMERGENCY_ACCESS_UPDATE_DISCRIMINATOR.write(_data, 0);
-    Borsh.write(args, _data, i);
+    args.write(_data, i);
 
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
@@ -251,20 +246,19 @@ public final class GlamProtocolProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(args, _data, i);
+      i += args.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.len(args);
+      return 8 + args.l();
     }
   }
 
   public static final Discriminator ENABLE_DISABLE_PROTOCOLS_DISCRIMINATOR = toDiscriminator(222, 198, 164, 163, 194, 161, 11, 171);
 
-  public static List<AccountMeta> enableDisableProtocolsKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                             ,
-                                                             final PublicKey glamStateKey,
+  public static List<AccountMeta> enableDisableProtocolsKeys(final PublicKey glamStateKey,
                                                              final PublicKey glamSignerKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -279,7 +273,6 @@ public final class GlamProtocolProgram {
                                                    final int protocolsBitmask,
                                                    final boolean setEnabled) {
     final var keys = enableDisableProtocolsKeys(
-      invokedGlamProtocolProgramMeta,
       glamStateKey,
       glamSignerKey
     );
@@ -292,7 +285,7 @@ public final class GlamProtocolProgram {
     );
   }
 
-  public static Instruction enableDisableProtocols(final AccountMeta invokedGlamProtocolProgramMeta                                                   ,
+  public static Instruction enableDisableProtocols(final AccountMeta invokedGlamProtocolProgramMeta,
                                                    final List<AccountMeta> keys,
                                                    final PublicKey integrationProgram,
                                                    final int protocolsBitmask,
@@ -353,8 +346,7 @@ public final class GlamProtocolProgram {
 
   public static final Discriminator EXTEND_STATE_DISCRIMINATOR = toDiscriminator(34, 147, 151, 206, 134, 128, 82, 228);
 
-  public static List<AccountMeta> extendStateKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                  ,
-                                                  final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> extendStateKeys(final SolanaAccounts solanaAccounts,
                                                   final PublicKey glamStateKey,
                                                   final PublicKey glamSignerKey) {
     return List.of(
@@ -370,7 +362,6 @@ public final class GlamProtocolProgram {
                                         final PublicKey glamSignerKey,
                                         final int bytes) {
     final var keys = extendStateKeys(
-      invokedGlamProtocolProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamSignerKey
@@ -378,7 +369,7 @@ public final class GlamProtocolProgram {
     return extendState(invokedGlamProtocolProgramMeta, keys, bytes);
   }
 
-  public static Instruction extendState(final AccountMeta invokedGlamProtocolProgramMeta                                        ,
+  public static Instruction extendState(final AccountMeta invokedGlamProtocolProgramMeta,
                                         final List<AccountMeta> keys,
                                         final int bytes) {
     final byte[] _data = new byte[12];
@@ -422,8 +413,7 @@ public final class GlamProtocolProgram {
 
   public static final Discriminator GRANT_REVOKE_DELEGATE_PERMISSIONS_DISCRIMINATOR = toDiscriminator(162, 21, 218, 157, 218, 86, 114, 171);
 
-  public static List<AccountMeta> grantRevokeDelegatePermissionsKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                                     ,
-                                                                     final PublicKey glamStateKey,
+  public static List<AccountMeta> grantRevokeDelegatePermissionsKeys(final PublicKey glamStateKey,
                                                                      final PublicKey glamSignerKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -440,7 +430,6 @@ public final class GlamProtocolProgram {
                                                            final long permissionsBitmask,
                                                            final boolean setGranted) {
     final var keys = grantRevokeDelegatePermissionsKeys(
-      invokedGlamProtocolProgramMeta,
       glamStateKey,
       glamSignerKey
     );
@@ -455,7 +444,7 @@ public final class GlamProtocolProgram {
     );
   }
 
-  public static Instruction grantRevokeDelegatePermissions(final AccountMeta invokedGlamProtocolProgramMeta                                                           ,
+  public static Instruction grantRevokeDelegatePermissions(final AccountMeta invokedGlamProtocolProgramMeta,
                                                            final List<AccountMeta> keys,
                                                            final PublicKey delegate,
                                                            final PublicKey integrationProgram,
@@ -537,8 +526,7 @@ public final class GlamProtocolProgram {
 
   public static final Discriminator INITIALIZE_STATE_DISCRIMINATOR = toDiscriminator(190, 171, 224, 219, 217, 72, 199, 176);
 
-  public static List<AccountMeta> initializeStateKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                      ,
-                                                      final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> initializeStateKeys(final SolanaAccounts solanaAccounts,
                                                       final PublicKey glamStateKey,
                                                       final PublicKey glamSignerKey,
                                                       final PublicKey baseAssetMintKey) {
@@ -557,7 +545,6 @@ public final class GlamProtocolProgram {
                                             final PublicKey baseAssetMintKey,
                                             final StateModel state) {
     final var keys = initializeStateKeys(
-      invokedGlamProtocolProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamSignerKey,
@@ -566,12 +553,12 @@ public final class GlamProtocolProgram {
     return initializeState(invokedGlamProtocolProgramMeta, keys, state);
   }
 
-  public static Instruction initializeState(final AccountMeta invokedGlamProtocolProgramMeta                                            ,
+  public static Instruction initializeState(final AccountMeta invokedGlamProtocolProgramMeta,
                                             final List<AccountMeta> keys,
                                             final StateModel state) {
-    final byte[] _data = new byte[8 + Borsh.len(state)];
+    final byte[] _data = new byte[8 + state.l()];
     int i = INITIALIZE_STATE_DISCRIMINATOR.write(_data, 0);
-    Borsh.write(state, _data, i);
+    state.write(_data, i);
 
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
@@ -595,19 +582,19 @@ public final class GlamProtocolProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(state, _data, i);
+      i += state.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.len(state);
+      return 8 + state.l();
     }
   }
 
   public static final Discriminator JUPITER_SWAP_DISCRIMINATOR = toDiscriminator(116, 207, 0, 196, 252, 120, 243, 18);
 
-  public static List<AccountMeta> jupiterSwapKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                  ,
+  public static List<AccountMeta> jupiterSwapKeys(final AccountMeta invokedGlamProtocolProgramMeta,
                                                   final SolanaAccounts solanaAccounts,
                                                   final PublicKey glamStateKey,
                                                   final PublicKey glamVaultKey,
@@ -672,7 +659,7 @@ public final class GlamProtocolProgram {
     return jupiterSwap(invokedGlamProtocolProgramMeta, keys, data);
   }
 
-  public static Instruction jupiterSwap(final AccountMeta invokedGlamProtocolProgramMeta                                        ,
+  public static Instruction jupiterSwap(final AccountMeta invokedGlamProtocolProgramMeta,
                                         final List<AccountMeta> keys,
                                         final byte[] data) {
     final byte[] _data = new byte[8 + Borsh.lenVector(data)];
@@ -715,8 +702,7 @@ public final class GlamProtocolProgram {
 
   /// For glam mint program's use only
   ///
-  public static List<AccountMeta> linkUnlinkMintByMintAuthorityKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                                    ,
-                                                                    final PublicKey glamStateKey,
+  public static List<AccountMeta> linkUnlinkMintByMintAuthorityKeys(final PublicKey glamStateKey,
                                                                     final PublicKey glamMintKey,
                                                                     final PublicKey glamMintAuthorityKey) {
     return List.of(
@@ -734,7 +720,6 @@ public final class GlamProtocolProgram {
                                                           final PublicKey glamMintAuthorityKey,
                                                           final boolean link) {
     final var keys = linkUnlinkMintByMintAuthorityKeys(
-      invokedGlamProtocolProgramMeta,
       glamStateKey,
       glamMintKey,
       glamMintAuthorityKey
@@ -744,7 +729,7 @@ public final class GlamProtocolProgram {
 
   /// For glam mint program's use only
   ///
-  public static Instruction linkUnlinkMintByMintAuthority(final AccountMeta invokedGlamProtocolProgramMeta                                                          ,
+  public static Instruction linkUnlinkMintByMintAuthority(final AccountMeta invokedGlamProtocolProgramMeta,
                                                           final List<AccountMeta> keys,
                                                           final boolean link) {
     final byte[] _data = new byte[9];
@@ -790,8 +775,7 @@ public final class GlamProtocolProgram {
 
   /// For glam mint program's use only
   ///
-  public static List<AccountMeta> resetPricedProtocolsByMintAuthorityKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                                          ,
-                                                                          final PublicKey glamStateKey,
+  public static List<AccountMeta> resetPricedProtocolsByMintAuthorityKeys(final PublicKey glamStateKey,
                                                                           final PublicKey glamMintKey,
                                                                           final PublicKey glamMintAuthorityKey) {
     return List.of(
@@ -808,7 +792,6 @@ public final class GlamProtocolProgram {
                                                                 final PublicKey glamMintKey,
                                                                 final PublicKey glamMintAuthorityKey) {
     final var keys = resetPricedProtocolsByMintAuthorityKeys(
-      invokedGlamProtocolProgramMeta,
       glamStateKey,
       glamMintKey,
       glamMintAuthorityKey
@@ -818,15 +801,14 @@ public final class GlamProtocolProgram {
 
   /// For glam mint program's use only
   ///
-  public static Instruction resetPricedProtocolsByMintAuthority(final AccountMeta invokedGlamProtocolProgramMeta                                                                ,
+  public static Instruction resetPricedProtocolsByMintAuthority(final AccountMeta invokedGlamProtocolProgramMeta,
                                                                 final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, RESET_PRICED_PROTOCOLS_BY_MINT_AUTHORITY_DISCRIMINATOR);
   }
 
   public static final Discriminator SET_JUPITER_SWAP_POLICY_DISCRIMINATOR = toDiscriminator(189, 182, 227, 165, 127, 148, 246, 189);
 
-  public static List<AccountMeta> setJupiterSwapPolicyKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                           ,
-                                                           final PublicKey glamStateKey,
+  public static List<AccountMeta> setJupiterSwapPolicyKeys(final PublicKey glamStateKey,
                                                            final PublicKey glamSignerKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -839,19 +821,18 @@ public final class GlamProtocolProgram {
                                                  final PublicKey glamSignerKey,
                                                  final JupiterSwapPolicy policy) {
     final var keys = setJupiterSwapPolicyKeys(
-      invokedGlamProtocolProgramMeta,
       glamStateKey,
       glamSignerKey
     );
     return setJupiterSwapPolicy(invokedGlamProtocolProgramMeta, keys, policy);
   }
 
-  public static Instruction setJupiterSwapPolicy(final AccountMeta invokedGlamProtocolProgramMeta                                                 ,
+  public static Instruction setJupiterSwapPolicy(final AccountMeta invokedGlamProtocolProgramMeta,
                                                  final List<AccountMeta> keys,
                                                  final JupiterSwapPolicy policy) {
-    final byte[] _data = new byte[8 + Borsh.len(policy)];
+    final byte[] _data = new byte[8 + policy.l()];
     int i = SET_JUPITER_SWAP_POLICY_DISCRIMINATOR.write(_data, 0);
-    Borsh.write(policy, _data, i);
+    policy.write(_data, i);
 
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
@@ -875,20 +856,19 @@ public final class GlamProtocolProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(policy, _data, i);
+      i += policy.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.len(policy);
+      return 8 + policy.l();
     }
   }
 
   public static final Discriminator SET_PROTOCOL_POLICY_DISCRIMINATOR = toDiscriminator(37, 99, 61, 122, 227, 102, 182, 180);
 
-  public static List<AccountMeta> setProtocolPolicyKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                        ,
-                                                        final PublicKey glamStateKey,
+  public static List<AccountMeta> setProtocolPolicyKeys(final PublicKey glamStateKey,
                                                         final PublicKey glamSignerKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -903,7 +883,6 @@ public final class GlamProtocolProgram {
                                               final int protocolBitflag,
                                               final byte[] data) {
     final var keys = setProtocolPolicyKeys(
-      invokedGlamProtocolProgramMeta,
       glamStateKey,
       glamSignerKey
     );
@@ -916,7 +895,7 @@ public final class GlamProtocolProgram {
     );
   }
 
-  public static Instruction setProtocolPolicy(final AccountMeta invokedGlamProtocolProgramMeta                                              ,
+  public static Instruction setProtocolPolicy(final AccountMeta invokedGlamProtocolProgramMeta,
                                               final List<AccountMeta> keys,
                                               final PublicKey integrationProgram,
                                               final int protocolBitflag,
@@ -974,8 +953,7 @@ public final class GlamProtocolProgram {
 
   public static final Discriminator SET_SYSTEM_TRANSFER_POLICY_DISCRIMINATOR = toDiscriminator(102, 21, 157, 101, 19, 4, 100, 213);
 
-  public static List<AccountMeta> setSystemTransferPolicyKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                              ,
-                                                              final PublicKey glamStateKey,
+  public static List<AccountMeta> setSystemTransferPolicyKeys(final PublicKey glamStateKey,
                                                               final PublicKey glamSignerKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -988,19 +966,18 @@ public final class GlamProtocolProgram {
                                                     final PublicKey glamSignerKey,
                                                     final TransferPolicy policy) {
     final var keys = setSystemTransferPolicyKeys(
-      invokedGlamProtocolProgramMeta,
       glamStateKey,
       glamSignerKey
     );
     return setSystemTransferPolicy(invokedGlamProtocolProgramMeta, keys, policy);
   }
 
-  public static Instruction setSystemTransferPolicy(final AccountMeta invokedGlamProtocolProgramMeta                                                    ,
+  public static Instruction setSystemTransferPolicy(final AccountMeta invokedGlamProtocolProgramMeta,
                                                     final List<AccountMeta> keys,
                                                     final TransferPolicy policy) {
-    final byte[] _data = new byte[8 + Borsh.len(policy)];
+    final byte[] _data = new byte[8 + policy.l()];
     int i = SET_SYSTEM_TRANSFER_POLICY_DISCRIMINATOR.write(_data, 0);
-    Borsh.write(policy, _data, i);
+    policy.write(_data, i);
 
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
@@ -1024,20 +1001,19 @@ public final class GlamProtocolProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(policy, _data, i);
+      i += policy.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.len(policy);
+      return 8 + policy.l();
     }
   }
 
   public static final Discriminator SYSTEM_TRANSFER_DISCRIMINATOR = toDiscriminator(167, 164, 195, 155, 219, 152, 191, 230);
 
-  public static List<AccountMeta> systemTransferKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                     ,
-                                                     final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> systemTransferKeys(final SolanaAccounts solanaAccounts,
                                                      final PublicKey glamStateKey,
                                                      final PublicKey glamVaultKey,
                                                      final PublicKey glamSignerKey,
@@ -1059,7 +1035,6 @@ public final class GlamProtocolProgram {
                                            final PublicKey toKey,
                                            final long lamports) {
     final var keys = systemTransferKeys(
-      invokedGlamProtocolProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -1069,7 +1044,7 @@ public final class GlamProtocolProgram {
     return systemTransfer(invokedGlamProtocolProgramMeta, keys, lamports);
   }
 
-  public static Instruction systemTransfer(final AccountMeta invokedGlamProtocolProgramMeta                                           ,
+  public static Instruction systemTransfer(final AccountMeta invokedGlamProtocolProgramMeta,
                                            final List<AccountMeta> keys,
                                            final long lamports) {
     final byte[] _data = new byte[16];
@@ -1115,8 +1090,7 @@ public final class GlamProtocolProgram {
 
   /// For glam mint program's use only
   ///
-  public static List<AccountMeta> tokenTransferCheckedByMintAuthorityKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                                          ,
-                                                                          final PublicKey glamStateKey,
+  public static List<AccountMeta> tokenTransferCheckedByMintAuthorityKeys(final PublicKey glamStateKey,
                                                                           final PublicKey glamVaultKey,
                                                                           final PublicKey glamMintKey,
                                                                           final PublicKey glamMintAuthorityKey,
@@ -1150,7 +1124,6 @@ public final class GlamProtocolProgram {
                                                                 final long amount,
                                                                 final int decimals) {
     final var keys = tokenTransferCheckedByMintAuthorityKeys(
-      invokedGlamProtocolProgramMeta,
       glamStateKey,
       glamVaultKey,
       glamMintKey,
@@ -1165,7 +1138,7 @@ public final class GlamProtocolProgram {
 
   /// For glam mint program's use only
   ///
-  public static Instruction tokenTransferCheckedByMintAuthority(final AccountMeta invokedGlamProtocolProgramMeta                                                                ,
+  public static Instruction tokenTransferCheckedByMintAuthority(final AccountMeta invokedGlamProtocolProgramMeta,
                                                                 final List<AccountMeta> keys,
                                                                 final long amount,
                                                                 final int decimals) {
@@ -1216,8 +1189,7 @@ public final class GlamProtocolProgram {
 
   public static final Discriminator UPDATE_MINT_PARAMS_DISCRIMINATOR = toDiscriminator(45, 42, 115, 25, 179, 27, 57, 191);
 
-  public static List<AccountMeta> updateMintParamsKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                       ,
-                                                       final PublicKey glamStateKey,
+  public static List<AccountMeta> updateMintParamsKeys(final PublicKey glamStateKey,
                                                        final PublicKey glamSignerKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -1230,14 +1202,13 @@ public final class GlamProtocolProgram {
                                              final PublicKey glamSignerKey,
                                              final EngineField[] params) {
     final var keys = updateMintParamsKeys(
-      invokedGlamProtocolProgramMeta,
       glamStateKey,
       glamSignerKey
     );
     return updateMintParams(invokedGlamProtocolProgramMeta, keys, params);
   }
 
-  public static Instruction updateMintParams(final AccountMeta invokedGlamProtocolProgramMeta                                             ,
+  public static Instruction updateMintParams(final AccountMeta invokedGlamProtocolProgramMeta,
                                              final List<AccountMeta> keys,
                                              final EngineField[] params) {
     final byte[] _data = new byte[8 + Borsh.lenVector(params)];
@@ -1280,8 +1251,7 @@ public final class GlamProtocolProgram {
 
   /// For glam mint program's use only, timelock is not enforced
   ///
-  public static List<AccountMeta> updateMintParamsByMintAuthorityKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                                      ,
-                                                                      final PublicKey glamStateKey,
+  public static List<AccountMeta> updateMintParamsByMintAuthorityKeys(final PublicKey glamStateKey,
                                                                       final PublicKey glamMintKey,
                                                                       final PublicKey glamMintAuthorityKey) {
     return List.of(
@@ -1299,7 +1269,6 @@ public final class GlamProtocolProgram {
                                                             final PublicKey glamMintAuthorityKey,
                                                             final EngineField[] params) {
     final var keys = updateMintParamsByMintAuthorityKeys(
-      invokedGlamProtocolProgramMeta,
       glamStateKey,
       glamMintKey,
       glamMintAuthorityKey
@@ -1309,7 +1278,7 @@ public final class GlamProtocolProgram {
 
   /// For glam mint program's use only, timelock is not enforced
   ///
-  public static Instruction updateMintParamsByMintAuthority(final AccountMeta invokedGlamProtocolProgramMeta                                                            ,
+  public static Instruction updateMintParamsByMintAuthority(final AccountMeta invokedGlamProtocolProgramMeta,
                                                             final List<AccountMeta> keys,
                                                             final EngineField[] params) {
     final byte[] _data = new byte[8 + Borsh.lenVector(params)];
@@ -1352,8 +1321,7 @@ public final class GlamProtocolProgram {
 
   /// Only accessible by integration programs
   ///
-  public static List<AccountMeta> updatePricedProtocolKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                           ,
-                                                           final PublicKey glamStateKey,
+  public static List<AccountMeta> updatePricedProtocolKeys(final PublicKey glamStateKey,
                                                            final PublicKey integrationAuthorityKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -1368,7 +1336,6 @@ public final class GlamProtocolProgram {
                                                  final PublicKey integrationAuthorityKey,
                                                  final PricedProtocol pricedProtocol) {
     final var keys = updatePricedProtocolKeys(
-      invokedGlamProtocolProgramMeta,
       glamStateKey,
       integrationAuthorityKey
     );
@@ -1377,12 +1344,12 @@ public final class GlamProtocolProgram {
 
   /// Only accessible by integration programs
   ///
-  public static Instruction updatePricedProtocol(final AccountMeta invokedGlamProtocolProgramMeta                                                 ,
+  public static Instruction updatePricedProtocol(final AccountMeta invokedGlamProtocolProgramMeta,
                                                  final List<AccountMeta> keys,
                                                  final PricedProtocol pricedProtocol) {
-    final byte[] _data = new byte[8 + Borsh.len(pricedProtocol)];
+    final byte[] _data = new byte[8 + pricedProtocol.l()];
     int i = UPDATE_PRICED_PROTOCOL_DISCRIMINATOR.write(_data, 0);
-    Borsh.write(pricedProtocol, _data, i);
+    pricedProtocol.write(_data, i);
 
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
@@ -1406,20 +1373,19 @@ public final class GlamProtocolProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(pricedProtocol, _data, i);
+      i += pricedProtocol.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.len(pricedProtocol);
+      return 8 + pricedProtocol.l();
     }
   }
 
   public static final Discriminator UPDATE_STATE_DISCRIMINATOR = toDiscriminator(135, 112, 215, 75, 247, 185, 53, 176);
 
-  public static List<AccountMeta> updateStateKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                  ,
-                                                  final PublicKey glamStateKey,
+  public static List<AccountMeta> updateStateKeys(final PublicKey glamStateKey,
                                                   final PublicKey glamSignerKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -1432,19 +1398,18 @@ public final class GlamProtocolProgram {
                                         final PublicKey glamSignerKey,
                                         final StateModel state) {
     final var keys = updateStateKeys(
-      invokedGlamProtocolProgramMeta,
       glamStateKey,
       glamSignerKey
     );
     return updateState(invokedGlamProtocolProgramMeta, keys, state);
   }
 
-  public static Instruction updateState(final AccountMeta invokedGlamProtocolProgramMeta                                        ,
+  public static Instruction updateState(final AccountMeta invokedGlamProtocolProgramMeta,
                                         final List<AccountMeta> keys,
                                         final StateModel state) {
-    final byte[] _data = new byte[8 + Borsh.len(state)];
+    final byte[] _data = new byte[8 + state.l()];
     int i = UPDATE_STATE_DISCRIMINATOR.write(_data, 0);
-    Borsh.write(state, _data, i);
+    state.write(_data, i);
 
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
@@ -1468,20 +1433,19 @@ public final class GlamProtocolProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(state, _data, i);
+      i += state.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.len(state);
+      return 8 + state.l();
     }
   }
 
   public static final Discriminator UPDATE_STATE_APPLY_TIMELOCK_DISCRIMINATOR = toDiscriminator(66, 12, 138, 80, 133, 85, 46, 220);
 
-  public static List<AccountMeta> updateStateApplyTimelockKeys(final AccountMeta invokedGlamProtocolProgramMeta                                                               ,
-                                                               final PublicKey glamStateKey,
+  public static List<AccountMeta> updateStateApplyTimelockKeys(final PublicKey glamStateKey,
                                                                final PublicKey glamSignerKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -1489,15 +1453,17 @@ public final class GlamProtocolProgram {
     );
   }
 
-  public static Instruction updateStateApplyTimelock(final AccountMeta invokedGlamProtocolProgramMeta, final PublicKey glamStateKey, final PublicKey glamSignerKey) {     final var keys = updateStateApplyTimelockKeys(
-      invokedGlamProtocolProgramMeta,
+  public static Instruction updateStateApplyTimelock(final AccountMeta invokedGlamProtocolProgramMeta,
+                                                     final PublicKey glamStateKey,
+                                                     final PublicKey glamSignerKey) {
+    final var keys = updateStateApplyTimelockKeys(
       glamStateKey,
       glamSignerKey
     );
     return updateStateApplyTimelock(invokedGlamProtocolProgramMeta, keys);
   }
 
-  public static Instruction updateStateApplyTimelock(final AccountMeta invokedGlamProtocolProgramMeta                                                     ,
+  public static Instruction updateStateApplyTimelock(final AccountMeta invokedGlamProtocolProgramMeta,
                                                      final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, UPDATE_STATE_APPLY_TIMELOCK_DISCRIMINATOR);
   }

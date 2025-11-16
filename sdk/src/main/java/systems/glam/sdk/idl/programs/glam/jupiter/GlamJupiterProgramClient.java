@@ -5,9 +5,8 @@ import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.jupiter.JupiterAccounts;
-import software.sava.solana.programs.clients.NativeProgramAccountClient;
 import systems.comodal.jsoniter.JsonIterator;
-import systems.glam.sdk.GlamProgramAccountClient;
+import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.GlamVaultAccounts;
 
 import java.util.*;
@@ -17,12 +16,12 @@ import static software.sava.solana.web2.jupiter.client.http.response.JupiterSwap
 
 public interface GlamJupiterProgramClient {
 
-  static GlamJupiterProgramClient createClient(final GlamProgramAccountClient nativeProgramAccountClient,
+  static GlamJupiterProgramClient createClient(final GlamAccountClient nativeProgramAccountClient,
                                                final JupiterAccounts jupiterAccounts) {
     return new GlamJupiterProgramClientImpl(nativeProgramAccountClient, jupiterAccounts);
   }
 
-  static GlamJupiterProgramClient createClient(final GlamProgramAccountClient nativeProgramAccountClient) {
+  static GlamJupiterProgramClient createClient(final GlamAccountClient nativeProgramAccountClient) {
     return createClient(nativeProgramAccountClient, JupiterAccounts.MAIN_NET);
   }
 
@@ -76,13 +75,13 @@ public interface GlamJupiterProgramClient {
   JupiterAccounts jupiterAccounts();
 
   default List<Instruction> swapChecked(final PublicKey inputMintKey,
-                                        final AccountMeta inputTokenProgram,
+                                        final PublicKey inputTokenProgram,
                                         final PublicKey outputMintKey,
-                                        final AccountMeta outputTokenProgram,
+                                        final PublicKey outputTokenProgram,
                                         final long amount,
                                         final Instruction swapInstruction,
                                         final boolean wrapSOL) {
-    return swapChecked(
+    return swapWithProgramStateChecked(
         null, inputMintKey, inputTokenProgram,
         null, outputMintKey, outputTokenProgram,
         amount,
@@ -96,7 +95,7 @@ public interface GlamJupiterProgramClient {
                                         final long amount,
                                         final Instruction swapInstruction,
                                         final boolean wrapSOL) {
-    final var tokenProgram = solanaAccounts().readTokenProgram();
+    final var tokenProgram = solanaAccounts().tokenProgram();
     return swapChecked(inputMintKey, tokenProgram, outputMintKey, tokenProgram, amount, swapInstruction, wrapSOL);
   }
 
@@ -107,43 +106,28 @@ public interface GlamJupiterProgramClient {
     return swapChecked(inputMintKey, outputMintKey, amount, swapInstruction, true);
   }
 
-  NativeProgramAccountClient nativeProgramAccountClient();
-
-  Map<PublicKey, Instruction> createSwapTokenAccountsIdempotent(final AccountMeta inputTokenProgram,
+  Map<PublicKey, Instruction> createSwapTokenAccountsIdempotent(final PublicKey inputTokenProgram,
                                                                 final PublicKey inputMintKey,
-                                                                final AccountMeta outputTokenProgram,
+                                                                final PublicKey outputTokenProgram,
                                                                 final PublicKey outputMintKey);
 
   default Instruction swapUncheckedAndNoWrap(final PublicKey inputMintKey,
-                                             final AccountMeta inputTokenProgram,
+                                             final PublicKey inputTokenProgram,
                                              final PublicKey outputMintKey,
-                                             final AccountMeta outputTokenProgram,
+                                             final PublicKey outputTokenProgram,
                                              final Instruction swapInstruction) {
-    return swapUncheckedAndNoWrap(
+    return swapWithProgramStateUncheckedAndNoWrap(
         null, inputMintKey, inputTokenProgram,
         null, outputMintKey, outputTokenProgram,
         swapInstruction
     );
   }
 
-  default Instruction swapUncheckedAndNoWrap(final PublicKey inputProgramStateKey,
-                                             final PublicKey inputMintKey,
-                                             final PublicKey outputProgramStateKey,
-                                             final PublicKey outputMintKey,
-                                             final Instruction swapInstruction) {
-    final var tokenProgram = solanaAccounts().readTokenProgram();
-    return swapUncheckedAndNoWrap(
-        inputProgramStateKey, inputMintKey, tokenProgram,
-        outputProgramStateKey, outputMintKey, tokenProgram,
-        swapInstruction
-    );
-  }
-
   default Instruction swapUncheckedAndNoWrap(final PublicKey inputMintKey,
                                              final PublicKey outputMintKey,
                                              final Instruction swapInstruction) {
-    final var tokenProgram = solanaAccounts().readTokenProgram();
-    return swapUncheckedAndNoWrap(
+    final var tokenProgram = solanaAccounts().tokenProgram();
+    return swapWithProgramStateUncheckedAndNoWrap(
         null, inputMintKey, tokenProgram,
         null, outputMintKey, tokenProgram,
         swapInstruction
@@ -151,13 +135,13 @@ public interface GlamJupiterProgramClient {
   }
 
   default List<Instruction> swapUnchecked(final PublicKey inputMintKey,
-                                          final AccountMeta inputTokenProgram,
+                                          final PublicKey inputTokenProgram,
                                           final PublicKey outputMintKey,
-                                          final AccountMeta outputTokenProgram,
+                                          final PublicKey outputTokenProgram,
                                           long amount,
                                           final Instruction swapInstruction,
                                           final boolean wrapSOL) {
-    return swapUnchecked(
+    return swapWithProgramStateUnchecked(
         null, inputMintKey, inputTokenProgram,
         null, outputMintKey, outputTokenProgram,
         amount,
@@ -171,7 +155,7 @@ public interface GlamJupiterProgramClient {
                                           final long amount,
                                           final Instruction swapInstruction,
                                           final boolean wrapSOL) {
-    final var tokenProgram = solanaAccounts().readTokenProgram();
+    final var tokenProgram = solanaAccounts().tokenProgram();
     return swapUnchecked(inputMintKey, tokenProgram, outputMintKey, tokenProgram, amount, swapInstruction, wrapSOL);
   }
 
@@ -179,7 +163,7 @@ public interface GlamJupiterProgramClient {
                                           final PublicKey outputMintKey,
                                           final long amount,
                                           final Instruction swapInstruction) {
-    final var tokenProgram = solanaAccounts().readTokenProgram();
+    final var tokenProgram = solanaAccounts().tokenProgram();
     return swapUnchecked(inputMintKey, tokenProgram, outputMintKey, tokenProgram, amount, swapInstruction, true);
   }
 
@@ -187,88 +171,101 @@ public interface GlamJupiterProgramClient {
   // For example, a user may have access to swap any LST;
   // this is checked by also passing the corresponding stake pool state program.
 
-  default List<Instruction> swapChecked(final PublicKey inputProgramStateKey,
-                                        final PublicKey inputMintKey,
-                                        final PublicKey outputProgramStateKey,
-                                        final PublicKey outputMintKey,
-                                        final long amount,
-                                        final Instruction swapInstruction,
-                                        final boolean wrapSOL) {
-    final var tokenProgram = solanaAccounts().readTokenProgram();
-    return swapChecked(
+  default Instruction swapWithProgramStateUncheckedAndNoWrap(final PublicKey inputProgramStateKey,
+                                                             final PublicKey inputMintKey,
+                                                             final PublicKey outputProgramStateKey,
+                                                             final PublicKey outputMintKey,
+                                                             final Instruction swapInstruction) {
+    final var tokenProgram = solanaAccounts().tokenProgram();
+    return swapWithProgramStateUncheckedAndNoWrap(
+        inputProgramStateKey, inputMintKey, tokenProgram,
+        outputProgramStateKey, outputMintKey, tokenProgram,
+        swapInstruction
+    );
+  }
+
+  default List<Instruction> swapWithProgramStateChecked(final PublicKey inputProgramStateKey,
+                                                        final PublicKey inputMintKey,
+                                                        final PublicKey outputProgramStateKey,
+                                                        final PublicKey outputMintKey,
+                                                        final long amount,
+                                                        final Instruction swapInstruction,
+                                                        final boolean wrapSOL) {
+    final var tokenProgram = solanaAccounts().tokenProgram();
+    return swapWithProgramStateChecked(
         inputProgramStateKey, inputMintKey, tokenProgram,
         outputProgramStateKey, outputMintKey, tokenProgram,
         amount, swapInstruction, wrapSOL
     );
   }
 
-  default List<Instruction> swapChecked(final PublicKey inputProgramStateKey,
-                                        final PublicKey inputMintKey,
-                                        final PublicKey outputProgramStateKey,
-                                        final PublicKey outputMintKey,
-                                        final long amount,
-                                        final Instruction swapInstruction) {
-    return swapChecked(
+  default List<Instruction> swapWithProgramStateChecked(final PublicKey inputProgramStateKey,
+                                                        final PublicKey inputMintKey,
+                                                        final PublicKey outputProgramStateKey,
+                                                        final PublicKey outputMintKey,
+                                                        final long amount,
+                                                        final Instruction swapInstruction) {
+    return swapWithProgramStateChecked(
         inputProgramStateKey, inputMintKey,
         outputProgramStateKey, outputMintKey,
         amount, swapInstruction, true
     );
   }
 
-  List<Instruction> swapChecked(final PublicKey inputProgramStateKey,
-                                final PublicKey inputMintKey,
-                                final AccountMeta inputTokenProgram,
-                                final PublicKey outputProgramStateKey,
-                                final PublicKey outputMintKey,
-                                final AccountMeta outputTokenProgram,
-                                final long amount,
-                                final Instruction swapInstruction,
-                                final boolean wrapSOL);
+  List<Instruction> swapWithProgramStateChecked(final PublicKey inputProgramStateKey,
+                                                final PublicKey inputMintKey,
+                                                final PublicKey inputTokenProgram,
+                                                final PublicKey outputProgramStateKey,
+                                                final PublicKey outputMintKey,
+                                                final PublicKey outputTokenProgram,
+                                                final long amount,
+                                                final Instruction swapInstruction,
+                                                final boolean wrapSOL);
 
-  Instruction swapUncheckedAndNoWrap(final PublicKey inputProgramStateKey,
-                                     final PublicKey inputMintKey,
-                                     final AccountMeta inputTokenProgram,
-                                     final PublicKey outputProgramStateKey,
-                                     final PublicKey outputMintKey,
-                                     final AccountMeta outputTokenProgram,
-                                     final Instruction swapInstruction);
+  Instruction swapWithProgramStateUncheckedAndNoWrap(final PublicKey inputProgramStateKey,
+                                                     final PublicKey inputMintKey,
+                                                     final PublicKey inputTokenProgram,
+                                                     final PublicKey outputProgramStateKey,
+                                                     final PublicKey outputMintKey,
+                                                     final PublicKey outputTokenProgram,
+                                                     final Instruction swapInstruction);
 
-  default List<Instruction> swapUnchecked(final PublicKey inputProgramStateKey,
-                                          final PublicKey inputMintKey,
-                                          final PublicKey outputProgramStateKey,
-                                          final PublicKey outputMintKey,
-                                          final long amount,
-                                          final Instruction swapInstruction,
-                                          final boolean wrapSOL) {
-    final var tokenProgram = solanaAccounts().readTokenProgram();
-    return swapUnchecked(
+  default List<Instruction> swapWithProgramStateUnchecked(final PublicKey inputProgramStateKey,
+                                                          final PublicKey inputMintKey,
+                                                          final PublicKey outputProgramStateKey,
+                                                          final PublicKey outputMintKey,
+                                                          final long amount,
+                                                          final Instruction swapInstruction,
+                                                          final boolean wrapSOL) {
+    final var tokenProgram = solanaAccounts().tokenProgram();
+    return swapWithProgramStateUnchecked(
         inputProgramStateKey, inputMintKey, tokenProgram,
         outputProgramStateKey, outputMintKey, tokenProgram,
         amount, swapInstruction, wrapSOL
     );
   }
 
-  default List<Instruction> swapUnchecked(final PublicKey inputProgramStateKey,
-                                          final PublicKey inputMintKey,
-                                          final PublicKey outputProgramStateKey,
-                                          final PublicKey outputMintKey,
-                                          final long amount,
-                                          final Instruction swapInstruction) {
-    final var tokenProgram = solanaAccounts().readTokenProgram();
-    return swapUnchecked(
+  default List<Instruction> swapWithProgramStateUnchecked(final PublicKey inputProgramStateKey,
+                                                          final PublicKey inputMintKey,
+                                                          final PublicKey outputProgramStateKey,
+                                                          final PublicKey outputMintKey,
+                                                          final long amount,
+                                                          final Instruction swapInstruction) {
+    final var tokenProgram = solanaAccounts().tokenProgram();
+    return swapWithProgramStateUnchecked(
         inputProgramStateKey, inputMintKey, tokenProgram,
         outputProgramStateKey, outputMintKey, tokenProgram,
         amount, swapInstruction, true
     );
   }
 
-  List<Instruction> swapUnchecked(final PublicKey inputProgramStateKey,
-                                  final PublicKey inputMintKey,
-                                  final AccountMeta inputTokenProgram,
-                                  final PublicKey outputProgramStateKey,
-                                  final PublicKey outputMintKey,
-                                  final AccountMeta outputTokenProgram,
-                                  final long amount,
-                                  final Instruction swapInstruction,
-                                  final boolean wrapSOL);
+  List<Instruction> swapWithProgramStateUnchecked(final PublicKey inputProgramStateKey,
+                                                  final PublicKey inputMintKey,
+                                                  final PublicKey inputTokenProgram,
+                                                  final PublicKey outputProgramStateKey,
+                                                  final PublicKey outputMintKey,
+                                                  final PublicKey outputTokenProgram,
+                                                  final long amount,
+                                                  final Instruction swapInstruction,
+                                                  final boolean wrapSOL);
 }

@@ -32,7 +32,7 @@ public final class ExtKaminoProgram {
 
   public static final Discriminator FARMS_HARVEST_REWARD_DISCRIMINATOR = toDiscriminator(244, 248, 124, 210, 194, 52, 75, 152);
 
-  public static List<AccountMeta> farmsHarvestRewardKeys(final AccountMeta invokedExtKaminoProgramMeta                                                         ,
+  public static List<AccountMeta> farmsHarvestRewardKeys(final AccountMeta invokedExtKaminoProgramMeta,
                                                          final SolanaAccounts solanaAccounts,
                                                          final PublicKey glamStateKey,
                                                          final PublicKey glamVaultKey,
@@ -113,7 +113,7 @@ public final class ExtKaminoProgram {
     return farmsHarvestReward(invokedExtKaminoProgramMeta, keys, rewardIndex);
   }
 
-  public static Instruction farmsHarvestReward(final AccountMeta invokedExtKaminoProgramMeta                                               ,
+  public static Instruction farmsHarvestReward(final AccountMeta invokedExtKaminoProgramMeta,
                                                final List<AccountMeta> keys,
                                                final long rewardIndex) {
     final byte[] _data = new byte[16];
@@ -157,8 +157,7 @@ public final class ExtKaminoProgram {
 
   public static final Discriminator FARMS_INITIALIZE_USER_DISCRIMINATOR = toDiscriminator(188, 148, 82, 37, 44, 46, 162, 34);
 
-  public static List<AccountMeta> farmsInitializeUserKeys(final AccountMeta invokedExtKaminoProgramMeta                                                          ,
-                                                          final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> farmsInitializeUserKeys(final SolanaAccounts solanaAccounts,
                                                           final PublicKey glamStateKey,
                                                           final PublicKey glamVaultKey,
                                                           final PublicKey glamSignerKey,
@@ -192,7 +191,6 @@ public final class ExtKaminoProgram {
                                                 final PublicKey userStateKey,
                                                 final PublicKey farmStateKey) {
     final var keys = farmsInitializeUserKeys(
-      invokedExtKaminoProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -206,14 +204,14 @@ public final class ExtKaminoProgram {
     return farmsInitializeUser(invokedExtKaminoProgramMeta, keys);
   }
 
-  public static Instruction farmsInitializeUser(final AccountMeta invokedExtKaminoProgramMeta                                                ,
+  public static Instruction farmsInitializeUser(final AccountMeta invokedExtKaminoProgramMeta,
                                                 final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, FARMS_INITIALIZE_USER_DISCRIMINATOR);
   }
 
   public static final Discriminator FARMS_STAKE_DISCRIMINATOR = toDiscriminator(224, 105, 208, 179, 98, 200, 213, 238);
 
-  public static List<AccountMeta> farmsStakeKeys(final AccountMeta invokedExtKaminoProgramMeta                                                 ,
+  public static List<AccountMeta> farmsStakeKeys(final AccountMeta invokedExtKaminoProgramMeta,
                                                  final SolanaAccounts solanaAccounts,
                                                  final PublicKey glamStateKey,
                                                  final PublicKey glamVaultKey,
@@ -282,7 +280,7 @@ public final class ExtKaminoProgram {
     return farmsStake(invokedExtKaminoProgramMeta, keys, amount);
   }
 
-  public static Instruction farmsStake(final AccountMeta invokedExtKaminoProgramMeta                                       ,
+  public static Instruction farmsStake(final AccountMeta invokedExtKaminoProgramMeta,
                                        final List<AccountMeta> keys,
                                        final long amount) {
     final byte[] _data = new byte[16];
@@ -326,7 +324,7 @@ public final class ExtKaminoProgram {
 
   public static final Discriminator FARMS_UNSTAKE_DISCRIMINATOR = toDiscriminator(180, 131, 50, 144, 26, 242, 175, 242);
 
-  public static List<AccountMeta> farmsUnstakeKeys(final AccountMeta invokedExtKaminoProgramMeta                                                   ,
+  public static List<AccountMeta> farmsUnstakeKeys(final AccountMeta invokedExtKaminoProgramMeta,
                                                    final SolanaAccounts solanaAccounts,
                                                    final PublicKey glamStateKey,
                                                    final PublicKey glamVaultKey,
@@ -379,7 +377,7 @@ public final class ExtKaminoProgram {
     return farmsUnstake(invokedExtKaminoProgramMeta, keys, amount);
   }
 
-  public static Instruction farmsUnstake(final AccountMeta invokedExtKaminoProgramMeta                                         ,
+  public static Instruction farmsUnstake(final AccountMeta invokedExtKaminoProgramMeta,
                                          final List<AccountMeta> keys,
                                          final BigInteger amount) {
     final byte[] _data = new byte[24];
@@ -423,8 +421,7 @@ public final class ExtKaminoProgram {
 
   public static final Discriminator FARMS_WITHDRAW_UNSTAKED_DEPOSITS_DISCRIMINATOR = toDiscriminator(107, 97, 50, 15, 211, 245, 52, 96);
 
-  public static List<AccountMeta> farmsWithdrawUnstakedDepositsKeys(final AccountMeta invokedExtKaminoProgramMeta                                                                    ,
-                                                                    final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> farmsWithdrawUnstakedDepositsKeys(final SolanaAccounts solanaAccounts,
                                                                     final PublicKey glamStateKey,
                                                                     final PublicKey glamVaultKey,
                                                                     final PublicKey glamSignerKey,
@@ -469,7 +466,6 @@ public final class ExtKaminoProgram {
                                                           final PublicKey farmVaultsAuthorityKey,
                                                           final PublicKey tokenProgramKey) {
     final var keys = farmsWithdrawUnstakedDepositsKeys(
-      invokedExtKaminoProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -487,14 +483,14 @@ public final class ExtKaminoProgram {
     return farmsWithdrawUnstakedDeposits(invokedExtKaminoProgramMeta, keys);
   }
 
-  public static Instruction farmsWithdrawUnstakedDeposits(final AccountMeta invokedExtKaminoProgramMeta                                                          ,
+  public static Instruction farmsWithdrawUnstakedDeposits(final AccountMeta invokedExtKaminoProgramMeta,
                                                           final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, FARMS_WITHDRAW_UNSTAKED_DEPOSITS_DISCRIMINATOR);
   }
 
   public static final Discriminator LENDING_BORROW_OBLIGATION_LIQUIDITY_V_2_DISCRIMINATOR = toDiscriminator(149, 226, 84, 157, 124, 178, 35, 122);
 
-  public static List<AccountMeta> lendingBorrowObligationLiquidityV2Keys(final AccountMeta invokedExtKaminoProgramMeta                                                                         ,
+  public static List<AccountMeta> lendingBorrowObligationLiquidityV2Keys(final AccountMeta invokedExtKaminoProgramMeta,
                                                                          final SolanaAccounts solanaAccounts,
                                                                          final PublicKey glamStateKey,
                                                                          final PublicKey glamVaultKey,
@@ -591,7 +587,7 @@ public final class ExtKaminoProgram {
     return lendingBorrowObligationLiquidityV2(invokedExtKaminoProgramMeta, keys, liquidityAmount);
   }
 
-  public static Instruction lendingBorrowObligationLiquidityV2(final AccountMeta invokedExtKaminoProgramMeta                                                               ,
+  public static Instruction lendingBorrowObligationLiquidityV2(final AccountMeta invokedExtKaminoProgramMeta,
                                                                final List<AccountMeta> keys,
                                                                final long liquidityAmount) {
     final byte[] _data = new byte[16];
@@ -635,7 +631,7 @@ public final class ExtKaminoProgram {
 
   public static final Discriminator LENDING_DEPOSIT_RESERVE_LIQUIDITY_AND_OBLIGATION_COLLATERAL_V_2_DISCRIMINATOR = toDiscriminator(33, 146, 50, 121, 127, 94, 92, 192);
 
-  public static List<AccountMeta> lendingDepositReserveLiquidityAndObligationCollateralV2Keys(final AccountMeta invokedExtKaminoProgramMeta                                                                                              ,
+  public static List<AccountMeta> lendingDepositReserveLiquidityAndObligationCollateralV2Keys(final AccountMeta invokedExtKaminoProgramMeta,
                                                                                               final SolanaAccounts solanaAccounts,
                                                                                               final PublicKey glamStateKey,
                                                                                               final PublicKey glamVaultKey,
@@ -740,7 +736,7 @@ public final class ExtKaminoProgram {
     return lendingDepositReserveLiquidityAndObligationCollateralV2(invokedExtKaminoProgramMeta, keys, liquidityAmount);
   }
 
-  public static Instruction lendingDepositReserveLiquidityAndObligationCollateralV2(final AccountMeta invokedExtKaminoProgramMeta                                                                                    ,
+  public static Instruction lendingDepositReserveLiquidityAndObligationCollateralV2(final AccountMeta invokedExtKaminoProgramMeta,
                                                                                     final List<AccountMeta> keys,
                                                                                     final long liquidityAmount) {
     final byte[] _data = new byte[16];
@@ -784,8 +780,7 @@ public final class ExtKaminoProgram {
 
   public static final Discriminator LENDING_INIT_OBLIGATION_DISCRIMINATOR = toDiscriminator(188, 161, 62, 142, 106, 232, 77, 135);
 
-  public static List<AccountMeta> lendingInitObligationKeys(final AccountMeta invokedExtKaminoProgramMeta                                                            ,
-                                                            final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> lendingInitObligationKeys(final SolanaAccounts solanaAccounts,
                                                             final PublicKey glamStateKey,
                                                             final PublicKey glamVaultKey,
                                                             final PublicKey glamSignerKey,
@@ -832,7 +827,6 @@ public final class ExtKaminoProgram {
                                                   final PublicKey ownerUserMetadataKey,
                                                   final InitObligationArgs args) {
     final var keys = lendingInitObligationKeys(
-      invokedExtKaminoProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -850,12 +844,12 @@ public final class ExtKaminoProgram {
     return lendingInitObligation(invokedExtKaminoProgramMeta, keys, args);
   }
 
-  public static Instruction lendingInitObligation(final AccountMeta invokedExtKaminoProgramMeta                                                  ,
+  public static Instruction lendingInitObligation(final AccountMeta invokedExtKaminoProgramMeta,
                                                   final List<AccountMeta> keys,
                                                   final InitObligationArgs args) {
-    final byte[] _data = new byte[8 + Borsh.len(args)];
+    final byte[] _data = new byte[8 + args.l()];
     int i = LENDING_INIT_OBLIGATION_DISCRIMINATOR.write(_data, 0);
-    Borsh.write(args, _data, i);
+    args.write(_data, i);
 
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
@@ -881,7 +875,7 @@ public final class ExtKaminoProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(args, _data, i);
+      i += args.write(_data, i);
       return i - _offset;
     }
 
@@ -893,8 +887,7 @@ public final class ExtKaminoProgram {
 
   public static final Discriminator LENDING_INIT_OBLIGATION_FARMS_FOR_RESERVE_DISCRIMINATOR = toDiscriminator(3, 234, 110, 39, 12, 147, 175, 185);
 
-  public static List<AccountMeta> lendingInitObligationFarmsForReserveKeys(final AccountMeta invokedExtKaminoProgramMeta                                                                           ,
-                                                                           final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> lendingInitObligationFarmsForReserveKeys(final SolanaAccounts solanaAccounts,
                                                                            final PublicKey glamStateKey,
                                                                            final PublicKey glamVaultKey,
                                                                            final PublicKey glamSignerKey,
@@ -947,7 +940,6 @@ public final class ExtKaminoProgram {
                                                                  final PublicKey farmsProgramKey,
                                                                  final int mode) {
     final var keys = lendingInitObligationFarmsForReserveKeys(
-      invokedExtKaminoProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -967,7 +959,7 @@ public final class ExtKaminoProgram {
     return lendingInitObligationFarmsForReserve(invokedExtKaminoProgramMeta, keys, mode);
   }
 
-  public static Instruction lendingInitObligationFarmsForReserve(final AccountMeta invokedExtKaminoProgramMeta                                                                 ,
+  public static Instruction lendingInitObligationFarmsForReserve(final AccountMeta invokedExtKaminoProgramMeta,
                                                                  final List<AccountMeta> keys,
                                                                  final int mode) {
     final byte[] _data = new byte[9];
@@ -1011,7 +1003,7 @@ public final class ExtKaminoProgram {
 
   public static final Discriminator LENDING_INIT_USER_METADATA_DISCRIMINATOR = toDiscriminator(68, 236, 138, 146, 124, 228, 247, 241);
 
-  public static List<AccountMeta> lendingInitUserMetadataKeys(final AccountMeta invokedExtKaminoProgramMeta                                                              ,
+  public static List<AccountMeta> lendingInitUserMetadataKeys(final AccountMeta invokedExtKaminoProgramMeta,
                                                               final SolanaAccounts solanaAccounts,
                                                               final PublicKey glamStateKey,
                                                               final PublicKey glamVaultKey,
@@ -1065,7 +1057,7 @@ public final class ExtKaminoProgram {
     return lendingInitUserMetadata(invokedExtKaminoProgramMeta, keys, userLookupTable);
   }
 
-  public static Instruction lendingInitUserMetadata(final AccountMeta invokedExtKaminoProgramMeta                                                    ,
+  public static Instruction lendingInitUserMetadata(final AccountMeta invokedExtKaminoProgramMeta,
                                                     final List<AccountMeta> keys,
                                                     final PublicKey userLookupTable) {
     final byte[] _data = new byte[40];
@@ -1109,7 +1101,7 @@ public final class ExtKaminoProgram {
 
   public static final Discriminator LENDING_REPAY_OBLIGATION_LIQUIDITY_V_2_DISCRIMINATOR = toDiscriminator(79, 34, 126, 170, 174, 156, 174, 29);
 
-  public static List<AccountMeta> lendingRepayObligationLiquidityV2Keys(final AccountMeta invokedExtKaminoProgramMeta                                                                        ,
+  public static List<AccountMeta> lendingRepayObligationLiquidityV2Keys(final AccountMeta invokedExtKaminoProgramMeta,
                                                                         final SolanaAccounts solanaAccounts,
                                                                         final PublicKey glamStateKey,
                                                                         final PublicKey glamVaultKey,
@@ -1198,7 +1190,7 @@ public final class ExtKaminoProgram {
     return lendingRepayObligationLiquidityV2(invokedExtKaminoProgramMeta, keys, liquidityAmount);
   }
 
-  public static Instruction lendingRepayObligationLiquidityV2(final AccountMeta invokedExtKaminoProgramMeta                                                              ,
+  public static Instruction lendingRepayObligationLiquidityV2(final AccountMeta invokedExtKaminoProgramMeta,
                                                               final List<AccountMeta> keys,
                                                               final long liquidityAmount) {
     final byte[] _data = new byte[16];
@@ -1242,7 +1234,7 @@ public final class ExtKaminoProgram {
 
   public static final Discriminator LENDING_WITHDRAW_OBLIGATION_COLLATERAL_AND_REDEEM_RESERVE_COLLATERAL_V_2_DISCRIMINATOR = toDiscriminator(217, 223, 173, 35, 64, 225, 161, 222);
 
-  public static List<AccountMeta> lendingWithdrawObligationCollateralAndRedeemReserveCollateralV2Keys(final AccountMeta invokedExtKaminoProgramMeta                                                                                                      ,
+  public static List<AccountMeta> lendingWithdrawObligationCollateralAndRedeemReserveCollateralV2Keys(final AccountMeta invokedExtKaminoProgramMeta,
                                                                                                       final SolanaAccounts solanaAccounts,
                                                                                                       final PublicKey glamStateKey,
                                                                                                       final PublicKey glamVaultKey,
@@ -1347,7 +1339,7 @@ public final class ExtKaminoProgram {
     return lendingWithdrawObligationCollateralAndRedeemReserveCollateralV2(invokedExtKaminoProgramMeta, keys, collateralAmount);
   }
 
-  public static Instruction lendingWithdrawObligationCollateralAndRedeemReserveCollateralV2(final AccountMeta invokedExtKaminoProgramMeta                                                                                            ,
+  public static Instruction lendingWithdrawObligationCollateralAndRedeemReserveCollateralV2(final AccountMeta invokedExtKaminoProgramMeta,
                                                                                             final List<AccountMeta> keys,
                                                                                             final long collateralAmount) {
     final byte[] _data = new byte[16];
@@ -1391,8 +1383,7 @@ public final class ExtKaminoProgram {
 
   public static final Discriminator SET_LENDING_POLICY_DISCRIMINATOR = toDiscriminator(226, 185, 23, 3, 113, 88, 118, 176);
 
-  public static List<AccountMeta> setLendingPolicyKeys(final AccountMeta invokedExtKaminoProgramMeta                                                       ,
-                                                       final PublicKey glamStateKey,
+  public static List<AccountMeta> setLendingPolicyKeys(final PublicKey glamStateKey,
                                                        final PublicKey glamSignerKey,
                                                        final PublicKey glamProtocolProgramKey) {
     return List.of(
@@ -1408,7 +1399,6 @@ public final class ExtKaminoProgram {
                                              final PublicKey glamProtocolProgramKey,
                                              final LendingPolicy policy) {
     final var keys = setLendingPolicyKeys(
-      invokedExtKaminoProgramMeta,
       glamStateKey,
       glamSignerKey,
       glamProtocolProgramKey
@@ -1416,12 +1406,12 @@ public final class ExtKaminoProgram {
     return setLendingPolicy(invokedExtKaminoProgramMeta, keys, policy);
   }
 
-  public static Instruction setLendingPolicy(final AccountMeta invokedExtKaminoProgramMeta                                             ,
+  public static Instruction setLendingPolicy(final AccountMeta invokedExtKaminoProgramMeta,
                                              final List<AccountMeta> keys,
                                              final LendingPolicy policy) {
-    final byte[] _data = new byte[8 + Borsh.len(policy)];
+    final byte[] _data = new byte[8 + policy.l()];
     int i = SET_LENDING_POLICY_DISCRIMINATOR.write(_data, 0);
-    Borsh.write(policy, _data, i);
+    policy.write(_data, i);
 
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
@@ -1445,20 +1435,19 @@ public final class ExtKaminoProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(policy, _data, i);
+      i += policy.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.len(policy);
+      return 8 + policy.l();
     }
   }
 
   public static final Discriminator SET_VAULTS_POLICY_DISCRIMINATOR = toDiscriminator(211, 177, 22, 152, 235, 59, 192, 62);
 
-  public static List<AccountMeta> setVaultsPolicyKeys(final AccountMeta invokedExtKaminoProgramMeta                                                      ,
-                                                      final PublicKey glamStateKey,
+  public static List<AccountMeta> setVaultsPolicyKeys(final PublicKey glamStateKey,
                                                       final PublicKey glamSignerKey,
                                                       final PublicKey glamProtocolProgramKey) {
     return List.of(
@@ -1474,7 +1463,6 @@ public final class ExtKaminoProgram {
                                             final PublicKey glamProtocolProgramKey,
                                             final VaultsPolicy policy) {
     final var keys = setVaultsPolicyKeys(
-      invokedExtKaminoProgramMeta,
       glamStateKey,
       glamSignerKey,
       glamProtocolProgramKey
@@ -1482,12 +1470,12 @@ public final class ExtKaminoProgram {
     return setVaultsPolicy(invokedExtKaminoProgramMeta, keys, policy);
   }
 
-  public static Instruction setVaultsPolicy(final AccountMeta invokedExtKaminoProgramMeta                                            ,
+  public static Instruction setVaultsPolicy(final AccountMeta invokedExtKaminoProgramMeta,
                                             final List<AccountMeta> keys,
                                             final VaultsPolicy policy) {
-    final byte[] _data = new byte[8 + Borsh.len(policy)];
+    final byte[] _data = new byte[8 + policy.l()];
     int i = SET_VAULTS_POLICY_DISCRIMINATOR.write(_data, 0);
-    Borsh.write(policy, _data, i);
+    policy.write(_data, i);
 
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
@@ -1511,20 +1499,19 @@ public final class ExtKaminoProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(policy, _data, i);
+      i += policy.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.len(policy);
+      return 8 + policy.l();
     }
   }
 
   public static final Discriminator VAULTS_DEPOSIT_DISCRIMINATOR = toDiscriminator(124, 173, 191, 223, 48, 26, 84, 84);
 
-  public static List<AccountMeta> vaultsDepositKeys(final AccountMeta invokedExtKaminoProgramMeta                                                    ,
-                                                    final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> vaultsDepositKeys(final SolanaAccounts solanaAccounts,
                                                     final PublicKey glamStateKey,
                                                     final PublicKey glamVaultKey,
                                                     final PublicKey glamSignerKey,
@@ -1588,7 +1575,6 @@ public final class ExtKaminoProgram {
                                           final PublicKey programKey,
                                           final long maxAmount) {
     final var keys = vaultsDepositKeys(
-      invokedExtKaminoProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -1612,7 +1598,7 @@ public final class ExtKaminoProgram {
     return vaultsDeposit(invokedExtKaminoProgramMeta, keys, maxAmount);
   }
 
-  public static Instruction vaultsDeposit(final AccountMeta invokedExtKaminoProgramMeta                                          ,
+  public static Instruction vaultsDeposit(final AccountMeta invokedExtKaminoProgramMeta,
                                           final List<AccountMeta> keys,
                                           final long maxAmount) {
     final byte[] _data = new byte[16];
@@ -1656,8 +1642,7 @@ public final class ExtKaminoProgram {
 
   public static final Discriminator VAULTS_WITHDRAW_DISCRIMINATOR = toDiscriminator(12, 8, 236, 92, 134, 144, 196, 87);
 
-  public static List<AccountMeta> vaultsWithdrawKeys(final AccountMeta invokedExtKaminoProgramMeta                                                     ,
-                                                     final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> vaultsWithdrawKeys(final SolanaAccounts solanaAccounts,
                                                      final PublicKey glamStateKey,
                                                      final PublicKey glamVaultKey,
                                                      final PublicKey glamSignerKey,
@@ -1754,7 +1739,6 @@ public final class ExtKaminoProgram {
                                            final PublicKey programKey,
                                            final long sharesAmount) {
     final var keys = vaultsWithdrawKeys(
-      invokedExtKaminoProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -1789,7 +1773,7 @@ public final class ExtKaminoProgram {
     return vaultsWithdraw(invokedExtKaminoProgramMeta, keys, sharesAmount);
   }
 
-  public static Instruction vaultsWithdraw(final AccountMeta invokedExtKaminoProgramMeta                                           ,
+  public static Instruction vaultsWithdraw(final AccountMeta invokedExtKaminoProgramMeta,
                                            final List<AccountMeta> keys,
                                            final long sharesAmount) {
     final byte[] _data = new byte[16];

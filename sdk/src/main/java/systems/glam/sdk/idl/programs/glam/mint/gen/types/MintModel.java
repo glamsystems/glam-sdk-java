@@ -3,6 +3,7 @@ package systems.glam.sdk.idl.programs.glam.mint.gen.types;
 import java.lang.Boolean;
 import java.lang.String;
 
+import java.util.Arrays;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
@@ -11,6 +12,8 @@ import software.sava.core.borsh.Borsh;
 
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.FeeStructure;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.NotifyAndSettle;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt32LE;
@@ -72,8 +75,11 @@ public record MintModel(String symbol, byte[] _symbol,
       ++i;
     } else {
       ++i;
-      symbol = Borsh.string(_data, i);
-      i += (Integer.BYTES + getInt32LE(_data, i));
+      final int _symbolLength = getInt32LE(_data, i);
+      i += 4;
+      final byte[] _symbol = Arrays.copyOfRange(_data, i, i + _symbolLength);
+      symbol = new String(_symbol, UTF_8);
+      i += _symbol.length;
     }
     final byte[] name;
     if (_data[i] == 0) {
@@ -90,8 +96,11 @@ public record MintModel(String symbol, byte[] _symbol,
       ++i;
     } else {
       ++i;
-      uri = Borsh.string(_data, i);
-      i += (Integer.BYTES + getInt32LE(_data, i));
+      final int _uriLength = getInt32LE(_data, i);
+      i += 4;
+      final byte[] _uri = Arrays.copyOfRange(_data, i, i + _uriLength);
+      uri = new String(_uri, UTF_8);
+      i += _uri.length;
     }
     final OptionalInt yearInSeconds;
     if (_data[i] == 0) {
@@ -127,7 +136,7 @@ public record MintModel(String symbol, byte[] _symbol,
     } else {
       ++i;
       feeStructure = FeeStructure.read(_data, i);
-      i += Borsh.len(feeStructure);
+      i += feeStructure.l();
     }
     final NotifyAndSettle notifyAndSettle;
     if (_data[i] == 0) {
@@ -136,7 +145,7 @@ public record MintModel(String symbol, byte[] _symbol,
     } else {
       ++i;
       notifyAndSettle = NotifyAndSettle.read(_data, i);
-      i += Borsh.len(notifyAndSettle);
+      i += notifyAndSettle.l();
     }
     final OptionalInt lockupPeriod;
     if (_data[i] == 0) {
@@ -243,14 +252,14 @@ public record MintModel(String symbol, byte[] _symbol,
 
   @Override
   public int l() {
-    return (_symbol == null || _symbol.length == 0 ? 1 : (1 + Borsh.lenVector(_symbol)))
+    return (_symbol == null || _symbol.length == 0 ? 1 : (1 + _symbol.length))
          + (name == null || name.length == 0 ? 1 : (1 + Borsh.lenArray(name)))
-         + (_uri == null || _uri.length == 0 ? 1 : (1 + Borsh.lenVector(_uri)))
+         + (_uri == null || _uri.length == 0 ? 1 : (1 + _uri.length))
          + (yearInSeconds == null || yearInSeconds.isEmpty() ? 1 : (1 + 4))
          + (permanentDelegate == null ? 1 : (1 + 32))
          + (defaultAccountStateFrozen == null ? 1 : (1 + 1))
-         + (feeStructure == null ? 1 : (1 + Borsh.len(feeStructure)))
-         + (notifyAndSettle == null ? 1 : (1 + Borsh.len(notifyAndSettle)))
+         + (feeStructure == null ? 1 : (1 + feeStructure.l()))
+         + (notifyAndSettle == null ? 1 : (1 + notifyAndSettle.l()))
          + (lockupPeriod == null || lockupPeriod.isEmpty() ? 1 : (1 + 4))
          + (maxCap == null || maxCap.isEmpty() ? 1 : (1 + 8))
          + (minSubscription == null || minSubscription.isEmpty() ? 1 : (1 + 8))

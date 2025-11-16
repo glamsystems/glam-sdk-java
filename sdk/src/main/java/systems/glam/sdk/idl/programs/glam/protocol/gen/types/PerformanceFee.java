@@ -31,7 +31,7 @@ public record PerformanceFee(int feeBps,
     i += 2;
     putInt16LE(_data, i, hurdleRateBps);
     i += 2;
-    i += Borsh.write(hurdleType, _data, i);
+    i += hurdleType.write(_data, i);
     return i - _offset;
   }
 

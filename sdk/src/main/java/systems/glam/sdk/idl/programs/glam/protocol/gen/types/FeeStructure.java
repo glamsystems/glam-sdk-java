@@ -16,13 +16,13 @@ public record FeeStructure(EntryExitFees vault,
     }
     int i = _offset;
     final var vault = EntryExitFees.read(_data, i);
-    i += Borsh.len(vault);
+    i += vault.l();
     final var manager = EntryExitFees.read(_data, i);
-    i += Borsh.len(manager);
+    i += manager.l();
     final var management = ManagementFee.read(_data, i);
-    i += Borsh.len(management);
+    i += management.l();
     final var performance = PerformanceFee.read(_data, i);
-    i += Borsh.len(performance);
+    i += performance.l();
     final var protocol = ProtocolFees.read(_data, i);
     return new FeeStructure(vault,
                             manager,
@@ -34,11 +34,11 @@ public record FeeStructure(EntryExitFees vault,
   @Override
   public int write(final byte[] _data, final int _offset) {
     int i = _offset;
-    i += Borsh.write(vault, _data, i);
-    i += Borsh.write(manager, _data, i);
-    i += Borsh.write(management, _data, i);
-    i += Borsh.write(performance, _data, i);
-    i += Borsh.write(protocol, _data, i);
+    i += vault.write(_data, i);
+    i += manager.write(_data, i);
+    i += management.write(_data, i);
+    i += performance.write(_data, i);
+    i += protocol.write(_data, i);
     return i - _offset;
   }
 

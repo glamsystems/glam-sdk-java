@@ -25,8 +25,7 @@ public final class GlamConfigProgram {
 
   public static final Discriminator CLOSE_DISCRIMINATOR = toDiscriminator(98, 165, 201, 177, 108, 65, 206, 96);
 
-  public static List<AccountMeta> closeKeys(final AccountMeta invokedGlamConfigProgramMeta                                            ,
-                                            final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> closeKeys(final SolanaAccounts solanaAccounts,
                                             final PublicKey globalConfigKey,
                                             final PublicKey adminKey) {
     return List.of(
@@ -41,7 +40,6 @@ public final class GlamConfigProgram {
                                   final PublicKey globalConfigKey,
                                   final PublicKey adminKey) {
     final var keys = closeKeys(
-      invokedGlamConfigProgramMeta,
       solanaAccounts,
       globalConfigKey,
       adminKey
@@ -49,15 +47,14 @@ public final class GlamConfigProgram {
     return close(invokedGlamConfigProgramMeta, keys);
   }
 
-  public static Instruction close(final AccountMeta invokedGlamConfigProgramMeta                                  ,
+  public static Instruction close(final AccountMeta invokedGlamConfigProgramMeta,
                                   final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, CLOSE_DISCRIMINATOR);
   }
 
   public static final Discriminator DELETE_ASSET_META_DISCRIMINATOR = toDiscriminator(108, 173, 149, 99, 144, 203, 21, 115);
 
-  public static List<AccountMeta> deleteAssetMetaKeys(final AccountMeta invokedGlamConfigProgramMeta                                                      ,
-                                                      final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> deleteAssetMetaKeys(final SolanaAccounts solanaAccounts,
                                                       final PublicKey globalConfigKey,
                                                       final PublicKey adminKey) {
     return List.of(
@@ -74,7 +71,6 @@ public final class GlamConfigProgram {
                                             final PublicKey asset,
                                             final PublicKey oracle) {
     final var keys = deleteAssetMetaKeys(
-      invokedGlamConfigProgramMeta,
       solanaAccounts,
       globalConfigKey,
       adminKey
@@ -82,7 +78,7 @@ public final class GlamConfigProgram {
     return deleteAssetMeta(invokedGlamConfigProgramMeta, keys, asset, oracle);
   }
 
-  public static Instruction deleteAssetMeta(final AccountMeta invokedGlamConfigProgramMeta                                            ,
+  public static Instruction deleteAssetMeta(final AccountMeta invokedGlamConfigProgramMeta,
                                             final List<AccountMeta> keys,
                                             final PublicKey asset,
                                             final PublicKey oracle) {
@@ -133,8 +129,7 @@ public final class GlamConfigProgram {
 
   public static final Discriminator INITIALIZE_DISCRIMINATOR = toDiscriminator(175, 175, 109, 31, 13, 152, 155, 237);
 
-  public static List<AccountMeta> initializeKeys(final AccountMeta invokedGlamConfigProgramMeta                                                 ,
-                                                 final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> initializeKeys(final SolanaAccounts solanaAccounts,
                                                  final PublicKey globalConfigKey,
                                                  final PublicKey payerKey) {
     return List.of(
@@ -154,7 +149,6 @@ public final class GlamConfigProgram {
                                        final int baseFeeBps,
                                        final int flowFeeBps) {
     final var keys = initializeKeys(
-      invokedGlamConfigProgramMeta,
       solanaAccounts,
       globalConfigKey,
       payerKey
@@ -170,7 +164,7 @@ public final class GlamConfigProgram {
     );
   }
 
-  public static Instruction initialize(final AccountMeta invokedGlamConfigProgramMeta                                       ,
+  public static Instruction initialize(final AccountMeta invokedGlamConfigProgramMeta,
                                        final List<AccountMeta> keys,
                                        final PublicKey admin,
                                        final PublicKey feeAuthority,
@@ -252,8 +246,7 @@ public final class GlamConfigProgram {
 
   public static final Discriminator UPDATE_ADMIN_DISCRIMINATOR = toDiscriminator(161, 176, 40, 213, 60, 184, 179, 228);
 
-  public static List<AccountMeta> updateAdminKeys(final AccountMeta invokedGlamConfigProgramMeta                                                  ,
-                                                  final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> updateAdminKeys(final SolanaAccounts solanaAccounts,
                                                   final PublicKey globalConfigKey,
                                                   final PublicKey adminKey) {
     return List.of(
@@ -269,7 +262,6 @@ public final class GlamConfigProgram {
                                         final PublicKey adminKey,
                                         final PublicKey newAdmin) {
     final var keys = updateAdminKeys(
-      invokedGlamConfigProgramMeta,
       solanaAccounts,
       globalConfigKey,
       adminKey
@@ -277,7 +269,7 @@ public final class GlamConfigProgram {
     return updateAdmin(invokedGlamConfigProgramMeta, keys, newAdmin);
   }
 
-  public static Instruction updateAdmin(final AccountMeta invokedGlamConfigProgramMeta                                        ,
+  public static Instruction updateAdmin(final AccountMeta invokedGlamConfigProgramMeta,
                                         final List<AccountMeta> keys,
                                         final PublicKey newAdmin) {
     final byte[] _data = new byte[40];
@@ -321,8 +313,7 @@ public final class GlamConfigProgram {
 
   public static final Discriminator UPDATE_PROTOCOL_FEES_DISCRIMINATOR = toDiscriminator(158, 219, 253, 143, 54, 45, 113, 182);
 
-  public static List<AccountMeta> updateProtocolFeesKeys(final AccountMeta invokedGlamConfigProgramMeta                                                         ,
-                                                         final PublicKey globalConfigKey,
+  public static List<AccountMeta> updateProtocolFeesKeys(final PublicKey globalConfigKey,
                                                          final PublicKey feeAuthorityKey) {
     return List.of(
       createWrite(globalConfigKey),
@@ -336,14 +327,13 @@ public final class GlamConfigProgram {
                                                final int baseFeeBps,
                                                final int flowFeeBps) {
     final var keys = updateProtocolFeesKeys(
-      invokedGlamConfigProgramMeta,
       globalConfigKey,
       feeAuthorityKey
     );
     return updateProtocolFees(invokedGlamConfigProgramMeta, keys, baseFeeBps, flowFeeBps);
   }
 
-  public static Instruction updateProtocolFees(final AccountMeta invokedGlamConfigProgramMeta                                               ,
+  public static Instruction updateProtocolFees(final AccountMeta invokedGlamConfigProgramMeta,
                                                final List<AccountMeta> keys,
                                                final int baseFeeBps,
                                                final int flowFeeBps) {
@@ -394,8 +384,7 @@ public final class GlamConfigProgram {
 
   public static final Discriminator UPDATE_REFERRER_DISCRIMINATOR = toDiscriminator(208, 225, 56, 15, 244, 21, 195, 34);
 
-  public static List<AccountMeta> updateReferrerKeys(final AccountMeta invokedGlamConfigProgramMeta                                                     ,
-                                                     final PublicKey globalConfigKey,
+  public static List<AccountMeta> updateReferrerKeys(final PublicKey globalConfigKey,
                                                      final PublicKey feeAuthorityKey) {
     return List.of(
       createWrite(globalConfigKey),
@@ -408,14 +397,13 @@ public final class GlamConfigProgram {
                                            final PublicKey feeAuthorityKey,
                                            final PublicKey referrer) {
     final var keys = updateReferrerKeys(
-      invokedGlamConfigProgramMeta,
       globalConfigKey,
       feeAuthorityKey
     );
     return updateReferrer(invokedGlamConfigProgramMeta, keys, referrer);
   }
 
-  public static Instruction updateReferrer(final AccountMeta invokedGlamConfigProgramMeta                                           ,
+  public static Instruction updateReferrer(final AccountMeta invokedGlamConfigProgramMeta,
                                            final List<AccountMeta> keys,
                                            final PublicKey referrer) {
     final byte[] _data = new byte[40];
@@ -459,8 +447,7 @@ public final class GlamConfigProgram {
 
   public static final Discriminator UPSERT_ASSET_META_DISCRIMINATOR = toDiscriminator(29, 40, 115, 194, 215, 146, 222, 212);
 
-  public static List<AccountMeta> upsertAssetMetaKeys(final AccountMeta invokedGlamConfigProgramMeta                                                      ,
-                                                      final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> upsertAssetMetaKeys(final SolanaAccounts solanaAccounts,
                                                       final PublicKey globalConfigKey,
                                                       final PublicKey adminKey) {
     return List.of(
@@ -476,7 +463,6 @@ public final class GlamConfigProgram {
                                             final PublicKey adminKey,
                                             final AssetMeta assetMeta) {
     final var keys = upsertAssetMetaKeys(
-      invokedGlamConfigProgramMeta,
       solanaAccounts,
       globalConfigKey,
       adminKey
@@ -484,12 +470,12 @@ public final class GlamConfigProgram {
     return upsertAssetMeta(invokedGlamConfigProgramMeta, keys, assetMeta);
   }
 
-  public static Instruction upsertAssetMeta(final AccountMeta invokedGlamConfigProgramMeta                                            ,
+  public static Instruction upsertAssetMeta(final AccountMeta invokedGlamConfigProgramMeta,
                                             final List<AccountMeta> keys,
                                             final AssetMeta assetMeta) {
-    final byte[] _data = new byte[8 + Borsh.len(assetMeta)];
+    final byte[] _data = new byte[8 + assetMeta.l()];
     int i = UPSERT_ASSET_META_DISCRIMINATOR.write(_data, 0);
-    Borsh.write(assetMeta, _data, i);
+    assetMeta.write(_data, i);
 
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
@@ -515,7 +501,7 @@ public final class GlamConfigProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(assetMeta, _data, i);
+      i += assetMeta.write(_data, i);
       return i - _offset;
     }
 

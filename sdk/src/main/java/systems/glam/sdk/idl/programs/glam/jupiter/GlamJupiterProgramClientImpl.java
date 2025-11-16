@@ -5,9 +5,7 @@ import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.jupiter.JupiterAccounts;
-import software.sava.solana.programs.clients.NativeProgramAccountClient;
-import software.sava.solana.programs.clients.NativeProgramClient;
-import systems.glam.sdk.GlamProgramAccountClient;
+import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.GlamVaultAccounts;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolProgram;
 
@@ -16,8 +14,7 @@ import java.util.Map;
 
 final class GlamJupiterProgramClientImpl implements GlamJupiterProgramClient {
 
-  private final NativeProgramAccountClient programAccountClient;
-  private final NativeProgramClient nativeProgramClient;
+  private final GlamAccountClient glamAccountClient;
   private final SolanaAccounts solanaAccounts;
   private final GlamVaultAccounts glamVaultAccounts;
   private final AccountMeta invokedProgram;
@@ -25,14 +22,13 @@ final class GlamJupiterProgramClientImpl implements GlamJupiterProgramClient {
   private final JupiterAccounts jupiterAccounts;
   private final PublicKey swapProgram;
 
-  GlamJupiterProgramClientImpl(final GlamProgramAccountClient programAccountClient,
+  GlamJupiterProgramClientImpl(final GlamAccountClient glamAccountClient,
                                final JupiterAccounts jupiterAccounts) {
-    this.programAccountClient = programAccountClient;
-    this.nativeProgramClient = programAccountClient.nativeProgramClient();
-    this.solanaAccounts = programAccountClient.solanaAccounts();
-    this.glamVaultAccounts = programAccountClient.vaultAccounts();
+    this.glamAccountClient = glamAccountClient;
+    this.solanaAccounts = glamAccountClient.solanaAccounts();
+    this.glamVaultAccounts = glamAccountClient.vaultAccounts();
+    this.feePayer = glamAccountClient.feePayer();
     this.invokedProgram = glamVaultAccounts.glamAccounts().invokedProtocolProgram();
-    this.feePayer = programAccountClient.feePayer();
     this.jupiterAccounts = jupiterAccounts;
     this.swapProgram = jupiterAccounts.swapProgram();
   }
@@ -52,11 +48,6 @@ final class GlamJupiterProgramClientImpl implements GlamJupiterProgramClient {
     return jupiterAccounts;
   }
 
-  @Override
-  public NativeProgramAccountClient nativeProgramAccountClient() {
-    return programAccountClient;
-  }
-
   private Instruction jupiterSwap(final PublicKey inputVaultATA,
                                   final PublicKey outputVaultATA,
                                   final PublicKey inputProgramStateKey,
@@ -69,7 +60,7 @@ final class GlamJupiterProgramClientImpl implements GlamJupiterProgramClient {
     return GlamProtocolProgram.jupiterSwap(
         invokedProgram,
         solanaAccounts,
-        glamVaultAccounts.glamPublicKey(),
+        glamVaultAccounts.glamStateKey(),
         glamVaultAccounts.vaultPublicKey(),
         feePayer.publicKey(),
         swapProgram,
@@ -84,21 +75,18 @@ final class GlamJupiterProgramClientImpl implements GlamJupiterProgramClient {
   }
 
   @Override
-  public Map<PublicKey, Instruction> createSwapTokenAccountsIdempotent(final AccountMeta inputTokenProgram,
+  public Map<PublicKey, Instruction> createSwapTokenAccountsIdempotent(final PublicKey inputTokenProgram,
                                                                        final PublicKey inputMintKey,
-                                                                       final AccountMeta outputTokenProgram,
+                                                                       final PublicKey outputTokenProgram,
                                                                        final PublicKey outputMintKey) {
-
-    final var outputTokenProgramKey = outputTokenProgram.publicKey();
-    final var outputVaultATA = programAccountClient.findATA(outputTokenProgramKey, outputMintKey).publicKey();
-    final var createVaultOutputATA = programAccountClient.createATAForOwnerFundedByFeePayer(
+    final var outputVaultATA = glamAccountClient.findATA(outputTokenProgram, outputMintKey).publicKey();
+    final var createVaultOutputATA = glamAccountClient.createATAForOwnerFundedByFeePayer(
         true, outputVaultATA, outputMintKey, outputTokenProgram
     );
 
     if (inputMintKey.equals(solanaAccounts.wrappedSolTokenMint())) {
-      final var inputTokenProgramKey = inputTokenProgram.publicKey();
-      final var inputVaultATA = programAccountClient.findATA(inputTokenProgramKey, inputMintKey).publicKey();
-      final var createVaultInputATA = programAccountClient.createATAForOwnerFundedByFeePayer(
+      final var inputVaultATA = glamAccountClient.findATA(inputTokenProgram, inputMintKey).publicKey();
+      final var createVaultInputATA = glamAccountClient.createATAForOwnerFundedByFeePayer(
           true, inputVaultATA, inputMintKey, inputTokenProgram
       );
       return Map.of(
@@ -111,43 +99,39 @@ final class GlamJupiterProgramClientImpl implements GlamJupiterProgramClient {
   }
 
   @Override
-  public List<Instruction> swapChecked(final PublicKey inputProgramStateKey,
-                                       final PublicKey inputMintKey,
-                                       final AccountMeta inputTokenProgram,
-                                       final PublicKey outputProgramStateKey,
-                                       final PublicKey outputMintKey,
-                                       final AccountMeta outputTokenProgram,
-                                       final long amount,
-                                       final Instruction swapInstruction,
-                                       final boolean wrapSOL) {
-    final var inputTokenProgramKey = inputTokenProgram.publicKey();
-    final var inputVaultATA = programAccountClient.findATA(inputTokenProgramKey, inputMintKey).publicKey();
-
-    final var outputTokenProgramKey = outputTokenProgram.publicKey();
-    final var outputVaultATA = programAccountClient.findATA(outputTokenProgramKey, outputMintKey).publicKey();
-    final var createVaultOutputATA = programAccountClient.createATAForOwnerFundedByFeePayer(
+  public List<Instruction> swapWithProgramStateChecked(final PublicKey inputProgramStateKey,
+                                                       final PublicKey inputMintKey,
+                                                       final PublicKey inputTokenProgram,
+                                                       final PublicKey outputProgramStateKey,
+                                                       final PublicKey outputMintKey,
+                                                       final PublicKey outputTokenProgram,
+                                                       final long amount,
+                                                       final Instruction swapInstruction,
+                                                       final boolean wrapSOL) {
+    final var inputVaultATA = glamAccountClient.findATA(inputTokenProgram, inputMintKey).publicKey();
+    final var outputVaultATA = glamAccountClient.findATA(outputTokenProgram, outputMintKey).publicKey();
+    final var createVaultOutputATA = glamAccountClient.createATAForOwnerFundedByFeePayer(
         true, outputVaultATA, outputMintKey, outputTokenProgram
     );
-
     final var glamJupiterSwap = jupiterSwap(
         inputVaultATA,
         outputVaultATA,
         inputProgramStateKey,
         inputMintKey,
-        inputTokenProgramKey,
+        inputTokenProgram,
         outputProgramStateKey,
         outputMintKey,
-        outputTokenProgramKey,
+        outputTokenProgram,
         swapInstruction
     );
 
     if (wrapSOL && inputMintKey.equals(solanaAccounts.wrappedSolTokenMint())) {
       return List.of(
-          programAccountClient.createATAForOwnerFundedByFeePayer(
+          glamAccountClient.createATAForOwnerFundedByFeePayer(
               true, inputVaultATA, inputMintKey, inputTokenProgram
           ),
-          programAccountClient.transferSolLamports(inputVaultATA, amount),
-          nativeProgramClient.syncNative(inputVaultATA),
+          glamAccountClient.transferSolLamports(inputVaultATA, amount),
+          glamAccountClient.syncNative(),
           createVaultOutputATA,
           glamJupiterSwap
       );
@@ -157,52 +141,48 @@ final class GlamJupiterProgramClientImpl implements GlamJupiterProgramClient {
   }
 
   @Override
-  public Instruction swapUncheckedAndNoWrap(final PublicKey inputProgramStateKey,
-                                            final PublicKey inputMintKey,
-                                            final AccountMeta inputTokenProgram,
-                                            final PublicKey outputProgramStateKey,
-                                            final PublicKey outputMintKey,
-                                            final AccountMeta outputTokenProgram,
-                                            final Instruction swapInstruction) {
-    final var inputTokenProgramKey = inputTokenProgram.publicKey();
-    final var inputVaultATA = programAccountClient.findATA(inputTokenProgramKey, inputMintKey).publicKey();
-
-    final var outputTokenProgramKey = outputTokenProgram.publicKey();
-    final var outputVaultATA = programAccountClient.findATA(outputTokenProgramKey, outputMintKey).publicKey();
-
+  public Instruction swapWithProgramStateUncheckedAndNoWrap(final PublicKey inputProgramStateKey,
+                                                            final PublicKey inputMintKey,
+                                                            final PublicKey inputTokenProgram,
+                                                            final PublicKey outputProgramStateKey,
+                                                            final PublicKey outputMintKey,
+                                                            final PublicKey outputTokenProgram,
+                                                            final Instruction swapInstruction) {
+    final var inputVaultATA = glamAccountClient.findATA(inputTokenProgram, inputMintKey).publicKey();
+    final var outputVaultATA = glamAccountClient.findATA(outputTokenProgram, outputMintKey).publicKey();
     return jupiterSwap(
         inputVaultATA,
         outputVaultATA,
         inputProgramStateKey,
         inputMintKey,
-        inputTokenProgram.publicKey(),
+        inputTokenProgram,
         outputProgramStateKey,
         outputMintKey,
-        outputTokenProgram.publicKey(),
+        outputTokenProgram,
         swapInstruction
     );
   }
 
   @Override
-  public List<Instruction> swapUnchecked(final PublicKey inputProgramStateKey,
-                                         final PublicKey inputMintKey,
-                                         final AccountMeta inputTokenProgram,
-                                         final PublicKey outputProgramStateKey,
-                                         final PublicKey outputMintKey,
-                                         final AccountMeta outputTokenProgram,
-                                         final long amount,
-                                         final Instruction swapInstruction,
-                                         final boolean wrapSOL) {
-    final var glamJupiterSwap = swapUncheckedAndNoWrap(
+  public List<Instruction> swapWithProgramStateUnchecked(final PublicKey inputProgramStateKey,
+                                                         final PublicKey inputMintKey,
+                                                         final PublicKey inputTokenProgram,
+                                                         final PublicKey outputProgramStateKey,
+                                                         final PublicKey outputMintKey,
+                                                         final PublicKey outputTokenProgram,
+                                                         final long amount,
+                                                         final Instruction swapInstruction,
+                                                         final boolean wrapSOL) {
+    final var glamJupiterSwap = swapWithProgramStateUncheckedAndNoWrap(
         inputProgramStateKey, inputMintKey, inputTokenProgram,
         outputProgramStateKey, outputMintKey, outputTokenProgram,
         swapInstruction
     );
     if (wrapSOL && inputMintKey.equals(solanaAccounts.wrappedSolTokenMint())) {
-      final var wrappedSolPDA = programAccountClient.wrappedSolPDA().publicKey();
+      final var wrappedSolPDA = glamAccountClient.wrappedSolPDA().publicKey();
       return List.of(
-          programAccountClient.transferSolLamports(wrappedSolPDA, amount),
-          nativeProgramClient.syncNative(wrappedSolPDA),
+          glamAccountClient.transferSolLamports(wrappedSolPDA, amount),
+          glamAccountClient.syncNative(),
           glamJupiterSwap
       );
     } else {

@@ -23,8 +23,7 @@ public final class ExtSplProgram {
 
   public static final Discriminator SET_TOKEN_TRANSFER_POLICY_DISCRIMINATOR = toDiscriminator(0, 144, 15, 4, 149, 22, 95, 50);
 
-  public static List<AccountMeta> setTokenTransferPolicyKeys(final AccountMeta invokedExtSplProgramMeta                                                             ,
-                                                             final PublicKey glamStateKey,
+  public static List<AccountMeta> setTokenTransferPolicyKeys(final PublicKey glamStateKey,
                                                              final PublicKey glamSignerKey,
                                                              final PublicKey glamProtocolProgramKey) {
     return List.of(
@@ -40,7 +39,6 @@ public final class ExtSplProgram {
                                                    final PublicKey glamProtocolProgramKey,
                                                    final TransferPolicy policy) {
     final var keys = setTokenTransferPolicyKeys(
-      invokedExtSplProgramMeta,
       glamStateKey,
       glamSignerKey,
       glamProtocolProgramKey
@@ -48,12 +46,12 @@ public final class ExtSplProgram {
     return setTokenTransferPolicy(invokedExtSplProgramMeta, keys, policy);
   }
 
-  public static Instruction setTokenTransferPolicy(final AccountMeta invokedExtSplProgramMeta                                                   ,
+  public static Instruction setTokenTransferPolicy(final AccountMeta invokedExtSplProgramMeta,
                                                    final List<AccountMeta> keys,
                                                    final TransferPolicy policy) {
-    final byte[] _data = new byte[8 + Borsh.len(policy)];
+    final byte[] _data = new byte[8 + policy.l()];
     int i = SET_TOKEN_TRANSFER_POLICY_DISCRIMINATOR.write(_data, 0);
-    Borsh.write(policy, _data, i);
+    policy.write(_data, i);
 
     return Instruction.createInstruction(invokedExtSplProgramMeta, keys, _data);
   }
@@ -77,20 +75,19 @@ public final class ExtSplProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(policy, _data, i);
+      i += policy.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.len(policy);
+      return 8 + policy.l();
     }
   }
 
   public static final Discriminator TOKEN_CLOSE_ACCOUNT_DISCRIMINATOR = toDiscriminator(240, 32, 179, 154, 96, 110, 43, 79);
 
-  public static List<AccountMeta> tokenCloseAccountKeys(final AccountMeta invokedExtSplProgramMeta                                                        ,
-                                                        final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> tokenCloseAccountKeys(final SolanaAccounts solanaAccounts,
                                                         final PublicKey glamStateKey,
                                                         final PublicKey glamVaultKey,
                                                         final PublicKey glamSignerKey,
@@ -120,7 +117,6 @@ public final class ExtSplProgram {
                                               final PublicKey glamProtocolProgramKey,
                                               final PublicKey tokenAccountKey) {
     final var keys = tokenCloseAccountKeys(
-      invokedExtSplProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -133,15 +129,14 @@ public final class ExtSplProgram {
     return tokenCloseAccount(invokedExtSplProgramMeta, keys);
   }
 
-  public static Instruction tokenCloseAccount(final AccountMeta invokedExtSplProgramMeta                                              ,
+  public static Instruction tokenCloseAccount(final AccountMeta invokedExtSplProgramMeta,
                                               final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedExtSplProgramMeta, keys, TOKEN_CLOSE_ACCOUNT_DISCRIMINATOR);
   }
 
   public static final Discriminator TOKEN_TRANSFER_CHECKED_DISCRIMINATOR = toDiscriminator(169, 178, 117, 156, 169, 191, 199, 116);
 
-  public static List<AccountMeta> tokenTransferCheckedKeys(final AccountMeta invokedExtSplProgramMeta                                                           ,
-                                                           final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> tokenTransferCheckedKeys(final SolanaAccounts solanaAccounts,
                                                            final PublicKey glamStateKey,
                                                            final PublicKey glamVaultKey,
                                                            final PublicKey glamSignerKey,
@@ -179,7 +174,6 @@ public final class ExtSplProgram {
                                                  final long amount,
                                                  final int decimals) {
     final var keys = tokenTransferCheckedKeys(
-      invokedExtSplProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -194,7 +188,7 @@ public final class ExtSplProgram {
     return tokenTransferChecked(invokedExtSplProgramMeta, keys, amount, decimals);
   }
 
-  public static Instruction tokenTransferChecked(final AccountMeta invokedExtSplProgramMeta                                                 ,
+  public static Instruction tokenTransferChecked(final AccountMeta invokedExtSplProgramMeta,
                                                  final List<AccountMeta> keys,
                                                  final long amount,
                                                  final int decimals) {

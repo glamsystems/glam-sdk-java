@@ -3,10 +3,13 @@ package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 import java.lang.Boolean;
 import java.lang.String;
 
+import java.util.Arrays;
 import java.util.OptionalInt;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.borsh.Borsh;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt32LE;
@@ -62,7 +65,7 @@ public record StateModel(AccountType accountType,
     } else {
       ++i;
       accountType = AccountType.read(_data, i);
-      i += Borsh.len(accountType);
+      i += accountType.l();
     }
     final byte[] name;
     if (_data[i] == 0) {
@@ -79,8 +82,11 @@ public record StateModel(AccountType accountType,
       ++i;
     } else {
       ++i;
-      uri = Borsh.string(_data, i);
-      i += (Integer.BYTES + getInt32LE(_data, i));
+      final int _uriLength = getInt32LE(_data, i);
+      i += 4;
+      final byte[] _uri = Arrays.copyOfRange(_data, i, i + _uriLength);
+      uri = new String(_uri, UTF_8);
+      i += _uri.length;
     }
     final Boolean enabled;
     if (_data[i] == 0) {
@@ -107,7 +113,7 @@ public record StateModel(AccountType accountType,
     } else {
       ++i;
       created = CreatedModel.read(_data, i);
-      i += Borsh.len(created);
+      i += created.l();
     }
     final PublicKey owner;
     if (_data[i] == 0) {
@@ -225,12 +231,12 @@ public record StateModel(AccountType accountType,
 
   @Override
   public int l() {
-    return (accountType == null ? 1 : (1 + Borsh.len(accountType)))
+    return (accountType == null ? 1 : (1 + accountType.l()))
          + (name == null || name.length == 0 ? 1 : (1 + Borsh.lenArray(name)))
-         + (_uri == null || _uri.length == 0 ? 1 : (1 + Borsh.lenVector(_uri)))
+         + (_uri == null || _uri.length == 0 ? 1 : (1 + _uri.length))
          + (enabled == null ? 1 : (1 + 1))
          + (assets == null || assets.length == 0 ? 1 : (1 + Borsh.lenVector(assets)))
-         + (created == null ? 1 : (1 + Borsh.len(created)))
+         + (created == null ? 1 : (1 + created.l()))
          + (owner == null ? 1 : (1 + 32))
          + (portfolioManagerName == null || portfolioManagerName.length == 0 ? 1 : (1 + Borsh.lenArray(portfolioManagerName)))
          + (borrowable == null || borrowable.length == 0 ? 1 : (1 + Borsh.lenVector(borrowable)))

@@ -37,7 +37,7 @@ public record PendingRequest(PublicKey user,
     final var timeUnit = _data[i] & 0xFF;
     ++i;
     final var requestType = RequestType.read(_data, i);
-    i += Borsh.len(requestType);
+    i += requestType.l();
     final var reserved = new byte[6];
     Borsh.readArray(reserved, _data, i);
     return new PendingRequest(user,
@@ -65,7 +65,7 @@ public record PendingRequest(PublicKey user,
     i += 8;
     _data[i] = (byte) timeUnit;
     ++i;
-    i += Borsh.write(requestType, _data, i);
+    i += requestType.write(_data, i);
     i += Borsh.writeArrayChecked(reserved, 6, _data, i);
     return i - _offset;
   }

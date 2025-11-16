@@ -12,7 +12,7 @@ public record EmergencyUpdateMintArgs(RequestType requestType, boolean setPaused
     }
     int i = _offset;
     final var requestType = RequestType.read(_data, i);
-    i += Borsh.len(requestType);
+    i += requestType.l();
     final var setPaused = _data[i] == 1;
     return new EmergencyUpdateMintArgs(requestType, setPaused);
   }
@@ -20,7 +20,7 @@ public record EmergencyUpdateMintArgs(RequestType requestType, boolean setPaused
   @Override
   public int write(final byte[] _data, final int _offset) {
     int i = _offset;
-    i += Borsh.write(requestType, _data, i);
+    i += requestType.write(_data, i);
     _data[i] = (byte) (setPaused ? 1 : 0);
     ++i;
     return i - _offset;

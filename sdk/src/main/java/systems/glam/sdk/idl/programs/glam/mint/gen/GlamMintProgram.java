@@ -32,8 +32,7 @@ public final class GlamMintProgram {
 
   public static final Discriminator BURN_TOKENS_DISCRIMINATOR = toDiscriminator(76, 15, 51, 254, 229, 215, 121, 66);
 
-  public static List<AccountMeta> burnTokensKeys(final AccountMeta invokedGlamMintProgramMeta                                                 ,
-                                                 final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> burnTokensKeys(final SolanaAccounts solanaAccounts,
                                                  final PublicKey glamStateKey,
                                                  final PublicKey glamSignerKey,
                                                  final PublicKey glamMintKey,
@@ -58,7 +57,6 @@ public final class GlamMintProgram {
                                        final PublicKey fromKey,
                                        final long amount) {
     final var keys = burnTokensKeys(
-      invokedGlamMintProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamSignerKey,
@@ -69,7 +67,7 @@ public final class GlamMintProgram {
     return burnTokens(invokedGlamMintProgramMeta, keys, amount);
   }
 
-  public static Instruction burnTokens(final AccountMeta invokedGlamMintProgramMeta                                       ,
+  public static Instruction burnTokens(final AccountMeta invokedGlamMintProgramMeta,
                                        final List<AccountMeta> keys,
                                        final long amount) {
     final byte[] _data = new byte[16];
@@ -113,8 +111,7 @@ public final class GlamMintProgram {
 
   public static final Discriminator CANCEL_DISCRIMINATOR = toDiscriminator(232, 219, 223, 41, 219, 236, 220, 190);
 
-  public static List<AccountMeta> cancelKeys(final AccountMeta invokedGlamMintProgramMeta                                             ,
-                                             final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> cancelKeys(final SolanaAccounts solanaAccounts,
                                              final PublicKey glamStateKey,
                                              final PublicKey glamMintKey,
                                              final PublicKey glamEscrowKey,
@@ -154,7 +151,6 @@ public final class GlamMintProgram {
                                    final PublicKey escrowAtaKey,
                                    final PublicKey recoverTokenProgramKey) {
     final var keys = cancelKeys(
-      invokedGlamMintProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamMintKey,
@@ -170,14 +166,14 @@ public final class GlamMintProgram {
     return cancel(invokedGlamMintProgramMeta, keys);
   }
 
-  public static Instruction cancel(final AccountMeta invokedGlamMintProgramMeta                                   ,
+  public static Instruction cancel(final AccountMeta invokedGlamMintProgramMeta,
                                    final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, CANCEL_DISCRIMINATOR);
   }
 
   public static final Discriminator CLAIM_DISCRIMINATOR = toDiscriminator(62, 198, 214, 193, 213, 159, 108, 210);
 
-  public static List<AccountMeta> claimKeys(final AccountMeta invokedGlamMintProgramMeta                                            ,
+  public static List<AccountMeta> claimKeys(final AccountMeta invokedGlamMintProgramMeta,
                                             final SolanaAccounts solanaAccounts,
                                             final PublicKey glamStateKey,
                                             final PublicKey glamMintKey,
@@ -242,7 +238,7 @@ public final class GlamMintProgram {
     return claim(invokedGlamMintProgramMeta, keys);
   }
 
-  public static Instruction claim(final AccountMeta invokedGlamMintProgramMeta                                  ,
+  public static Instruction claim(final AccountMeta invokedGlamMintProgramMeta,
                                   final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, CLAIM_DISCRIMINATOR);
   }
@@ -252,8 +248,7 @@ public final class GlamMintProgram {
   /// @param vaultDepositAtaKey To pay out fees
   /// @param protocolFeeAuthorityKey To receive protocol fee
   /// @param managerFeeAuthorityKey To receive manager fee
-  public static List<AccountMeta> claimFeesKeys(final AccountMeta invokedGlamMintProgramMeta                                                ,
-                                                final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> claimFeesKeys(final SolanaAccounts solanaAccounts,
                                                 final PublicKey glamStateKey,
                                                 final PublicKey glamVaultKey,
                                                 final PublicKey glamMintKey,
@@ -312,7 +307,6 @@ public final class GlamMintProgram {
                                       final PublicKey glamProtocolProgramKey,
                                       final PublicKey depositTokenProgramKey) {
     final var keys = claimFeesKeys(
-      invokedGlamMintProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -333,14 +327,14 @@ public final class GlamMintProgram {
     return claimFees(invokedGlamMintProgramMeta, keys);
   }
 
-  public static Instruction claimFees(final AccountMeta invokedGlamMintProgramMeta                                      ,
+  public static Instruction claimFees(final AccountMeta invokedGlamMintProgramMeta,
                                       final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, CLAIM_FEES_DISCRIMINATOR);
   }
 
   public static final Discriminator CLOSE_MINT_DISCRIMINATOR = toDiscriminator(149, 251, 157, 212, 65, 181, 235, 129);
 
-  public static List<AccountMeta> closeMintKeys(final AccountMeta invokedGlamMintProgramMeta                                                ,
+  public static List<AccountMeta> closeMintKeys(final AccountMeta invokedGlamMintProgramMeta,
                                                 final SolanaAccounts solanaAccounts,
                                                 final PublicKey glamStateKey,
                                                 final PublicKey glamSignerKey,
@@ -385,15 +379,14 @@ public final class GlamMintProgram {
     return closeMint(invokedGlamMintProgramMeta, keys);
   }
 
-  public static Instruction closeMint(final AccountMeta invokedGlamMintProgramMeta                                      ,
+  public static Instruction closeMint(final AccountMeta invokedGlamMintProgramMeta,
                                       final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, CLOSE_MINT_DISCRIMINATOR);
   }
 
   public static final Discriminator CRYSTALLIZE_FEES_DISCRIMINATOR = toDiscriminator(78, 0, 111, 26, 7, 12, 41, 249);
 
-  public static List<AccountMeta> crystallizeFeesKeys(final AccountMeta invokedGlamMintProgramMeta                                                      ,
-                                                      final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> crystallizeFeesKeys(final SolanaAccounts solanaAccounts,
                                                       final PublicKey glamStateKey,
                                                       final PublicKey glamEscrowKey,
                                                       final PublicKey glamMintKey,
@@ -420,7 +413,6 @@ public final class GlamMintProgram {
                                             final PublicKey signerKey,
                                             final PublicKey glamProtocolProgramKey) {
     final var keys = crystallizeFeesKeys(
-      invokedGlamMintProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamEscrowKey,
@@ -432,15 +424,14 @@ public final class GlamMintProgram {
     return crystallizeFees(invokedGlamMintProgramMeta, keys);
   }
 
-  public static Instruction crystallizeFees(final AccountMeta invokedGlamMintProgramMeta                                            ,
+  public static Instruction crystallizeFees(final AccountMeta invokedGlamMintProgramMeta,
                                             final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, CRYSTALLIZE_FEES_DISCRIMINATOR);
   }
 
   public static final Discriminator EMERGENCY_UPDATE_MINT_DISCRIMINATOR = toDiscriminator(141, 210, 26, 160, 120, 140, 28, 239);
 
-  public static List<AccountMeta> emergencyUpdateMintKeys(final AccountMeta invokedGlamMintProgramMeta                                                          ,
-                                                          final PublicKey glamStateKey,
+  public static List<AccountMeta> emergencyUpdateMintKeys(final PublicKey glamStateKey,
                                                           final PublicKey glamSignerKey,
                                                           final PublicKey glamMintKey,
                                                           final PublicKey requestQueueKey) {
@@ -459,7 +450,6 @@ public final class GlamMintProgram {
                                                 final PublicKey requestQueueKey,
                                                 final EmergencyUpdateMintArgs args) {
     final var keys = emergencyUpdateMintKeys(
-      invokedGlamMintProgramMeta,
       glamStateKey,
       glamSignerKey,
       glamMintKey,
@@ -468,12 +458,12 @@ public final class GlamMintProgram {
     return emergencyUpdateMint(invokedGlamMintProgramMeta, keys, args);
   }
 
-  public static Instruction emergencyUpdateMint(final AccountMeta invokedGlamMintProgramMeta                                                ,
+  public static Instruction emergencyUpdateMint(final AccountMeta invokedGlamMintProgramMeta,
                                                 final List<AccountMeta> keys,
                                                 final EmergencyUpdateMintArgs args) {
-    final byte[] _data = new byte[8 + Borsh.len(args)];
+    final byte[] _data = new byte[8 + args.l()];
     int i = EMERGENCY_UPDATE_MINT_DISCRIMINATOR.write(_data, 0);
-    Borsh.write(args, _data, i);
+    args.write(_data, i);
 
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
@@ -499,7 +489,7 @@ public final class GlamMintProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(args, _data, i);
+      i += args.write(_data, i);
       return i - _offset;
     }
 
@@ -511,7 +501,7 @@ public final class GlamMintProgram {
 
   public static final Discriminator FORCE_TRANSFER_TOKENS_DISCRIMINATOR = toDiscriminator(185, 34, 78, 211, 192, 13, 160, 37);
 
-  public static List<AccountMeta> forceTransferTokensKeys(final AccountMeta invokedGlamMintProgramMeta                                                          ,
+  public static List<AccountMeta> forceTransferTokensKeys(final AccountMeta invokedGlamMintProgramMeta,
                                                           final SolanaAccounts solanaAccounts,
                                                           final PublicKey glamStateKey,
                                                           final PublicKey glamSignerKey,
@@ -565,7 +555,7 @@ public final class GlamMintProgram {
     return forceTransferTokens(invokedGlamMintProgramMeta, keys, amount);
   }
 
-  public static Instruction forceTransferTokens(final AccountMeta invokedGlamMintProgramMeta                                                ,
+  public static Instruction forceTransferTokens(final AccountMeta invokedGlamMintProgramMeta,
                                                 final List<AccountMeta> keys,
                                                 final long amount) {
     final byte[] _data = new byte[16];
@@ -609,8 +599,7 @@ public final class GlamMintProgram {
 
   public static final Discriminator FULFILL_DISCRIMINATOR = toDiscriminator(143, 2, 52, 206, 174, 164, 247, 72);
 
-  public static List<AccountMeta> fulfillKeys(final AccountMeta invokedGlamMintProgramMeta                                              ,
-                                              final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> fulfillKeys(final SolanaAccounts solanaAccounts,
                                               final PublicKey glamStateKey,
                                               final PublicKey glamVaultKey,
                                               final PublicKey glamMintKey,
@@ -658,7 +647,6 @@ public final class GlamMintProgram {
                                     final PublicKey glamProtocolProgramKey,
                                     final OptionalInt limit) {
     final var keys = fulfillKeys(
-      invokedGlamMintProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -676,7 +664,7 @@ public final class GlamMintProgram {
     return fulfill(invokedGlamMintProgramMeta, keys, limit);
   }
 
-  public static Instruction fulfill(final AccountMeta invokedGlamMintProgramMeta                                    ,
+  public static Instruction fulfill(final AccountMeta invokedGlamMintProgramMeta,
                                     final List<AccountMeta> keys,
                                     final OptionalInt limit) {
     final byte[] _data = new byte[
@@ -733,7 +721,7 @@ public final class GlamMintProgram {
   /// - `account_type` - Fund (for tokenized vault mint) or Mint
   /// - `decimals` - Decimals of new mint
   ///
-  public static List<AccountMeta> initializeMintKeys(final AccountMeta invokedGlamMintProgramMeta                                                     ,
+  public static List<AccountMeta> initializeMintKeys(final AccountMeta invokedGlamMintProgramMeta,
                                                      final SolanaAccounts solanaAccounts,
                                                      final PublicKey glamStateKey,
                                                      final PublicKey signerKey,
@@ -807,20 +795,20 @@ public final class GlamMintProgram {
   /// - `account_type` - Fund (for tokenized vault mint) or Mint
   /// - `decimals` - Decimals of new mint
   ///
-  public static Instruction initializeMint(final AccountMeta invokedGlamMintProgramMeta                                           ,
+  public static Instruction initializeMint(final AccountMeta invokedGlamMintProgramMeta,
                                            final List<AccountMeta> keys,
                                            final MintModel mintModel,
                                            final byte[] createdKey,
                                            final AccountType accountType,
                                            final OptionalInt decimals) {
     final byte[] _data = new byte[
-    8 + Borsh.len(mintModel) + Borsh.lenArray(createdKey) + Borsh.len(accountType)
+    8 + mintModel.l() + Borsh.lenArray(createdKey) + accountType.l()
     + (decimals == null || decimals.isEmpty() ? 1 : 2)
     ];
     int i = INITIALIZE_MINT_DISCRIMINATOR.write(_data, 0);
-    i += Borsh.write(mintModel, _data, i);
+    i += mintModel.write(_data, i);
     i += Borsh.writeArrayChecked(createdKey, 8, _data, i);
-    i += Borsh.write(accountType, _data, i);
+    i += accountType.write(_data, i);
     Borsh.writeOptionalbyte(decimals, _data, i);
 
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
@@ -844,11 +832,11 @@ public final class GlamMintProgram {
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
       final var mintModel = MintModel.read(_data, i);
-      i += Borsh.len(mintModel);
+      i += mintModel.l();
       final var createdKey = new byte[8];
       i += Borsh.readArray(createdKey, _data, i);
       final var accountType = AccountType.read(_data, i);
-      i += Borsh.len(accountType);
+      i += accountType.l();
       final OptionalInt decimals;
       if (_data[i] == 0) {
         decimals = OptionalInt.empty();
@@ -866,22 +854,22 @@ public final class GlamMintProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(mintModel, _data, i);
+      i += mintModel.write(_data, i);
       i += Borsh.writeArrayChecked(createdKey, 8, _data, i);
-      i += Borsh.write(accountType, _data, i);
+      i += accountType.write(_data, i);
       i += Borsh.writeOptionalbyte(decimals, _data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.len(mintModel) + Borsh.lenArray(createdKey) + Borsh.len(accountType) + (decimals == null || decimals.isEmpty() ? 1 : (1 + 1));
+      return 8 + mintModel.l() + Borsh.lenArray(createdKey) + accountType.l() + (decimals == null || decimals.isEmpty() ? 1 : (1 + 1));
     }
   }
 
   public static final Discriminator MINT_TOKENS_DISCRIMINATOR = toDiscriminator(59, 132, 24, 246, 122, 39, 8, 243);
 
-  public static List<AccountMeta> mintTokensKeys(final AccountMeta invokedGlamMintProgramMeta                                                 ,
+  public static List<AccountMeta> mintTokensKeys(final AccountMeta invokedGlamMintProgramMeta,
                                                  final SolanaAccounts solanaAccounts,
                                                  final PublicKey glamStateKey,
                                                  final PublicKey glamSignerKey,
@@ -927,7 +915,7 @@ public final class GlamMintProgram {
     return mintTokens(invokedGlamMintProgramMeta, keys, amount);
   }
 
-  public static Instruction mintTokens(final AccountMeta invokedGlamMintProgramMeta                                       ,
+  public static Instruction mintTokens(final AccountMeta invokedGlamMintProgramMeta,
                                        final List<AccountMeta> keys,
                                        final long amount) {
     final byte[] _data = new byte[16];
@@ -976,7 +964,7 @@ public final class GlamMintProgram {
   /// - drift_user x N
   /// - markets and oracles used by all drift users (no specific order)
   ///
-  public static List<AccountMeta> priceDriftUsersKeys(final AccountMeta invokedGlamMintProgramMeta                                                      ,
+  public static List<AccountMeta> priceDriftUsersKeys(final AccountMeta invokedGlamMintProgramMeta,
                                                       final PublicKey glamStateKey,
                                                       final PublicKey glamVaultKey,
                                                       final PublicKey signerKey,
@@ -1039,7 +1027,7 @@ public final class GlamMintProgram {
   /// - drift_user x N
   /// - markets and oracles used by all drift users (no specific order)
   ///
-  public static Instruction priceDriftUsers(final AccountMeta invokedGlamMintProgramMeta                                            ,
+  public static Instruction priceDriftUsers(final AccountMeta invokedGlamMintProgramMeta,
                                             final List<AccountMeta> keys,
                                             final int numUsers) {
     final byte[] _data = new byte[9];
@@ -1089,7 +1077,7 @@ public final class GlamMintProgram {
   /// - perp markets used by drift users of vaults (no specific order)
   /// - oracles of spot markets and perp markets (no specific order)
   ///
-  public static List<AccountMeta> priceDriftVaultDepositorsKeys(final AccountMeta invokedGlamMintProgramMeta                                                                ,
+  public static List<AccountMeta> priceDriftVaultDepositorsKeys(final AccountMeta invokedGlamMintProgramMeta,
                                                                 final PublicKey glamStateKey,
                                                                 final PublicKey glamVaultKey,
                                                                 final PublicKey signerKey,
@@ -1162,7 +1150,7 @@ public final class GlamMintProgram {
   /// - perp markets used by drift users of vaults (no specific order)
   /// - oracles of spot markets and perp markets (no specific order)
   ///
-  public static Instruction priceDriftVaultDepositors(final AccountMeta invokedGlamMintProgramMeta                                                      ,
+  public static Instruction priceDriftVaultDepositors(final AccountMeta invokedGlamMintProgramMeta,
                                                       final List<AccountMeta> keys,
                                                       final int numVaultDepositors,
                                                       final int numSpotMarkets,
@@ -1233,7 +1221,7 @@ public final class GlamMintProgram {
   /// - reserve x num_reserves: no specific order
   /// - market x num_markets: no specific order
   ///
-  public static List<AccountMeta> priceKaminoObligationsKeys(final AccountMeta invokedGlamMintProgramMeta                                                             ,
+  public static List<AccountMeta> priceKaminoObligationsKeys(final AccountMeta invokedGlamMintProgramMeta,
                                                              final PublicKey glamStateKey,
                                                              final PublicKey glamVaultKey,
                                                              final PublicKey signerKey,
@@ -1334,7 +1322,7 @@ public final class GlamMintProgram {
   /// - reserve x num_reserves: no specific order
   /// - market x num_markets: no specific order
   ///
-  public static Instruction priceKaminoObligations(final AccountMeta invokedGlamMintProgramMeta                                                   ,
+  public static Instruction priceKaminoObligations(final AccountMeta invokedGlamMintProgramMeta,
                                                    final List<AccountMeta> keys,
                                                    final int numObligations,
                                                    final int numMarkets,
@@ -1404,7 +1392,7 @@ public final class GlamMintProgram {
   /// - M = number of reserves used by all kvaults' allocations
   /// - reserve pubkeys must follow the same order of reserves used by each allocation
   ///
-  public static List<AccountMeta> priceKaminoVaultSharesKeys(final AccountMeta invokedGlamMintProgramMeta                                                             ,
+  public static List<AccountMeta> priceKaminoVaultSharesKeys(final AccountMeta invokedGlamMintProgramMeta,
                                                              final PublicKey glamStateKey,
                                                              final PublicKey glamVaultKey,
                                                              final PublicKey signerKey,
@@ -1475,7 +1463,7 @@ public final class GlamMintProgram {
   /// - M = number of reserves used by all kvaults' allocations
   /// - reserve pubkeys must follow the same order of reserves used by each allocation
   ///
-  public static Instruction priceKaminoVaultShares(final AccountMeta invokedGlamMintProgramMeta                                                   ,
+  public static Instruction priceKaminoVaultShares(final AccountMeta invokedGlamMintProgramMeta,
                                                    final List<AccountMeta> keys,
                                                    final int numVaults) {
     final byte[] _data = new byte[9];
@@ -1529,7 +1517,7 @@ public final class GlamMintProgram {
   /// - (ata, mint, oracle) x N
   /// - optional oracle mapping (only add it if any token uses an agg oracle)
   ///
-  public static List<AccountMeta> priceVaultTokensKeys(final AccountMeta invokedGlamMintProgramMeta                                                       ,
+  public static List<AccountMeta> priceVaultTokensKeys(final AccountMeta invokedGlamMintProgramMeta,
                                                        final PublicKey glamStateKey,
                                                        final PublicKey glamVaultKey,
                                                        final PublicKey signerKey,
@@ -1602,7 +1590,7 @@ public final class GlamMintProgram {
   /// - (ata, mint, oracle) x N
   /// - optional oracle mapping (only add it if any token uses an agg oracle)
   ///
-  public static Instruction priceVaultTokens(final AccountMeta invokedGlamMintProgramMeta                                             ,
+  public static Instruction priceVaultTokens(final AccountMeta invokedGlamMintProgramMeta,
                                              final List<AccountMeta> keys,
                                              final short[][] aggIndexes) {
     final byte[] _data = new byte[8 + Borsh.lenVectorArray(aggIndexes)];
@@ -1643,8 +1631,7 @@ public final class GlamMintProgram {
 
   public static final Discriminator QUEUED_REDEEM_DISCRIMINATOR = toDiscriminator(82, 242, 202, 93, 170, 196, 215, 113);
 
-  public static List<AccountMeta> queuedRedeemKeys(final AccountMeta invokedGlamMintProgramMeta                                                   ,
-                                                   final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> queuedRedeemKeys(final SolanaAccounts solanaAccounts,
                                                    final PublicKey glamStateKey,
                                                    final PublicKey glamMintKey,
                                                    final PublicKey glamEscrowKey,
@@ -1677,7 +1664,6 @@ public final class GlamMintProgram {
                                          final PublicKey escrowMintAtaKey,
                                          final long amountIn) {
     final var keys = queuedRedeemKeys(
-      invokedGlamMintProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamMintKey,
@@ -1690,7 +1676,7 @@ public final class GlamMintProgram {
     return queuedRedeem(invokedGlamMintProgramMeta, keys, amountIn);
   }
 
-  public static Instruction queuedRedeem(final AccountMeta invokedGlamMintProgramMeta                                         ,
+  public static Instruction queuedRedeem(final AccountMeta invokedGlamMintProgramMeta,
                                          final List<AccountMeta> keys,
                                          final long amountIn) {
     final byte[] _data = new byte[16];
@@ -1734,8 +1720,7 @@ public final class GlamMintProgram {
 
   public static final Discriminator QUEUED_SUBSCRIBE_DISCRIMINATOR = toDiscriminator(107, 180, 212, 63, 146, 0, 159, 255);
 
-  public static List<AccountMeta> queuedSubscribeKeys(final AccountMeta invokedGlamMintProgramMeta                                                      ,
-                                                      final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> queuedSubscribeKeys(final SolanaAccounts solanaAccounts,
                                                       final PublicKey glamStateKey,
                                                       final PublicKey glamMintKey,
                                                       final PublicKey glamEscrowKey,
@@ -1773,7 +1758,6 @@ public final class GlamMintProgram {
                                             final PublicKey depositTokenProgramKey,
                                             final long amountIn) {
     final var keys = queuedSubscribeKeys(
-      invokedGlamMintProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamMintKey,
@@ -1788,7 +1772,7 @@ public final class GlamMintProgram {
     return queuedSubscribe(invokedGlamMintProgramMeta, keys, amountIn);
   }
 
-  public static Instruction queuedSubscribe(final AccountMeta invokedGlamMintProgramMeta                                            ,
+  public static Instruction queuedSubscribe(final AccountMeta invokedGlamMintProgramMeta,
                                             final List<AccountMeta> keys,
                                             final long amountIn) {
     final byte[] _data = new byte[16];
@@ -1832,8 +1816,7 @@ public final class GlamMintProgram {
 
   public static final Discriminator SET_MINT_POLICY_DISCRIMINATOR = toDiscriminator(12, 208, 252, 52, 166, 250, 137, 169);
 
-  public static List<AccountMeta> setMintPolicyKeys(final AccountMeta invokedGlamMintProgramMeta                                                    ,
-                                                    final PublicKey glamStateKey,
+  public static List<AccountMeta> setMintPolicyKeys(final PublicKey glamStateKey,
                                                     final PublicKey glamSignerKey,
                                                     final PublicKey glamProtocolProgramKey) {
     return List.of(
@@ -1849,7 +1832,6 @@ public final class GlamMintProgram {
                                           final PublicKey glamProtocolProgramKey,
                                           final MintPolicy policy) {
     final var keys = setMintPolicyKeys(
-      invokedGlamMintProgramMeta,
       glamStateKey,
       glamSignerKey,
       glamProtocolProgramKey
@@ -1857,12 +1839,12 @@ public final class GlamMintProgram {
     return setMintPolicy(invokedGlamMintProgramMeta, keys, policy);
   }
 
-  public static Instruction setMintPolicy(final AccountMeta invokedGlamMintProgramMeta                                          ,
+  public static Instruction setMintPolicy(final AccountMeta invokedGlamMintProgramMeta,
                                           final List<AccountMeta> keys,
                                           final MintPolicy policy) {
-    final byte[] _data = new byte[8 + Borsh.len(policy)];
+    final byte[] _data = new byte[8 + policy.l()];
     int i = SET_MINT_POLICY_DISCRIMINATOR.write(_data, 0);
-    Borsh.write(policy, _data, i);
+    policy.write(_data, i);
 
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
@@ -1886,20 +1868,19 @@ public final class GlamMintProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(policy, _data, i);
+      i += policy.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.len(policy);
+      return 8 + policy.l();
     }
   }
 
   public static final Discriminator SET_PROTOCOL_FEES_DISCRIMINATOR = toDiscriminator(49, 143, 189, 18, 56, 206, 158, 226);
 
-  public static List<AccountMeta> setProtocolFeesKeys(final AccountMeta invokedGlamMintProgramMeta                                                      ,
-                                                      final PublicKey glamStateKey,
+  public static List<AccountMeta> setProtocolFeesKeys(final PublicKey glamStateKey,
                                                       final PublicKey glamMintKey,
                                                       final PublicKey signerKey,
                                                       final PublicKey glamConfigKey,
@@ -1922,7 +1903,6 @@ public final class GlamMintProgram {
                                             final int baseFeeBps,
                                             final int flowFeeBps) {
     final var keys = setProtocolFeesKeys(
-      invokedGlamMintProgramMeta,
       glamStateKey,
       glamMintKey,
       signerKey,
@@ -1932,7 +1912,7 @@ public final class GlamMintProgram {
     return setProtocolFees(invokedGlamMintProgramMeta, keys, baseFeeBps, flowFeeBps);
   }
 
-  public static Instruction setProtocolFees(final AccountMeta invokedGlamMintProgramMeta                                            ,
+  public static Instruction setProtocolFees(final AccountMeta invokedGlamMintProgramMeta,
                                             final List<AccountMeta> keys,
                                             final int baseFeeBps,
                                             final int flowFeeBps) {
@@ -1983,8 +1963,7 @@ public final class GlamMintProgram {
 
   public static final Discriminator SET_TOKEN_ACCOUNTS_STATES_DISCRIMINATOR = toDiscriminator(50, 133, 45, 86, 117, 66, 115, 195);
 
-  public static List<AccountMeta> setTokenAccountsStatesKeys(final AccountMeta invokedGlamMintProgramMeta                                                             ,
-                                                             final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> setTokenAccountsStatesKeys(final SolanaAccounts solanaAccounts,
                                                              final PublicKey glamStateKey,
                                                              final PublicKey glamSignerKey,
                                                              final PublicKey glamMintKey) {
@@ -2003,7 +1982,6 @@ public final class GlamMintProgram {
                                                    final PublicKey glamMintKey,
                                                    final boolean frozen) {
     final var keys = setTokenAccountsStatesKeys(
-      invokedGlamMintProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamSignerKey,
@@ -2012,7 +1990,7 @@ public final class GlamMintProgram {
     return setTokenAccountsStates(invokedGlamMintProgramMeta, keys, frozen);
   }
 
-  public static Instruction setTokenAccountsStates(final AccountMeta invokedGlamMintProgramMeta                                                   ,
+  public static Instruction setTokenAccountsStates(final AccountMeta invokedGlamMintProgramMeta,
                                                    final List<AccountMeta> keys,
                                                    final boolean frozen) {
     final byte[] _data = new byte[9];
@@ -2056,7 +2034,7 @@ public final class GlamMintProgram {
 
   public static final Discriminator SUBSCRIBE_DISCRIMINATOR = toDiscriminator(254, 28, 191, 138, 156, 179, 183, 53);
 
-  public static List<AccountMeta> subscribeKeys(final AccountMeta invokedGlamMintProgramMeta                                                ,
+  public static List<AccountMeta> subscribeKeys(final AccountMeta invokedGlamMintProgramMeta,
                                                 final SolanaAccounts solanaAccounts,
                                                 final PublicKey glamStateKey,
                                                 final PublicKey glamVaultKey,
@@ -2135,7 +2113,7 @@ public final class GlamMintProgram {
     return subscribe(invokedGlamMintProgramMeta, keys, amountIn);
   }
 
-  public static Instruction subscribe(final AccountMeta invokedGlamMintProgramMeta                                      ,
+  public static Instruction subscribe(final AccountMeta invokedGlamMintProgramMeta,
                                       final List<AccountMeta> keys,
                                       final long amountIn) {
     final byte[] _data = new byte[16];
@@ -2179,8 +2157,7 @@ public final class GlamMintProgram {
 
   public static final Discriminator UPDATE_MINT_DISCRIMINATOR = toDiscriminator(212, 203, 57, 78, 75, 245, 222, 5);
 
-  public static List<AccountMeta> updateMintKeys(final AccountMeta invokedGlamMintProgramMeta                                                 ,
-                                                 final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> updateMintKeys(final SolanaAccounts solanaAccounts,
                                                  final PublicKey glamStateKey,
                                                  final PublicKey glamSignerKey,
                                                  final PublicKey glamMintKey,
@@ -2203,7 +2180,6 @@ public final class GlamMintProgram {
                                        final PublicKey glamProtocolKey,
                                        final MintModel mintModel) {
     final var keys = updateMintKeys(
-      invokedGlamMintProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamSignerKey,
@@ -2213,12 +2189,12 @@ public final class GlamMintProgram {
     return updateMint(invokedGlamMintProgramMeta, keys, mintModel);
   }
 
-  public static Instruction updateMint(final AccountMeta invokedGlamMintProgramMeta                                       ,
+  public static Instruction updateMint(final AccountMeta invokedGlamMintProgramMeta,
                                        final List<AccountMeta> keys,
                                        final MintModel mintModel) {
-    final byte[] _data = new byte[8 + Borsh.len(mintModel)];
+    final byte[] _data = new byte[8 + mintModel.l()];
     int i = UPDATE_MINT_DISCRIMINATOR.write(_data, 0);
-    Borsh.write(mintModel, _data, i);
+    mintModel.write(_data, i);
 
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
@@ -2242,19 +2218,19 @@ public final class GlamMintProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(mintModel, _data, i);
+      i += mintModel.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.len(mintModel);
+      return 8 + mintModel.l();
     }
   }
 
   public static final Discriminator UPDATE_MINT_APPLY_TIMELOCK_DISCRIMINATOR = toDiscriminator(223, 241, 80, 24, 120, 25, 82, 134);
 
-  public static List<AccountMeta> updateMintApplyTimelockKeys(final AccountMeta invokedGlamMintProgramMeta                                                              ,
+  public static List<AccountMeta> updateMintApplyTimelockKeys(final AccountMeta invokedGlamMintProgramMeta,
                                                               final SolanaAccounts solanaAccounts,
                                                               final PublicKey glamStateKey,
                                                               final PublicKey glamSignerKey,
@@ -2291,7 +2267,7 @@ public final class GlamMintProgram {
     return updateMintApplyTimelock(invokedGlamMintProgramMeta, keys);
   }
 
-  public static Instruction updateMintApplyTimelock(final AccountMeta invokedGlamMintProgramMeta                                                    ,
+  public static Instruction updateMintApplyTimelock(final AccountMeta invokedGlamMintProgramMeta,
                                                     final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, UPDATE_MINT_APPLY_TIMELOCK_DISCRIMINATOR);
   }
@@ -2300,7 +2276,7 @@ public final class GlamMintProgram {
 
   /// Validates AUM of the vault and emits AumRecord event.
   ///
-  public static List<AccountMeta> validateAumKeys(final AccountMeta invokedGlamMintProgramMeta                                                  ,
+  public static List<AccountMeta> validateAumKeys(final AccountMeta invokedGlamMintProgramMeta,
                                                   final PublicKey glamStateKey,
                                                   final PublicKey signerKey,
                                                   final PublicKey eventAuthorityKey,
@@ -2332,7 +2308,7 @@ public final class GlamMintProgram {
 
   /// Validates AUM of the vault and emits AumRecord event.
   ///
-  public static Instruction validateAum(final AccountMeta invokedGlamMintProgramMeta                                        ,
+  public static Instruction validateAum(final AccountMeta invokedGlamMintProgramMeta,
                                         final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, VALIDATE_AUM_DISCRIMINATOR);
   }

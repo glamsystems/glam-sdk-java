@@ -19,12 +19,12 @@ public record GlamVaultAccountsRecord(GlamAccounts glamAccounts,
   }
 
   @Override
-  public PublicKey glamPublicKey() {
+  public PublicKey glamStateKey() {
     return readGlamState.publicKey();
   }
 
   @Override
   public ProgramDerivedAddress mintPDA(final int id) {
-    return glamAccounts.mintPDA(glamPublicKey(), id);
+    return glamAccounts.mintPDA(glamStateKey(), id);
   }
 }

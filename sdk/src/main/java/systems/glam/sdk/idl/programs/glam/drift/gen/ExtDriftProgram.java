@@ -36,8 +36,7 @@ public final class ExtDriftProgram {
 
   public static final Discriminator CANCEL_ORDERS_DISCRIMINATOR = toDiscriminator(238, 225, 95, 158, 227, 103, 8, 194);
 
-  public static List<AccountMeta> cancelOrdersKeys(final AccountMeta invokedExtDriftProgramMeta                                                   ,
-                                                   final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> cancelOrdersKeys(final SolanaAccounts solanaAccounts,
                                                    final PublicKey glamStateKey,
                                                    final PublicKey glamVaultKey,
                                                    final PublicKey glamSignerKey,
@@ -73,7 +72,6 @@ public final class ExtDriftProgram {
                                          final OptionalInt marketIndex,
                                          final PositionDirection direction) {
     final var keys = cancelOrdersKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -93,16 +91,16 @@ public final class ExtDriftProgram {
     );
   }
 
-  public static Instruction cancelOrders(final AccountMeta invokedExtDriftProgramMeta                                         ,
+  public static Instruction cancelOrders(final AccountMeta invokedExtDriftProgramMeta,
                                          final List<AccountMeta> keys,
                                          final MarketType marketType,
                                          final OptionalInt marketIndex,
                                          final PositionDirection direction) {
     final byte[] _data = new byte[
     8
-    + (marketType == null ? 1 : (1 + Borsh.len(marketType)))
+    + (marketType == null ? 1 : (1 + marketType.l()))
     + (marketIndex == null || marketIndex.isEmpty() ? 1 : 3)
-    + (direction == null ? 1 : (1 + Borsh.len(direction)))
+    + (direction == null ? 1 : (1 + direction.l()))
     ];
     int i = CANCEL_ORDERS_DISCRIMINATOR.write(_data, 0);
     i += Borsh.writeOptional(marketType, _data, i);
@@ -134,7 +132,7 @@ public final class ExtDriftProgram {
       } else {
         ++i;
         marketType = MarketType.read(_data, i);
-        i += Borsh.len(marketType);
+        i += marketType.l();
       }
       final OptionalInt marketIndex;
       if (_data[i] == 0) {
@@ -166,14 +164,13 @@ public final class ExtDriftProgram {
 
     @Override
     public int l() {
-      return 8 + (marketType == null ? 1 : (1 + Borsh.len(marketType))) + (marketIndex == null || marketIndex.isEmpty() ? 1 : (1 + 2)) + (direction == null ? 1 : (1 + Borsh.len(direction)));
+      return 8 + (marketType == null ? 1 : (1 + marketType.l())) + (marketIndex == null || marketIndex.isEmpty() ? 1 : (1 + 2)) + (direction == null ? 1 : (1 + direction.l()));
     }
   }
 
   public static final Discriminator CANCEL_ORDERS_BY_IDS_DISCRIMINATOR = toDiscriminator(134, 19, 144, 165, 94, 240, 210, 94);
 
-  public static List<AccountMeta> cancelOrdersByIdsKeys(final AccountMeta invokedExtDriftProgramMeta                                                        ,
-                                                        final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> cancelOrdersByIdsKeys(final SolanaAccounts solanaAccounts,
                                                         final PublicKey glamStateKey,
                                                         final PublicKey glamVaultKey,
                                                         final PublicKey glamSignerKey,
@@ -207,7 +204,6 @@ public final class ExtDriftProgram {
                                               final PublicKey userKey,
                                               final int[] orderIds) {
     final var keys = cancelOrdersByIdsKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -221,7 +217,7 @@ public final class ExtDriftProgram {
     return cancelOrdersByIds(invokedExtDriftProgramMeta, keys, orderIds);
   }
 
-  public static Instruction cancelOrdersByIds(final AccountMeta invokedExtDriftProgramMeta                                              ,
+  public static Instruction cancelOrdersByIds(final AccountMeta invokedExtDriftProgramMeta,
                                               final List<AccountMeta> keys,
                                               final int[] orderIds) {
     final byte[] _data = new byte[8 + Borsh.lenVector(orderIds)];
@@ -262,8 +258,7 @@ public final class ExtDriftProgram {
 
   public static final Discriminator DELETE_USER_DISCRIMINATOR = toDiscriminator(186, 85, 17, 249, 219, 231, 98, 251);
 
-  public static List<AccountMeta> deleteUserKeys(final AccountMeta invokedExtDriftProgramMeta                                                 ,
-                                                 final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> deleteUserKeys(final SolanaAccounts solanaAccounts,
                                                  final PublicKey glamStateKey,
                                                  final PublicKey glamVaultKey,
                                                  final PublicKey glamSignerKey,
@@ -299,7 +294,6 @@ public final class ExtDriftProgram {
                                        final PublicKey userStatsKey,
                                        final PublicKey stateKey) {
     final var keys = deleteUserKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -314,15 +308,14 @@ public final class ExtDriftProgram {
     return deleteUser(invokedExtDriftProgramMeta, keys);
   }
 
-  public static Instruction deleteUser(final AccountMeta invokedExtDriftProgramMeta                                       ,
+  public static Instruction deleteUser(final AccountMeta invokedExtDriftProgramMeta,
                                        final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedExtDriftProgramMeta, keys, DELETE_USER_DISCRIMINATOR);
   }
 
   public static final Discriminator DEPOSIT_DISCRIMINATOR = toDiscriminator(242, 35, 198, 137, 82, 225, 242, 182);
 
-  public static List<AccountMeta> depositKeys(final AccountMeta invokedExtDriftProgramMeta                                              ,
-                                              final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> depositKeys(final SolanaAccounts solanaAccounts,
                                               final PublicKey glamStateKey,
                                               final PublicKey glamVaultKey,
                                               final PublicKey glamSignerKey,
@@ -370,7 +363,6 @@ public final class ExtDriftProgram {
                                     final long amount,
                                     final boolean reduceOnly) {
     final var keys = depositKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -394,7 +386,7 @@ public final class ExtDriftProgram {
     );
   }
 
-  public static Instruction deposit(final AccountMeta invokedExtDriftProgramMeta                                    ,
+  public static Instruction deposit(final AccountMeta invokedExtDriftProgramMeta,
                                     final List<AccountMeta> keys,
                                     final int marketIndex,
                                     final long amount,
@@ -455,8 +447,7 @@ public final class ExtDriftProgram {
 
   public static final Discriminator INITIALIZE_USER_DISCRIMINATOR = toDiscriminator(111, 17, 185, 250, 60, 122, 38, 254);
 
-  public static List<AccountMeta> initializeUserKeys(final AccountMeta invokedExtDriftProgramMeta                                                     ,
-                                                     final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> initializeUserKeys(final SolanaAccounts solanaAccounts,
                                                      final PublicKey glamStateKey,
                                                      final PublicKey glamVaultKey,
                                                      final PublicKey glamSignerKey,
@@ -495,7 +486,6 @@ public final class ExtDriftProgram {
                                            final int subAccountId,
                                            final byte[] name) {
     final var keys = initializeUserKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -510,7 +500,7 @@ public final class ExtDriftProgram {
     return initializeUser(invokedExtDriftProgramMeta, keys, subAccountId, name);
   }
 
-  public static Instruction initializeUser(final AccountMeta invokedExtDriftProgramMeta                                           ,
+  public static Instruction initializeUser(final AccountMeta invokedExtDriftProgramMeta,
                                            final List<AccountMeta> keys,
                                            final int subAccountId,
                                            final byte[] name) {
@@ -562,8 +552,7 @@ public final class ExtDriftProgram {
 
   public static final Discriminator INITIALIZE_USER_STATS_DISCRIMINATOR = toDiscriminator(254, 243, 72, 98, 251, 130, 168, 213);
 
-  public static List<AccountMeta> initializeUserStatsKeys(final AccountMeta invokedExtDriftProgramMeta                                                          ,
-                                                          final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> initializeUserStatsKeys(final SolanaAccounts solanaAccounts,
                                                           final PublicKey glamStateKey,
                                                           final PublicKey glamVaultKey,
                                                           final PublicKey glamSignerKey,
@@ -597,7 +586,6 @@ public final class ExtDriftProgram {
                                                 final PublicKey userStatsKey,
                                                 final PublicKey stateKey) {
     final var keys = initializeUserStatsKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -611,15 +599,14 @@ public final class ExtDriftProgram {
     return initializeUserStats(invokedExtDriftProgramMeta, keys);
   }
 
-  public static Instruction initializeUserStats(final AccountMeta invokedExtDriftProgramMeta                                                ,
+  public static Instruction initializeUserStats(final AccountMeta invokedExtDriftProgramMeta,
                                                 final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedExtDriftProgramMeta, keys, INITIALIZE_USER_STATS_DISCRIMINATOR);
   }
 
   public static final Discriminator MODIFY_ORDER_DISCRIMINATOR = toDiscriminator(47, 124, 117, 255, 201, 197, 130, 94);
 
-  public static List<AccountMeta> modifyOrderKeys(final AccountMeta invokedExtDriftProgramMeta                                                  ,
-                                                  final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> modifyOrderKeys(final SolanaAccounts solanaAccounts,
                                                   final PublicKey glamStateKey,
                                                   final PublicKey glamVaultKey,
                                                   final PublicKey glamSignerKey,
@@ -654,7 +641,6 @@ public final class ExtDriftProgram {
                                         final OptionalInt orderId,
                                         final ModifyOrderParams modifyOrderParams) {
     final var keys = modifyOrderKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -668,17 +654,17 @@ public final class ExtDriftProgram {
     return modifyOrder(invokedExtDriftProgramMeta, keys, orderId, modifyOrderParams);
   }
 
-  public static Instruction modifyOrder(final AccountMeta invokedExtDriftProgramMeta                                        ,
+  public static Instruction modifyOrder(final AccountMeta invokedExtDriftProgramMeta,
                                         final List<AccountMeta> keys,
                                         final OptionalInt orderId,
                                         final ModifyOrderParams modifyOrderParams) {
     final byte[] _data = new byte[
     8
-    + (orderId == null || orderId.isEmpty() ? 1 : 5) + Borsh.len(modifyOrderParams)
+    + (orderId == null || orderId.isEmpty() ? 1 : 5) + modifyOrderParams.l()
     ];
     int i = MODIFY_ORDER_DISCRIMINATOR.write(_data, 0);
     i += Borsh.writeOptional(orderId, _data, i);
-    Borsh.write(modifyOrderParams, _data, i);
+    modifyOrderParams.write(_data, i);
 
     return Instruction.createInstruction(invokedExtDriftProgramMeta, keys, _data);
   }
@@ -712,20 +698,19 @@ public final class ExtDriftProgram {
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
       i += Borsh.writeOptional(orderId, _data, i);
-      i += Borsh.write(modifyOrderParams, _data, i);
+      i += modifyOrderParams.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + (orderId == null || orderId.isEmpty() ? 1 : (1 + 4)) + Borsh.len(modifyOrderParams);
+      return 8 + (orderId == null || orderId.isEmpty() ? 1 : (1 + 4)) + modifyOrderParams.l();
     }
   }
 
   public static final Discriminator PLACE_ORDERS_DISCRIMINATOR = toDiscriminator(60, 63, 50, 123, 12, 197, 60, 190);
 
-  public static List<AccountMeta> placeOrdersKeys(final AccountMeta invokedExtDriftProgramMeta                                                  ,
-                                                  final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> placeOrdersKeys(final SolanaAccounts solanaAccounts,
                                                   final PublicKey glamStateKey,
                                                   final PublicKey glamVaultKey,
                                                   final PublicKey glamSignerKey,
@@ -759,7 +744,6 @@ public final class ExtDriftProgram {
                                         final PublicKey userKey,
                                         final OrderParams[] params) {
     final var keys = placeOrdersKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -773,7 +757,7 @@ public final class ExtDriftProgram {
     return placeOrders(invokedExtDriftProgramMeta, keys, params);
   }
 
-  public static Instruction placeOrders(final AccountMeta invokedExtDriftProgramMeta                                        ,
+  public static Instruction placeOrders(final AccountMeta invokedExtDriftProgramMeta,
                                         final List<AccountMeta> keys,
                                         final OrderParams[] params) {
     final byte[] _data = new byte[8 + Borsh.lenVector(params)];
@@ -814,8 +798,7 @@ public final class ExtDriftProgram {
 
   public static final Discriminator RECLAIM_RENT_DISCRIMINATOR = toDiscriminator(218, 200, 19, 197, 227, 89, 192, 22);
 
-  public static List<AccountMeta> reclaimRentKeys(final AccountMeta invokedExtDriftProgramMeta                                                  ,
-                                                  final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> reclaimRentKeys(final SolanaAccounts solanaAccounts,
                                                   final PublicKey glamStateKey,
                                                   final PublicKey glamVaultKey,
                                                   final PublicKey glamSignerKey,
@@ -852,7 +835,6 @@ public final class ExtDriftProgram {
                                         final PublicKey userStatsKey,
                                         final PublicKey stateKey) {
     final var keys = reclaimRentKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -867,15 +849,14 @@ public final class ExtDriftProgram {
     return reclaimRent(invokedExtDriftProgramMeta, keys);
   }
 
-  public static Instruction reclaimRent(final AccountMeta invokedExtDriftProgramMeta                                        ,
+  public static Instruction reclaimRent(final AccountMeta invokedExtDriftProgramMeta,
                                         final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedExtDriftProgramMeta, keys, RECLAIM_RENT_DISCRIMINATOR);
   }
 
   public static final Discriminator SET_DRIFT_PROTOCOL_POLICY_DISCRIMINATOR = toDiscriminator(200, 22, 110, 2, 58, 22, 76, 162);
 
-  public static List<AccountMeta> setDriftProtocolPolicyKeys(final AccountMeta invokedExtDriftProgramMeta                                                             ,
-                                                             final PublicKey glamStateKey,
+  public static List<AccountMeta> setDriftProtocolPolicyKeys(final PublicKey glamStateKey,
                                                              final PublicKey glamSignerKey,
                                                              final PublicKey glamProtocolProgramKey) {
     return List.of(
@@ -891,7 +872,6 @@ public final class ExtDriftProgram {
                                                    final PublicKey glamProtocolProgramKey,
                                                    final DriftProtocolPolicy policy) {
     final var keys = setDriftProtocolPolicyKeys(
-      invokedExtDriftProgramMeta,
       glamStateKey,
       glamSignerKey,
       glamProtocolProgramKey
@@ -899,12 +879,12 @@ public final class ExtDriftProgram {
     return setDriftProtocolPolicy(invokedExtDriftProgramMeta, keys, policy);
   }
 
-  public static Instruction setDriftProtocolPolicy(final AccountMeta invokedExtDriftProgramMeta                                                   ,
+  public static Instruction setDriftProtocolPolicy(final AccountMeta invokedExtDriftProgramMeta,
                                                    final List<AccountMeta> keys,
                                                    final DriftProtocolPolicy policy) {
-    final byte[] _data = new byte[8 + Borsh.len(policy)];
+    final byte[] _data = new byte[8 + policy.l()];
     int i = SET_DRIFT_PROTOCOL_POLICY_DISCRIMINATOR.write(_data, 0);
-    Borsh.write(policy, _data, i);
+    policy.write(_data, i);
 
     return Instruction.createInstruction(invokedExtDriftProgramMeta, keys, _data);
   }
@@ -928,20 +908,19 @@ public final class ExtDriftProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(policy, _data, i);
+      i += policy.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.len(policy);
+      return 8 + policy.l();
     }
   }
 
   public static final Discriminator SET_DRIFT_VAULTS_POLICY_DISCRIMINATOR = toDiscriminator(168, 134, 53, 33, 18, 88, 142, 223);
 
-  public static List<AccountMeta> setDriftVaultsPolicyKeys(final AccountMeta invokedExtDriftProgramMeta                                                           ,
-                                                           final PublicKey glamStateKey,
+  public static List<AccountMeta> setDriftVaultsPolicyKeys(final PublicKey glamStateKey,
                                                            final PublicKey glamSignerKey,
                                                            final PublicKey glamProtocolProgramKey) {
     return List.of(
@@ -957,7 +936,6 @@ public final class ExtDriftProgram {
                                                  final PublicKey glamProtocolProgramKey,
                                                  final DriftVaultsPolicy policy) {
     final var keys = setDriftVaultsPolicyKeys(
-      invokedExtDriftProgramMeta,
       glamStateKey,
       glamSignerKey,
       glamProtocolProgramKey
@@ -965,12 +943,12 @@ public final class ExtDriftProgram {
     return setDriftVaultsPolicy(invokedExtDriftProgramMeta, keys, policy);
   }
 
-  public static Instruction setDriftVaultsPolicy(final AccountMeta invokedExtDriftProgramMeta                                                 ,
+  public static Instruction setDriftVaultsPolicy(final AccountMeta invokedExtDriftProgramMeta,
                                                  final List<AccountMeta> keys,
                                                  final DriftVaultsPolicy policy) {
-    final byte[] _data = new byte[8 + Borsh.len(policy)];
+    final byte[] _data = new byte[8 + policy.l()];
     int i = SET_DRIFT_VAULTS_POLICY_DISCRIMINATOR.write(_data, 0);
-    Borsh.write(policy, _data, i);
+    policy.write(_data, i);
 
     return Instruction.createInstruction(invokedExtDriftProgramMeta, keys, _data);
   }
@@ -994,20 +972,19 @@ public final class ExtDriftProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.write(policy, _data, i);
+      i += policy.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.len(policy);
+      return 8 + policy.l();
     }
   }
 
   public static final Discriminator SETTLE_MULTIPLE_PNLS_DISCRIMINATOR = toDiscriminator(127, 66, 117, 57, 40, 50, 152, 127);
 
-  public static List<AccountMeta> settleMultiplePnlsKeys(final AccountMeta invokedExtDriftProgramMeta                                                         ,
-                                                         final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> settleMultiplePnlsKeys(final SolanaAccounts solanaAccounts,
                                                          final PublicKey glamStateKey,
                                                          final PublicKey glamVaultKey,
                                                          final PublicKey glamSignerKey,
@@ -1045,7 +1022,6 @@ public final class ExtDriftProgram {
                                                final short[] marketIndexes,
                                                final SettlePnlMode mode) {
     final var keys = settleMultiplePnlsKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -1060,14 +1036,14 @@ public final class ExtDriftProgram {
     return settleMultiplePnls(invokedExtDriftProgramMeta, keys, marketIndexes, mode);
   }
 
-  public static Instruction settleMultiplePnls(final AccountMeta invokedExtDriftProgramMeta                                               ,
+  public static Instruction settleMultiplePnls(final AccountMeta invokedExtDriftProgramMeta,
                                                final List<AccountMeta> keys,
                                                final short[] marketIndexes,
                                                final SettlePnlMode mode) {
-    final byte[] _data = new byte[8 + Borsh.lenVector(marketIndexes) + Borsh.len(mode)];
+    final byte[] _data = new byte[8 + Borsh.lenVector(marketIndexes) + mode.l()];
     int i = SETTLE_MULTIPLE_PNLS_DISCRIMINATOR.write(_data, 0);
     i += Borsh.writeVector(marketIndexes, _data, i);
-    Borsh.write(mode, _data, i);
+    mode.write(_data, i);
 
     return Instruction.createInstruction(invokedExtDriftProgramMeta, keys, _data);
   }
@@ -1094,20 +1070,19 @@ public final class ExtDriftProgram {
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
       i += Borsh.writeVector(marketIndexes, _data, i);
-      i += Borsh.write(mode, _data, i);
+      i += mode.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.lenVector(marketIndexes) + Borsh.len(mode);
+      return 8 + Borsh.lenVector(marketIndexes) + mode.l();
     }
   }
 
   public static final Discriminator SETTLE_PNL_DISCRIMINATOR = toDiscriminator(43, 61, 234, 45, 15, 95, 152, 153);
 
-  public static List<AccountMeta> settlePnlKeys(final AccountMeta invokedExtDriftProgramMeta                                                ,
-                                                final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> settlePnlKeys(final SolanaAccounts solanaAccounts,
                                                 final PublicKey glamStateKey,
                                                 final PublicKey glamVaultKey,
                                                 final PublicKey glamSignerKey,
@@ -1144,7 +1119,6 @@ public final class ExtDriftProgram {
                                       final PublicKey spotMarketVaultKey,
                                       final int marketIndex) {
     final var keys = settlePnlKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -1159,7 +1133,7 @@ public final class ExtDriftProgram {
     return settlePnl(invokedExtDriftProgramMeta, keys, marketIndex);
   }
 
-  public static Instruction settlePnl(final AccountMeta invokedExtDriftProgramMeta                                      ,
+  public static Instruction settlePnl(final AccountMeta invokedExtDriftProgramMeta,
                                       final List<AccountMeta> keys,
                                       final int marketIndex) {
     final byte[] _data = new byte[10];
@@ -1203,8 +1177,7 @@ public final class ExtDriftProgram {
 
   public static final Discriminator UPDATE_USER_CUSTOM_MARGIN_RATIO_DISCRIMINATOR = toDiscriminator(21, 221, 140, 187, 32, 129, 11, 123);
 
-  public static List<AccountMeta> updateUserCustomMarginRatioKeys(final AccountMeta invokedExtDriftProgramMeta                                                                  ,
-                                                                  final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> updateUserCustomMarginRatioKeys(final SolanaAccounts solanaAccounts,
                                                                   final PublicKey glamStateKey,
                                                                   final PublicKey glamVaultKey,
                                                                   final PublicKey glamSignerKey,
@@ -1236,7 +1209,6 @@ public final class ExtDriftProgram {
                                                         final int subAccountId,
                                                         final int marginRatio) {
     final var keys = updateUserCustomMarginRatioKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -1249,7 +1221,7 @@ public final class ExtDriftProgram {
     return updateUserCustomMarginRatio(invokedExtDriftProgramMeta, keys, subAccountId, marginRatio);
   }
 
-  public static Instruction updateUserCustomMarginRatio(final AccountMeta invokedExtDriftProgramMeta                                                        ,
+  public static Instruction updateUserCustomMarginRatio(final AccountMeta invokedExtDriftProgramMeta,
                                                         final List<AccountMeta> keys,
                                                         final int subAccountId,
                                                         final int marginRatio) {
@@ -1300,8 +1272,7 @@ public final class ExtDriftProgram {
 
   public static final Discriminator UPDATE_USER_DELEGATE_DISCRIMINATOR = toDiscriminator(139, 205, 141, 141, 113, 36, 94, 187);
 
-  public static List<AccountMeta> updateUserDelegateKeys(final AccountMeta invokedExtDriftProgramMeta                                                         ,
-                                                         final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> updateUserDelegateKeys(final SolanaAccounts solanaAccounts,
                                                          final PublicKey glamStateKey,
                                                          final PublicKey glamVaultKey,
                                                          final PublicKey glamSignerKey,
@@ -1333,7 +1304,6 @@ public final class ExtDriftProgram {
                                                final int subAccountId,
                                                final PublicKey delegate) {
     final var keys = updateUserDelegateKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -1346,7 +1316,7 @@ public final class ExtDriftProgram {
     return updateUserDelegate(invokedExtDriftProgramMeta, keys, subAccountId, delegate);
   }
 
-  public static Instruction updateUserDelegate(final AccountMeta invokedExtDriftProgramMeta                                               ,
+  public static Instruction updateUserDelegate(final AccountMeta invokedExtDriftProgramMeta,
                                                final List<AccountMeta> keys,
                                                final int subAccountId,
                                                final PublicKey delegate) {
@@ -1397,8 +1367,7 @@ public final class ExtDriftProgram {
 
   public static final Discriminator UPDATE_USER_MARGIN_TRADING_ENABLED_DISCRIMINATOR = toDiscriminator(194, 92, 204, 223, 246, 188, 31, 203);
 
-  public static List<AccountMeta> updateUserMarginTradingEnabledKeys(final AccountMeta invokedExtDriftProgramMeta                                                                     ,
-                                                                     final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> updateUserMarginTradingEnabledKeys(final SolanaAccounts solanaAccounts,
                                                                      final PublicKey glamStateKey,
                                                                      final PublicKey glamVaultKey,
                                                                      final PublicKey glamSignerKey,
@@ -1430,7 +1399,6 @@ public final class ExtDriftProgram {
                                                            final int subAccountId,
                                                            final boolean marginTradingEnabled) {
     final var keys = updateUserMarginTradingEnabledKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -1443,7 +1411,7 @@ public final class ExtDriftProgram {
     return updateUserMarginTradingEnabled(invokedExtDriftProgramMeta, keys, subAccountId, marginTradingEnabled);
   }
 
-  public static Instruction updateUserMarginTradingEnabled(final AccountMeta invokedExtDriftProgramMeta                                                           ,
+  public static Instruction updateUserMarginTradingEnabled(final AccountMeta invokedExtDriftProgramMeta,
                                                            final List<AccountMeta> keys,
                                                            final int subAccountId,
                                                            final boolean marginTradingEnabled) {
@@ -1494,8 +1462,7 @@ public final class ExtDriftProgram {
 
   public static final Discriminator UPDATE_USER_POOL_ID_DISCRIMINATOR = toDiscriminator(219, 86, 73, 106, 56, 218, 128, 109);
 
-  public static List<AccountMeta> updateUserPoolIdKeys(final AccountMeta invokedExtDriftProgramMeta                                                       ,
-                                                       final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> updateUserPoolIdKeys(final SolanaAccounts solanaAccounts,
                                                        final PublicKey glamStateKey,
                                                        final PublicKey glamVaultKey,
                                                        final PublicKey glamSignerKey,
@@ -1527,7 +1494,6 @@ public final class ExtDriftProgram {
                                              final int subAccountId,
                                              final int poolId) {
     final var keys = updateUserPoolIdKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -1540,7 +1506,7 @@ public final class ExtDriftProgram {
     return updateUserPoolId(invokedExtDriftProgramMeta, keys, subAccountId, poolId);
   }
 
-  public static Instruction updateUserPoolId(final AccountMeta invokedExtDriftProgramMeta                                             ,
+  public static Instruction updateUserPoolId(final AccountMeta invokedExtDriftProgramMeta,
                                              final List<AccountMeta> keys,
                                              final int subAccountId,
                                              final int poolId) {
@@ -1591,8 +1557,7 @@ public final class ExtDriftProgram {
 
   public static final Discriminator VAULTS_CANCEL_REQUEST_WITHDRAW_DISCRIMINATOR = toDiscriminator(188, 93, 159, 202, 157, 47, 143, 219);
 
-  public static List<AccountMeta> vaultsCancelRequestWithdrawKeys(final AccountMeta invokedExtDriftProgramMeta                                                                  ,
-                                                                  final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> vaultsCancelRequestWithdrawKeys(final SolanaAccounts solanaAccounts,
                                                                   final PublicKey glamStateKey,
                                                                   final PublicKey glamVaultKey,
                                                                   final PublicKey glamSignerKey,
@@ -1631,7 +1596,6 @@ public final class ExtDriftProgram {
                                                         final PublicKey driftUserStatsKey,
                                                         final PublicKey driftUserKey) {
     final var keys = vaultsCancelRequestWithdrawKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -1647,15 +1611,14 @@ public final class ExtDriftProgram {
     return vaultsCancelRequestWithdraw(invokedExtDriftProgramMeta, keys);
   }
 
-  public static Instruction vaultsCancelRequestWithdraw(final AccountMeta invokedExtDriftProgramMeta                                                        ,
+  public static Instruction vaultsCancelRequestWithdraw(final AccountMeta invokedExtDriftProgramMeta,
                                                         final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedExtDriftProgramMeta, keys, VAULTS_CANCEL_REQUEST_WITHDRAW_DISCRIMINATOR);
   }
 
   public static final Discriminator VAULTS_DEPOSIT_DISCRIMINATOR = toDiscriminator(124, 173, 191, 223, 48, 26, 84, 84);
 
-  public static List<AccountMeta> vaultsDepositKeys(final AccountMeta invokedExtDriftProgramMeta                                                    ,
-                                                    final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> vaultsDepositKeys(final SolanaAccounts solanaAccounts,
                                                     final PublicKey glamStateKey,
                                                     final PublicKey glamVaultKey,
                                                     final PublicKey glamSignerKey,
@@ -1713,7 +1676,6 @@ public final class ExtDriftProgram {
                                           final PublicKey tokenProgramKey,
                                           final long amount) {
     final var keys = vaultsDepositKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -1735,7 +1697,7 @@ public final class ExtDriftProgram {
     return vaultsDeposit(invokedExtDriftProgramMeta, keys, amount);
   }
 
-  public static Instruction vaultsDeposit(final AccountMeta invokedExtDriftProgramMeta                                          ,
+  public static Instruction vaultsDeposit(final AccountMeta invokedExtDriftProgramMeta,
                                           final List<AccountMeta> keys,
                                           final long amount) {
     final byte[] _data = new byte[16];
@@ -1779,8 +1741,7 @@ public final class ExtDriftProgram {
 
   public static final Discriminator VAULTS_INITIALIZE_VAULT_DEPOSITOR_DISCRIMINATOR = toDiscriminator(135, 5, 41, 254, 229, 75, 138, 49);
 
-  public static List<AccountMeta> vaultsInitializeVaultDepositorKeys(final AccountMeta invokedExtDriftProgramMeta                                                                     ,
-                                                                     final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> vaultsInitializeVaultDepositorKeys(final SolanaAccounts solanaAccounts,
                                                                      final PublicKey glamStateKey,
                                                                      final PublicKey glamVaultKey,
                                                                      final PublicKey glamSignerKey,
@@ -1814,7 +1775,6 @@ public final class ExtDriftProgram {
                                                            final PublicKey vaultKey,
                                                            final PublicKey vaultDepositorKey) {
     final var keys = vaultsInitializeVaultDepositorKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -1828,15 +1788,14 @@ public final class ExtDriftProgram {
     return vaultsInitializeVaultDepositor(invokedExtDriftProgramMeta, keys);
   }
 
-  public static Instruction vaultsInitializeVaultDepositor(final AccountMeta invokedExtDriftProgramMeta                                                           ,
+  public static Instruction vaultsInitializeVaultDepositor(final AccountMeta invokedExtDriftProgramMeta,
                                                            final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedExtDriftProgramMeta, keys, VAULTS_INITIALIZE_VAULT_DEPOSITOR_DISCRIMINATOR);
   }
 
   public static final Discriminator VAULTS_REQUEST_WITHDRAW_DISCRIMINATOR = toDiscriminator(138, 91, 50, 130, 167, 165, 120, 175);
 
-  public static List<AccountMeta> vaultsRequestWithdrawKeys(final AccountMeta invokedExtDriftProgramMeta                                                            ,
-                                                            final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> vaultsRequestWithdrawKeys(final SolanaAccounts solanaAccounts,
                                                             final PublicKey glamStateKey,
                                                             final PublicKey glamVaultKey,
                                                             final PublicKey glamSignerKey,
@@ -1877,7 +1836,6 @@ public final class ExtDriftProgram {
                                                   final long withdrawAmount,
                                                   final WithdrawUnit withdrawUnit) {
     final var keys = vaultsRequestWithdrawKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -1893,15 +1851,15 @@ public final class ExtDriftProgram {
     return vaultsRequestWithdraw(invokedExtDriftProgramMeta, keys, withdrawAmount, withdrawUnit);
   }
 
-  public static Instruction vaultsRequestWithdraw(final AccountMeta invokedExtDriftProgramMeta                                                  ,
+  public static Instruction vaultsRequestWithdraw(final AccountMeta invokedExtDriftProgramMeta,
                                                   final List<AccountMeta> keys,
                                                   final long withdrawAmount,
                                                   final WithdrawUnit withdrawUnit) {
-    final byte[] _data = new byte[16 + Borsh.len(withdrawUnit)];
+    final byte[] _data = new byte[16 + withdrawUnit.l()];
     int i = VAULTS_REQUEST_WITHDRAW_DISCRIMINATOR.write(_data, 0);
     putInt64LE(_data, i, withdrawAmount);
     i += 8;
-    Borsh.write(withdrawUnit, _data, i);
+    withdrawUnit.write(_data, i);
 
     return Instruction.createInstruction(invokedExtDriftProgramMeta, keys, _data);
   }
@@ -1931,7 +1889,7 @@ public final class ExtDriftProgram {
       int i = _offset + discriminator.write(_data, _offset);
       putInt64LE(_data, i, withdrawAmount);
       i += 8;
-      i += Borsh.write(withdrawUnit, _data, i);
+      i += withdrawUnit.write(_data, i);
       return i - _offset;
     }
 
@@ -1943,8 +1901,7 @@ public final class ExtDriftProgram {
 
   public static final Discriminator VAULTS_WITHDRAW_DISCRIMINATOR = toDiscriminator(12, 8, 236, 92, 134, 144, 196, 87);
 
-  public static List<AccountMeta> vaultsWithdrawKeys(final AccountMeta invokedExtDriftProgramMeta                                                     ,
-                                                     final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> vaultsWithdrawKeys(final SolanaAccounts solanaAccounts,
                                                      final PublicKey glamStateKey,
                                                      final PublicKey glamVaultKey,
                                                      final PublicKey glamSignerKey,
@@ -2004,7 +1961,6 @@ public final class ExtDriftProgram {
                                            final PublicKey driftProgramKey,
                                            final PublicKey tokenProgramKey) {
     final var keys = vaultsWithdrawKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -2027,15 +1983,14 @@ public final class ExtDriftProgram {
     return vaultsWithdraw(invokedExtDriftProgramMeta, keys);
   }
 
-  public static Instruction vaultsWithdraw(final AccountMeta invokedExtDriftProgramMeta                                           ,
+  public static Instruction vaultsWithdraw(final AccountMeta invokedExtDriftProgramMeta,
                                            final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedExtDriftProgramMeta, keys, VAULTS_WITHDRAW_DISCRIMINATOR);
   }
 
   public static final Discriminator WITHDRAW_DISCRIMINATOR = toDiscriminator(183, 18, 70, 156, 148, 109, 161, 34);
 
-  public static List<AccountMeta> withdrawKeys(final AccountMeta invokedExtDriftProgramMeta                                               ,
-                                               final SolanaAccounts solanaAccounts,
+  public static List<AccountMeta> withdrawKeys(final SolanaAccounts solanaAccounts,
                                                final PublicKey glamStateKey,
                                                final PublicKey glamVaultKey,
                                                final PublicKey glamSignerKey,
@@ -2086,7 +2041,6 @@ public final class ExtDriftProgram {
                                      final long amount,
                                      final boolean reduceOnly) {
     final var keys = withdrawKeys(
-      invokedExtDriftProgramMeta,
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -2111,7 +2065,7 @@ public final class ExtDriftProgram {
     );
   }
 
-  public static Instruction withdraw(final AccountMeta invokedExtDriftProgramMeta                                     ,
+  public static Instruction withdraw(final AccountMeta invokedExtDriftProgramMeta,
                                      final List<AccountMeta> keys,
                                      final int marketIndex,
                                      final long amount,
