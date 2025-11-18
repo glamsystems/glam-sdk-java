@@ -7,6 +7,6 @@ testModuleInfo {
 // They will be placed under glam/remapping_v1/ inside the jar, preserving the relative path.
 tasks.named<Copy>("processResources") {
   from(rootDir) {
-    include("glam/remapping_v1/**")
+    include("glam/mapping-configs-v1/**")
   }
 }
