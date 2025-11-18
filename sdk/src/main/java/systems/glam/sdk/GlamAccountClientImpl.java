@@ -49,13 +49,18 @@ final class GlamAccountClientImpl implements GlamAccountClient {
   }
 
   @Override
+  public GlamVaultAccounts vaultAccounts() {
+    return glamVaultAccounts;
+  }
+
+  @Override
   public SPLClient splClient() {
     return splAccountClient.splClient();
   }
 
   @Override
-  public GlamVaultAccounts vaultAccounts() {
-    return glamVaultAccounts;
+  public PublicKey owner() {
+    return glamVaultAccounts.vaultPublicKey();
   }
 
   @Override
