@@ -145,11 +145,15 @@ public interface GlamAccounts {
     return invokedDriftIntegrationProgram().publicKey();
   }
 
+  AccountMeta readDriftIntegrationAuthority();
+
   AccountMeta invokedKaminoIntegrationProgram();
 
   default PublicKey kaminoIntegrationProgram() {
     return invokedKaminoIntegrationProgram().publicKey();
   }
+
+  AccountMeta readKaminoIntegrationAuthority();
 
   Map<PublicKey, AccountMeta> integrationAuthorities();
 

@@ -7,8 +7,6 @@ import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.spl.SPLAccountClient;
 import software.sava.idl.clients.spl.SPLClient;
-import software.sava.solana.programs.clients.NativeProgramAccountClient;
-import software.sava.solana.programs.clients.NativeProgramClient;
 import software.sava.solana.programs.token.AssociatedTokenProgram;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintPDAs;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintProgram;
@@ -23,7 +21,6 @@ final class GlamAccountClientImpl implements GlamAccountClient {
 
   private final SolanaAccounts solanaAccounts;
   private final PublicKey wrappedSolPDA;
-  private final NativeProgramAccountClient nativeProgramAccountClient;
   private final SPLAccountClient splAccountClient;
   private final GlamVaultAccounts glamVaultAccounts;
   private final GlamAccounts glamAccounts;
@@ -31,13 +28,12 @@ final class GlamAccountClientImpl implements GlamAccountClient {
   private final AccountMeta feePayer;
   private final PublicKey globalConfigKey;
 
-  GlamAccountClientImpl(final NativeProgramClient nativeProgramClient, final GlamVaultAccounts glamVaultAccounts) {
-    this.solanaAccounts = nativeProgramClient.accounts();
+  GlamAccountClientImpl(final SPLClient splClient, final GlamVaultAccounts glamVaultAccounts) {
+    this.solanaAccounts = splClient.solanaAccounts();
     this.glamVaultAccounts = glamVaultAccounts;
     this.feePayer = AccountMeta.createFeePayer(glamVaultAccounts.feePayer());
-    this.nativeProgramAccountClient = NativeProgramAccountClient.createClient(solanaAccounts, glamVaultAccounts.vaultPublicKey(), feePayer);
-    this.splAccountClient = null;
-    this.wrappedSolPDA = nativeProgramAccountClient.wrappedSolPDA().publicKey();
+    this.splAccountClient = SPLAccountClient.createClient(solanaAccounts, glamVaultAccounts.vaultPublicKey(), feePayer);
+    this.wrappedSolPDA = splAccountClient.wrappedSolPDA().publicKey();
     this.glamAccounts = glamVaultAccounts.glamAccounts();
     this.invokedProtocolProgram = glamAccounts.invokedProtocolProgram();
     this.globalConfigKey = glamVaultAccounts.glamAccounts().globalConfigPDA().publicKey();
@@ -46,6 +42,11 @@ final class GlamAccountClientImpl implements GlamAccountClient {
   @Override
   public SolanaAccounts solanaAccounts() {
     return solanaAccounts;
+  }
+
+  @Override
+  public GlamAccounts glamAccounts() {
+    return glamAccounts;
   }
 
   @Override
@@ -70,12 +71,12 @@ final class GlamAccountClientImpl implements GlamAccountClient {
 
   @Override
   public ProgramDerivedAddress wrappedSolPDA() {
-    return nativeProgramAccountClient.wrappedSolPDA();
+    return splAccountClient.wrappedSolPDA();
   }
 
   @Override
   public ProgramDerivedAddress findATA(final PublicKey tokenProgram, final PublicKey mint) {
-    return nativeProgramAccountClient.findATA(tokenProgram, mint);
+    return splAccountClient.findATA(tokenProgram, mint);
   }
 
   @Override
