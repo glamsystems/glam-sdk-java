@@ -3,6 +3,7 @@ package systems.glam.sdk.lut;
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.drift.vaults.gen.types.VaultDepositor;
+import software.sava.idl.clients.jupiter.JupiterAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.lend.gen.types.Obligation;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
@@ -17,75 +18,18 @@ import java.util.stream.Collectors;
 
 public interface VaultTableBuilder {
 
-  static VaultTableBuilder createBuilder(final StateAccount stateAccount, final PublicKey feePayer) {
-    final var stateAccountClient = StateAccountClient.createClient(stateAccount, feePayer);
-    return createBuilder(stateAccountClient);
+  static VaultTableBuilder.Builder build() {
+    return Builder.newBuilder();
   }
 
-  static VaultTableBuilder createBuilder(final StateAccountClient stateAccountClient) {
-    final var stateAccount = stateAccountClient.stateAccount();
-    final var accountsNeeded = HashSet.<PublicKey>newHashSet(256);
-    accountsNeeded.addAll(Arrays.asList(stateAccount.externalPositions()));
-    accountsNeeded.addAll(Arrays.asList(stateAccount.assets())); // Need the token programs to derive the token accounts.
-    final var baseAssetMint = stateAccount.baseAssetMint();
-    if (baseAssetMint != null && !baseAssetMint.equals(PublicKey.NONE)) {
-      accountsNeeded.add(baseAssetMint);
-    }
-
-    if (stateAccountClient.driftEnabled() || stateAccountClient.driftVaultsEnabled()) {
-      final var driftAccounts = DriftAccounts.MAIN_NET;
-      accountsNeeded.addAll(driftAccounts.marketLookupTables());
-    }
-
-    final Map<PublicKey, VaultDepositor> driftVaultDepositors = stateAccountClient.driftVaultsEnabled()
-        ? HashMap.newHashMap(8)
-        : Map.of();
-
-    final Map<PublicKey, Obligation> glamVaultKaminoObligations;
-    if (stateAccountClient.kaminoLendEnabled()) {
-      accountsNeeded.add(KaminoAccounts.MAIN_NET.mainMarketLUT());
-      glamVaultKaminoObligations = HashMap.newHashMap(16);
-    } else {
-      glamVaultKaminoObligations = Map.of();
-    }
-
-    final Map<PublicKey, VaultState> kaminoVaults;
-    if (stateAccountClient.kaminoVaultsEnabled()) {
-      accountsNeeded.add(KaminoAccounts.MAIN_NET.mainMarketLUT());
-      kaminoVaults = HashMap.newHashMap(8);
-    } else {
-      kaminoVaults = Map.of();
-    }
-
-    final var secondPhaseAccountsNeeded = HashSet.<PublicKey>newHashSet(128);
-    final var glamVaultTableAccounts = HashSet.<PublicKey>newHashSet(256);
-
-    final var accountClient = stateAccountClient.accountClient();
-    final var vaultAccounts = accountClient.vaultAccounts();
-    final var glamAccounts = accountClient.glamAccounts();
-    final var globalConfig = glamAccounts.globalConfigPDA().publicKey();
-
-    final var tablePrefix = List.of(
-        vaultAccounts.glamStateKey(),
-        vaultAccounts.vaultPublicKey(),
-        globalConfig
-    );
-
-    return new VaultTableBuilderImpl(
-        stateAccountClient,
-        tablePrefix,
-        accountsNeeded,
-        secondPhaseAccountsNeeded,
-        glamVaultTableAccounts,
-        driftVaultDepositors,
-        glamVaultKaminoObligations,
-        kaminoVaults
-    );
+  static CompletableFuture<List<AccountInfo<byte[]>>> fetchKaminoVaultStates(final PublicKey kVaultProgram,
+                                                                             final SolanaRpcClient rpcClient) {
+    final var filters = List.of(VaultState.SIZE_FILTER, VaultState.DISCRIMINATOR_FILTER);
+    return rpcClient.getProgramAccounts(kVaultProgram, filters);
   }
 
   static CompletableFuture<List<AccountInfo<byte[]>>> fetchKaminoVaultStates(final SolanaRpcClient rpcClient) {
-    final var filters = List.of(VaultState.SIZE_FILTER, VaultState.DISCRIMINATOR_FILTER);
-    return rpcClient.getProgramAccounts(KaminoAccounts.MAIN_NET.kVaultsProgram(), filters);
+    return fetchKaminoVaultStates(KaminoAccounts.MAIN_NET.kVaultsProgram(), rpcClient);
   }
 
   static Map<PublicKey, VaultState> mapKaminoVaultStatesByMint(final List<AccountInfo<byte[]>> vaults) {
@@ -99,13 +43,6 @@ public interface VaultTableBuilder {
   /// Note: If the set of accounts needed exceeds 100 this call will fail and will require batching the requests by the user.
   default CompletableFuture<List<AccountInfo<byte[]>>> fetchAccountsNeeded(final SolanaRpcClient rpcClient) {
     return rpcClient.getAccounts(List.copyOf(accountsNeeded()));
-  }
-
-  Set<PublicKey> secondPhaseAccountsNeeded();
-
-  /// Note: If the set of accounts needed exceeds 100 this call will fail and will require batching the requests by the user.
-  default CompletableFuture<List<AccountInfo<byte[]>>> fetchSecondPhaseAccountsNeeded(final SolanaRpcClient rpcClient) {
-    return rpcClient.getAccounts(List.copyOf(secondPhaseAccountsNeeded()));
   }
 
   default void addAccounts(final List<AccountInfo<byte[]>> accountsNeeded,
@@ -136,6 +73,13 @@ public interface VaultTableBuilder {
     addAccounts(accountsNeeded, kVaultStatesByMint, false);
   }
 
+  Set<PublicKey> secondPhaseAccountsNeeded();
+
+  /// Note: If the set of accounts needed exceeds 100 this call will fail and will require batching the requests by the user.
+  default CompletableFuture<List<AccountInfo<byte[]>>> fetchSecondPhaseAccountsNeeded(final SolanaRpcClient rpcClient) {
+    return rpcClient.getAccounts(List.copyOf(secondPhaseAccountsNeeded()));
+  }
+
   default void addAccountsSecondPhase(final List<AccountInfo<byte[]>> accountsNeeded) {
     addDriftVaultAccountsSecondPhase(accountsNeeded);
     addKaminoAccountsSecondPhase(accountsNeeded);
@@ -163,4 +107,98 @@ public interface VaultTableBuilder {
                               final boolean ignoreKVaultTable);
 
   void addKaminoVaultAccountsSecondPhase(final List<AccountInfo<byte[]>> accountsNeeded);
+
+  final class Builder {
+
+    private DriftAccounts driftAccounts = DriftAccounts.MAIN_NET;
+    private JupiterAccounts jupiterAccounts = JupiterAccounts.MAIN_NET;
+    private KaminoAccounts kaminoAccounts = KaminoAccounts.MAIN_NET;
+
+    public static Builder newBuilder() {
+      return new Builder();
+    }
+
+    public Builder driftAccounts(final DriftAccounts driftAccounts) {
+      if (driftAccounts != null) this.driftAccounts = driftAccounts;
+      return this;
+    }
+
+    public Builder jupiterAccounts(final JupiterAccounts jupiterAccounts) {
+      if (jupiterAccounts != null) this.jupiterAccounts = jupiterAccounts;
+      return this;
+    }
+
+    public Builder kaminoAccounts(final KaminoAccounts kaminoAccounts) {
+      if (kaminoAccounts != null) this.kaminoAccounts = kaminoAccounts;
+      return this;
+    }
+
+    public VaultTableBuilder create(final StateAccount stateAccount, final PublicKey feePayer) {
+      final var stateAccountClient = StateAccountClient.createClient(stateAccount, feePayer);
+      return create(stateAccountClient);
+    }
+
+    public VaultTableBuilder create(final StateAccountClient stateAccountClient) {
+      final var stateAccount = stateAccountClient.stateAccount();
+      final var accountsNeeded = HashSet.<PublicKey>newHashSet(256);
+      accountsNeeded.addAll(Arrays.asList(stateAccount.externalPositions()));
+      accountsNeeded.addAll(Arrays.asList(stateAccount.assets())); // Need the token programs to derive the token accounts.
+      final var baseAssetMint = stateAccount.baseAssetMint();
+      if (baseAssetMint != null && !baseAssetMint.equals(PublicKey.NONE)) {
+        accountsNeeded.add(baseAssetMint);
+      }
+
+      if (stateAccountClient.driftEnabled() || stateAccountClient.driftVaultsEnabled()) {
+        accountsNeeded.addAll(driftAccounts.marketLookupTables());
+      }
+
+      final Map<PublicKey, VaultDepositor> driftVaultDepositors = stateAccountClient.driftVaultsEnabled()
+          ? HashMap.newHashMap(8)
+          : Map.of();
+
+      final Map<PublicKey, Obligation> glamVaultKaminoObligations;
+      if (stateAccountClient.kaminoLendEnabled()) {
+        accountsNeeded.add(kaminoAccounts.mainMarketLUT());
+        glamVaultKaminoObligations = HashMap.newHashMap(16);
+      } else {
+        glamVaultKaminoObligations = Map.of();
+      }
+
+      final Map<PublicKey, VaultState> kaminoVaults;
+      if (stateAccountClient.kaminoVaultsEnabled()) {
+        accountsNeeded.add(kaminoAccounts.mainMarketLUT());
+        kaminoVaults = HashMap.newHashMap(8);
+      } else {
+        kaminoVaults = Map.of();
+      }
+
+      final var secondPhaseAccountsNeeded = HashSet.<PublicKey>newHashSet(128);
+      final var glamVaultTableAccounts = HashSet.<PublicKey>newHashSet(256);
+
+      final var accountClient = stateAccountClient.accountClient();
+      final var vaultAccounts = accountClient.vaultAccounts();
+      final var glamAccounts = accountClient.glamAccounts();
+      final var globalConfig = glamAccounts.globalConfigPDA().publicKey();
+
+      final var tablePrefix = List.of(
+          vaultAccounts.glamStateKey(),
+          vaultAccounts.vaultPublicKey(),
+          globalConfig
+      );
+
+      return new VaultTableBuilderImpl(
+          stateAccountClient,
+          tablePrefix,
+          accountsNeeded,
+          secondPhaseAccountsNeeded,
+          glamVaultTableAccounts,
+          driftAccounts,
+          driftVaultDepositors,
+          jupiterAccounts,
+          kaminoAccounts,
+          glamVaultKaminoObligations,
+          kaminoVaults
+      );
+    }
+  }
 }

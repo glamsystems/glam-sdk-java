@@ -33,7 +33,10 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
                              Set<PublicKey> accountsNeeded,
                              Set<PublicKey> secondPhaseAccountsNeeded,
                              Set<PublicKey> glamVaultTableAccounts,
+                             DriftAccounts driftAccounts,
                              Map<PublicKey, VaultDepositor> driftVaultDepositors,
+                             JupiterAccounts jupiterAccounts,
+                             KaminoAccounts kaminoAccounts,
                              Map<PublicKey, Obligation> glamVaultKaminoObligations,
                              Map<PublicKey, VaultState> kaminoVaults) implements VaultTableBuilder {
 
@@ -169,7 +172,6 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
   public void addDriftAccounts(final List<AccountInfo<byte[]>> accountsNeeded) {
     final var glamAccounts = stateAccountClient.accountClient().glamAccounts();
     add(glamAccounts.readDriftIntegrationAuthority().publicKey());
-    final var driftAccounts = DriftAccounts.MAIN_NET;
     final var driftProgram = driftAccounts.driftProgram();
 
     final var driftTables = mapDriftTables(accountsNeeded, driftAccounts);
@@ -178,18 +180,17 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
     addIfAbsent(driftAccounts.stateKey(), driftTables);
 
     final var glamVaultKey = stateAccountClient.accountClient().owner();
-    final var userStats = DriftPDAs.deriveUserStatsAccount(driftAccounts, glamVaultKey).publicKey();
+    final var userStats = DriftPDAs.deriveUserStatsAccount(this.driftAccounts, glamVaultKey).publicKey();
     add(userStats);
 
-    addDriftUsers(accountsNeeded, driftAccounts, driftTables);
+    addDriftUsers(accountsNeeded, this.driftAccounts, driftTables);
   }
 
   @Override
   public void addDriftVaultAccounts(final List<AccountInfo<byte[]>> accountsNeeded) {
     final var glamAccounts = stateAccountClient.accountClient().glamAccounts();
     add(glamAccounts.readDriftIntegrationAuthority().publicKey());
-    final var driftAccounts = DriftAccounts.MAIN_NET;
-    final var driftVaultsProgram = driftAccounts.driftVaultsProgram();
+    final var driftVaultsProgram = this.driftAccounts.driftVaultsProgram();
     add(driftVaultsProgram);
     for (final var accountInfo : accountsNeeded) {
       if (accountInfo == null
@@ -203,15 +204,14 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
       final var driftVaultKey = depositor.vault();
       add(driftVaultKey);
       secondPhaseAccountsNeeded.add(driftVaultKey);
-      final var user = DriftPDAs.deriveUserAccount(driftAccounts, driftVaultKey, 0);
+      final var user = DriftPDAs.deriveUserAccount(this.driftAccounts, driftVaultKey, 0);
       secondPhaseAccountsNeeded.add(user.publicKey());
     }
   }
 
   @Override
   public void addDriftVaultAccountsSecondPhase(final List<AccountInfo<byte[]>> accountsNeeded) {
-    final var driftAccounts = DriftAccounts.MAIN_NET;
-    final var driftVaultsProgram = driftAccounts.driftVaultsProgram();
+    final var driftVaultsProgram = this.driftAccounts.driftVaultsProgram();
     for (final var accountInfo : accountsNeeded) {
       if (accountInfo == null
           || !accountInfo.owner().equals(driftVaultsProgram)
@@ -224,21 +224,19 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
       add(driftVault.user());
       add(driftVault.tokenAccount());
     }
-    final var driftTables = mapDriftTables(accountsNeeded, driftAccounts);
-    addDriftUsers(accountsNeeded, driftAccounts, driftTables);
+    final var driftTables = mapDriftTables(accountsNeeded, this.driftAccounts);
+    addDriftUsers(accountsNeeded, this.driftAccounts, driftTables);
   }
 
   @Override
   public void addJupiterSwapAccounts(final List<AccountInfo<byte[]>> accountsNeeded) {
-    final var jupiterAccounts = JupiterAccounts.MAIN_NET;
-    add(jupiterAccounts.swapProgram());
-    add(jupiterAccounts.aggregatorEventAuthority());
+    add(this.jupiterAccounts.swapProgram());
+    add(this.jupiterAccounts.aggregatorEventAuthority());
   }
 
   private void addKFarmAccounts() {
-    final var kaminoAccounts = KaminoAccounts.MAIN_NET;
     // add(kaminoAccounts.farmProgram()); // In Kamino LUT
-    add(kaminoAccounts.farmsGlobalConfig());
+    add(this.kaminoAccounts.farmsGlobalConfig());
     // TODO Obligation Farm User State
     // TODO Reserve Farm State
   }
@@ -249,10 +247,9 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
     add(glamAccounts.readKaminoIntegrationAuthority().publicKey());
     addKFarmAccounts();
 
-    final var kaminoAccounts = KaminoAccounts.MAIN_NET;
-    final var mainMarketTable = mapTable(accountsNeeded, kaminoAccounts.mainMarketLUT());
+    final var mainMarketTable = mapTable(accountsNeeded, this.kaminoAccounts.mainMarketLUT());
 
-    final var kLendProgram = kaminoAccounts.kLendProgram();
+    final var kLendProgram = this.kaminoAccounts.kLendProgram();
 
     for (final var accountInfo : accountsNeeded) {
       if (accountInfo == null
@@ -279,7 +276,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
 
   @Override
   public void addKaminoAccountsSecondPhase(final List<AccountInfo<byte[]>> accountsNeeded) {
-    final var mainMarketTable = mapTable(accountsNeeded, KaminoAccounts.MAIN_NET.mainMarketLUT());
+    final var mainMarketTable = mapTable(accountsNeeded, this.kaminoAccounts.mainMarketLUT());
 
     final var solanaAccounts = stateAccountClient.accountClient().solanaAccounts();
     addIfAbsent(solanaAccounts.instructionsSysVar(), mainMarketTable);
@@ -312,10 +309,9 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
     final var accountClient = stateAccountClient.accountClient();
     final var glamAccounts = accountClient.glamAccounts();
     add(glamAccounts.readKaminoIntegrationAuthority().publicKey());
-    final var kaminoAccounts = KaminoAccounts.MAIN_NET;
-    final var kVaultProgram = kaminoAccounts.kVaultsProgram();
+    final var kVaultProgram = this.kaminoAccounts.kVaultsProgram();
     add(kVaultProgram);
-    add(kaminoAccounts.kVaultsEventAuthority());
+    add(this.kaminoAccounts.kVaultsEventAuthority());
 
     addKFarmAccounts();
 
@@ -364,14 +360,13 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
 
   @Override
   public void addKaminoVaultAccountsSecondPhase(final List<AccountInfo<byte[]>> accountsNeeded) {
-    final var kaminoAccounts = KaminoAccounts.MAIN_NET;
-    final var kLendProgram = kaminoAccounts.kLendProgram();
-    final var hubbleScopeFeedAccounts = kaminoAccounts.scopeMainnetHubbleFeed();
-    final var kaminoScopeFeedAccounts = kaminoAccounts.scopeMainnetKLendFeed();
+    final var kLendProgram = this.kaminoAccounts.kLendProgram();
+    final var hubbleScopeFeedAccounts = this.kaminoAccounts.scopeMainnetHubbleFeed();
+    final var kaminoScopeFeedAccounts = this.kaminoAccounts.scopeMainnetKLendFeed();
 
     final var scopeFeeds = Map.of(
-        hubbleScopeFeedAccounts.oraclePrices(), kaminoAccounts.scopeMainnetHubbleFeed(),
-        kaminoScopeFeedAccounts.oraclePrices(), kaminoAccounts.scopeMainnetKLendFeed()
+        hubbleScopeFeedAccounts.oraclePrices(), this.kaminoAccounts.scopeMainnetHubbleFeed(),
+        kaminoScopeFeedAccounts.oraclePrices(), this.kaminoAccounts.scopeMainnetKLendFeed()
     );
 
     final var reserves = accountsNeeded.stream().<Reserve>mapMulti((accountInfo, downstream) -> {
@@ -439,7 +434,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
 
       final var stateAccount = StateAccount.read(stateAccountInfoFuture.join());
       final var stateAccountClient = StateAccountClient.createClient(stateAccount, glamAccountClient);
-      final var glamStateAccountClient = VaultTableBuilder.createBuilder(stateAccountClient);
+      final var glamStateAccountClient = VaultTableBuilder.build().create(stateAccountClient);
       var accountsNeededFuture = glamStateAccountClient.fetchAccountsNeeded(rpcClient);
 
       final var kaminoVaults = kaminoVaultsFuture.join();
