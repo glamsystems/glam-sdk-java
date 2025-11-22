@@ -9,10 +9,11 @@ pluginManagement {
       credentials(PasswordCredentials::class)
     }
   }
+//  includeBuild("../sava-build")
 }
 
 plugins {
-  id("software.sava.build") version "0.2.4"
+  id("software.sava.build")  version "0.2.5"
 }
 
 javaModules {

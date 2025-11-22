@@ -1,6 +1,7 @@
 package systems.glam.sdk.lut;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.accounts.lookup.AddressLookupTable;
 import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.drift.vaults.gen.types.VaultDepositor;
 import software.sava.idl.clients.jupiter.JupiterAccounts;
@@ -85,6 +86,10 @@ public interface VaultTableBuilder {
     addKaminoAccountsSecondPhase(accountsNeeded);
     addKaminoVaultAccountsSecondPhase(accountsNeeded);
   }
+
+  CompletableFuture<List<AddressLookupTable>> fetchGlamVaultTables(final SolanaRpcClient rpcClient);
+
+  List<TableTask> batchTableTasks(final List<AddressLookupTable> lookupTables);
 
   void addGlamVaultAccounts(final List<AccountInfo<byte[]>> accountsNeeded);
 

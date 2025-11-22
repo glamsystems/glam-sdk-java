@@ -1,8 +1,10 @@
 package systems.glam.sdk.lut;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.accounts.Signer;
 import software.sava.core.accounts.lookup.AddressLookupTable;
 import software.sava.core.accounts.token.TokenAccount;
+import software.sava.core.tx.Transaction;
 import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.drift.DriftPDAs;
 import software.sava.idl.clients.drift.gen.types.User;
@@ -16,17 +18,23 @@ import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
 import software.sava.rpc.json.http.SolanaNetwork;
 import software.sava.rpc.json.http.client.SolanaRpcClient;
 import software.sava.rpc.json.http.response.AccountInfo;
+import software.sava.solana.programs.address_lookup_table.AddressLookupTableProgram;
+import software.sava.solana.programs.compute_budget.ComputeBudgetProgram;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.StateAccountClient;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 
 import java.net.URI;
 import java.net.http.HttpClient;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+
+import static software.sava.core.accounts.lookup.AddressLookupTable.LOOKUP_TABLE_META_SIZE;
+import static software.sava.core.accounts.lookup.AddressLookupTable.activeFilter;
+import static software.sava.core.rpc.Filter.createMemCompFilter;
+import static software.sava.rpc.json.http.request.Commitment.CONFIRMED;
+import static software.sava.solana.programs.compute_budget.ComputeBudgetProgram.MAX_COMPUTE_BUDGET;
 
 record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
                              List<PublicKey> tablePrefix,
@@ -64,9 +72,115 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
         .orElse(null);
   }
 
-  public void createTable() {
+  @Override
+  public CompletableFuture<List<AddressLookupTable>> fetchGlamVaultTables(final SolanaRpcClient rpcClient) {
+    final var accountClient = stateAccountClient.accountClient();
+    final var addressLookupTableProgram = accountClient.solanaAccounts().addressLookupTableProgram();
+    final byte[] prefixKeys = new byte[PublicKey.PUBLIC_KEY_LENGTH * tablePrefix.size()];
+    int i = 0;
+    for (final var key : tablePrefix) {
+      i += key.write(prefixKeys, i);
+    }
+    return rpcClient.getProgramAccounts(
+        addressLookupTableProgram,
+        List.of(
+            activeFilter(),
+            createMemCompFilter(LOOKUP_TABLE_META_SIZE, prefixKeys)
+        )
+    ).thenApply(accounts -> accounts.stream()
+        .map(accountInfo -> AddressLookupTable.read(accountInfo.pubKey(), accountInfo.data()))
+        .toList()
+    );
+  }
+
+  @Override
+  public List<TableTask> batchTableTasks(final List<AddressLookupTable> lookupTables) {
     tablePrefix.forEach(glamVaultTableAccounts::remove);
-    // TODO
+
+    // Remove all accounts already indexed into a table.
+    PublicKey tableKey;
+    final Set<AddressLookupTable> remainingTables;
+    int tableSpace;
+    if (lookupTables.isEmpty()) {
+      tableKey = null;
+      remainingTables = Set.of();
+      tableSpace = AddressLookupTable.LOOKUP_TABLE_MAX_ADDRESSES;
+    } else {
+      int maxAccounts = 0, maxIndex = 0;
+      int i = 0;
+      for (final var table : lookupTables) {
+        final int numAccounts = table.numAccounts();
+        if (numAccounts > maxAccounts) {
+          maxAccounts = numAccounts;
+          maxIndex = i;
+        }
+        for (int a = 0; a < numAccounts; a++) {
+          glamVaultTableAccounts.remove(table.account(a));
+        }
+        ++i;
+      }
+      tableSpace = AddressLookupTable.LOOKUP_TABLE_MAX_ADDRESSES - maxAccounts;
+      final var maxTable = lookupTables.get(maxIndex);
+      tableKey = maxTable.address();
+      remainingTables = new HashSet<>(lookupTables);
+      remainingTables.remove(maxTable);
+    }
+
+    if (glamVaultTableAccounts.isEmpty()) {
+      return List.of();
+    }
+
+    final var accountClient = stateAccountClient.accountClient();
+    final var feePayer = accountClient.feePayerKey();
+    final var accounts = glamVaultTableAccounts.toArray(PublicKey[]::new);
+    final int maxAccountsWithCreateIx = 27;
+    final var tasks = new ArrayList<TableTask>((accounts.length / maxAccountsWithCreateIx) + 1);
+    CreateTable createTableTask = null;
+    for (int i = 0; i < accounts.length; ) {
+      final int remainingAccounts = accounts.length - i;
+      final List<PublicKey> extendAccounts;
+      final TableTask tableTask;
+      if (tableKey == null || tableSpace == 0) {
+        final int add = Math.min(maxAccountsWithCreateIx, tablePrefix.size() + remainingAccounts);
+        extendAccounts = new ArrayList<>(add);
+        extendAccounts.addAll(tablePrefix);
+        for (final int to = i + add; i < to; ++i) {
+          extendAccounts.add(accounts[i]);
+        }
+        createTableTask = new CreateTable(accountClient, extendAccounts);
+        tableTask = createTableTask;
+      } else {
+        final int add = Math.min(tableSpace, Math.min(32, remainingAccounts));
+        extendAccounts = new ArrayList<>(add);
+        for (final int to = i + add; i < to; ++i) {
+          extendAccounts.add(accounts[i]);
+        }
+        if (createTableTask != null) {
+          tableTask = new DynamicExtendTable(accountClient, extendAccounts, createTableTask);
+        } else {
+          final var extendTableIx = AddressLookupTableProgram.extendLookupTable(
+              accountClient.solanaAccounts(),
+              tableKey,
+              feePayer, feePayer,
+              extendAccounts
+          );
+          tableTask = new ExtendTable(tableKey, List.of(extendTableIx));
+        }
+      }
+      tasks.add(tableTask);
+      tableSpace -= extendAccounts.size();
+      if (tableSpace == 0) {
+        if (remainingTables.isEmpty()) {
+          tableKey = null;
+        } else {
+          final var maxTable = remainingTables.stream().max(Comparator.comparingInt(AddressLookupTable::numAccounts)).get();
+          tableKey = maxTable.address();
+          remainingTables.remove(maxTable);
+          tableSpace = AddressLookupTable.LOOKUP_TABLE_MAX_ADDRESSES - maxTable.numAccounts();
+        }
+      }
+    }
+    return tasks;
   }
 
   @Override
@@ -415,7 +529,8 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
   }
 
   static void main(final String[] args) {
-    final var feePayer = PublicKey.fromBase58Encoded("");
+    final Signer signer = null;
+    final var feePayer = signer.publicKey();
     final var glamStateKey = PublicKey.fromBase58Encoded("");
 
     final var rpcEndpoint = args.length > 0 ? URI.create(args[0]) : SolanaNetwork.MAIN_NET.getEndpoint();
@@ -434,19 +549,69 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
 
       final var stateAccount = StateAccount.read(stateAccountInfoFuture.join());
       final var stateAccountClient = StateAccountClient.createClient(stateAccount, glamAccountClient);
-      final var glamStateAccountClient = VaultTableBuilder.build().create(stateAccountClient);
-      var accountsNeededFuture = glamStateAccountClient.fetchAccountsNeeded(rpcClient);
+      final var vaultTableBuilder = VaultTableBuilder.build().create(stateAccountClient);
+      var accountsNeededFuture = vaultTableBuilder.fetchAccountsNeeded(rpcClient);
+
+      final var glamVaultTablesFuture = vaultTableBuilder.fetchGlamVaultTables(rpcClient);
 
       final var kaminoVaults = kaminoVaultsFuture.join();
       final var kVaultsByMint = VaultTableBuilder.mapKaminoVaultStatesByMint(kaminoVaults);
 
       final var accountsNeeded = accountsNeededFuture.join();
-      glamStateAccountClient.addAccounts(accountsNeeded, kVaultsByMint);
+      vaultTableBuilder.addAccounts(accountsNeeded, kVaultsByMint);
 
-      accountsNeededFuture = glamStateAccountClient.fetchSecondPhaseAccountsNeeded(rpcClient);
-      glamStateAccountClient.addAccountsSecondPhase(accountsNeededFuture.join());
+      accountsNeededFuture = vaultTableBuilder.fetchSecondPhaseAccountsNeeded(rpcClient);
+      vaultTableBuilder.addAccountsSecondPhase(accountsNeededFuture.join());
 
-      // TODO: Create Table Instructions.
+      final var glamVaultTables = glamVaultTablesFuture.join();
+      final var tableTasks = vaultTableBuilder.batchTableTasks(glamVaultTables);
+
+      // Execute Create & Extend Table Instructions
+      final var computeBudgetProgram = glamAccountClient.solanaAccounts().invokedComputeBudgetProgram();
+      final var simulationCUInstructions = List.of(
+          ComputeBudgetProgram.setComputeUnitLimit(computeBudgetProgram, MAX_COMPUTE_BUDGET),
+          ComputeBudgetProgram.setComputeUnitPrice(computeBudgetProgram, 0)
+      );
+
+      long recentSlot = -1;
+      final var taskIterator = tableTasks.iterator();
+      for (final TableTask tableTask = taskIterator.next(); ; ) {
+        final var simulationTx = Transaction.createTx(glamAccountClient.feePayer(), simulationCUInstructions);
+        if (tableTask.needsSlot() && recentSlot < 0) {
+          recentSlot = rpcClient.getSlot(CONFIRMED).join();
+        }
+        final var instructions = tableTask.instructions(recentSlot);
+        simulationTx.appendInstructions(instructions);
+        var base64EncodedTx = simulationTx.base64EncodeToString();
+        final var simulationResponse = rpcClient.simulateTransaction(CONFIRMED, base64EncodedTx, true).join();
+        if (simulationResponse.error() != null) {
+          // TODO: handle error and retry.
+          recentSlot = -1;
+          continue;
+        }
+
+        final int cuBudget = simulationResponse
+            .unitsConsumed()
+            .orElseThrow(() -> new IllegalStateException("RPC server did not provide a CU budget:" + simulationResponse));
+        // Typically fetch from Helius.
+        final long cuPrice = 12345;
+
+        final var transaction = Transaction.createTx(
+            glamAccountClient.feePayer(),
+            List.of(
+                ComputeBudgetProgram.setComputeUnitLimit(computeBudgetProgram, cuBudget),
+                ComputeBudgetProgram.setComputeUnitPrice(computeBudgetProgram, cuPrice)
+            )
+        );
+        transaction.appendInstructions(instructions);
+        transaction.sign(signer);
+        base64EncodedTx = transaction.base64EncodeToString();
+        final var txId = rpcClient.sendTransaction(base64EncodedTx).join();
+        System.out.println("Sent transaction: " + txId);
+        // TODO: Confirmation logic.
+
+        recentSlot = simulationResponse.context().slot();
+      }
     }
   }
 }
