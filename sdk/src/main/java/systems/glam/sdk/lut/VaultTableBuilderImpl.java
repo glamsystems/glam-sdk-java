@@ -50,10 +50,18 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
                              Map<PublicKey, Obligation> glamVaultKaminoObligations,
                              Map<PublicKey, VaultState> kaminoVaults) implements VaultTableBuilder {
 
-  private void add(final PublicKey key) {
+  private static void addAccount(final PublicKey key, final Set<PublicKey> accountsNeeded) {
     if (!key.equals(PublicKey.NONE)) {
-      glamVaultTableAccounts.add(key);
+      accountsNeeded.add(key);
     }
+  }
+
+  private void add(final PublicKey key) {
+    addAccount(key, accountsNeeded);
+  }
+
+  private void addSecondPhase(final PublicKey key) {
+    addAccount(key, secondPhaseAccountsNeeded);
   }
 
   private AddressLookupTable mapTable(final List<AccountInfo<byte[]>> accounts, final PublicKey tableKey) {
@@ -323,9 +331,9 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
       add(depositor._address());
       final var driftVaultKey = depositor.vault();
       add(driftVaultKey);
-      secondPhaseAccountsNeeded.add(driftVaultKey);
+      addSecondPhase(driftVaultKey);
       final var user = DriftPDAs.deriveUserAccount(this.driftAccounts, driftVaultKey, 0);
-      secondPhaseAccountsNeeded.add(user.publicKey());
+      addSecondPhase(user.publicKey());
     }
   }
 
@@ -391,10 +399,10 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
       final var marketAuthority = KaminoAccounts.lendingMarketAuthPda(market, kLendProgram).publicKey();
       add(marketAuthority);
       for (final var deposit : obligation.deposits()) {
-        secondPhaseAccountsNeeded.add(deposit.depositReserve());
+        addSecondPhase(deposit.depositReserve());
       }
       for (final var borrow : obligation.borrows()) {
-        secondPhaseAccountsNeeded.add(borrow.borrowReserve());
+        addSecondPhase(borrow.borrowReserve());
       }
     }
   }
@@ -460,10 +468,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
         kaminoVaults.put(tokenAccount.address(), vaultState);
 
         for (final var allocation : vaultState.vaultAllocationStrategy()) {
-          final var reserveKey = allocation.reserve();
-          if (!reserveKey.equals(PublicKey.NONE)) {
-            secondPhaseAccountsNeeded.add(reserveKey);
-          }
+          addSecondPhase(allocation.reserve());
         }
 
         add(tokenAccount.address());
@@ -478,9 +483,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
         add(vaultState.baseVaultAuthority());
 
         final var vaultTableKey = vaultState.vaultLookupTable();
-        if (!vaultTableKey.equals(PublicKey.NONE)) {
-          secondPhaseAccountsNeeded.add(vaultTableKey);
-        }
+        addSecondPhase(vaultTableKey);
       }
     }
   }
