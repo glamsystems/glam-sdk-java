@@ -41,9 +41,12 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
                              Set<PublicKey> secondPhaseAccountsNeeded,
                              Set<PublicKey> glamVaultTableAccounts,
                              DriftAccounts driftAccounts,
+                             Map<PublicKey, AddressLookupTable> driftLookupTables,
                              Map<PublicKey, VaultDepositor> driftVaultDepositors,
                              JupiterAccounts jupiterAccounts,
                              KaminoAccounts kaminoAccounts,
+                             Map<PublicKey, AddressLookupTable> kaminoLookupTables,
+                             Map<PublicKey, AddressLookupTable> kaminoVaultLookupTables,
                              Map<PublicKey, Obligation> glamVaultKaminoObligations,
                              Map<PublicKey, VaultState> kaminoVaults) implements VaultTableBuilder {
 
@@ -51,19 +54,10 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
     glamVaultTableAccounts.add(key);
   }
 
-  private void addIfAbsent(final PublicKey key, final AddressLookupTable table) {
-    if (!table.containKey(key)) {
-      add(key);
-    }
-  }
-
-  private void addIfAbsent(final PublicKey key, final Collection<AddressLookupTable> tables) {
-    for (final var table : tables) {
-      addIfAbsent(key, table);
-    }
-  }
-
   private AddressLookupTable mapTable(final List<AccountInfo<byte[]>> accounts, final PublicKey tableKey) {
+    if (tableKey == null || tableKey.equals(PublicKey.NONE)) {
+      return null;
+    }
     return accounts.stream()
         .filter(accountInfo -> accountInfo != null && accountInfo.pubKey().equals(tableKey))
         .findFirst()
@@ -241,6 +235,17 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
     }
   }
 
+  private void removeAccounts(final Map<PublicKey, AddressLookupTable> tables) {
+    for (final var table : tables.values()) {
+      this.glamVaultTableAccounts.removeIf(table::containKey);
+    }
+  }
+
+  @Override
+  public void removeDriftTableAccounts() {
+    removeAccounts(driftLookupTables);
+  }
+
   private List<AddressLookupTable> mapDriftTables(final List<AccountInfo<byte[]>> accountsNeeded,
                                                   final DriftAccounts driftAccounts) {
     final var tableKeys = driftAccounts.marketLookupTables();
@@ -254,9 +259,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
     }).toList();
   }
 
-  private void addDriftUsers(final List<AccountInfo<byte[]>> accountsNeeded,
-                             final DriftAccounts driftAccounts,
-                             final List<AddressLookupTable> driftTables) {
+  private void addDriftUsers(final List<AccountInfo<byte[]>> accountsNeeded, final DriftAccounts driftAccounts) {
     final var driftProgram = driftAccounts.driftProgram();
     for (final var accountInfo : accountsNeeded) {
       if (accountInfo == null
@@ -269,14 +272,14 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
       add(user._address());
       for (final var spotPosition : user.spotPositions()) {
         final int marketIndex = spotPosition.marketIndex();
-        final var spotMarketKey = DriftPDAs.deriveSpotMarketAccount(driftAccounts, marketIndex).publicKey();
-        addIfAbsent(spotMarketKey, driftTables);
-        final var spotMarketVaultKey = DriftPDAs.deriveSpotMarketVaultAccount(driftAccounts, marketIndex).publicKey();
-        addIfAbsent(spotMarketVaultKey, driftTables);
+        final var spotMarketKey = DriftPDAs.deriveSpotMarketAccount(driftAccounts, marketIndex);
+        add(spotMarketKey.publicKey());
+        final var spotMarketVaultKey = DriftPDAs.deriveSpotMarketVaultAccount(driftAccounts, marketIndex);
+        add(spotMarketVaultKey.publicKey());
       }
       for (final var perpPosition : user.perpPositions()) {
-        final var perpMarket = DriftPDAs.derivePerpMarketAccount(driftAccounts, perpPosition.marketIndex()).publicKey();
-        addIfAbsent(perpMarket, driftTables);
+        final var perpMarket = DriftPDAs.derivePerpMarketAccount(driftAccounts, perpPosition.marketIndex());
+        add(perpMarket.publicKey());
       }
     }
   }
@@ -288,15 +291,18 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
     final var driftProgram = driftAccounts.driftProgram();
 
     final var driftTables = mapDriftTables(accountsNeeded, driftAccounts);
+    for (final var table : driftTables) {
+      this.driftLookupTables.put(table.address(), table);
+    }
 
-    addIfAbsent(driftProgram, driftTables);
-    addIfAbsent(driftAccounts.stateKey(), driftTables);
+    add(driftProgram);
+    add(driftAccounts.stateKey());
 
     final var glamVaultKey = stateAccountClient.accountClient().owner();
-    final var userStats = DriftPDAs.deriveUserStatsAccount(this.driftAccounts, glamVaultKey).publicKey();
-    add(userStats);
+    final var userStats = DriftPDAs.deriveUserStatsAccount(this.driftAccounts, glamVaultKey);
+    add(userStats.publicKey());
 
-    addDriftUsers(accountsNeeded, this.driftAccounts, driftTables);
+    addDriftUsers(accountsNeeded, this.driftAccounts);
   }
 
   @Override
@@ -337,8 +343,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
       add(driftVault.user());
       add(driftVault.tokenAccount());
     }
-    final var driftTables = mapDriftTables(accountsNeeded, this.driftAccounts);
-    addDriftUsers(accountsNeeded, this.driftAccounts, driftTables);
+    addDriftUsers(accountsNeeded, this.driftAccounts);
   }
 
   @Override
@@ -355,12 +360,18 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
   }
 
   @Override
+  public void removeKaminoLendTableAccounts() {
+    removeAccounts(kaminoLookupTables);
+  }
+
+  @Override
   public void addKaminoLendAccounts(final List<AccountInfo<byte[]>> accountsNeeded) {
     final var glamAccounts = stateAccountClient.accountClient().glamAccounts();
     add(glamAccounts.readKaminoIntegrationAuthority().publicKey());
     addKFarmAccounts();
 
     final var mainMarketTable = mapTable(accountsNeeded, this.kaminoAccounts.mainMarketLUT());
+    kaminoLookupTables.put(mainMarketTable.address(), mainMarketTable);
 
     final var kLendProgram = this.kaminoAccounts.kLendProgram();
 
@@ -375,9 +386,9 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
       glamVaultKaminoObligations.put(obligation._address(), obligation);
       add(obligation._address());
       final var market = obligation.lendingMarket();
-      addIfAbsent(market, mainMarketTable);
+      add(market);
       final var marketAuthority = KaminoAccounts.lendingMarketAuthPda(market, kLendProgram).publicKey();
-      addIfAbsent(marketAuthority, mainMarketTable);
+      add(marketAuthority);
       for (final var deposit : obligation.deposits()) {
         secondPhaseAccountsNeeded.add(deposit.depositReserve());
       }
@@ -389,10 +400,8 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
 
   @Override
   public void addKaminoAccountsSecondPhase(final List<AccountInfo<byte[]>> accountsNeeded) {
-    final var mainMarketTable = mapTable(accountsNeeded, this.kaminoAccounts.mainMarketLUT());
-
     final var solanaAccounts = stateAccountClient.accountClient().solanaAccounts();
-    addIfAbsent(solanaAccounts.instructionsSysVar(), mainMarketTable);
+    add(solanaAccounts.instructionsSysVar());
 
     final var reserveKeys = glamVaultKaminoObligations.values().stream().mapMulti((obligation, downstream) -> {
       for (final var deposit : obligation.deposits()) {
@@ -406,19 +415,23 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
     for (final var accountInfo : accountsNeeded) {
       if (accountInfo != null && reserveKeys.contains(accountInfo.pubKey())) {
         final var reserve = Reserve.read(accountInfo);
-        addIfAbsent(reserve._address(), mainMarketTable);
-        addIfAbsent(reserve.liquidity().mintPubkey(), mainMarketTable);
+        add(reserve._address());
+        add(reserve.liquidity().mintPubkey());
         final var reserveCollateral = reserve.collateral();
-        addIfAbsent(reserveCollateral.supplyVault(), mainMarketTable);
-        addIfAbsent(reserveCollateral.mintPubkey(), mainMarketTable);
+        add(reserveCollateral.supplyVault());
+        add(reserveCollateral.mintPubkey());
       }
     }
   }
 
   @Override
+  public void removeKaminoVaultTableAccounts() {
+    removeAccounts(kaminoVaultLookupTables);
+  }
+
+  @Override
   public void addKaminoVaultAccounts(final List<AccountInfo<byte[]>> accountsNeeded,
-                                     final Map<PublicKey, VaultState> vaultStatesByMint,
-                                     final boolean ignoreKVaultTable) {
+                                     final Map<PublicKey, VaultState> vaultStatesByMint) {
     final var accountClient = stateAccountClient.accountClient();
     final var glamAccounts = accountClient.glamAccounts();
     add(glamAccounts.readKaminoIntegrationAuthority().publicKey());
@@ -457,15 +470,15 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
         final var sharesMint = vaultState.sharesMint();
         final var userTokenAta = accountClient.findATA(tokenProgram, tokenMint).publicKey();
         add(userTokenAta);
+        add(vaultState._address());
+        add(vaultState.tokenVault());
+        add(tokenMint);
+        add(sharesMint);
+        add(vaultState.baseVaultAuthority());
 
-        if (ignoreKVaultTable) {
-          add(vaultState._address());
-          add(vaultState.tokenVault());
-          add(tokenMint);
-          add(sharesMint);
-          add(vaultState.baseVaultAuthority());
-        } else {
-          secondPhaseAccountsNeeded.add(vaultState.vaultLookupTable());
+        final var vaultTableKey = vaultState.vaultLookupTable();
+        if (!vaultTableKey.equals(PublicKey.NONE)) {
+          secondPhaseAccountsNeeded.add(vaultTableKey);
         }
       }
     }
@@ -496,31 +509,17 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
         final var reserve = reserves.get(allocation.reserve());
         if (reserve != null) {
           final var kVaultTable = mapTable(accountsNeeded, vaultState.vaultLookupTable());
+          if (kVaultTable != null) {
+            kaminoVaultLookupTables.put(vaultState._address(), kVaultTable);
+          }
 
           final var scopeConfiguration = reserve.config().tokenInfo().scopeConfiguration();
           final var scopeFeed = scopeFeeds.get(scopeConfiguration.priceFeed());
-
-          if (kVaultTable != null) {
-            addIfAbsent(vaultState._address(), kVaultTable);
-            addIfAbsent(vaultState.tokenVault(), kVaultTable);
-            addIfAbsent(vaultState.tokenMint(), kVaultTable);
-            addIfAbsent(vaultState.sharesMint(), kVaultTable);
-            addIfAbsent(vaultState.baseVaultAuthority(), kVaultTable);
-
-            addIfAbsent(reserve._address(), kVaultTable);
-            addIfAbsent(reserve.lendingMarket(), kVaultTable);
-
-            if (scopeFeed != null) {
-              addIfAbsent(scopeFeed.oraclePrices(), kVaultTable);
-              addIfAbsent(scopeFeed.oracleMappings(), kVaultTable);
-            }
-          } else {
-            add(reserve._address());
-            add(reserve.lendingMarket());
-            if (scopeFeed != null) {
-              add(scopeFeed.oraclePrices());
-              add(scopeFeed.oracleMappings());
-            }
+          add(reserve._address());
+          add(reserve.lendingMarket());
+          if (scopeFeed != null) {
+            add(scopeFeed.oraclePrices());
+            add(scopeFeed.oracleMappings());
           }
         }
       }
@@ -562,6 +561,8 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
       accountsNeededFuture = vaultTableBuilder.fetchSecondPhaseAccountsNeeded(rpcClient);
       vaultTableBuilder.addAccountsSecondPhase(accountsNeededFuture.join());
 
+      vaultTableBuilder.removeExternalProtocolTableAccounts();
+
       final var glamVaultTables = glamVaultTablesFuture.join();
       final var tableTasks = vaultTableBuilder.batchTableTasks(glamVaultTables);
 
@@ -574,7 +575,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
 
       long recentSlot = -1;
       final var taskIterator = tableTasks.iterator();
-      for (final TableTask tableTask = taskIterator.next(); ; ) {
+      for (TableTask tableTask = taskIterator.next(); ; ) {
         final var simulationTx = Transaction.createTx(glamAccountClient.feePayer(), simulationCUInstructions);
         if (tableTask.needsSlot() && recentSlot < 0) {
           recentSlot = rpcClient.getSlot(CONFIRMED).join();
@@ -603,13 +604,18 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
             )
         );
         transaction.appendInstructions(instructions);
+        transaction.setRecentBlockHash(simulationResponse.replacementBlockHash().blockhash());
         transaction.sign(signer);
         base64EncodedTx = transaction.base64EncodeToString();
         final var txId = rpcClient.sendTransaction(base64EncodedTx).join();
         System.out.println("Sent transaction: " + txId);
         // TODO: Confirmation logic.
 
+        if (!taskIterator.hasNext()) {
+          break;
+        }
         recentSlot = simulationResponse.context().slot();
+        tableTask = taskIterator.next();
       }
     }
   }

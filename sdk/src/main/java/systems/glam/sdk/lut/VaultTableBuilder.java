@@ -47,8 +47,7 @@ public interface VaultTableBuilder {
   }
 
   default void addAccounts(final List<AccountInfo<byte[]>> accountsNeeded,
-                           final Map<PublicKey, VaultState> kVaultStatesByMint,
-                           final boolean ignoreKVaultTable) {
+                           final Map<PublicKey, VaultState> kVaultStatesByMint) {
     addGlamVaultAccounts(accountsNeeded);
     addGlamVaultTokens(accountsNeeded);
     final var stateAccountClient = stateAccountClient();
@@ -65,13 +64,8 @@ public interface VaultTableBuilder {
       addKaminoLendAccounts(accountsNeeded);
     }
     if (stateAccountClient.kaminoVaultsEnabled()) {
-      addKaminoVaultAccounts(accountsNeeded, kVaultStatesByMint, ignoreKVaultTable);
+      addKaminoVaultAccounts(accountsNeeded, kVaultStatesByMint);
     }
-  }
-
-  default void addAccounts(final List<AccountInfo<byte[]>> accountsNeeded,
-                           final Map<PublicKey, VaultState> kVaultStatesByMint) {
-    addAccounts(accountsNeeded, kVaultStatesByMint, false);
   }
 
   Set<PublicKey> secondPhaseAccountsNeeded();
@@ -89,11 +83,19 @@ public interface VaultTableBuilder {
 
   CompletableFuture<List<AddressLookupTable>> fetchGlamVaultTables(final SolanaRpcClient rpcClient);
 
+  default void removeExternalProtocolTableAccounts() {
+    removeDriftTableAccounts();
+    removeKaminoLendTableAccounts();
+    removeKaminoVaultTableAccounts();
+  }
+
   List<TableTask> batchTableTasks(final List<AddressLookupTable> lookupTables);
 
   void addGlamVaultAccounts(final List<AccountInfo<byte[]>> accountsNeeded);
 
   void addGlamVaultTokens(final List<AccountInfo<byte[]>> accountsNeeded);
+
+  void removeDriftTableAccounts();
 
   void addDriftAccounts(final List<AccountInfo<byte[]>> accountsNeeded);
 
@@ -103,13 +105,16 @@ public interface VaultTableBuilder {
 
   void addJupiterSwapAccounts(final List<AccountInfo<byte[]>> accountsNeeded);
 
+  void removeKaminoLendTableAccounts();
+
   void addKaminoLendAccounts(final List<AccountInfo<byte[]>> accountsNeeded);
 
   void addKaminoAccountsSecondPhase(final List<AccountInfo<byte[]>> accountsNeeded);
 
+  void removeKaminoVaultTableAccounts();
+
   void addKaminoVaultAccounts(final List<AccountInfo<byte[]>> accountsNeeded,
-                              final Map<PublicKey, VaultState> vaultStatesByMint,
-                              final boolean ignoreKVaultTable);
+                              final Map<PublicKey, VaultState> vaultStatesByMint);
 
   void addKaminoVaultAccountsSecondPhase(final List<AccountInfo<byte[]>> accountsNeeded);
 
@@ -153,27 +158,38 @@ public interface VaultTableBuilder {
         accountsNeeded.add(baseAssetMint);
       }
 
+      final Map<PublicKey, AddressLookupTable> driftLookupTables;
       if (stateAccountClient.driftEnabled() || stateAccountClient.driftVaultsEnabled()) {
-        accountsNeeded.addAll(driftAccounts.marketLookupTables());
+        final var tableKeys = driftAccounts.marketLookupTables();
+        accountsNeeded.addAll(tableKeys);
+        driftLookupTables = HashMap.newHashMap(tableKeys.size());
+      } else {
+        driftLookupTables = Map.of();
       }
 
       final Map<PublicKey, VaultDepositor> driftVaultDepositors = stateAccountClient.driftVaultsEnabled()
           ? HashMap.newHashMap(8)
           : Map.of();
 
+      final Map<PublicKey, AddressLookupTable> kaminoLendLookupTables;
       final Map<PublicKey, Obligation> glamVaultKaminoObligations;
       if (stateAccountClient.kaminoLendEnabled()) {
         accountsNeeded.add(kaminoAccounts.mainMarketLUT());
+        kaminoLendLookupTables = HashMap.newHashMap(16);
         glamVaultKaminoObligations = HashMap.newHashMap(16);
       } else {
+        kaminoLendLookupTables = Map.of();
         glamVaultKaminoObligations = Map.of();
       }
 
+      final Map<PublicKey, AddressLookupTable> kaminoVaultLookupTables;
       final Map<PublicKey, VaultState> kaminoVaults;
       if (stateAccountClient.kaminoVaultsEnabled()) {
         accountsNeeded.add(kaminoAccounts.mainMarketLUT());
+        kaminoVaultLookupTables = HashMap.newHashMap(8);
         kaminoVaults = HashMap.newHashMap(8);
       } else {
+        kaminoVaultLookupTables = Map.of();
         kaminoVaults = Map.of();
       }
 
@@ -198,9 +214,12 @@ public interface VaultTableBuilder {
           secondPhaseAccountsNeeded,
           glamVaultTableAccounts,
           driftAccounts,
+          driftLookupTables,
           driftVaultDepositors,
           jupiterAccounts,
           kaminoAccounts,
+          kaminoLendLookupTables,
+          kaminoVaultLookupTables,
           glamVaultKaminoObligations,
           kaminoVaults
       );
