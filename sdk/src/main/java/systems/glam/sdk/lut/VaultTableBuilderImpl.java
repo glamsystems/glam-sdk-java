@@ -51,7 +51,9 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
                              Map<PublicKey, VaultState> kaminoVaults) implements VaultTableBuilder {
 
   private void add(final PublicKey key) {
-    glamVaultTableAccounts.add(key);
+    if (!key.equals(PublicKey.NONE)) {
+      glamVaultTableAccounts.add(key);
+    }
   }
 
   private AddressLookupTable mapTable(final List<AccountInfo<byte[]>> accounts, final PublicKey tableKey) {
@@ -288,14 +290,13 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
   public void addDriftAccounts(final List<AccountInfo<byte[]>> accountsNeeded) {
     final var glamAccounts = stateAccountClient.accountClient().glamAccounts();
     add(glamAccounts.readDriftIntegrationAuthority().publicKey());
-    final var driftProgram = driftAccounts.driftProgram();
 
     final var driftTables = mapDriftTables(accountsNeeded, driftAccounts);
     for (final var table : driftTables) {
       this.driftLookupTables.put(table.address(), table);
     }
 
-    add(driftProgram);
+    add(driftAccounts.driftProgram());
     add(driftAccounts.stateKey());
 
     final var glamVaultKey = stateAccountClient.accountClient().owner();
@@ -577,7 +578,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
 
       long recentSlot = -1;
       final var taskIterator = tableTasks.iterator();
-      for (TableTask tableTask = taskIterator.next(); ; ) {
+      for (var tableTask = taskIterator.next(); ; ) {
         final var simulationTx = Transaction.createTx(glamAccountClient.feePayer(), simulationCUInstructions);
         if (tableTask.needsSlot() && recentSlot < 0) {
           recentSlot = rpcClient.getSlot(CONFIRMED).join();
