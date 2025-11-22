@@ -465,7 +465,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
           }
         }
 
-        add(tokenAccount.address()); // User Share ATA.
+        add(tokenAccount.address());
         final var tokenMint = vaultState.tokenMint();
         final var sharesMint = vaultState.sharesMint();
         final var userTokenAta = accountClient.findATA(tokenProgram, tokenMint).publicKey();
@@ -537,9 +537,11 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
           .httpClient(httpClient)
           .endpoint(rpcEndpoint)
           .createClient();
+
+      final var vaultTableBuilderBuilder = VaultTableBuilder.build();
       // These Kamino VaultState's can be re-used if managing multiple GLAM vault's.
       // But still would need to be refreshed periodically.
-      final var kaminoVaultsFuture = VaultTableBuilder.fetchKaminoVaultStates(rpcClient);
+      final var kaminoVaultsFuture = vaultTableBuilderBuilder.kaminoAccounts().fetchVaults(rpcClient);
 
       final var stateAccountInfoFuture = rpcClient.getAccountInfo(glamStateKey);
 
@@ -547,7 +549,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
 
       final var stateAccount = StateAccount.read(stateAccountInfoFuture.join());
       final var stateAccountClient = StateAccountClient.createClient(stateAccount, glamAccountClient);
-      final var vaultTableBuilder = VaultTableBuilder.build().create(stateAccountClient);
+      final var vaultTableBuilder = vaultTableBuilderBuilder.create(stateAccountClient);
       var accountsNeededFuture = vaultTableBuilder.fetchAccountsNeeded(rpcClient);
 
       final var glamVaultTablesFuture = vaultTableBuilder.fetchGlamVaultTables(rpcClient);

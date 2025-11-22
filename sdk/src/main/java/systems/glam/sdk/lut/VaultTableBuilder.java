@@ -23,16 +23,6 @@ public interface VaultTableBuilder {
     return Builder.newBuilder();
   }
 
-  static CompletableFuture<List<AccountInfo<byte[]>>> fetchKaminoVaultStates(final PublicKey kVaultProgram,
-                                                                             final SolanaRpcClient rpcClient) {
-    final var filters = List.of(VaultState.SIZE_FILTER, VaultState.DISCRIMINATOR_FILTER);
-    return rpcClient.getProgramAccounts(kVaultProgram, filters);
-  }
-
-  static CompletableFuture<List<AccountInfo<byte[]>>> fetchKaminoVaultStates(final SolanaRpcClient rpcClient) {
-    return fetchKaminoVaultStates(KaminoAccounts.MAIN_NET.kVaultsProgram(), rpcClient);
-  }
-
   static Map<PublicKey, VaultState> mapKaminoVaultStatesByMint(final List<AccountInfo<byte[]>> vaults) {
     return vaults.stream().map(VaultState::read).collect(Collectors.toMap(VaultState::tokenMint, v -> v));
   }
@@ -133,14 +123,26 @@ public interface VaultTableBuilder {
       return this;
     }
 
+    public DriftAccounts driftAccounts() {
+      return driftAccounts;
+    }
+
     public Builder jupiterAccounts(final JupiterAccounts jupiterAccounts) {
       this.jupiterAccounts = Objects.requireNonNull(jupiterAccounts);
       return this;
     }
 
+    public JupiterAccounts jupiterAccounts() {
+      return jupiterAccounts;
+    }
+
     public Builder kaminoAccounts(final KaminoAccounts kaminoAccounts) {
       this.kaminoAccounts = Objects.requireNonNull(kaminoAccounts);
       return this;
+    }
+
+    public KaminoAccounts kaminoAccounts() {
+      return kaminoAccounts;
     }
 
     public VaultTableBuilder create(final StateAccount stateAccount, final PublicKey feePayer) {
