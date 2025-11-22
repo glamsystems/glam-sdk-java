@@ -30,8 +30,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import static software.sava.core.accounts.lookup.AddressLookupTable.LOOKUP_TABLE_META_SIZE;
-import static software.sava.core.accounts.lookup.AddressLookupTable.activeFilter;
+import static software.sava.core.accounts.lookup.AddressLookupTable.*;
 import static software.sava.core.rpc.Filter.createMemCompFilter;
 import static software.sava.rpc.json.http.request.Commitment.CONFIRMED;
 import static software.sava.solana.programs.compute_budget.ComputeBudgetProgram.MAX_COMPUTE_BUDGET;
@@ -99,31 +98,32 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
 
     // Remove all accounts already indexed into a table.
     PublicKey tableKey;
-    final Set<AddressLookupTable> remainingTables;
+    final AddressLookupTable[] remainingTables;
     int tableSpace;
     if (lookupTables.isEmpty()) {
       tableKey = null;
-      remainingTables = Set.of();
-      tableSpace = AddressLookupTable.LOOKUP_TABLE_MAX_ADDRESSES;
+      remainingTables = new AddressLookupTable[0];
+      tableSpace = LOOKUP_TABLE_MAX_ADDRESSES;
     } else {
-      int maxAccounts = 0, maxIndex = 0;
-      int i = 0;
       for (final var table : lookupTables) {
         final int numAccounts = table.numAccounts();
-        if (numAccounts > maxAccounts) {
-          maxAccounts = numAccounts;
-          maxIndex = i;
-        }
         for (int a = 0; a < numAccounts; a++) {
           glamVaultTableAccounts.remove(table.account(a));
         }
-        ++i;
       }
-      tableSpace = AddressLookupTable.LOOKUP_TABLE_MAX_ADDRESSES - maxAccounts;
-      final var maxTable = lookupTables.get(maxIndex);
-      tableKey = maxTable.address();
-      remainingTables = new HashSet<>(lookupTables);
-      remainingTables.remove(maxTable);
+      // Sort tables by most populated.
+      remainingTables = lookupTables.stream()
+          .filter(table -> table.numAccounts() < LOOKUP_TABLE_MAX_ADDRESSES)
+          .sorted(Comparator.comparingInt(AddressLookupTable::numAccounts).reversed())
+          .toArray(AddressLookupTable[]::new);
+      if (remainingTables.length > 0) {
+        final var maxTable = remainingTables[0];
+        tableKey = maxTable.address();
+        tableSpace = LOOKUP_TABLE_MAX_ADDRESSES - maxTable.numAccounts();
+      } else {
+        tableKey = null;
+        tableSpace = LOOKUP_TABLE_MAX_ADDRESSES;
+      }
     }
 
     if (glamVaultTableAccounts.isEmpty()) {
@@ -136,7 +136,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
     final int maxAccountsWithCreateIx = 27;
     final var tasks = new ArrayList<TableTask>((accounts.length / maxAccountsWithCreateIx) + 1);
     CreateTable createTableTask = null;
-    for (int i = 0; i < accounts.length; ) {
+    for (int i = 0, remainingTableIndex = 0; i < accounts.length; ) {
       final int remainingAccounts = accounts.length - i;
       final List<PublicKey> extendAccounts;
       final TableTask tableTask;
@@ -170,13 +170,12 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
       tasks.add(tableTask);
       tableSpace -= extendAccounts.size();
       if (tableSpace == 0) {
-        if (remainingTables.isEmpty()) {
-          tableKey = null;
-        } else {
-          final var maxTable = remainingTables.stream().max(Comparator.comparingInt(AddressLookupTable::numAccounts)).get();
+        if (++remainingTableIndex < remainingTables.length) {
+          final var maxTable = remainingTables[remainingTableIndex];
           tableKey = maxTable.address();
-          remainingTables.remove(maxTable);
-          tableSpace = AddressLookupTable.LOOKUP_TABLE_MAX_ADDRESSES - maxTable.numAccounts();
+          tableSpace = LOOKUP_TABLE_MAX_ADDRESSES - maxTable.numAccounts();
+        } else {
+          tableKey = null;
         }
       }
     }

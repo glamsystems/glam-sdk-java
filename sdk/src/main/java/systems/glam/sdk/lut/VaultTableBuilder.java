@@ -41,7 +41,7 @@ public interface VaultTableBuilder {
 
   Set<PublicKey> accountsNeeded();
 
-  /// Note: If the set of accounts needed exceeds 100 this call will fail and will require batching the requests by the user.
+  /// Note: If the set of accounts needed exceeds 100, this call will fail and will require batching the requests by the user.
   default CompletableFuture<List<AccountInfo<byte[]>>> fetchAccountsNeeded(final SolanaRpcClient rpcClient) {
     return rpcClient.getAccounts(List.copyOf(accountsNeeded()));
   }
@@ -76,7 +76,7 @@ public interface VaultTableBuilder {
 
   Set<PublicKey> secondPhaseAccountsNeeded();
 
-  /// Note: If the set of accounts needed exceeds 100 this call will fail and will require batching the requests by the user.
+  /// Note: If the set of accounts needed exceeds 100, this call will fail and will require batching the requests by the user.
   default CompletableFuture<List<AccountInfo<byte[]>>> fetchSecondPhaseAccountsNeeded(final SolanaRpcClient rpcClient) {
     return rpcClient.getAccounts(List.copyOf(secondPhaseAccountsNeeded()));
   }
@@ -124,17 +124,17 @@ public interface VaultTableBuilder {
     }
 
     public Builder driftAccounts(final DriftAccounts driftAccounts) {
-      if (driftAccounts != null) this.driftAccounts = driftAccounts;
+      this.driftAccounts = Objects.requireNonNull(driftAccounts);
       return this;
     }
 
     public Builder jupiterAccounts(final JupiterAccounts jupiterAccounts) {
-      if (jupiterAccounts != null) this.jupiterAccounts = jupiterAccounts;
+      this.jupiterAccounts = Objects.requireNonNull(jupiterAccounts);
       return this;
     }
 
     public Builder kaminoAccounts(final KaminoAccounts kaminoAccounts) {
-      if (kaminoAccounts != null) this.kaminoAccounts = kaminoAccounts;
+      this.kaminoAccounts = Objects.requireNonNull(kaminoAccounts);
       return this;
     }
 
