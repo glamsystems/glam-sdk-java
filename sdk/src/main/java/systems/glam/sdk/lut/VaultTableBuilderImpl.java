@@ -51,7 +51,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
                              Map<PublicKey, VaultState> kaminoVaults) implements VaultTableBuilder {
 
   private static void addAccount(final PublicKey key, final Set<PublicKey> accountsNeeded) {
-    if (!key.equals(PublicKey.NONE)) {
+    if (key != null && !key.equals(PublicKey.NONE)) {
       accountsNeeded.add(key);
     }
   }
@@ -101,33 +101,27 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
     tablePrefix.forEach(glamVaultTableAccounts::remove);
 
     // Remove all accounts already indexed into a table.
-    PublicKey tableKey;
     final AddressLookupTable[] remainingTables;
+    PublicKey tableKey;
     int tableSpace;
-    if (lookupTables.isEmpty()) {
-      tableKey = null;
-      remainingTables = new AddressLookupTable[0];
-      tableSpace = LOOKUP_TABLE_MAX_ADDRESSES;
+    for (final var table : lookupTables) {
+      final int numAccounts = table.numAccounts();
+      for (int a = 0; a < numAccounts; a++) {
+        glamVaultTableAccounts.remove(table.account(a));
+      }
+    }
+    // Sort tables by most populated.
+    remainingTables = lookupTables.stream()
+        .filter(table -> table.numAccounts() < LOOKUP_TABLE_MAX_ADDRESSES)
+        .sorted(Comparator.comparingInt(AddressLookupTable::numAccounts).reversed())
+        .toArray(AddressLookupTable[]::new);
+    if (remainingTables.length > 0) {
+      final var maxTable = remainingTables[0];
+      tableKey = maxTable.address();
+      tableSpace = LOOKUP_TABLE_MAX_ADDRESSES - maxTable.numAccounts();
     } else {
-      for (final var table : lookupTables) {
-        final int numAccounts = table.numAccounts();
-        for (int a = 0; a < numAccounts; a++) {
-          glamVaultTableAccounts.remove(table.account(a));
-        }
-      }
-      // Sort tables by most populated.
-      remainingTables = lookupTables.stream()
-          .filter(table -> table.numAccounts() < LOOKUP_TABLE_MAX_ADDRESSES)
-          .sorted(Comparator.comparingInt(AddressLookupTable::numAccounts).reversed())
-          .toArray(AddressLookupTable[]::new);
-      if (remainingTables.length > 0) {
-        final var maxTable = remainingTables[0];
-        tableKey = maxTable.address();
-        tableSpace = LOOKUP_TABLE_MAX_ADDRESSES - maxTable.numAccounts();
-      } else {
-        tableKey = null;
-        tableSpace = LOOKUP_TABLE_MAX_ADDRESSES;
-      }
+      tableKey = null;
+      tableSpace = LOOKUP_TABLE_MAX_ADDRESSES;
     }
 
     if (glamVaultTableAccounts.isEmpty()) {
@@ -154,7 +148,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
         createTableTask = new CreateTable(accountClient, extendAccounts);
         tableTask = createTableTask;
       } else {
-        final int add = Math.min(tableSpace, Math.min(32, remainingAccounts));
+        final int add = Math.min(tableSpace, Math.min(30, remainingAccounts));
         extendAccounts = new ArrayList<>(add);
         for (final int to = i + add; i < to; ++i) {
           extendAccounts.add(accounts[i]);
@@ -183,6 +177,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
         }
       }
     }
+
     return tasks;
   }
 
@@ -208,10 +203,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
       );
       add(escrowTokenAccount.publicKey());
     }
-    final var baseAssetMint = stateAccount.baseAssetMint();
-    if (baseAssetMint != null && !PublicKey.NONE.equals(baseAssetMint)) {
-      add(baseAssetMint);
-    }
+    add(stateAccount.baseAssetMint());
   }
 
   @Override
@@ -531,11 +523,12 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
   }
 
   static void main(final String[] args) {
+    final var rpcEndpoint = args.length > 0 ? URI.create(args[0]) : SolanaNetwork.MAIN_NET.getEndpoint();
+
     final Signer signer = null;
     final var feePayer = signer.publicKey();
     final var glamStateKey = PublicKey.fromBase58Encoded("");
 
-    final var rpcEndpoint = args.length > 0 ? URI.create(args[0]) : SolanaNetwork.MAIN_NET.getEndpoint();
     try (final var httpClient = HttpClient.newHttpClient()) {
       final var rpcClient = SolanaRpcClient.build()
           .httpClient(httpClient)
@@ -571,6 +564,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
 
       final var glamVaultTables = glamVaultTablesFuture.join();
       final var tableTasks = vaultTableBuilder.batchTableTasks(glamVaultTables);
+
 
       // Execute Create & Extend Table Instructions
       final var computeBudgetProgram = glamAccountClient.solanaAccounts().invokedComputeBudgetProgram();

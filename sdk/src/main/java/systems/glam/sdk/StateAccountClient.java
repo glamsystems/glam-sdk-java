@@ -38,7 +38,7 @@ public interface StateAccountClient {
 
   GlamAccountClient accountClient();
 
-  boolean integrationEnabled(final PublicKey extensionProgram, final int bitFlag);
+  boolean integrationEnabled(final PublicKey integrationProgram, final int bitFlag);
 
   boolean driftEnabled();
 
