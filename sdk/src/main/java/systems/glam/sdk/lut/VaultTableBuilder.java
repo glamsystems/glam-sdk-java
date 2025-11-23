@@ -221,8 +221,8 @@ public interface VaultTableBuilder {
           jupiterAccounts,
           kaminoAccounts,
           kaminoLendLookupTables,
-          kaminoVaultLookupTables,
           glamVaultKaminoObligations,
+          kaminoVaultLookupTables,
           kaminoVaults
       );
     }

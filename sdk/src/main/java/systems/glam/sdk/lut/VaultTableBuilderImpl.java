@@ -46,8 +46,8 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
                              JupiterAccounts jupiterAccounts,
                              KaminoAccounts kaminoAccounts,
                              Map<PublicKey, AddressLookupTable> kaminoLookupTables,
-                             Map<PublicKey, AddressLookupTable> kaminoVaultLookupTables,
                              Map<PublicKey, Obligation> glamVaultKaminoObligations,
+                             Map<PublicKey, AddressLookupTable> kaminoVaultLookupTables,
                              Map<PublicKey, VaultState> kaminoVaults) implements VaultTableBuilder {
 
   private static void addAccount(final PublicKey key, final Set<PublicKey> accountsNeeded) {
@@ -99,22 +99,18 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
   @Override
   public List<TableTask> batchTableTasks(final List<AddressLookupTable> lookupTables) {
     tablePrefix.forEach(glamVaultTableAccounts::remove);
-
-    // Remove all accounts already indexed into a table.
-    final AddressLookupTable[] remainingTables;
-    PublicKey tableKey;
-    int tableSpace;
     for (final var table : lookupTables) {
-      final int numAccounts = table.numAccounts();
-      for (int a = 0; a < numAccounts; a++) {
-        glamVaultTableAccounts.remove(table.account(a));
-      }
+      glamVaultTableAccounts.removeIf(table::containKey);
     }
+
     // Sort tables by most populated.
-    remainingTables = lookupTables.stream()
+    final var remainingTables = lookupTables.stream()
         .filter(table -> table.numAccounts() < LOOKUP_TABLE_MAX_ADDRESSES)
         .sorted(Comparator.comparingInt(AddressLookupTable::numAccounts).reversed())
         .toArray(AddressLookupTable[]::new);
+
+    PublicKey tableKey;
+    int tableSpace;
     if (remainingTables.length > 0) {
       final var maxTable = remainingTables[0];
       tableKey = maxTable.address();
