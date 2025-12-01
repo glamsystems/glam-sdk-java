@@ -470,8 +470,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
         add(sharesMint);
         add(vaultState.baseVaultAuthority());
 
-        final var vaultTableKey = vaultState.vaultLookupTable();
-        addSecondPhase(vaultTableKey);
+        addSecondPhase(vaultState.vaultLookupTable());
       }
     }
   }
