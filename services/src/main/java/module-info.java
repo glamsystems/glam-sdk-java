@@ -5,4 +5,6 @@ module systems.glam.services {
   requires software.sava.rpc;
   requires software.sava.idl.clients.kamino;
   requires java.net.http;
+  requires software.sava.core;
+  requires systems.comodal.json_iterator;
 }

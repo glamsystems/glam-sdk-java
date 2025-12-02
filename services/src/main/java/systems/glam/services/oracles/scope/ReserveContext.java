@@ -14,11 +14,13 @@ import systems.glam.services.oracles.scope.parsers.ScopeEntryParser;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Objects;
 
 public record ReserveContext(PublicKey pubKey,
                              PublicKey market,
                              String tokenName,
                              PublicKey mint,
+                             PublicKey priceFeed,
                              PriceChains priceChains,
                              TokenInfo tokenInfo) {
 
@@ -46,12 +48,14 @@ public record ReserveContext(PublicKey pubKey,
         reserve.lendingMarket(),
         i == 0 ? null : new String(name, 0, i + 1),
         mint,
+        tokenInfo.scopeConfiguration().priceFeed(),
         priceChains,
         tokenInfo
     );
   }
 
-  static ReserveContext createContext(final Reserve reserve, final Map<PublicKey, MappingsContext> scopeEntryMap) {
+  static ReserveContext createContext(final Reserve reserve,
+                                      final Map<PublicKey, MappingsContext> scopeEntryMap) {
     final var tokenInfo = reserve.config().tokenInfo();
     final var scopeConfiguration = tokenInfo.scopeConfiguration();
     final var priceFeed = scopeConfiguration.priceFeed();
@@ -108,6 +112,7 @@ public record ReserveContext(PublicKey pubKey,
                 "reserve": "%s",
                 "tokenName": "%s",
                 "mint": "%s",
+                "priceFeed": "%s",
                 "maxAgePriceSeconds": %d,
                 "priceChain": %s,
                 "tokenInfo": "%s"
@@ -115,8 +120,9 @@ public record ReserveContext(PublicKey pubKey,
           pubKey.toBase58(),
           tokenName,
           mint,
+          priceFeed.toBase58(),
           maxAgePriceSeconds(),
-          ScopeMonitorService.toJson(priceChains.priceChain()),
+          ScopeMonitorServiceImpl.toJson(priceChains.priceChain()),
           encodedTokenInfo
       );
     } else {
@@ -138,8 +144,8 @@ public record ReserveContext(PublicKey pubKey,
           maxAgePriceSeconds(),
           maxAgeTwapSeconds(),
           maxTwapDivergenceBps(),
-          ScopeMonitorService.toJson(priceChains.priceChain()),
-          ScopeMonitorService.toJson(twapChain),
+          ScopeMonitorServiceImpl.toJson(priceChains.priceChain()),
+          ScopeMonitorServiceImpl.toJson(twapChain),
           encodedTokenInfo
       );
     }
@@ -149,19 +155,19 @@ public record ReserveContext(PublicKey pubKey,
     return !pubKey.equals(o.pubKey)
         || !market.equals(o.market)
         || !mint.equals(o.mint)
-        || !tokenName.equals(o.tokenName)
-        || !priceChains.equals(o.priceChains);
+        || !Objects.equals(tokenName, o.tokenName)
+        || !Objects.equals(priceChains, o.priceChains);
   }
 
   public static final class Parser implements FieldBufferPredicate {
 
-    private static final short[] EMPTY_ARRAY = new short[0];
     private static final ScopeEntry[] EMPTY_CHAIN = new ScopeEntry[0];
 
     private final PublicKey market;
     private PublicKey reserve;
     private String tokenName;
     private PublicKey mint;
+    private PublicKey priceFeed;
     private ScopeEntry[] priceChain;
     private ScopeEntry[] twapChain;
     private TokenInfo tokenInfo;
@@ -176,6 +182,7 @@ public record ReserveContext(PublicKey pubKey,
           market,
           tokenName,
           mint,
+          priceFeed,
           new PriceChainsRecord(
               priceChain == null ? EMPTY_CHAIN : priceChain,
               twapChain == null ? EMPTY_CHAIN : twapChain
@@ -200,6 +207,8 @@ public record ReserveContext(PublicKey pubKey,
         this.tokenName = ji.readString();
       } else if (JsonIterator.fieldEquals("mint", buf, offset, len)) {
         this.mint = PublicKey.fromBase58Encoded(ji.readString());
+      } else if (JsonIterator.fieldEquals("priceFeed", buf, offset, len)) {
+        this.priceFeed = PublicKey.fromBase58Encoded(ji.readString());
       } else if (JsonIterator.fieldEquals("priceChain", buf, offset, len)) {
         this.priceChain = parseChain(ji);
       } else if (JsonIterator.fieldEquals("twapChain", buf, offset, len)) {

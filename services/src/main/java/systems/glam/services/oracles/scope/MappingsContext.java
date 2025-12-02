@@ -7,16 +7,16 @@ import software.sava.rpc.json.http.response.AccountInfo;
 
 record MappingsContext(byte[] data, ScopeEntries scopeEntries) {
 
+  static MappingsContext createContext(final AccountInfo<byte[]> accountInfo) {
+    return new MappingsContext(accountInfo.data(), ScopeReader.parseEntries(accountInfo));
+  }
+
   PublicKey publicKey() {
     return scopeEntries.pubKey();
   }
 
   long slot() {
     return scopeEntries.slot();
-  }
-
-  static MappingsContext createContext(final AccountInfo<byte[]> accountInfo) {
-    return new MappingsContext(accountInfo.data(), ScopeReader.parseEntries(accountInfo));
   }
 
   boolean isAfter(final MappingsContext other) {

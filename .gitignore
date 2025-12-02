@@ -46,3 +46,4 @@ bin/
 Integ.*
 /.local/
 /idl-clients
+/services/.**
