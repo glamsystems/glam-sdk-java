@@ -19,7 +19,7 @@ final class FixedPriceParser extends ScopeEntryParser {
 
   @Override
   ScopeEntry createEntry() {
-    return new FixedPrice(value, exp);
+    return FixedPrice.createEntry(value, exp);
   }
 
   @Override

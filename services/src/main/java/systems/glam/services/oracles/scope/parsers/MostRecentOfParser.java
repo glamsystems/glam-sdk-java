@@ -1,7 +1,7 @@
 package systems.glam.services.oracles.scope.parsers;
 
 import software.sava.idl.clients.kamino.scope.entries.CappedMostRecentOf;
-import software.sava.idl.clients.kamino.scope.entries.MostRecentOfRecord;
+import software.sava.idl.clients.kamino.scope.entries.MostRecentOfEntry;
 import software.sava.idl.clients.kamino.scope.entries.ScopeEntry;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import systems.comodal.jsoniter.JsonIterator;
@@ -26,7 +26,7 @@ final class MostRecentOfParser extends ScopeEntryParser {
     if (oracleType == OracleType.CappedMostRecentOf) {
       return new CappedMostRecentOf(sources, maxDivergenceBps, sourcesMaxAgeS, refPrice);
     } else if (oracleType == OracleType.MostRecentOf) {
-      return new MostRecentOfRecord(sources, maxDivergenceBps, sourcesMaxAgeS, refPrice);
+      return new MostRecentOfEntry(sources, maxDivergenceBps, sourcesMaxAgeS, refPrice);
     } else {
       throw new IllegalStateException("Unexpected oracle type: " + oracleType);
     }

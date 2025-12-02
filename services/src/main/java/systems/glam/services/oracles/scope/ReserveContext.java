@@ -2,28 +2,61 @@ package systems.glam.services.oracles.scope;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.kamino.lend.gen.types.Reserve;
+import software.sava.idl.clients.kamino.lend.gen.types.ScopeConfiguration;
+import software.sava.idl.clients.kamino.lend.gen.types.TokenInfo;
 import software.sava.idl.clients.kamino.scope.entries.PriceChains;
+import software.sava.idl.clients.kamino.scope.entries.PriceChainsRecord;
+import software.sava.idl.clients.kamino.scope.entries.ScopeEntry;
+import systems.comodal.jsoniter.FieldBufferPredicate;
+import systems.comodal.jsoniter.JsonIterator;
+import systems.glam.services.oracles.scope.parsers.ScopeEntryParser;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Map;
 
-record ReserveContext(Reserve reserve,
-                      String tokenName,
-                      PublicKey mint,
-                      PriceChains priceChains) {
+public record ReserveContext(PublicKey pubKey,
+                             PublicKey market,
+                             String tokenName,
+                             PublicKey mint,
+                             PriceChains priceChains,
+                             TokenInfo tokenInfo) {
 
-  static ReserveContext createContext(final Reserve reserve, final Map<PublicKey, MappingsContext> scopeEntryMap) {
+  public static final PublicKey NULL_KEY = PublicKey.fromBase58Encoded("nu11111111111111111111111111111111111111111");
+
+  public static ReserveContext parse(final JsonIterator ji, final PublicKey market) {
+    final var parser = new Parser(market);
+    ji.testObject(parser);
+    return parser.createContext();
+  }
+
+  static ReserveContext createContext(final Reserve reserve, final PriceChains priceChains) {
     final var mint = reserve.liquidity().mintPubkey();
     final byte[] name = reserve.config().tokenInfo().name();
     int i = name.length - 1;
     while (Character.isISOControl(name[i])) {
-      --i;
+      if (--i < 0) {
+        break;
+      }
     }
+    final var tokenInfo = reserve.config().tokenInfo();
 
-    final var scopeConfiguration = reserve.config().tokenInfo().scopeConfiguration();
+    return new ReserveContext(
+        reserve._address(),
+        reserve.lendingMarket(),
+        i == 0 ? null : new String(name, 0, i + 1),
+        mint,
+        priceChains,
+        tokenInfo
+    );
+  }
+
+  static ReserveContext createContext(final Reserve reserve, final Map<PublicKey, MappingsContext> scopeEntryMap) {
+    final var tokenInfo = reserve.config().tokenInfo();
+    final var scopeConfiguration = tokenInfo.scopeConfiguration();
     final var priceFeed = scopeConfiguration.priceFeed();
     final PriceChains priceChains;
-    if (priceFeed.equals(PublicKey.NONE)) {
+    if (priceFeed.equals(PublicKey.NONE) || priceFeed.equals(NULL_KEY)) {
       priceChains = null;
     } else {
       final var scopeEntries = scopeEntryMap.get(priceFeed);
@@ -33,8 +66,19 @@ record ReserveContext(Reserve reserve,
         priceChains = scopeEntries.scopeEntries().readPriceChains(reserve);
       }
     }
+    return createContext(reserve, priceChains);
+  }
 
-    return new ReserveContext(reserve, new String(name, 0, i + 1), mint, priceChains);
+  public long maxAgePriceSeconds() {
+    return tokenInfo.maxAgePriceSeconds();
+  }
+
+  public long maxAgeTwapSeconds() {
+    return tokenInfo.maxAgeTwapSeconds();
+  }
+
+  public long maxTwapDivergenceBps() {
+    return tokenInfo.maxTwapDivergenceBps();
   }
 
   String keysToJson() {
@@ -45,45 +89,127 @@ record ReserveContext(Reserve reserve,
               "tokenName": "%s",
               "mint": "%s"
             }""",
-        reserve.lendingMarket().toBase58(),
-        reserve._address(),
+        market.toBase58(),
+        pubKey.toBase58(),
         tokenName,
         mint
     );
   }
 
   String priceChainsToJson() {
-    final var tokenInfo = reserve.config().tokenInfo();
-    return String.format("""
-            {
-              "reserve": "%s",
-              "tokenName": "%s",
-              "mint": "%s",
-              "maxTwapDivergenceBps": %d,
-              "maxAgePriceSeconds": %d,
-              "maxAgeTwapSeconds": %d,
-              "priceChain": %s,
-              "twapChain": %s
-            }""",
-        reserve._address(),
-        tokenName,
-        mint,
-        tokenInfo.maxTwapDivergenceBps(),
-        tokenInfo.maxAgePriceSeconds(),
-        tokenInfo.maxAgeTwapSeconds(),
-        ScopeMonitorService.toJson(priceChains.priceChain()),
-        ScopeMonitorService.toJson(priceChains.twapChain())
-    );
+    final byte[] tokenInfo = new byte[TokenInfo.BYTES];
+    this.tokenInfo.write(tokenInfo, 0);
+    final var encodedTokenInfo = Base64.getEncoder().encodeToString(tokenInfo);
+
+    final var twapChain = priceChains.twapChain();
+    if (twapChain.length == 0) {
+      return String.format("""
+              {
+                "reserve": "%s",
+                "tokenName": "%s",
+                "mint": "%s",
+                "maxAgePriceSeconds": %d,
+                "priceChain": %s,
+                "tokenInfo": "%s"
+              }""",
+          pubKey.toBase58(),
+          tokenName,
+          mint,
+          maxAgePriceSeconds(),
+          ScopeMonitorService.toJson(priceChains.priceChain()),
+          encodedTokenInfo
+      );
+    } else {
+      return String.format("""
+              {
+                "reserve": "%s",
+                "tokenName": "%s",
+                "mint": "%s",
+                "maxAgePriceSeconds": %d,
+                "maxAgeTwapSeconds": %d,
+                "maxTwapDivergenceBps": %d,
+                "priceChain": %s,
+                "twapChain": %s,
+                "tokenInfo": "%s"
+              }""",
+          pubKey.toBase58(),
+          tokenName,
+          mint,
+          maxAgePriceSeconds(),
+          maxAgeTwapSeconds(),
+          maxTwapDivergenceBps(),
+          ScopeMonitorService.toJson(priceChains.priceChain()),
+          ScopeMonitorService.toJson(twapChain),
+          encodedTokenInfo
+      );
+    }
   }
 
   boolean changed(final ReserveContext o) {
-    final var tokenInfo = reserve.config().tokenInfo();
-    final var othertTokenInfo = o.reserve.config().tokenInfo();
-    return !mint.equals(o.mint)
-        || tokenInfo.maxTwapDivergenceBps() != othertTokenInfo.maxTwapDivergenceBps()
-        || tokenInfo.maxAgePriceSeconds() != othertTokenInfo.maxAgePriceSeconds()
-        || tokenInfo.maxAgeTwapSeconds() != othertTokenInfo.maxAgeTwapSeconds()
-        || !Arrays.equals(priceChains.priceChain(), o.priceChains.priceChain())
-        || !Arrays.equals(priceChains.twapChain(), o.priceChains.twapChain());
+    return !pubKey.equals(o.pubKey)
+        || !market.equals(o.market)
+        || !mint.equals(o.mint)
+        || !tokenName.equals(o.tokenName)
+        || !priceChains.equals(o.priceChains);
+  }
+
+  public static final class Parser implements FieldBufferPredicate {
+
+    private static final short[] EMPTY_ARRAY = new short[0];
+    private static final ScopeEntry[] EMPTY_CHAIN = new ScopeEntry[0];
+
+    private final PublicKey market;
+    private PublicKey reserve;
+    private String tokenName;
+    private PublicKey mint;
+    private ScopeEntry[] priceChain;
+    private ScopeEntry[] twapChain;
+    private TokenInfo tokenInfo;
+
+    public Parser(final PublicKey market) {
+      this.market = market;
+    }
+
+    private ReserveContext createContext() {
+      return new ReserveContext(
+          reserve,
+          market,
+          tokenName,
+          mint,
+          new PriceChainsRecord(
+              priceChain == null ? EMPTY_CHAIN : priceChain,
+              twapChain == null ? EMPTY_CHAIN : twapChain
+          ),
+          tokenInfo
+      );
+    }
+
+    private static ScopeEntry[] parseChain(final JsonIterator ji) {
+      final var priceChain = new ArrayList<ScopeEntry>(ScopeConfiguration.PRICE_CHAIN_LEN);
+      while (ji.readArray()) {
+        priceChain.add(ScopeEntryParser.parseEntry(ji));
+      }
+      return priceChain.toArray(ScopeEntry[]::new);
+    }
+
+    @Override
+    public boolean test(final char[] buf, final int offset, final int len, final JsonIterator ji) {
+      if (JsonIterator.fieldEquals("reserve", buf, offset, len)) {
+        this.reserve = PublicKey.fromBase58Encoded(ji.readString());
+      } else if (JsonIterator.fieldEquals("tokenName", buf, offset, len)) {
+        this.tokenName = ji.readString();
+      } else if (JsonIterator.fieldEquals("mint", buf, offset, len)) {
+        this.mint = PublicKey.fromBase58Encoded(ji.readString());
+      } else if (JsonIterator.fieldEquals("priceChain", buf, offset, len)) {
+        this.priceChain = parseChain(ji);
+      } else if (JsonIterator.fieldEquals("twapChain", buf, offset, len)) {
+        this.twapChain = parseChain(ji);
+      } else if (JsonIterator.fieldEquals("tokenInfo", buf, offset, len)) {
+        this.tokenInfo = TokenInfo.read(ji.decodeBase64String(), 0);
+      } else {
+        ji.skip();
+      }
+      return true;
+    }
   }
 }

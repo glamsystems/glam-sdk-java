@@ -10,7 +10,6 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -160,36 +159,36 @@ public final class ScopeMonitorService implements Runnable, Consumer<AccountInfo
   }
 
   private void removePreviousEntry(final ReserveContext previousContext) {
-    final var reserve = previousContext.reserve();
-    final var scopeConfiguration = reserve.config().tokenInfo().scopeConfiguration();
+    final var key = previousContext.pubKey();
+    final var scopeConfiguration = previousContext.tokenInfo().scopeConfiguration();
     for (final short index : scopeConfiguration.priceChain()) {
       if (index < 0) {
         break;
       }
-      reservesUsingScopeIndex.get(index).remove(reserve._address());
+      reservesUsingScopeIndex.get(index).remove(key);
     }
     for (final short index : scopeConfiguration.twapChain()) {
       if (index < 0) {
         break;
       }
-      reservesUsingScopeIndex.get(index).remove(reserve._address());
+      reservesUsingScopeIndex.get(index).remove(key);
     }
   }
 
   private void addEntry(final ReserveContext reserveContext) {
-    final var reserve = reserveContext.reserve();
-    final var scopeConfiguration = reserve.config().tokenInfo().scopeConfiguration();
+    final var key = reserveContext.pubKey();
+    final var scopeConfiguration = reserveContext.tokenInfo().scopeConfiguration();
     for (final short index : scopeConfiguration.priceChain()) {
       if (index < 0) {
         break;
       }
-      reservesUsingScopeIndex.get(index).put(reserve._address(), reserveContext);
+      reservesUsingScopeIndex.get(index).put(key, reserveContext);
     }
     for (final short index : scopeConfiguration.twapChain()) {
       if (index < 0) {
         break;
       }
-      reservesUsingScopeIndex.get(index).put(reserve._address(), reserveContext);
+      reservesUsingScopeIndex.get(index).put(key, reserveContext);
     }
   }
 
@@ -257,14 +256,13 @@ public final class ScopeMonitorService implements Runnable, Consumer<AccountInfo
       }
 
       for (final var previousContext : reserveContextMap.values()) {
-        if (!presentReserves.contains(previousContext.reserve()._address())) {
+        if (!presentReserves.contains(previousContext.pubKey())) {
           removePreviousEntry(previousContext);
         }
       }
 
       for (final var reserveContext : mutatedReserves) {
-        final var reserve = reserveContext.reserve();
-        final var previousReserveContext = reserveContextMap.put(reserve._address(), reserveContext);
+        final var previousReserveContext = reserveContextMap.put(reserveContext.pubKey(), reserveContext);
         if (previousReserveContext != null) {
           handleReserveChange(reserveContext);
         }
@@ -365,7 +363,7 @@ public final class ScopeMonitorService implements Runnable, Consumer<AccountInfo
               prefix,
               toJson(cappedMostRecentOf.capEntry())
           );
-          case MostRecentOfRecord mostRecentOfRecord -> String.format("""
+          case MostRecentOfEntry mostRecentOfRecord -> String.format("""
                   %s
                     "refPrice": %s
                   }""",
@@ -397,10 +395,7 @@ public final class ScopeMonitorService implements Runnable, Consumer<AccountInfo
               }""",
           fixedPrice.oracleType().name(),
           fixedPrice.value(), fixedPrice.exp(),
-          BigDecimal.valueOf(fixedPrice.value())
-              .movePointLeft(Math.toIntExact(fixedPrice.exp()))
-              .stripTrailingZeros()
-              .toPlainString()
+          fixedPrice.decimal().toPlainString()
       );
       case NotYetSupported notYetSupported -> String.format("""
               {

@@ -24,7 +24,7 @@ public abstract class ScopeEntryParser implements FieldBufferPredicate {
     return ScopeEntryParser.parseEntry(ji);
   }
 
-  static ScopeEntry parseEntry(final JsonIterator ji) {
+  public static ScopeEntry parseEntry(final JsonIterator ji) {
     final var type = ji.skipObjField().readString();
     if (type.equals("Deprecated")) {
       return new Deprecated(); // TODO: use singletons.
