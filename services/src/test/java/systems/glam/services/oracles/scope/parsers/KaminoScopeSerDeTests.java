@@ -33,42 +33,36 @@ final class KaminoScopeSerDeTests {
     }
   }
 
-  private static final class MarketParser implements FieldBufferPredicate {
-    private final List<ScopeEntry> sink;
-
-    private MarketParser(final List<ScopeEntry> sink) { this.sink = sink; }
+  private record MarketParser(List<ScopeEntry> sink) implements FieldBufferPredicate {
 
     @Override
-    public boolean test(final char[] buf, final int offset, final int len, final JsonIterator ji) {
-      if (JsonIterator.fieldEquals("reserves", buf, offset, len)) {
-        while (ji.readArray()) {
-          ji.testObject(new ReserveParser(sink));
+      public boolean test(final char[] buf, final int offset, final int len, final JsonIterator ji) {
+        if (JsonIterator.fieldEquals("reserves", buf, offset, len)) {
+          while (ji.readArray()) {
+            ji.testObject(new ReserveParser(sink));
+          }
+        } else {
+          ji.skip();
         }
-      } else {
-        ji.skip();
+        return true;
       }
-      return true;
     }
-  }
 
-  private static final class ReserveParser implements FieldBufferPredicate {
-    private final List<ScopeEntry> sink;
-
-    private ReserveParser(final List<ScopeEntry> sink) { this.sink = sink; }
+  private record ReserveParser(List<ScopeEntry> sink) implements FieldBufferPredicate {
 
     @Override
-    public boolean test(final char[] buf, final int offset, final int len, final JsonIterator ji) {
-      if (JsonIterator.fieldEquals("priceChain", buf, offset, len)
-          || JsonIterator.fieldEquals("twapChain", buf, offset, len)) {
-        while (ji.readArray()) {
-          final var entry = ScopeEntryParser.parseEntry(ji);
-          assertNotNull(entry, "Parsed ScopeEntry must not be null");
-          sink.add(entry);
+      public boolean test(final char[] buf, final int offset, final int len, final JsonIterator ji) {
+        if (JsonIterator.fieldEquals("priceChain", buf, offset, len)
+            || JsonIterator.fieldEquals("twapChain", buf, offset, len)) {
+          while (ji.readArray()) {
+            final var entry = ScopeEntryParser.parseEntry(ji);
+            assertNotNull(entry, "Parsed ScopeEntry must not be null");
+            sink.add(entry);
+          }
+        } else {
+          ji.skip();
         }
-      } else {
-        ji.skip();
+        return true;
       }
-      return true;
     }
-  }
 }
