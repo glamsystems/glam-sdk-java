@@ -100,11 +100,13 @@ public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
 
     final var reserveContextsFilePath = serviceConfig.reserveContextsFilePath();
     final var reserveContextMap = new ConcurrentHashMap<PublicKey, ReserveContext>();
-    try {
-      MarketParser.parseReserves(Files.readAllBytes(reserveContextsFilePath), reserveContextMap);
-    } catch (final IOException e) {
-      logger.log(WARNING, "Failed to read reserve contexts file.", e);
-      return null;
+    if (Files.exists(reserveContextsFilePath)) {
+      try {
+        MarketParser.parseReserves(Files.readAllBytes(reserveContextsFilePath), reserveContextMap);
+      } catch (final IOException e) {
+        logger.log(WARNING, "Failed to read reserve contexts file.", e);
+        return null;
+      }
     }
 
     if (scopeConfigurationsFuture != null) {

@@ -55,7 +55,7 @@ public record ReserveContext(PublicKey pubKey,
   }
 
   static ReserveContext createContext(final Reserve reserve,
-                                      final Map<PublicKey, MappingsContext> scopeEntryMap) {
+                                      final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed) {
     final var tokenInfo = reserve.config().tokenInfo();
     final var scopeConfiguration = tokenInfo.scopeConfiguration();
     final var priceFeed = scopeConfiguration.priceFeed();
@@ -63,7 +63,7 @@ public record ReserveContext(PublicKey pubKey,
     if (priceFeed.equals(PublicKey.NONE) || priceFeed.equals(NULL_KEY)) {
       priceChains = null;
     } else {
-      final var scopeEntries = scopeEntryMap.get(priceFeed);
+      final var scopeEntries = mappingsContextByPriceFeed.get(priceFeed);
       if (scopeEntries == null) {
         return null;
       } else {
@@ -115,7 +115,7 @@ public record ReserveContext(PublicKey pubKey,
               }""",
           pubKey.toBase58(),
           tokenName,
-          mint,
+          mint.toBase58(),
           priceFeed.toBase58(),
           encodedTokenInfo
       );
@@ -134,7 +134,7 @@ public record ReserveContext(PublicKey pubKey,
                 }""",
             pubKey.toBase58(),
             tokenName,
-            mint,
+            mint.toBase58(),
             priceFeed.toBase58(),
             maxAgePriceSeconds(),
             ScopeMonitorServiceImpl.toJson(priceChains.priceChain()),
@@ -146,6 +146,7 @@ public record ReserveContext(PublicKey pubKey,
                   "reserve": "%s",
                   "tokenName": "%s",
                   "mint": "%s",
+                  "priceFeed": "%s",
                   "maxAgePriceSeconds": %d,
                   "maxAgeTwapSeconds": %d,
                   "maxTwapDivergenceBps": %d,
@@ -155,7 +156,8 @@ public record ReserveContext(PublicKey pubKey,
                 }""",
             pubKey.toBase58(),
             tokenName,
-            mint,
+            mint.toBase58(),
+            priceFeed.toBase58(),
             maxAgePriceSeconds(),
             maxAgeTwapSeconds(),
             maxTwapDivergenceBps(),
@@ -196,16 +198,22 @@ public record ReserveContext(PublicKey pubKey,
     }
 
     private ReserveContext createContext() {
+      final PriceChains priceChains;
+      if (priceChain == null && twapChain == null) {
+        priceChains = null;
+      } else {
+        priceChains = new PriceChainsRecord(
+            priceChain == null ? EMPTY_CHAIN : priceChain,
+            twapChain == null ? EMPTY_CHAIN : twapChain
+        );
+      }
       return new ReserveContext(
           reserve,
           market,
           tokenName,
           mint,
           priceFeed,
-          new PriceChainsRecord(
-              priceChain == null ? EMPTY_CHAIN : priceChain,
-              twapChain == null ? EMPTY_CHAIN : twapChain
-          ),
+          priceChains,
           tokenInfo
       );
     }
@@ -215,7 +223,7 @@ public record ReserveContext(PublicKey pubKey,
       while (ji.readArray()) {
         priceChain.add(ScopeEntryParser.parseEntry(ji));
       }
-      return priceChain.toArray(ScopeEntry[]::new);
+      return priceChain.isEmpty() ? null : priceChain.toArray(ScopeEntry[]::new);
     }
 
     @Override
