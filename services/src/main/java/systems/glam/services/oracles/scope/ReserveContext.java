@@ -41,12 +41,12 @@ public record ReserveContext(PublicKey pubKey,
         break;
       }
     }
+    final var tokenName = i == 0 ? null : new String(name, 0, i + 1);
     final var tokenInfo = reserve.config().tokenInfo();
-
     return new ReserveContext(
         reserve._address(),
         reserve.lendingMarket(),
-        i == 0 ? null : new String(name, 0, i + 1),
+        tokenName,
         mint,
         tokenInfo.scopeConfiguration().priceFeed(),
         priceChains,
@@ -85,17 +85,25 @@ public record ReserveContext(PublicKey pubKey,
     return tokenInfo.maxTwapDivergenceBps();
   }
 
+  private String jsonTokenName() {
+    if (tokenName == null) {
+      return "null";
+    } else {
+      return '"' + tokenName + '"';
+    }
+  }
+
   String keysToJson() {
     return String.format("""
             {
               "market": "%s",
               "reserve": "%s",
-              "tokenName": "%s",
+              "tokenName": %s,
               "mint": "%s"
             }""",
         market.toBase58(),
         pubKey.toBase58(),
-        tokenName,
+        jsonTokenName(),
         mint
     );
   }
@@ -108,13 +116,13 @@ public record ReserveContext(PublicKey pubKey,
       return String.format("""
               {
                 "reserve": "%s",
-                "tokenName": "%s",
+                "tokenName": %s,
                 "mint": "%s",
                 "priceFeed": "%s",
                 "tokenInfo": "%s"
               }""",
           pubKey.toBase58(),
-          tokenName,
+          jsonTokenName(),
           mint.toBase58(),
           priceFeed.toBase58(),
           encodedTokenInfo
@@ -125,7 +133,7 @@ public record ReserveContext(PublicKey pubKey,
         return String.format("""
                 {
                   "reserve": "%s",
-                  "tokenName": "%s",
+                  "tokenName": %s,
                   "mint": "%s",
                   "priceFeed": "%s",
                   "maxAgePriceSeconds": %d,
@@ -133,7 +141,7 @@ public record ReserveContext(PublicKey pubKey,
                   "tokenInfo": "%s"
                 }""",
             pubKey.toBase58(),
-            tokenName,
+            jsonTokenName(),
             mint.toBase58(),
             priceFeed.toBase58(),
             maxAgePriceSeconds(),
@@ -144,7 +152,7 @@ public record ReserveContext(PublicKey pubKey,
         return String.format("""
                 {
                   "reserve": "%s",
-                  "tokenName": "%s",
+                  "tokenName": %s,
                   "mint": "%s",
                   "priceFeed": "%s",
                   "maxAgePriceSeconds": %d,
@@ -155,7 +163,7 @@ public record ReserveContext(PublicKey pubKey,
                   "tokenInfo": "%s"
                 }""",
             pubKey.toBase58(),
-            tokenName,
+            jsonTokenName(),
             mint.toBase58(),
             priceFeed.toBase58(),
             maxAgePriceSeconds(),

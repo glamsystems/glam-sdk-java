@@ -579,7 +579,7 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
                   pythLazer.exponent(),
                   pythLazer.confidenceFactor()
               );
-              default -> prefix + "\n}";
+              default -> refPrefix + "\n}";
             };
           }
           case ChainlinkStatusEntry chainlinkStatusEntry -> String.format("""

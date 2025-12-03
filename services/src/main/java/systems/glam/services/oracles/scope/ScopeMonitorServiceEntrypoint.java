@@ -24,11 +24,12 @@ import java.util.concurrent.Executors;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.WARNING;
 import static java.nio.file.StandardOpenOption.*;
-import static systems.glam.services.oracles.scope.ScopeMonitorServiceImpl.logger;
 
 public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
                                             WebSocketManager webSocketManager,
                                             ScopeMonitorService monitorService) implements Runnable {
+
+  private static final System.Logger logger = System.getLogger(ScopeMonitorServiceEntrypoint.class.getName());
 
   static void main() {
     try (final var executorService = Executors.newFixedThreadPool(1)) {
