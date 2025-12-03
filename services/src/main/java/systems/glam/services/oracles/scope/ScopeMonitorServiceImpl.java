@@ -58,7 +58,8 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
                           final Path mappingsPath,
                           final Path reserveContextsFilePath,
                           final Map<PublicKey, Configuration> scopeConfigurations,
-                          final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed) {
+                          final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed,
+                          final Map<PublicKey, ReserveContext> reserveContextMap) {
     this.notifyClient = notifyClient;
     this.rpcCaller = rpcCaller;
     this.kLendProgram = kLendProgram;
@@ -72,7 +73,7 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
     this.scopeFeedToMappings = new ConcurrentHashMap<>();
     this.mappingsToScopeFeed = new ConcurrentHashMap<>();
     this.mappingsContextByPriceFeed = mappingsContextByPriceFeed;
-    this.reserveContextMap = new ConcurrentHashMap<>();
+    this.reserveContextMap = reserveContextMap;
     this.reservesUsingScopeIndex = new ConcurrentHashMap<>();
     this.lock = new ReentrantLock();
     for (final var configuration : scopeConfigurations.values()) {

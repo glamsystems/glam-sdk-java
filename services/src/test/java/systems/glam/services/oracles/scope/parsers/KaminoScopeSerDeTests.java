@@ -4,13 +4,10 @@ import org.junit.jupiter.api.Test;
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.kamino.scope.entries.*;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
-import systems.comodal.jsoniter.FieldBufferPredicate;
-import systems.comodal.jsoniter.JsonIterator;
 import systems.glam.services.oracles.scope.ReserveContext;
 import systems.glam.services.tests.ResourceUtil;
 
 import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -18,12 +15,10 @@ final class KaminoScopeSerDeTests {
 
   @Test
   void parseReserveContexts() throws Exception {
-    final var ji = JsonIterator.parse(ResourceUtil.readResource("scope/klend_reserves.json.zip"));
+    final byte[] data = ResourceUtil.readResource("scope/klend_reserves.json.zip");
 
     final var reserveContexts = HashMap.<PublicKey, ReserveContext>newHashMap(512);
-    while (ji.readArray()) {
-      ji.testObject(new MarketParser(reserveContexts));
-    }
+    MarketParser.parseReserves(data, reserveContexts);
 
     assertFalse(reserveContexts.isEmpty());
 
@@ -207,30 +202,5 @@ final class KaminoScopeSerDeTests {
     var usdgtwap = assertInstanceOf(PythPullEMA.class, chain[0]);
     assertEquals(PublicKey.fromBase58Encoded("6JkZmXGgWnzsyTQaqRARzP64iFYnpMNT4siiuUDUaB8s"), usdgtwap.oracle());
     assertFalse(usdgtwap.twapEnabled());
-  }
-
-  private static final class MarketParser implements FieldBufferPredicate {
-
-    private final Map<PublicKey, ReserveContext> reserveContexts;
-    private PublicKey market;
-
-    private MarketParser(final Map<PublicKey, ReserveContext> reserveContexts) {
-      this.reserveContexts = reserveContexts;
-    }
-
-    @Override
-    public boolean test(final char[] buf, final int offset, final int len, final JsonIterator ji) {
-      if (JsonIterator.fieldEquals("market", buf, offset, len)) {
-        this.market = PublicKey.fromBase58Encoded(ji.readString());
-      } else if (JsonIterator.fieldEquals("reserves", buf, offset, len)) {
-        while (ji.readArray()) {
-          final var reserveContext = ReserveContext.parse(ji, market);
-          reserveContexts.put(reserveContext.pubKey(), reserveContext);
-        }
-      } else {
-        ji.skip();
-      }
-      return true;
-    }
   }
 }

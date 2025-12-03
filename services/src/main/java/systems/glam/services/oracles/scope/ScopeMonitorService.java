@@ -23,7 +23,8 @@ interface ScopeMonitorService extends Runnable, Consumer<AccountInfo<byte[]>> {
                                            final Path mappingsPath,
                                            final Path reserveContextsFilePath,
                                            final Map<PublicKey, Configuration> scopeConfigurations,
-                                           final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed) {
+                                           final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed,
+                                           final Map<PublicKey, ReserveContext> reserveContextMap) {
     return new ScopeMonitorServiceImpl(
         notifyClient,
         rpcCaller,
@@ -34,7 +35,8 @@ interface ScopeMonitorService extends Runnable, Consumer<AccountInfo<byte[]>> {
         mappingsPath,
         reserveContextsFilePath,
         scopeConfigurations,
-        mappingsContextByPriceFeed
+        mappingsContextByPriceFeed,
+        reserveContextMap
     );
   }
 

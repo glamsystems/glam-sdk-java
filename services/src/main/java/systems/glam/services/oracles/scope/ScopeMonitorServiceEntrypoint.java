@@ -7,6 +7,7 @@ import software.sava.idl.clients.kamino.scope.gen.types.OracleMappings;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.websocket.WebSocketManager;
 import systems.glam.services.io.FileUtils;
+import systems.glam.services.oracles.scope.parsers.MarketParser;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -97,6 +98,15 @@ public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
       scopeConfigurationsFuture = null;
     }
 
+    final var reserveContextsFilePath = serviceConfig.reserveContextsFilePath();
+    final var reserveContextMap = new ConcurrentHashMap<PublicKey, ReserveContext>();
+    try {
+      MarketParser.parseReserves(Files.readAllBytes(reserveContextsFilePath), reserveContextMap);
+    } catch (final IOException e) {
+      logger.log(WARNING, "Failed to read reserve contexts file.", e);
+      return null;
+    }
+
     if (scopeConfigurationsFuture != null) {
       final var accounts = scopeConfigurationsFuture.join();
       for (final var accountInfo : accounts) {
@@ -171,10 +181,11 @@ public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
         kaminoAccounts,
         serviceConfig.pollingDelay(),
         configurationsPath,
-        serviceConfig.mappingsPath(),
-        serviceConfig.reserveContextsFilePath(),
+        mappingsPath,
+        reserveContextsFilePath,
         scopeConfigurations,
-        mappingsContextByPriceFeed
+        mappingsContextByPriceFeed,
+        reserveContextMap
     );
 
     final var websocketConfig = serviceConfig.websocketConfig();
