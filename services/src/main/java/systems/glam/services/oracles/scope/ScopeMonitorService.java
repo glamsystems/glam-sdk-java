@@ -10,32 +10,31 @@ import software.sava.services.solana.remote.call.RpcCaller;
 
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Collection;
-import java.util.Set;
+import java.util.Map;
 import java.util.function.Consumer;
 
-public interface ScopeMonitorService extends Runnable, Consumer<AccountInfo<byte[]>> {
+interface ScopeMonitorService extends Runnable, Consumer<AccountInfo<byte[]>> {
 
   static ScopeMonitorService createService(final NotifyClient notifyClient,
                                            final RpcCaller rpcCaller,
                                            final KaminoAccounts kaminoAccounts,
-                                           final Set<PublicKey> accountsNeeded,
-                                           final Collection<Configuration> configurations,
                                            final Duration pollingDelay,
                                            final Path configurationsPath,
                                            final Path mappingsPath,
-                                           final Path reserveContextsFilePath) {
+                                           final Path reserveContextsFilePath,
+                                           final Map<PublicKey, Configuration> scopeConfigurations,
+                                           final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed) {
     return new ScopeMonitorServiceImpl(
         notifyClient,
         rpcCaller,
         kaminoAccounts.kLendProgram(),
         kaminoAccounts.scopePricesProgram(),
-        accountsNeeded,
-        configurations,
         pollingDelay.toNanos(),
         configurationsPath,
         mappingsPath,
-        reserveContextsFilePath
+        reserveContextsFilePath,
+        scopeConfigurations,
+        mappingsContextByPriceFeed
     );
   }
 

@@ -1,12 +1,14 @@
 package systems.glam.services.oracles.scope;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.idl.clients.kamino.scope.entries.ScopeReader;
 import software.sava.idl.clients.kamino.scope.gen.types.Configuration;
+import software.sava.idl.clients.kamino.scope.gen.types.OracleMappings;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.websocket.WebSocketManager;
+import systems.glam.services.io.FileUtils;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -55,18 +57,12 @@ public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
                                                              final HttpClient httpClient,
                                                              final HttpClient wsHttpClient) {
     final var serviceConfig = ScopeMonitorConfig.loadConfig(taskExecutor, httpClient);
-    final var accountsNeeded = ConcurrentHashMap.<PublicKey>newKeySet(100);
 
     final var configurationsPath = serviceConfig.configurationsPath();
     final var scopeConfigKeys = serviceConfig.scopeConfigurationKeys();
     final Map<PublicKey, Configuration> scopeConfigurations;
     try {
       scopeConfigurations = loadConfigurations(configurationsPath);
-      accountsNeeded.addAll(scopeConfigKeys);
-      for (final var configuration : scopeConfigurations.values()) {
-        accountsNeeded.add(configuration._address());
-        accountsNeeded.add(configuration.oracleMappings());
-      }
     } catch (final IOException e) {
       logger.log(WARNING, String.format(
               "Error listing Scope Configurations directory [%s]. exiting.",
@@ -107,24 +103,64 @@ public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
         if (accountInfo == null) {
           continue;
         }
-        final var configuration = Configuration.read(accountInfo.pubKey(), accountInfo.data());
-        if (!Configuration.DISCRIMINATOR.equals(configuration.discriminator())
-            || configuration.l() != Configuration.BYTES) {
-          logger.log(ERROR, String.format("""
-                  %s is not a valid Scope Configuration account.""", configuration._address().toBase58()
+        final byte[] data = accountInfo.data();
+        if (!Configuration.DISCRIMINATOR.equals(data, 0) || data.length != Configuration.BYTES) {
+          logger.log(ERROR, String.format(
+                  "%s is not a valid Scope Configuration account.", accountInfo.pubKey()
               )
           );
+          return null;
         }
+        final var configuration = Configuration.read(accountInfo);
         final var key = configuration._address();
         if (scopeConfigurations.putIfAbsent(key, configuration) == null) {
-          accountsNeeded.add(key);
-          accountsNeeded.add(configuration.oracleMappings());
           try {
             writeConfigurations(configurationsPath, configuration);
           } catch (final IOException e) {
-            logger.log(WARNING, "Failed to persist Scope configuration.", e);
+            logger.log(WARNING, "Failed to persist Scope Configuration.", e);
             return null;
           }
+        }
+      }
+    }
+
+
+    final var mappingToFeedMap = HashMap.<PublicKey, PublicKey>newHashMap(scopeConfigurations.size());
+    for (final var scopeConfiguration : scopeConfigurations.values()) {
+      mappingToFeedMap.put(scopeConfiguration.oracleMappings(), scopeConfiguration.oraclePrices());
+    }
+    final var mappingsPath = serviceConfig.mappingsPath();
+    final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed;
+    try {
+      mappingsContextByPriceFeed = loadMappings(mappingsPath, mappingToFeedMap);
+    } catch (final IOException e) {
+      logger.log(WARNING, "Failed to read mappings directory.", e);
+      return null;
+    }
+
+    final var missingMappings = scopeConfigurations.values().stream().<PublicKey>mapMulti((configuration, downstream) -> {
+      if (!mappingsContextByPriceFeed.containsKey(configuration.oraclePrices())) {
+        downstream.accept(configuration.oracleMappings());
+      }
+    }).toList();
+
+    if (!missingMappings.isEmpty()) {
+      final var mappingsFuture = rpcCaller.courteousCall(
+          rpcClient -> rpcClient.getAccounts(missingMappings),
+          "Oracle Mappings accounts"
+      );
+
+      for (final var accountInfo : mappingsFuture.join()) {
+        final var mappingsKey = accountInfo.pubKey();
+        final var priceFeed = mappingToFeedMap.get(mappingsKey);
+        final var mappingsContext = MappingsContext.createContext(accountInfo);
+        mappingsContextByPriceFeed.put(priceFeed, mappingsContext);
+        final var path = FileUtils.resolveAccountPath(mappingsPath, mappingsKey);
+        try {
+          Files.write(path, mappingsContext.data(), CREATE, TRUNCATE_EXISTING, WRITE);
+        } catch (final IOException e) {
+          logger.log(WARNING, "Failed to persist Oracle Mappings.", e);
+          return null;
         }
       }
     }
@@ -133,20 +169,27 @@ public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
         serviceConfig.notifyClient(),
         rpcCaller,
         kaminoAccounts,
-        accountsNeeded,
-        scopeConfigurations.values(),
         serviceConfig.pollingDelay(),
         configurationsPath,
         serviceConfig.mappingsPath(),
-        serviceConfig.reserveContextsFilePath()
+        serviceConfig.reserveContextsFilePath(),
+        scopeConfigurations,
+        mappingsContextByPriceFeed
     );
 
     final var websocketConfig = serviceConfig.websocketConfig();
+
     final var webSocketManager = WebSocketManager.createManager(
         wsHttpClient,
         websocketConfig.endpoint(),
         websocketConfig.backoff(),
-        monitorService::subscribe
+        scopeConfigKeys.isEmpty()
+            ? monitorService::subscribe
+            : websocket -> {
+          for (final var key : scopeConfigKeys) {
+            websocket.accountSubscribe(key, monitorService);
+          }
+        }
     );
     webSocketManager.checkConnection();
 
@@ -154,7 +197,7 @@ public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
   }
 
   static void writeConfigurations(final Path configurationsPath, final Configuration configuration) throws IOException {
-    final var filePath = configurationsPath.resolve(configuration._address().toBase58() + ".dat");
+    final var filePath = FileUtils.resolveAccountPath(configurationsPath, configuration._address());
     final byte[] data = new byte[Configuration.BYTES];
     configuration.write(data, 0);
     Files.write(
@@ -169,20 +212,11 @@ public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
     if (Files.exists(configurationsPath)) {
       try (final var paths = Files.list(configurationsPath)) {
         paths.forEach(path -> {
-          final String name = path.getFileName().toString();
-          if (name.endsWith(".dat")) {
-            final byte[] data;
+          final var accountData = FileUtils.readAccountData(path);
+          if (accountData.isAccount(Configuration.DISCRIMINATOR, Configuration.BYTES)) {
             try {
-              data = Files.readAllBytes(path);
-            } catch (IOException e) {
-              throw new UncheckedIOException(e);
-            }
-            try {
-              if (data.length > 0) {
-                final var key = name.substring(0, name.lastIndexOf('.'));
-                final var configuration = Configuration.read(PublicKey.fromBase58Encoded(key), data);
-                configurations.put(configuration._address(), configuration);
-              }
+              final var configuration = accountData.read(Configuration::read);
+              configurations.put(configuration._address(), configuration);
             } catch (RuntimeException e) {
               logger.log(WARNING, "Failed to read/parse configuration file: " + path, e);
             }
@@ -193,6 +227,28 @@ public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
       Files.createDirectories(configurationsPath);
     }
     return configurations;
+  }
+
+  private static Map<PublicKey, MappingsContext> loadMappings(final Path mappingsPath,
+                                                              final Map<PublicKey, PublicKey> mappingToFeedMap) throws IOException {
+    final var mappingsContextByPriceFeed = new ConcurrentHashMap<PublicKey, MappingsContext>();
+    try (final var paths = Files.list(mappingsPath)) {
+      paths.forEach(path -> {
+        final var accountData = FileUtils.readAccountData(path);
+        if (accountData.isAccount(OracleMappings.DISCRIMINATOR, OracleMappings.BYTES)) {
+          try {
+            final var mappings = accountData.read(OracleMappings::read);
+            final var scopeEntries = ScopeReader.parseEntries(0, mappings);
+            final var priceFeed = mappingToFeedMap.get(mappings._address());
+            mappingsContextByPriceFeed.put(priceFeed, new MappingsContext(accountData.data(), scopeEntries));
+          } catch (final RuntimeException e) {
+            logger.log(WARNING, "Failed to parse OracleMappings file: " + path, e);
+            throw e;
+          }
+        }
+      });
+    }
+    return mappingsContextByPriceFeed;
   }
 
   @Override

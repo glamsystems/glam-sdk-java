@@ -104,59 +104,78 @@ public record ReserveContext(PublicKey pubKey,
     final byte[] tokenInfo = new byte[TokenInfo.BYTES];
     this.tokenInfo.write(tokenInfo, 0);
     final var encodedTokenInfo = Base64.getEncoder().encodeToString(tokenInfo);
-
-    final var twapChain = priceChains.twapChain();
-    if (twapChain.length == 0) {
+    if (priceChains == null) {
       return String.format("""
               {
                 "reserve": "%s",
                 "tokenName": "%s",
                 "mint": "%s",
                 "priceFeed": "%s",
-                "maxAgePriceSeconds": %d,
-                "priceChain": %s,
                 "tokenInfo": "%s"
               }""",
           pubKey.toBase58(),
           tokenName,
           mint,
           priceFeed.toBase58(),
-          maxAgePriceSeconds(),
-          ScopeMonitorServiceImpl.toJson(priceChains.priceChain()),
           encodedTokenInfo
       );
     } else {
-      return String.format("""
-              {
-                "reserve": "%s",
-                "tokenName": "%s",
-                "mint": "%s",
-                "maxAgePriceSeconds": %d,
-                "maxAgeTwapSeconds": %d,
-                "maxTwapDivergenceBps": %d,
-                "priceChain": %s,
-                "twapChain": %s,
-                "tokenInfo": "%s"
-              }""",
-          pubKey.toBase58(),
-          tokenName,
-          mint,
-          maxAgePriceSeconds(),
-          maxAgeTwapSeconds(),
-          maxTwapDivergenceBps(),
-          ScopeMonitorServiceImpl.toJson(priceChains.priceChain()),
-          ScopeMonitorServiceImpl.toJson(twapChain),
-          encodedTokenInfo
-      );
+      final var twapChain = priceChains.twapChain();
+      if (twapChain.length == 0) {
+        return String.format("""
+                {
+                  "reserve": "%s",
+                  "tokenName": "%s",
+                  "mint": "%s",
+                  "priceFeed": "%s",
+                  "maxAgePriceSeconds": %d,
+                  "priceChain": %s,
+                  "tokenInfo": "%s"
+                }""",
+            pubKey.toBase58(),
+            tokenName,
+            mint,
+            priceFeed.toBase58(),
+            maxAgePriceSeconds(),
+            ScopeMonitorServiceImpl.toJson(priceChains.priceChain()),
+            encodedTokenInfo
+        );
+      } else {
+        return String.format("""
+                {
+                  "reserve": "%s",
+                  "tokenName": "%s",
+                  "mint": "%s",
+                  "maxAgePriceSeconds": %d,
+                  "maxAgeTwapSeconds": %d,
+                  "maxTwapDivergenceBps": %d,
+                  "priceChain": %s,
+                  "twapChain": %s,
+                  "tokenInfo": "%s"
+                }""",
+            pubKey.toBase58(),
+            tokenName,
+            mint,
+            maxAgePriceSeconds(),
+            maxAgeTwapSeconds(),
+            maxTwapDivergenceBps(),
+            ScopeMonitorServiceImpl.toJson(priceChains.priceChain()),
+            ScopeMonitorServiceImpl.toJson(twapChain),
+            encodedTokenInfo
+        );
+      }
     }
   }
 
   boolean changed(final ReserveContext o) {
-    return !pubKey.equals(o.pubKey)
-        || !market.equals(o.market)
-        || !mint.equals(o.mint)
-        || !Objects.equals(tokenName, o.tokenName)
-        || !Objects.equals(priceChains, o.priceChains);
+    if (!pubKey.equals(o.pubKey)) {
+      throw new IllegalStateException("Cannot compare different reserves");
+    } else {
+      return !market.equals(o.market)
+          || !mint.equals(o.mint)
+          || !Objects.equals(tokenName, o.tokenName)
+          || !Objects.equals(priceChains, o.priceChains);
+    }
   }
 
   public static final class Parser implements FieldBufferPredicate {
