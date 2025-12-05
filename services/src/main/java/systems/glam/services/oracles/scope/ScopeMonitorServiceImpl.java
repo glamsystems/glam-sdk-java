@@ -81,6 +81,9 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
         syncConfigMappings(configuration);
       }
     }
+    for (final var reserveContext : reserveContextMap.values()) {
+      addEntry(reserveContext);
+    }
   }
 
   @Override
@@ -96,16 +99,30 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
   }
 
   private void handleReserveChange(final ReserveContext previous, final ReserveContext reserveContext) {
-    final var msg = String.format("""
+    final var changes = previous.changed(reserveContext);
+    final var changesString = changes.stream().map(Enum::name).collect(Collectors.joining("\",\""));
+    var msg = String.format("""
             {
               "event": "Kamino Reserve Change",
+              "changes": ["%s"]
               "previous": %s,
               "latest": %s,
             }""",
+        changesString,
         previous.priceChainsToJson(), reserveContext.priceChainsToJson()
     );
     logger.log(INFO, msg);
     // TODO retry handling.
+    msg = String.format("""
+            {
+              "event": "Kamino Reserve Change",
+              "changes": ["%s"]
+              "previous": %s,
+              "latest": %s,
+            }""",
+        changesString,
+        previous.priceChainsToJsonNoTokenInfo(), reserveContext.priceChainsToJsonNoTokenInfo()
+    );
     notifyClient.postMsg(msg);
   }
 
@@ -435,11 +452,12 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
         } else {
           final var previousContext = reserveContextMap.get(reservePubKey);
           if (previousContext != null) {
-            if (previousContext.changed(reserveContext)) {
+            final var changes = previousContext.changed(reserveContext);
+            if (changes.isEmpty()) {
+              continue;
+            } else {
               removePreviousEntry(previousContext);
               mutatedReserves.add(reserveContext);
-            } else {
-              continue;
             }
           }
         }

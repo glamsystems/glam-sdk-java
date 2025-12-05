@@ -11,10 +11,7 @@ import systems.comodal.jsoniter.FieldBufferPredicate;
 import systems.comodal.jsoniter.JsonIterator;
 import systems.glam.services.oracles.scope.parsers.ScopeEntryParser;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 public record ReserveContext(PublicKey pubKey,
                              PublicKey market,
@@ -177,14 +174,123 @@ public record ReserveContext(PublicKey pubKey,
     }
   }
 
-  boolean changed(final ReserveContext o) {
+  String priceChainsToJsonNoTokenInfo() {
+    if (priceChains == null) {
+      return String.format("""
+              {
+                "reserve": "%s",
+                "tokenName": %s,
+                "mint": "%s",
+                "priceFeed": "%s"
+              }""",
+          pubKey.toBase58(),
+          jsonTokenName(),
+          mint.toBase58(),
+          priceFeed.toBase58()
+      );
+    } else {
+      final var twapChain = priceChains.twapChain();
+      if (twapChain.length == 0) {
+        return String.format("""
+                {
+                  "reserve": "%s",
+                  "tokenName": %s,
+                  "mint": "%s",
+                  "priceFeed": "%s",
+                  "maxAgePriceSeconds": %d,
+                  "priceChain": %s
+                }""",
+            pubKey.toBase58(),
+            jsonTokenName(),
+            mint.toBase58(),
+            priceFeed.toBase58(),
+            maxAgePriceSeconds(),
+            ScopeMonitorServiceImpl.toJson(priceChains.priceChain())
+        );
+      } else {
+        return String.format("""
+                {
+                  "reserve": "%s",
+                  "tokenName": %s,
+                  "mint": "%s",
+                  "priceFeed": "%s",
+                  "maxAgePriceSeconds": %d,
+                  "maxAgeTwapSeconds": %d,
+                  "maxTwapDivergenceBps": %d,
+                  "priceChain": %s,
+                  "twapChain": %s
+                }""",
+            pubKey.toBase58(),
+            jsonTokenName(),
+            mint.toBase58(),
+            priceFeed.toBase58(),
+            maxAgePriceSeconds(),
+            maxAgeTwapSeconds(),
+            maxTwapDivergenceBps(),
+            ScopeMonitorServiceImpl.toJson(priceChains.priceChain()),
+            ScopeMonitorServiceImpl.toJson(twapChain)
+        );
+      }
+    }
+  }
+
+  enum ConfigChange {
+    MARKET,
+    MINT,
+    TOKEN_NAME,
+    MAX_AGE_PRICE_SECONDS,
+    MAX_AGE_TWAP_SECONDS,
+    MAX_TWAP_DIVERGENCE_BPS,
+    PRICE_CHAIN,
+    TWAP_CHAIN
+  }
+
+  private static Set<ConfigChange> NO_CHANGES = Set.of();
+
+  private static Set<ConfigChange> addChange(final Set<ConfigChange> changes, final ConfigChange change) {
+    if (changes.isEmpty()) {
+      return EnumSet.of(change);
+    } else {
+      changes.add(change);
+      return changes;
+    }
+  }
+
+  Set<ConfigChange> changed(final ReserveContext o) {
     if (!pubKey.equals(o.pubKey)) {
       throw new IllegalStateException("Cannot compare different reserves");
     } else {
-      return !market.equals(o.market)
-          || !mint.equals(o.mint)
-          || !Objects.equals(tokenName, o.tokenName)
-          || !Objects.equals(priceChains, o.priceChains);
+      var changes = NO_CHANGES;
+      if (!market.equals(o.market)) {
+        changes = EnumSet.of(ConfigChange.MARKET);
+      }
+      if (!mint.equals(o.mint)) {
+        changes = addChange(changes, ConfigChange.MINT);
+      }
+      if (!Objects.equals(tokenName, o.tokenName)) {
+        changes = addChange(changes, ConfigChange.TOKEN_NAME);
+      }
+      if (maxAgePriceSeconds() != o.maxAgePriceSeconds()) {
+        changes = addChange(changes, ConfigChange.MAX_AGE_PRICE_SECONDS);
+      }
+      if (maxAgeTwapSeconds() != o.maxAgeTwapSeconds()) {
+        changes = addChange(changes, ConfigChange.MAX_AGE_TWAP_SECONDS);
+      }
+      if (maxTwapDivergenceBps() != o.maxTwapDivergenceBps()) {
+        changes = addChange(changes, ConfigChange.MAX_TWAP_DIVERGENCE_BPS);
+      }
+      if (priceChains == null ^ o.priceChains == null) {
+        changes = addChange(changes, ConfigChange.PRICE_CHAIN);
+        changes.add(ConfigChange.TWAP_CHAIN);
+      } else if (priceChains != null) {
+        if (!Arrays.equals(priceChains.priceChain(), o.priceChains.priceChain())) {
+          changes = addChange(changes, ConfigChange.PRICE_CHAIN);
+        }
+        if (!Arrays.equals(priceChains.twapChain(), o.priceChains.twapChain())) {
+          changes = addChange(changes, ConfigChange.TWAP_CHAIN);
+        }
+      }
+      return changes;
     }
   }
 
