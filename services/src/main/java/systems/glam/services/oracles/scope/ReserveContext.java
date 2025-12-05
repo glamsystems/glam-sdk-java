@@ -245,7 +245,7 @@ public record ReserveContext(PublicKey pubKey,
     TWAP_CHAIN
   }
 
-  private static Set<ConfigChange> NO_CHANGES = Set.of();
+  private static final Set<ConfigChange> NO_CHANGES = Set.of();
 
   private static Set<ConfigChange> addChange(final Set<ConfigChange> changes, final ConfigChange change) {
     if (changes.isEmpty()) {
