@@ -101,4 +101,8 @@ public interface GlamVaultAccounts {
   AccountMeta readVault();
 
   ProgramDerivedAddress mintPDA(final int id);
+
+  default ProgramDerivedAddress mintPDA() {
+    return mintPDA(0);
+  }
 }

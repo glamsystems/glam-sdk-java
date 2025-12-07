@@ -1,5 +1,6 @@
 package systems.glam.sdk;
 
+import software.sava.core.accounts.ProgramDerivedAddress;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.tx.Instruction;
@@ -44,6 +45,10 @@ public interface GlamAccountClient extends SPLAccountClient {
   GlamAccounts glamAccounts();
 
   GlamVaultAccounts vaultAccounts();
+
+  ProgramDerivedAddress escrowMintPDA(final PublicKey mint, final PublicKey escrow);
+
+  ProgramDerivedAddress escrowMintPDA();
 
   Instruction fulfill(final int mintId,
                       final PublicKey baseAssetMint,

@@ -8,7 +8,6 @@ import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.spl.SPLAccountClient;
 import software.sava.idl.clients.spl.SPLClient;
 import software.sava.solana.programs.token.AssociatedTokenProgram;
-import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintPDAs;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintProgram;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolProgram;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateModel;
@@ -157,23 +156,34 @@ final class GlamAccountClientImpl implements GlamAccountClient {
   }
 
   @Override
+  public ProgramDerivedAddress escrowMintPDA(final PublicKey mint, final PublicKey escrow) {
+    return AssociatedTokenProgram.findATA(solanaAccounts, escrow, solanaAccounts.token2022Program(), mint);
+  }
+
+  @Override
+  public ProgramDerivedAddress escrowMintPDA() {
+    final var mint = glamVaultAccounts.mintPDA().publicKey();
+    final var escrow = glamAccounts.escrowPDA(mint).publicKey();
+    return AssociatedTokenProgram.findATA(solanaAccounts, escrow, solanaAccounts.token2022Program(), mint);
+  }
+
+  @Override
   public Instruction fulfill(final int mintId,
                              final PublicKey baseAssetMint,
                              final PublicKey baseAssetTokenProgram,
                              final OptionalInt limit) {
-    final var glamProgram = invokedProtocolProgram.publicKey();
-
-    final var escrow = GlamMintPDAs.glamEscrowPDA(glamProgram, glamVaultAccounts.glamStateKey()).publicKey();
-
     final var mint = glamVaultAccounts.mintPDA(mintId).publicKey();
-    final var escrowMintTokenAccount = AssociatedTokenProgram.findATA(solanaAccounts, escrow, solanaAccounts.token2022Program(), mint);
+    final var escrow = glamAccounts.escrowPDA(mint).publicKey();
+
+    final var escrowMintTokenAccount = escrowMintPDA(mint, escrow);
 
     final var vault = glamVaultAccounts.vaultPublicKey();
     final var vaultTokenAccount = AssociatedTokenProgram.findATA(solanaAccounts, vault, baseAssetTokenProgram, baseAssetMint);
 
     final var escrowTokenAccount = AssociatedTokenProgram.findATA(solanaAccounts, escrow, baseAssetTokenProgram, baseAssetMint);
 
-    final var requestQueueKey = GlamMintPDAs.requestQueuePDA(glamAccounts.mintProgram(), mint).publicKey();
+    final var requestQueueKey = glamAccounts.requestQueuePDA(mint).publicKey();
+
     return GlamMintProgram.fulfill(
         glamAccounts.invokedMintProgram(),
         solanaAccounts,

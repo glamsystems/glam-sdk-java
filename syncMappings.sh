@@ -2,8 +2,6 @@
 
 set -e
 
-cd glam
-git pull
-cd ..
+git -C glam pull
 
 exit 0

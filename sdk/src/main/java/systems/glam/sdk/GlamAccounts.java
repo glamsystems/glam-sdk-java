@@ -112,6 +112,14 @@ public interface GlamAccounts {
 
   ProgramDerivedAddress mintPDA(final PublicKey glamPublicKey, final int shareClassId);
 
+  default ProgramDerivedAddress escrowPDA(final PublicKey mint) {
+    return GlamMintPDAs.glamEscrowPDA(mintProgram(), mint);
+  }
+
+  default ProgramDerivedAddress requestQueuePDA(final PublicKey mint) {
+    return GlamMintPDAs.requestQueuePDA(mintProgram(), mint);
+  }
+
   default TransactionMapper<GlamVaultAccounts> createMapper(final Path mappingsDirectory,
                                                             final DynamicGlamAccountFactory dynamicGlamAccountFactory) {
     return GlamVaultAccounts.createMapper(invokedProtocolProgram(), mappingsDirectory, dynamicGlamAccountFactory);
