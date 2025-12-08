@@ -1,10 +1,7 @@
 dependencyAnalysis {
   issues {
-    onIncorrectConfiguration {
+    onAny {
       severity("ignore")
     }
-//    onAny {
-//      severity("ignore")
-//    }
   }
 }
