@@ -21,7 +21,6 @@ public interface GlamAccounts {
 
   // https://github.com/glamsystems/glam-sdk/tree/main/idl
   GlamAccounts MAIN_NET = createAccounts(
-      "GLAMbTqav9N9witRjswJ8enwp9vv5G8bsSJ2kPJ4rcyc",
       "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
       "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
       "GM1NtvvnSXUptTrMCqbogAdZJydZSNv98DoU5AZVLmGh",
@@ -31,8 +30,7 @@ public interface GlamAccounts {
       "G1NTkDEUR3pkEqGCKZtmtmVzCUEdYa86pezHkwYbLyde"
   );
 
-  static GlamAccounts createAccounts(final PublicKey program,
-                                     final PublicKey protocolProgram,
+  static GlamAccounts createAccounts(final PublicKey protocolProgram,
                                      final PublicKey configProgram,
                                      final PublicKey mintProgram,
                                      final PublicKey policyProgram,
@@ -50,8 +48,6 @@ public interface GlamAccounts {
         kaminoIntegrationProgram, kaminoIntegrationAuthority
     );
     return new GlamAccountsRecord(
-        program,
-        AccountMeta.createInvoked(program),
         AccountMeta.createInvoked(protocolProgram),
         configProgram,
         policyProgram,
@@ -68,8 +64,7 @@ public interface GlamAccounts {
     );
   }
 
-  static GlamAccounts createAccounts(final String program,
-                                     final String protocolProgram,
+  static GlamAccounts createAccounts(final String protocolProgram,
                                      final String configProgram,
                                      final String mintProgram,
                                      final String policyProgram,
@@ -77,7 +72,6 @@ public interface GlamAccounts {
                                      final String driftIntegrationProgram,
                                      final String kaminoIntegrationProgram) {
     return createAccounts(
-        PublicKey.fromBase58Encoded(program),
         PublicKey.fromBase58Encoded(protocolProgram),
         PublicKey.fromBase58Encoded(configProgram),
         PublicKey.fromBase58Encoded(mintProgram),
@@ -87,10 +81,6 @@ public interface GlamAccounts {
         PublicKey.fromBase58Encoded(kaminoIntegrationProgram)
     );
   }
-
-  PublicKey program();
-
-  AccountMeta invokedProgram();
 
   AccountMeta invokedProtocolProgram();
 

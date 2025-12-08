@@ -15,6 +15,8 @@ import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.lend.gen.types.Obligation;
 import software.sava.idl.clients.kamino.lend.gen.types.Reserve;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
+import software.sava.idl.clients.marinade.stake_pool.MarinadeAccounts;
+import software.sava.idl.clients.meteora.MeteoraAccounts;
 import software.sava.rpc.json.http.SolanaNetwork;
 import software.sava.rpc.json.http.client.SolanaRpcClient;
 import software.sava.rpc.json.http.response.AccountInfo;
@@ -48,7 +50,9 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
                              Map<PublicKey, AddressLookupTable> kaminoLookupTables,
                              Map<PublicKey, Obligation> glamVaultKaminoObligations,
                              Map<PublicKey, AddressLookupTable> kaminoVaultLookupTables,
-                             Map<PublicKey, VaultState> kaminoVaults) implements VaultTableBuilder {
+                             Map<PublicKey, VaultState> kaminoVaults,
+                             MarinadeAccounts marinadeAccounts,
+                             MeteoraAccounts meteoraAccounts) implements VaultTableBuilder {
 
   private static void addAccount(final PublicKey key, final Set<PublicKey> accountsNeeded) {
     if (key != null && !key.equals(PublicKey.NONE)) {

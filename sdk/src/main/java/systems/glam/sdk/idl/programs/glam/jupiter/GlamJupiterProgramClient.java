@@ -5,6 +5,7 @@ import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.jupiter.JupiterAccounts;
+import software.sava.idl.clients.jupiter.swap.rest.response.JupiterSwapInstructions;
 import systems.comodal.jsoniter.JsonIterator;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.GlamVaultAccounts;
@@ -12,7 +13,6 @@ import systems.glam.sdk.GlamVaultAccounts;
 import java.util.*;
 
 import static software.sava.rpc.json.PublicKeyEncoding.parseBase58Encoded;
-import static software.sava.solana.web2.jupiter.client.http.response.JupiterSwapInstructions.parseInstruction;
 
 public interface GlamJupiterProgramClient {
 
@@ -52,7 +52,7 @@ public interface GlamJupiterProgramClient {
         return null;
       }
     }
-    return parseInstruction(jsonResponseBody);
+    return JupiterSwapInstructions.parseInstruction(jsonResponseBody);
   }
 
   static Collection<PublicKey> parseLookupTables(final JsonIterator jsonResponseBody) {

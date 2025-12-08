@@ -8,6 +8,8 @@ import software.sava.idl.clients.jupiter.JupiterAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.lend.gen.types.Obligation;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
+import software.sava.idl.clients.marinade.stake_pool.MarinadeAccounts;
+import software.sava.idl.clients.meteora.MeteoraAccounts;
 import software.sava.rpc.json.http.client.SolanaRpcClient;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.StateAccountClient;
@@ -113,6 +115,8 @@ public interface VaultTableBuilder {
     private DriftAccounts driftAccounts = DriftAccounts.MAIN_NET;
     private JupiterAccounts jupiterAccounts = JupiterAccounts.MAIN_NET;
     private KaminoAccounts kaminoAccounts = KaminoAccounts.MAIN_NET;
+    private MarinadeAccounts marinadeAccounts = MarinadeAccounts.MAIN_NET;
+    private MeteoraAccounts meteorAccounts = MeteoraAccounts.MAIN_NET;
 
     public static Builder newBuilder() {
       return new Builder();
@@ -143,6 +147,24 @@ public interface VaultTableBuilder {
 
     public KaminoAccounts kaminoAccounts() {
       return kaminoAccounts;
+    }
+
+    public Builder marinadeAccounts(final MarinadeAccounts marinadeAccounts) {
+      this.marinadeAccounts = Objects.requireNonNull(marinadeAccounts);
+      return this;
+    }
+
+    public MarinadeAccounts marinadeAccounts() {
+      return marinadeAccounts;
+    }
+
+    public Builder meteorAccounts(final MeteoraAccounts meteorAccounts) {
+      this.meteorAccounts = Objects.requireNonNull(meteorAccounts);
+      return this;
+    }
+
+    public MeteoraAccounts meteorAccounts() {
+      return meteorAccounts;
     }
 
     public VaultTableBuilder create(final StateAccount stateAccount, final PublicKey feePayer) {
@@ -223,7 +245,9 @@ public interface VaultTableBuilder {
           kaminoLendLookupTables,
           glamVaultKaminoObligations,
           kaminoVaultLookupTables,
-          kaminoVaults
+          kaminoVaults,
+          marinadeAccounts,
+          meteorAccounts
       );
     }
   }
