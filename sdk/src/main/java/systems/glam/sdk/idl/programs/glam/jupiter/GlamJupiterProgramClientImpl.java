@@ -57,6 +57,7 @@ final class GlamJupiterProgramClientImpl implements GlamJupiterProgramClient {
                                   final PublicKey outputMintKey,
                                   final PublicKey outputTokenProgram,
                                   final Instruction swapInstruction) {
+    final var fixedAccounts = GlamJupiterProgramClient.fixCPICallerRights(swapInstruction.accounts());
     return GlamProtocolProgram.jupiterSwap(
         invokedProgram,
         solanaAccounts,
@@ -71,7 +72,7 @@ final class GlamJupiterProgramClientImpl implements GlamJupiterProgramClient {
         outputProgramStateKey,
         inputTokenProgram, outputTokenProgram,
         swapInstruction.data()
-    ).extraAccounts(swapInstruction.accounts());
+    ).extraAccounts(fixedAccounts);
   }
 
   @Override

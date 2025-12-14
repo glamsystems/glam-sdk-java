@@ -5,14 +5,12 @@ import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.jupiter.JupiterAccounts;
-import software.sava.idl.clients.jupiter.swap.rest.response.JupiterSwapInstructions;
-import systems.comodal.jsoniter.JsonIterator;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.GlamVaultAccounts;
 
-import java.util.*;
-
-import static software.sava.rpc.json.PublicKeyEncoding.parseBase58Encoded;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 public interface GlamJupiterProgramClient {
 
@@ -25,11 +23,11 @@ public interface GlamJupiterProgramClient {
     return createClient(nativeProgramAccountClient, JupiterAccounts.MAIN_NET);
   }
 
-  /// Removes signature requirements for the vault/owner key.
+  /// Removes signature requirements for the vault key.
   ///
   /// Jupiter assumes a direct call instead of a CPI call, which implicitly considers the calling program to be authorized.
-  static Instruction fixCPICallerRights(final Instruction swapIx) {
-    final var accounts = swapIx.accounts().toArray(AccountMeta[]::new);
+  static List<AccountMeta> fixCPICallerRights(final List<AccountMeta> accountList) {
+    final var accounts = accountList.toArray(AccountMeta[]::new);
     for (int i = 0; i < accounts.length; i++) {
       final var account = accounts[i];
       if (account.signer()) {
@@ -39,33 +37,18 @@ public interface GlamJupiterProgramClient {
         break;
       }
     }
+    return Arrays.asList(accounts);
+  }
+
+  /// Removes signature requirements for the vault key.
+  ///
+  /// Jupiter assumes a direct call instead of a CPI call, which implicitly considers the calling program to be authorized.
+  static Instruction fixCPICallerRights(final Instruction swapIx) {
     return Instruction.createInstruction(
         swapIx.programId(),
-        Arrays.asList(accounts),
+        fixCPICallerRights(swapIx.accounts()),
         swapIx.data()
     );
-  }
-
-  static Instruction parseSwapInstruction(final JsonIterator jsonResponseBody) {
-    if (jsonResponseBody.skipUntil("swapInstruction") == null) {
-      if (jsonResponseBody.reset(0).skipUntil("swapInstruction") == null) {
-        return null;
-      }
-    }
-    return JupiterSwapInstructions.parseInstruction(jsonResponseBody);
-  }
-
-  static Collection<PublicKey> parseLookupTables(final JsonIterator jsonResponseBody) {
-    if (jsonResponseBody.skipUntil("addressLookupTableAddresses") == null) {
-      if (jsonResponseBody.reset(0).skipUntil("addressLookupTableAddresses") == null) {
-        return List.of();
-      }
-    }
-    final var addressLookupTableAddresses = new ArrayList<PublicKey>();
-    while (jsonResponseBody.readArray()) {
-      addressLookupTableAddresses.add(parseBase58Encoded(jsonResponseBody));
-    }
-    return addressLookupTableAddresses;
   }
 
   SolanaAccounts solanaAccounts();

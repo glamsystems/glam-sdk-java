@@ -28,6 +28,6 @@ module systems.glam.sdk {
   requires transitive software.sava.idl.clients.meteora;
   requires transitive software.sava.idl.clients.spl;
   requires transitive software.sava.rpc;
-  requires transitive systems.comodal.json_iterator;
+  requires systems.comodal.json_iterator;
   requires transitive systems.glam.ix_proxy;
 }
