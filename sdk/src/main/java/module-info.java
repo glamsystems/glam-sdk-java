@@ -19,6 +19,7 @@ module systems.glam.sdk {
   requires java.base;
   requires java.net.http;
   requires software.sava.solana_programs;
+  requires systems.comodal.json_iterator;
   requires transitive software.sava.core;
   requires transitive software.sava.idl.clients.core;
   requires transitive software.sava.idl.clients.drift;
@@ -28,6 +29,5 @@ module systems.glam.sdk {
   requires transitive software.sava.idl.clients.meteora;
   requires transitive software.sava.idl.clients.spl;
   requires transitive software.sava.rpc;
-  requires systems.comodal.json_iterator;
   requires transitive systems.glam.ix_proxy;
 }

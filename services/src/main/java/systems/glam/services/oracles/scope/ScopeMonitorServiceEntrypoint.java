@@ -137,7 +137,6 @@ public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
       }
     }
 
-
     final var mappingToFeedMap = HashMap.<PublicKey, PublicKey>newHashMap(scopeConfigurations.size());
     for (final var scopeConfiguration : scopeConfigurations.values()) {
       mappingToFeedMap.put(scopeConfiguration.oracleMappings(), scopeConfiguration.oraclePrices());

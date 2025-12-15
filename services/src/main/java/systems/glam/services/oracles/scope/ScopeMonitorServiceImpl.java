@@ -346,7 +346,6 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
   }
 
   private void deleteOracleMappings(final MappingsContext mappingsContext) {
-    final var scopeEntries = mappingsContext.scopeEntries();
     final var mappingsKey = mappingsContext.publicKey();
     final var priceFeed = mappingsToScopeFeed.remove(mappingsKey);
     this.scopeFeedToMappings.remove(priceFeed);
@@ -424,7 +423,6 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
               logger.log(WARNING, "Failed to find Scope Configuration for price feed " + priceFeedKey);
               continue;
             } else if (numConfigAccounts > 1) {
-
               logger.log(WARNING, String.format("""
                           Found multiple Scope Configurations ["%s"] for price feed %s.""",
                       configAccountList.stream().map(AccountInfo::pubKey).map(PublicKey::toBase58).collect(Collectors.joining("\", \"")),
@@ -468,7 +466,7 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
       int i = 0;
       int accountsDeleted = 0;
       for (final var accountInfo : accountInfoList) {
-        if (accountInfo == null) {
+        if (accountInfo == null || accountInfo.data() == null || accountInfo.data().length == 0) {
           ++accountsDeleted;
           final var key = accountsNeededList.get(i);
           this.accountsNeededSet.remove(key);
@@ -545,6 +543,8 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
         } catch (final IOException e) {
           logger.log(ERROR, "Failed to write Kamino Markets Reserve Scope Price Chains.", e);
         }
+      } else if (accountsDeleted == 0) {
+        logger.log(INFO, "No changes to Scope Reserves.");
       }
 
       try {
