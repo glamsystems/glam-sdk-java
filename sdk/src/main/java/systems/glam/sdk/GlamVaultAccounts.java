@@ -110,11 +110,9 @@ public interface GlamVaultAccounts {
     return mintPDA(0);
   }
 
-  static Filter vaultTableFilter(final PublicKey glamProgramKey,
-                                 final PublicKey glamConfigProgramKey,
-                                 final PublicKey stateKey) {
-    final var vaultKey = GlamProtocolPDAs.glamVaultPDA(glamProgramKey, stateKey).publicKey();
-
+  static Filter vaultTableFilter(final PublicKey stateKey,
+                                 final PublicKey vaultKey,
+                                 final PublicKey glamConfigProgramKey) {
     final byte[] keyData = new byte[PublicKey.PUBLIC_KEY_LENGTH * 3];
     stateKey.write(keyData, 0);
     vaultKey.write(keyData, PublicKey.PUBLIC_KEY_LENGTH);
@@ -123,15 +121,23 @@ public interface GlamVaultAccounts {
     return Filter.createMemCompFilter(LOOKUP_TABLE_META_SIZE, keyData);
   }
 
+  static Filter deriveVaulKeyTableFilter(final PublicKey glamProgramKey,
+                                         final PublicKey glamConfigProgramKey,
+                                         final PublicKey stateKey) {
+    final var vaultKey = GlamProtocolPDAs.glamVaultPDA(glamProgramKey, stateKey).publicKey();
+    return vaultTableFilter(stateKey, vaultKey, glamConfigProgramKey);
+  }
+
   static List<Filter> activeVaultTableFilters(final PublicKey glamProgramKey,
                                               final PublicKey glamConfigProgramKey,
                                               final PublicKey stateKey) {
-    return List.of(ACTIVE_FILTER, vaultTableFilter(glamProgramKey, glamConfigProgramKey, stateKey));
+    return List.of(ACTIVE_FILTER, deriveVaulKeyTableFilter(glamProgramKey, glamConfigProgramKey, stateKey));
   }
 
   default Filter vaultTableFilter() {
-    final var glamAccounts = glamAccounts();
-    return vaultTableFilter(glamAccounts.protocolProgram(), glamAccounts.configProgram(), glamStateKey());
+    return vaultTableFilter(
+        glamAccounts().configProgram(), glamStateKey(), vaultPublicKey()
+    );
   }
 
   default List<Filter> activeVaultTableFilters() {

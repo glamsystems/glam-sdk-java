@@ -2,7 +2,6 @@ package systems.glam.sdk;
 
 import software.sava.core.accounts.ProgramDerivedAddress;
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.accounts.lookup.AddressLookupTable;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.encoding.ByteUtil;
 import software.sava.core.rpc.Filter;
@@ -22,7 +21,7 @@ public record GlamVaultAccountsRecord(GlamAccounts glamAccounts,
     final byte[] notDeActivated = new byte[Integer.BYTES + Long.BYTES];
     ByteUtil.putInt32LE(notDeActivated, 0, 1);
     ByteUtil.putInt64LE(notDeActivated, Integer.BYTES, -1);
-    ACTIVE_FILTER = Filter.createMemCompFilter(AddressLookupTable.DEACTIVATION_SLOT_OFFSET, notDeActivated);
+    ACTIVE_FILTER = Filter.createMemCompFilter(0, notDeActivated);
   }
 
   @Override
