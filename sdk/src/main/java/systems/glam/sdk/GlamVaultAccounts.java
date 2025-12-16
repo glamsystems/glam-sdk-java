@@ -121,6 +121,12 @@ public interface GlamVaultAccounts {
     return Filter.createMemCompFilter(LOOKUP_TABLE_META_SIZE, keyData);
   }
 
+  static List<Filter> activeVaultTableFilters(final PublicKey stateKey,
+                                              final PublicKey vaultKey,
+                                              final PublicKey glamConfigProgramKey) {
+    return List.of(ACTIVE_FILTER, vaultTableFilter(stateKey, vaultKey, glamConfigProgramKey));
+  }
+
   static Filter deriveVaulKeyTableFilter(final PublicKey glamProgramKey,
                                          final PublicKey glamConfigProgramKey,
                                          final PublicKey stateKey) {
@@ -128,9 +134,9 @@ public interface GlamVaultAccounts {
     return vaultTableFilter(stateKey, vaultKey, glamConfigProgramKey);
   }
 
-  static List<Filter> activeVaultTableFilters(final PublicKey glamProgramKey,
-                                              final PublicKey glamConfigProgramKey,
-                                              final PublicKey stateKey) {
+  static List<Filter> deriveVaultActiveTableFilters(final PublicKey glamProgramKey,
+                                                    final PublicKey glamConfigProgramKey,
+                                                    final PublicKey stateKey) {
     return List.of(ACTIVE_FILTER, deriveVaulKeyTableFilter(glamProgramKey, glamConfigProgramKey, stateKey));
   }
 
