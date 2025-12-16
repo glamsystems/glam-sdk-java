@@ -48,29 +48,17 @@ final class GlamJupiterProgramClientImpl implements GlamJupiterProgramClient {
     return jupiterAccounts;
   }
 
-  private Instruction jupiterSwap(final PublicKey inputVaultATA,
-                                  final PublicKey outputVaultATA,
-                                  final PublicKey inputProgramStateKey,
-                                  final PublicKey inputMintKey,
-                                  final PublicKey inputTokenProgram,
+  private Instruction jupiterSwap(final PublicKey inputProgramStateKey,
                                   final PublicKey outputProgramStateKey,
-                                  final PublicKey outputMintKey,
-                                  final PublicKey outputTokenProgram,
                                   final Instruction swapInstruction) {
     final var fixedAccounts = GlamJupiterProgramClient.fixCPICallerRights(swapInstruction.accounts());
     return GlamProtocolProgram.jupiterSwap(
         invokedProgram,
-        solanaAccounts,
         glamVaultAccounts.glamStateKey(),
         glamVaultAccounts.vaultPublicKey(),
         feePayer.publicKey(),
         swapProgram,
-        inputVaultATA,
-        outputVaultATA,
-        inputMintKey, outputMintKey,
-        inputProgramStateKey,
-        outputProgramStateKey,
-        inputTokenProgram, outputTokenProgram,
+        inputProgramStateKey, outputProgramStateKey,
         swapInstruction.data()
     ).extraAccounts(fixedAccounts);
   }
@@ -115,14 +103,8 @@ final class GlamJupiterProgramClientImpl implements GlamJupiterProgramClient {
         true, outputVaultATA, outputMintKey, outputTokenProgram
     );
     final var glamJupiterSwap = jupiterSwap(
-        inputVaultATA,
-        outputVaultATA,
         inputProgramStateKey,
-        inputMintKey,
-        inputTokenProgram,
         outputProgramStateKey,
-        outputMintKey,
-        outputTokenProgram,
         swapInstruction
     );
 
@@ -149,17 +131,11 @@ final class GlamJupiterProgramClientImpl implements GlamJupiterProgramClient {
                                                             final PublicKey outputMintKey,
                                                             final PublicKey outputTokenProgram,
                                                             final Instruction swapInstruction) {
-    final var inputVaultATA = glamAccountClient.findATA(inputTokenProgram, inputMintKey).publicKey();
-    final var outputVaultATA = glamAccountClient.findATA(outputTokenProgram, outputMintKey).publicKey();
+//    final var inputVaultATA = glamAccountClient.findATA(inputTokenProgram, inputMintKey).publicKey();
+//    final var outputVaultATA = glamAccountClient.findATA(outputTokenProgram, outputMintKey).publicKey();
     return jupiterSwap(
-        inputVaultATA,
-        outputVaultATA,
         inputProgramStateKey,
-        inputMintKey,
-        inputTokenProgram,
         outputProgramStateKey,
-        outputMintKey,
-        outputTokenProgram,
         swapInstruction
     );
   }
