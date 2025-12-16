@@ -48,9 +48,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
       case 13 -> AccruedFees.read(_data, i);
       case 14 -> NotifyAndSettle.read(_data, i);
       case 15 -> OracleConfigs.read(_data, i);
-      default -> throw new IllegalStateException(java.lang.String.format(
-          "Unexpected ordinal [%d] for enum [EngineFieldValue]", ordinal
-      ));
+      default -> null;
     };
   }
 

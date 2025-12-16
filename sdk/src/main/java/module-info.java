@@ -6,6 +6,7 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.jupiter;
   exports systems.glam.sdk.idl.programs.glam.kamino.gen.types;
   exports systems.glam.sdk.idl.programs.glam.kamino.gen;
+  exports systems.glam.sdk.idl.programs.glam.mint.gen.events;
   exports systems.glam.sdk.idl.programs.glam.mint.gen.types;
   exports systems.glam.sdk.idl.programs.glam.mint.gen;
   exports systems.glam.sdk.idl.programs.glam.policy.gen.types;
