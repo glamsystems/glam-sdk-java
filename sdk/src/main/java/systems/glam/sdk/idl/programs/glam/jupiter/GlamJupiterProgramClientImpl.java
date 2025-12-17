@@ -131,8 +131,6 @@ final class GlamJupiterProgramClientImpl implements GlamJupiterProgramClient {
                                                             final PublicKey outputMintKey,
                                                             final PublicKey outputTokenProgram,
                                                             final Instruction swapInstruction) {
-//    final var inputVaultATA = glamAccountClient.findATA(inputTokenProgram, inputMintKey).publicKey();
-//    final var outputVaultATA = glamAccountClient.findATA(outputTokenProgram, outputMintKey).publicKey();
     return jupiterSwap(
         inputProgramStateKey,
         outputProgramStateKey,

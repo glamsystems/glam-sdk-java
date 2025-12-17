@@ -192,8 +192,7 @@
       "source": "sdk",
       "package": "glam.protocol",
       "module": "sdk",
-      "program": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
-      "idlURL": "https://raw.githubusercontent.com/glamsystems/glam-sdk-ts/refs/heads/main/idl/glam_protocol.json"
+      "program": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"
     },
     {
       "name": "GLAM Policy Program",
