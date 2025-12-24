@@ -3,9 +3,10 @@ package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 import java.util.function.BiFunction;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.borsh.Borsh;
 import software.sava.core.programs.Discriminator;
 import software.sava.core.rpc.Filter;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 import software.sava.rpc.json.http.response.AccountInfo;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
@@ -36,7 +37,7 @@ public record StateAccount(PublicKey _address,
                            DelegateAcl[] delegateAcls,
                            PublicKey[] externalPositions,
                            PricedProtocol[] pricedProtocols,
-                           EngineField[][] params) implements Borsh {
+                           EngineField[][] params) implements SerDe {
 
   public static final int PORTFOLIO_MANAGER_NAME_LEN = 32;
   public static final int NAME_LEN = 32;
@@ -135,7 +136,7 @@ public record StateAccount(PublicKey _address,
     final var owner = readPubKey(_data, i);
     i += 32;
     final var portfolioManagerName = new byte[32];
-    i += Borsh.readArray(portfolioManagerName, _data, i);
+    i += SerDeUtil.readArray(portfolioManagerName, _data, i);
     final var created = CreatedModel.read(_data, i);
     i += created.l();
     final var baseAssetMint = readPubKey(_data, i);
@@ -145,24 +146,24 @@ public record StateAccount(PublicKey _address,
     final var baseAssetTokenProgram = _data[i] & 0xFF;
     ++i;
     final var name = new byte[32];
-    i += Borsh.readArray(name, _data, i);
+    i += SerDeUtil.readArray(name, _data, i);
     final var timelockDuration = getInt32LE(_data, i);
     i += 4;
     final var timelockExpiresAt = getInt64LE(_data, i);
     i += 8;
     final var mint = readPubKey(_data, i);
     i += 32;
-    final var assets = Borsh.readPublicKeyVector(_data, i);
-    i += Borsh.lenVector(assets);
-    final var integrationAcls = Borsh.readVector(IntegrationAcl.class, IntegrationAcl::read, _data, i);
-    i += Borsh.lenVector(integrationAcls);
-    final var delegateAcls = Borsh.readVector(DelegateAcl.class, DelegateAcl::read, _data, i);
-    i += Borsh.lenVector(delegateAcls);
-    final var externalPositions = Borsh.readPublicKeyVector(_data, i);
-    i += Borsh.lenVector(externalPositions);
-    final var pricedProtocols = Borsh.readVector(PricedProtocol.class, PricedProtocol::read, _data, i);
-    i += Borsh.lenVector(pricedProtocols);
-    final var params = Borsh.readMultiDimensionVector(EngineField.class, EngineField::read, _data, i);
+    final var assets = SerDeUtil.readPublicKeyVector(4, _data, i);
+    i += SerDeUtil.lenVector(4, assets);
+    final var integrationAcls = SerDeUtil.readVector(4, IntegrationAcl.class, IntegrationAcl::read, _data, i);
+    i += SerDeUtil.lenVector(4, integrationAcls);
+    final var delegateAcls = SerDeUtil.readVector(4, DelegateAcl.class, DelegateAcl::read, _data, i);
+    i += SerDeUtil.lenVector(4, delegateAcls);
+    final var externalPositions = SerDeUtil.readPublicKeyVector(4, _data, i);
+    i += SerDeUtil.lenVector(4, externalPositions);
+    final var pricedProtocols = SerDeUtil.readVector(4, PricedProtocol.class, PricedProtocol::read, _data, i);
+    i += SerDeUtil.lenVector(4, pricedProtocols);
+    final var params = SerDeUtil.readMultiDimensionVector(4, EngineField.class, EngineField::read, _data, i);
     return new StateAccount(_address,
                             discriminator,
                             accountType,
@@ -196,7 +197,7 @@ public record StateAccount(PublicKey _address,
     i += 32;
     owner.write(_data, i);
     i += 32;
-    i += Borsh.writeArrayChecked(portfolioManagerName, 32, _data, i);
+    i += SerDeUtil.writeArrayChecked(portfolioManagerName, 32, _data, i);
     i += created.write(_data, i);
     baseAssetMint.write(_data, i);
     i += 32;
@@ -204,19 +205,19 @@ public record StateAccount(PublicKey _address,
     ++i;
     _data[i] = (byte) baseAssetTokenProgram;
     ++i;
-    i += Borsh.writeArrayChecked(name, 32, _data, i);
+    i += SerDeUtil.writeArrayChecked(name, 32, _data, i);
     putInt32LE(_data, i, timelockDuration);
     i += 4;
     putInt64LE(_data, i, timelockExpiresAt);
     i += 8;
     mint.write(_data, i);
     i += 32;
-    i += Borsh.writeVector(assets, _data, i);
-    i += Borsh.writeVector(integrationAcls, _data, i);
-    i += Borsh.writeVector(delegateAcls, _data, i);
-    i += Borsh.writeVector(externalPositions, _data, i);
-    i += Borsh.writeVector(pricedProtocols, _data, i);
-    i += Borsh.writeVector(params, _data, i);
+    i += SerDeUtil.writeVector(4, assets, _data, i);
+    i += SerDeUtil.writeVector(4, integrationAcls, _data, i);
+    i += SerDeUtil.writeVector(4, delegateAcls, _data, i);
+    i += SerDeUtil.writeVector(4, externalPositions, _data, i);
+    i += SerDeUtil.writeVector(4, pricedProtocols, _data, i);
+    i += SerDeUtil.writeVector(4, params, _data, i);
     return i - _offset;
   }
 
@@ -226,20 +227,20 @@ public record StateAccount(PublicKey _address,
          + 1
          + 32
          + 32
-         + Borsh.lenArray(portfolioManagerName)
+         + SerDeUtil.lenArray(portfolioManagerName)
          + created.l()
          + 32
          + 1
          + 1
-         + Borsh.lenArray(name)
+         + SerDeUtil.lenArray(name)
          + 4
          + 8
          + 32
-         + Borsh.lenVector(assets)
-         + Borsh.lenVector(integrationAcls)
-         + Borsh.lenVector(delegateAcls)
-         + Borsh.lenVector(externalPositions)
-         + Borsh.lenVector(pricedProtocols)
-         + Borsh.lenVector(params);
+         + SerDeUtil.lenVector(4, assets)
+         + SerDeUtil.lenVector(4, integrationAcls)
+         + SerDeUtil.lenVector(4, delegateAcls)
+         + SerDeUtil.lenVector(4, externalPositions)
+         + SerDeUtil.lenVector(4, pricedProtocols)
+         + SerDeUtil.lenVector(4, params);
   }
 }

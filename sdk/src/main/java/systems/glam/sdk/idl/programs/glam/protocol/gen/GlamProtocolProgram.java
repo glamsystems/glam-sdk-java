@@ -5,9 +5,10 @@ import java.util.List;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
-import software.sava.core.borsh.Borsh;
 import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.EmergencyAccessUpdateArgs;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.EngineField;
@@ -141,15 +142,15 @@ public final class GlamProtocolProgram {
                                      final List<AccountMeta> keys,
                                      final byte[] data,
                                      final ExtraParams[] extraParams) {
-    final byte[] _data = new byte[8 + Borsh.lenVector(data) + Borsh.lenVector(extraParams)];
+    final byte[] _data = new byte[8 + SerDeUtil.lenVector(4, data) + SerDeUtil.lenVector(4, extraParams)];
     int i = CPI_PROXY_DISCRIMINATOR.write(_data, 0);
-    i += Borsh.writeVector(data, _data, i);
-    Borsh.writeVector(extraParams, _data, i);
+    i += SerDeUtil.writeVector(4, data, _data, i);
+    SerDeUtil.writeVector(4, extraParams, _data, i);
 
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record CpiProxyIxData(Discriminator discriminator, byte[] data, ExtraParams[] extraParams) implements Borsh {  
+  public record CpiProxyIxData(Discriminator discriminator, byte[] data, ExtraParams[] extraParams) implements SerDe {  
 
     public static CpiProxyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -161,23 +162,23 @@ public final class GlamProtocolProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var data = Borsh.readbyteVector(_data, i);
-      i += Borsh.lenVector(data);
-      final var extraParams = Borsh.readVector(ExtraParams.class, ExtraParams::read, _data, i);
+      final var data = SerDeUtil.readbyteVector(4, _data, i);
+      i += SerDeUtil.lenVector(4, data);
+      final var extraParams = SerDeUtil.readVector(4, ExtraParams.class, ExtraParams::read, _data, i);
       return new CpiProxyIxData(discriminator, data, extraParams);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.writeVector(data, _data, i);
-      i += Borsh.writeVector(extraParams, _data, i);
+      i += SerDeUtil.writeVector(4, data, _data, i);
+      i += SerDeUtil.writeVector(4, extraParams, _data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.lenVector(data) + Borsh.lenVector(extraParams);
+      return 8 + SerDeUtil.lenVector(4, data) + SerDeUtil.lenVector(4, extraParams);
     }
   }
 
@@ -227,7 +228,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record EmergencyAccessUpdateIxData(Discriminator discriminator, EmergencyAccessUpdateArgs args) implements Borsh {  
+  public record EmergencyAccessUpdateIxData(Discriminator discriminator, EmergencyAccessUpdateArgs args) implements SerDe {  
 
     public static EmergencyAccessUpdateIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -304,7 +305,7 @@ public final class GlamProtocolProgram {
   public record EnableDisableProtocolsIxData(Discriminator discriminator,
                                              PublicKey integrationProgram,
                                              int protocolsBitmask,
-                                             boolean setEnabled) implements Borsh {  
+                                             boolean setEnabled) implements SerDe {  
 
     public static EnableDisableProtocolsIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -379,7 +380,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record ExtendStateIxData(Discriminator discriminator, int bytes) implements Borsh {  
+  public record ExtendStateIxData(Discriminator discriminator, int bytes) implements SerDe {  
 
     public static ExtendStateIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -471,7 +472,7 @@ public final class GlamProtocolProgram {
                                                      PublicKey integrationProgram,
                                                      int protocolBitflag,
                                                      long permissionsBitmask,
-                                                     boolean setGranted) implements Borsh {  
+                                                     boolean setGranted) implements SerDe {  
 
     public static GrantRevokeDelegatePermissionsIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -563,7 +564,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record InitializeStateIxData(Discriminator discriminator, StateModel state) implements Borsh {  
+  public record InitializeStateIxData(Discriminator discriminator, StateModel state) implements SerDe {  
 
     public static InitializeStateIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -634,14 +635,14 @@ public final class GlamProtocolProgram {
   public static Instruction jupiterSwap(final AccountMeta invokedGlamProtocolProgramMeta,
                                         final List<AccountMeta> keys,
                                         final byte[] data) {
-    final byte[] _data = new byte[8 + Borsh.lenVector(data)];
+    final byte[] _data = new byte[8 + SerDeUtil.lenVector(4, data)];
     int i = JUPITER_SWAP_DISCRIMINATOR.write(_data, 0);
-    Borsh.writeVector(data, _data, i);
+    SerDeUtil.writeVector(4, data, _data, i);
 
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record JupiterSwapIxData(Discriminator discriminator, byte[] data) implements Borsh {  
+  public record JupiterSwapIxData(Discriminator discriminator, byte[] data) implements SerDe {  
 
     public static JupiterSwapIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -653,20 +654,20 @@ public final class GlamProtocolProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var data = Borsh.readbyteVector(_data, i);
+      final var data = SerDeUtil.readbyteVector(4, _data, i);
       return new JupiterSwapIxData(discriminator, data);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.writeVector(data, _data, i);
+      i += SerDeUtil.writeVector(4, data, _data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.lenVector(data);
+      return 8 + SerDeUtil.lenVector(4, data);
     }
   }
 
@@ -711,7 +712,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record LinkUnlinkMintByMintAuthorityIxData(Discriminator discriminator, boolean link) implements Borsh {  
+  public record LinkUnlinkMintByMintAuthorityIxData(Discriminator discriminator, boolean link) implements SerDe {  
 
     public static LinkUnlinkMintByMintAuthorityIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -809,7 +810,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record SetJupiterSwapPolicyIxData(Discriminator discriminator, JupiterSwapPolicy policy) implements Borsh {  
+  public record SetJupiterSwapPolicyIxData(Discriminator discriminator, JupiterSwapPolicy policy) implements SerDe {  
 
     public static SetJupiterSwapPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -872,13 +873,13 @@ public final class GlamProtocolProgram {
                                               final PublicKey integrationProgram,
                                               final int protocolBitflag,
                                               final byte[] data) {
-    final byte[] _data = new byte[42 + Borsh.lenVector(data)];
+    final byte[] _data = new byte[42 + SerDeUtil.lenVector(4, data)];
     int i = SET_PROTOCOL_POLICY_DISCRIMINATOR.write(_data, 0);
     integrationProgram.write(_data, i);
     i += 32;
     putInt16LE(_data, i, protocolBitflag);
     i += 2;
-    Borsh.writeVector(data, _data, i);
+    SerDeUtil.writeVector(4, data, _data, i);
 
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
@@ -886,7 +887,7 @@ public final class GlamProtocolProgram {
   public record SetProtocolPolicyIxData(Discriminator discriminator,
                                         PublicKey integrationProgram,
                                         int protocolBitflag,
-                                        byte[] data) implements Borsh {  
+                                        byte[] data) implements SerDe {  
 
     public static SetProtocolPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -902,7 +903,7 @@ public final class GlamProtocolProgram {
       i += 32;
       final var protocolBitflag = getInt16LE(_data, i);
       i += 2;
-      final var data = Borsh.readbyteVector(_data, i);
+      final var data = SerDeUtil.readbyteVector(4, _data, i);
       return new SetProtocolPolicyIxData(discriminator, integrationProgram, protocolBitflag, data);
     }
 
@@ -913,13 +914,13 @@ public final class GlamProtocolProgram {
       i += 32;
       putInt16LE(_data, i, protocolBitflag);
       i += 2;
-      i += Borsh.writeVector(data, _data, i);
+      i += SerDeUtil.writeVector(4, data, _data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + 32 + 2 + Borsh.lenVector(data);
+      return 8 + 32 + 2 + SerDeUtil.lenVector(4, data);
     }
   }
 
@@ -954,7 +955,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record SetSystemTransferPolicyIxData(Discriminator discriminator, TransferPolicy policy) implements Borsh {  
+  public record SetSystemTransferPolicyIxData(Discriminator discriminator, TransferPolicy policy) implements SerDe {  
 
     public static SetSystemTransferPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1038,7 +1039,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record SystemTransferIxData(Discriminator discriminator, long lamports) implements Borsh {  
+  public record SystemTransferIxData(Discriminator discriminator, long lamports) implements SerDe {  
 
     public static SystemTransferIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1135,7 +1136,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record TokenTransferCheckedByMintAuthorityIxData(Discriminator discriminator, long amount, int decimals) implements Borsh {  
+  public record TokenTransferCheckedByMintAuthorityIxData(Discriminator discriminator, long amount, int decimals) implements SerDe {  
 
     public static TokenTransferCheckedByMintAuthorityIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1195,14 +1196,14 @@ public final class GlamProtocolProgram {
   public static Instruction updateMintParams(final AccountMeta invokedGlamProtocolProgramMeta,
                                              final List<AccountMeta> keys,
                                              final EngineField[] params) {
-    final byte[] _data = new byte[8 + Borsh.lenVector(params)];
+    final byte[] _data = new byte[8 + SerDeUtil.lenVector(4, params)];
     int i = UPDATE_MINT_PARAMS_DISCRIMINATOR.write(_data, 0);
-    Borsh.writeVector(params, _data, i);
+    SerDeUtil.writeVector(4, params, _data, i);
 
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record UpdateMintParamsIxData(Discriminator discriminator, EngineField[] params) implements Borsh {  
+  public record UpdateMintParamsIxData(Discriminator discriminator, EngineField[] params) implements SerDe {  
 
     public static UpdateMintParamsIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1214,20 +1215,20 @@ public final class GlamProtocolProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var params = Borsh.readVector(EngineField.class, EngineField::read, _data, i);
+      final var params = SerDeUtil.readVector(4, EngineField.class, EngineField::read, _data, i);
       return new UpdateMintParamsIxData(discriminator, params);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.writeVector(params, _data, i);
+      i += SerDeUtil.writeVector(4, params, _data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.lenVector(params);
+      return 8 + SerDeUtil.lenVector(4, params);
     }
   }
 
@@ -1265,14 +1266,14 @@ public final class GlamProtocolProgram {
   public static Instruction updateMintParamsByMintAuthority(final AccountMeta invokedGlamProtocolProgramMeta,
                                                             final List<AccountMeta> keys,
                                                             final EngineField[] params) {
-    final byte[] _data = new byte[8 + Borsh.lenVector(params)];
+    final byte[] _data = new byte[8 + SerDeUtil.lenVector(4, params)];
     int i = UPDATE_MINT_PARAMS_BY_MINT_AUTHORITY_DISCRIMINATOR.write(_data, 0);
-    Borsh.writeVector(params, _data, i);
+    SerDeUtil.writeVector(4, params, _data, i);
 
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record UpdateMintParamsByMintAuthorityIxData(Discriminator discriminator, EngineField[] params) implements Borsh {  
+  public record UpdateMintParamsByMintAuthorityIxData(Discriminator discriminator, EngineField[] params) implements SerDe {  
 
     public static UpdateMintParamsByMintAuthorityIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1284,20 +1285,20 @@ public final class GlamProtocolProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var params = Borsh.readVector(EngineField.class, EngineField::read, _data, i);
+      final var params = SerDeUtil.readVector(4, EngineField.class, EngineField::read, _data, i);
       return new UpdateMintParamsByMintAuthorityIxData(discriminator, params);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.writeVector(params, _data, i);
+      i += SerDeUtil.writeVector(4, params, _data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.lenVector(params);
+      return 8 + SerDeUtil.lenVector(4, params);
     }
   }
 
@@ -1338,7 +1339,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record UpdatePricedProtocolIxData(Discriminator discriminator, PricedProtocol pricedProtocol) implements Borsh {  
+  public record UpdatePricedProtocolIxData(Discriminator discriminator, PricedProtocol pricedProtocol) implements SerDe {  
 
     public static UpdatePricedProtocolIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1398,7 +1399,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record UpdateStateIxData(Discriminator discriminator, StateModel state) implements Borsh {  
+  public record UpdateStateIxData(Discriminator discriminator, StateModel state) implements SerDe {  
 
     public static UpdateStateIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());

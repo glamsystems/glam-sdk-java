@@ -1,11 +1,11 @@
 package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
 
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 
-public record ProtocolFees(int baseFeeBps, int flowFeeBps) implements Borsh {
+public record ProtocolFees(int baseFeeBps, int flowFeeBps) implements SerDe {
 
   public static final int BYTES = 4;
 

@@ -1,8 +1,9 @@
 package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.RustEnum;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
-public enum ActionType implements Borsh.Enum {
+public enum ActionType implements RustEnum {
 
   AddExternalAccount,
   DeleteExternalAccount,
@@ -12,6 +13,6 @@ public enum ActionType implements Borsh.Enum {
   DeleteAsset;
 
   public static ActionType read(final byte[] _data, final int _offset) {
-    return Borsh.read(ActionType.values(), _data, _offset);
+    return SerDeUtil.read(1, ActionType.values(), _data, _offset);
   }
 }

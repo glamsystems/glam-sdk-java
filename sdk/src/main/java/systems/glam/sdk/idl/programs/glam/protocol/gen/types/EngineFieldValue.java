@@ -1,8 +1,9 @@
 package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.borsh.Borsh;
-import software.sava.core.borsh.RustEnum;
+import software.sava.idl.clients.core.gen.RustEnum;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -110,7 +111,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
     }
 
     public static String read(final byte[] data, final int _offset) {
-      return createRecord(Borsh.string(data, _offset));
+      return createRecord(SerDeUtil.readString(4, data, _offset));
     }
 
     @Override
@@ -137,20 +138,20 @@ public sealed interface EngineFieldValue extends RustEnum permits
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var val = Borsh.readPublicKeyVector(_data, _offset);
+      final var val = SerDeUtil.readPublicKeyVector(4, _data, _offset);
       return new VecPubkey(val);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = writeOrdinal(_data, _offset);
-      i += Borsh.writeVector(val, _data, i);
+      i += SerDeUtil.writeVector(4, val, _data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 1 + Borsh.lenVector(val);
+      return 1 + SerDeUtil.lenVector(4, val);
     }
 
     @Override
@@ -165,20 +166,20 @@ public sealed interface EngineFieldValue extends RustEnum permits
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var val = Borsh.readbyteVector(_data, _offset);
+      final var val = SerDeUtil.readbyteVector(4, _data, _offset);
       return new VecU8(val);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = writeOrdinal(_data, _offset);
-      i += Borsh.writeVector(val, _data, i);
+      i += SerDeUtil.writeVector(4, val, _data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 1 + Borsh.lenVector(val);
+      return 1 + SerDeUtil.lenVector(4, val);
     }
 
     @Override
@@ -193,20 +194,20 @@ public sealed interface EngineFieldValue extends RustEnum permits
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var val = Borsh.readintVector(_data, _offset);
+      final var val = SerDeUtil.readintVector(4, _data, _offset);
       return new VecU32(val);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = writeOrdinal(_data, _offset);
-      i += Borsh.writeVector(val, _data, i);
+      i += SerDeUtil.writeVector(4, val, _data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 1 + Borsh.lenVector(val);
+      return 1 + SerDeUtil.lenVector(4, val);
     }
 
     @Override
@@ -221,20 +222,20 @@ public sealed interface EngineFieldValue extends RustEnum permits
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var val = Borsh.readVector(DelegateAcl.class, DelegateAcl::read, _data, _offset);
+      final var val = SerDeUtil.readVector(4, DelegateAcl.class, DelegateAcl::read, _data, _offset);
       return new VecDelegateAcl(val);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = writeOrdinal(_data, _offset);
-      i += Borsh.writeVector(val, _data, i);
+      i += SerDeUtil.writeVector(4, val, _data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 1 + Borsh.lenVector(val);
+      return 1 + SerDeUtil.lenVector(4, val);
     }
 
     @Override
@@ -249,20 +250,20 @@ public sealed interface EngineFieldValue extends RustEnum permits
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var val = Borsh.readVector(IntegrationAcl.class, IntegrationAcl::read, _data, _offset);
+      final var val = SerDeUtil.readVector(4, IntegrationAcl.class, IntegrationAcl::read, _data, _offset);
       return new VecIntegrationAcl(val);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = writeOrdinal(_data, _offset);
-      i += Borsh.writeVector(val, _data, i);
+      i += SerDeUtil.writeVector(4, val, _data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 1 + Borsh.lenVector(val);
+      return 1 + SerDeUtil.lenVector(4, val);
     }
 
     @Override
@@ -271,7 +272,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
     }
   }
 
-  record FeeStructure(systems.glam.sdk.idl.programs.glam.protocol.gen.types.FeeStructure val) implements BorshEnum, EngineFieldValue {
+  record FeeStructure(systems.glam.sdk.idl.programs.glam.protocol.gen.types.FeeStructure val) implements SerDeEnum, EngineFieldValue {
 
     public static FeeStructure read(final byte[] _data, final int _offset) {
       return new FeeStructure(systems.glam.sdk.idl.programs.glam.protocol.gen.types.FeeStructure.read(_data, _offset));
@@ -283,7 +284,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
     }
   }
 
-  record FeeParams(systems.glam.sdk.idl.programs.glam.protocol.gen.types.FeeParams val) implements BorshEnum, EngineFieldValue {
+  record FeeParams(systems.glam.sdk.idl.programs.glam.protocol.gen.types.FeeParams val) implements SerDeEnum, EngineFieldValue {
 
     public static FeeParams read(final byte[] _data, final int _offset) {
       return new FeeParams(systems.glam.sdk.idl.programs.glam.protocol.gen.types.FeeParams.read(_data, _offset));
@@ -295,7 +296,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
     }
   }
 
-  record AccruedFees(systems.glam.sdk.idl.programs.glam.protocol.gen.types.AccruedFees val) implements BorshEnum, EngineFieldValue {
+  record AccruedFees(systems.glam.sdk.idl.programs.glam.protocol.gen.types.AccruedFees val) implements SerDeEnum, EngineFieldValue {
 
     public static AccruedFees read(final byte[] _data, final int _offset) {
       return new AccruedFees(systems.glam.sdk.idl.programs.glam.protocol.gen.types.AccruedFees.read(_data, _offset));
@@ -307,7 +308,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
     }
   }
 
-  record NotifyAndSettle(systems.glam.sdk.idl.programs.glam.protocol.gen.types.NotifyAndSettle val) implements BorshEnum, EngineFieldValue {
+  record NotifyAndSettle(systems.glam.sdk.idl.programs.glam.protocol.gen.types.NotifyAndSettle val) implements SerDeEnum, EngineFieldValue {
 
     public static NotifyAndSettle read(final byte[] _data, final int _offset) {
       return new NotifyAndSettle(systems.glam.sdk.idl.programs.glam.protocol.gen.types.NotifyAndSettle.read(_data, _offset));
@@ -319,7 +320,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
     }
   }
 
-  record OracleConfigs(systems.glam.sdk.idl.programs.glam.protocol.gen.types.OracleConfigs val) implements BorshEnum, EngineFieldValue {
+  record OracleConfigs(systems.glam.sdk.idl.programs.glam.protocol.gen.types.OracleConfigs val) implements SerDeEnum, EngineFieldValue {
 
     public static OracleConfigs read(final byte[] _data, final int _offset) {
       return new OracleConfigs(systems.glam.sdk.idl.programs.glam.protocol.gen.types.OracleConfigs.read(_data, _offset));

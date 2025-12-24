@@ -2,7 +2,7 @@ package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 
 import java.math.BigInteger;
 
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
 
 import static software.sava.core.encoding.ByteUtil.getInt128LE;
 import static software.sava.core.encoding.ByteUtil.getInt32LE;
@@ -17,7 +17,7 @@ public record FeeParams(int yearInSeconds,
                         BigInteger lastAum,
                         long lastPerformanceFeeCrystallized,
                         long lastManagementFeeCrystallized,
-                        long lastProtocolFeeCrystallized) implements Borsh {
+                        long lastProtocolFeeCrystallized) implements SerDe {
 
   public static final int BYTES = 76;
 

@@ -3,9 +3,10 @@ package systems.glam.sdk.idl.programs.glam.config.gen.types;
 import java.util.function.BiFunction;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.borsh.Borsh;
 import software.sava.core.programs.Discriminator;
 import software.sava.core.rpc.Filter;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 import software.sava.rpc.json.http.response.AccountInfo;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
@@ -23,7 +24,7 @@ public record GlobalConfig(PublicKey _address,
                            PublicKey referrer,
                            int baseFeeBps,
                            int flowFeeBps,
-                           AssetMeta[] assetMetas) implements Borsh {
+                           AssetMeta[] assetMetas) implements SerDe {
 
   public static final Discriminator DISCRIMINATOR = toDiscriminator(149, 8, 156, 202, 160, 252, 176, 217);
   public static final Filter DISCRIMINATOR_FILTER = Filter.createMemCompFilter(0, DISCRIMINATOR.data());
@@ -89,7 +90,7 @@ public record GlobalConfig(PublicKey _address,
     i += 2;
     final var flowFeeBps = getInt16LE(_data, i);
     i += 2;
-    final var assetMetas = Borsh.readVector(AssetMeta.class, AssetMeta::read, _data, i);
+    final var assetMetas = SerDeUtil.readVector(4, AssetMeta.class, AssetMeta::read, _data, i);
     return new GlobalConfig(_address,
                             discriminator,
                             admin,
@@ -113,7 +114,7 @@ public record GlobalConfig(PublicKey _address,
     i += 2;
     putInt16LE(_data, i, flowFeeBps);
     i += 2;
-    i += Borsh.writeVector(assetMetas, _data, i);
+    i += SerDeUtil.writeVector(4, assetMetas, _data, i);
     return i - _offset;
   }
 
@@ -124,6 +125,6 @@ public record GlobalConfig(PublicKey _address,
          + 32
          + 2
          + 2
-         + Borsh.lenVector(assetMetas);
+         + SerDeUtil.lenVector(4, assetMetas);
   }
 }

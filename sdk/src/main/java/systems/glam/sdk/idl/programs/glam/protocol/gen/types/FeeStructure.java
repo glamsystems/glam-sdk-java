@@ -1,12 +1,12 @@
 package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
 
 public record FeeStructure(EntryExitFees vault,
                            EntryExitFees manager,
                            ManagementFee management,
                            PerformanceFee performance,
-                           ProtocolFees protocol) implements Borsh {
+                           ProtocolFees protocol) implements SerDe {
 
   public static final int BYTES = 19;
 

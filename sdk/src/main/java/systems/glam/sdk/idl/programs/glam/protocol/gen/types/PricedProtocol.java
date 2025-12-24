@@ -3,7 +3,8 @@ package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 import java.math.BigInteger;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt128LE;
@@ -19,7 +20,7 @@ public record PricedProtocol(long rent,
                              long lastUpdatedSlot,
                              PublicKey integrationProgram,
                              int protocolBitflag,
-                             PublicKey[] positions) implements Borsh {
+                             PublicKey[] positions) implements SerDe {
 
   public static PricedProtocol read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
@@ -38,7 +39,7 @@ public record PricedProtocol(long rent,
     i += 32;
     final var protocolBitflag = getInt16LE(_data, i);
     i += 2;
-    final var positions = Borsh.readPublicKeyVector(_data, i);
+    final var positions = SerDeUtil.readPublicKeyVector(4, _data, i);
     return new PricedProtocol(rent,
                               amount,
                               decimals,
@@ -63,7 +64,7 @@ public record PricedProtocol(long rent,
     i += 32;
     putInt16LE(_data, i, protocolBitflag);
     i += 2;
-    i += Borsh.writeVector(positions, _data, i);
+    i += SerDeUtil.writeVector(4, positions, _data, i);
     return i - _offset;
   }
 
@@ -75,6 +76,6 @@ public record PricedProtocol(long rent,
          + 8
          + 32
          + 2
-         + Borsh.lenVector(positions);
+         + SerDeUtil.lenVector(4, positions);
   }
 }

@@ -1,8 +1,8 @@
 package systems.glam.sdk.idl.programs.glam.mint.gen.events;
 
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
 
-public sealed interface GlamMintEvent extends Borsh permits
+public sealed interface GlamMintEvent extends SerDe permits
     AumRecord,
     PricedProtocolRecord {
 

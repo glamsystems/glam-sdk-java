@@ -1,6 +1,7 @@
 package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
@@ -16,7 +17,7 @@ public record NotifyAndSettle(ValuationModel model,
                               long redeemSettlementPeriod,
                               long redeemCancellationWindow,
                               TimeUnit timeUnit,
-                              byte[] padding) implements Borsh {
+                              byte[] padding) implements SerDe {
 
   public static final int BYTES = 56;
   public static final int PADDING_LEN = 3;
@@ -49,7 +50,7 @@ public record NotifyAndSettle(ValuationModel model,
     final var timeUnit = TimeUnit.read(_data, i);
     i += timeUnit.l();
     final var padding = new byte[3];
-    Borsh.readArray(padding, _data, i);
+    SerDeUtil.readArray(padding, _data, i);
     return new NotifyAndSettle(model,
                                permissionlessFulfillment,
                                subscribeNoticePeriodType,
@@ -85,7 +86,7 @@ public record NotifyAndSettle(ValuationModel model,
     putInt64LE(_data, i, redeemCancellationWindow);
     i += 8;
     i += timeUnit.write(_data, i);
-    i += Borsh.writeArrayChecked(padding, 3, _data, i);
+    i += SerDeUtil.writeArrayChecked(padding, 3, _data, i);
     return i - _offset;
   }
 

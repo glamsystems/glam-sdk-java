@@ -1,6 +1,6 @@
 package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
 
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
@@ -9,7 +9,7 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
 /// Represents a delegate's permissions for a specific protocol
 ///
-public record ProtocolPermissions(int protocolBitflag, long permissionsBitmask) implements Borsh {
+public record ProtocolPermissions(int protocolBitflag, long permissionsBitmask) implements SerDe {
 
   public static final int BYTES = 10;
 

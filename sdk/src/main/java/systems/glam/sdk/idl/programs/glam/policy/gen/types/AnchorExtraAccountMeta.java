@@ -1,11 +1,12 @@
 package systems.glam.sdk.idl.programs.glam.policy.gen.types;
 
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
 public record AnchorExtraAccountMeta(int discriminator,
                                      byte[] addressConfig,
                                      boolean isSigner,
-                                     boolean isWritable) implements Borsh {
+                                     boolean isWritable) implements SerDe {
 
   public static final int BYTES = 35;
   public static final int ADDRESS_CONFIG_LEN = 32;
@@ -18,7 +19,7 @@ public record AnchorExtraAccountMeta(int discriminator,
     final var discriminator = _data[i] & 0xFF;
     ++i;
     final var addressConfig = new byte[32];
-    i += Borsh.readArray(addressConfig, _data, i);
+    i += SerDeUtil.readArray(addressConfig, _data, i);
     final var isSigner = _data[i] == 1;
     ++i;
     final var isWritable = _data[i] == 1;
@@ -33,7 +34,7 @@ public record AnchorExtraAccountMeta(int discriminator,
     int i = _offset;
     _data[i] = (byte) discriminator;
     ++i;
-    i += Borsh.writeArrayChecked(addressConfig, 32, _data, i);
+    i += SerDeUtil.writeArrayChecked(addressConfig, 32, _data, i);
     _data[i] = (byte) (isSigner ? 1 : 0);
     ++i;
     _data[i] = (byte) (isWritable ? 1 : 0);

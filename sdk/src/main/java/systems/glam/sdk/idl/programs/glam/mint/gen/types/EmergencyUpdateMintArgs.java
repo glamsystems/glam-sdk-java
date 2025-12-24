@@ -1,8 +1,8 @@
 package systems.glam.sdk.idl.programs.glam.mint.gen.types;
 
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
 
-public record EmergencyUpdateMintArgs(RequestType requestType, boolean setPaused) implements Borsh {
+public record EmergencyUpdateMintArgs(RequestType requestType, boolean setPaused) implements SerDe {
 
   public static final int BYTES = 2;
 

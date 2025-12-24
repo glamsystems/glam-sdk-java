@@ -2,7 +2,7 @@ package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 
 import java.math.BigInteger;
 
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
 
 import static software.sava.core.encoding.ByteUtil.getInt128LE;
 import static software.sava.core.encoding.ByteUtil.putInt128LE;
@@ -14,7 +14,7 @@ public record AccruedFees(BigInteger vaultSubscriptionFee,
                           BigInteger managementFee,
                           BigInteger performanceFee,
                           BigInteger protocolBaseFee,
-                          BigInteger protocolFlowFee) implements Borsh {
+                          BigInteger protocolFlowFee) implements SerDe {
 
   public static final int BYTES = 128;
 

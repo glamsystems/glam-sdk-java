@@ -3,9 +3,10 @@ package systems.glam.sdk.idl.programs.glam.mint.gen.types;
 import java.util.function.BiFunction;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.borsh.Borsh;
 import software.sava.core.programs.Discriminator;
 import software.sava.core.rpc.Filter;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 import software.sava.rpc.json.http.response.AccountInfo;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
@@ -18,7 +19,7 @@ public record RequestQueue(PublicKey _address,
                            PublicKey glamMint,
                            boolean subscriptionPaused,
                            boolean redemptionPaused,
-                           PendingRequest[] data) implements Borsh {
+                           PendingRequest[] data) implements SerDe {
 
   public static final Discriminator DISCRIMINATOR = toDiscriminator(172, 124, 172, 253, 233, 63, 70, 234);
   public static final Filter DISCRIMINATOR_FILTER = Filter.createMemCompFilter(0, DISCRIMINATOR.data());
@@ -73,7 +74,7 @@ public record RequestQueue(PublicKey _address,
     ++i;
     final var redemptionPaused = _data[i] == 1;
     ++i;
-    final var data = Borsh.readVector(PendingRequest.class, PendingRequest::read, _data, i);
+    final var data = SerDeUtil.readVector(4, PendingRequest.class, PendingRequest::read, _data, i);
     return new RequestQueue(_address,
                             discriminator,
                             glamState,
@@ -94,7 +95,7 @@ public record RequestQueue(PublicKey _address,
     ++i;
     _data[i] = (byte) (redemptionPaused ? 1 : 0);
     ++i;
-    i += Borsh.writeVector(data, _data, i);
+    i += SerDeUtil.writeVector(4, data, _data, i);
     return i - _offset;
   }
 
@@ -104,6 +105,6 @@ public record RequestQueue(PublicKey _address,
          + 32
          + 1
          + 1
-         + Borsh.lenVector(data);
+         + SerDeUtil.lenVector(4, data);
   }
 }

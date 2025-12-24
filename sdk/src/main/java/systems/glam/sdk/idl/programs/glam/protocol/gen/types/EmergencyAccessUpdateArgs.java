@@ -3,23 +3,24 @@ package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 import java.lang.Boolean;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
 public record EmergencyAccessUpdateArgs(PublicKey[] disabledIntegrations,
                                         PublicKey[] disabledDelegates,
-                                        Boolean stateEnabled) implements Borsh {
+                                        Boolean stateEnabled) implements SerDe {
 
   public static EmergencyAccessUpdateArgs read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
     int i = _offset;
-    final var disabledIntegrations = Borsh.readPublicKeyVector(_data, i);
-    i += Borsh.lenVector(disabledIntegrations);
-    final var disabledDelegates = Borsh.readPublicKeyVector(_data, i);
-    i += Borsh.lenVector(disabledDelegates);
+    final var disabledIntegrations = SerDeUtil.readPublicKeyVector(4, _data, i);
+    i += SerDeUtil.lenVector(4, disabledIntegrations);
+    final var disabledDelegates = SerDeUtil.readPublicKeyVector(4, _data, i);
+    i += SerDeUtil.lenVector(4, disabledDelegates);
     final Boolean stateEnabled;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       stateEnabled = null;
     } else {
       ++i;
@@ -31,14 +32,14 @@ public record EmergencyAccessUpdateArgs(PublicKey[] disabledIntegrations,
   @Override
   public int write(final byte[] _data, final int _offset) {
     int i = _offset;
-    i += Borsh.writeVector(disabledIntegrations, _data, i);
-    i += Borsh.writeVector(disabledDelegates, _data, i);
-    i += Borsh.writeOptional(stateEnabled, _data, i);
+    i += SerDeUtil.writeVector(4, disabledIntegrations, _data, i);
+    i += SerDeUtil.writeVector(4, disabledDelegates, _data, i);
+    i += SerDeUtil.writeOptional(1, stateEnabled, _data, i);
     return i - _offset;
   }
 
   @Override
   public int l() {
-    return Borsh.lenVector(disabledIntegrations) + Borsh.lenVector(disabledDelegates) + (stateEnabled == null ? 1 : (1 + 1));
+    return SerDeUtil.lenVector(4, disabledIntegrations) + SerDeUtil.lenVector(4, disabledDelegates) + (stateEnabled == null ? 1 : (1 + 1));
   }
 }

@@ -7,9 +7,9 @@ import java.util.List;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
-import software.sava.core.borsh.Borsh;
 import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
+import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.kamino.lend.gen.types.InitObligationArgs;
 
 import systems.glam.sdk.idl.programs.glam.kamino.gen.types.LendingPolicy;
@@ -123,7 +123,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record FarmsHarvestRewardIxData(Discriminator discriminator, long rewardIndex) implements Borsh {  
+  public record FarmsHarvestRewardIxData(Discriminator discriminator, long rewardIndex) implements SerDe {  
 
     public static FarmsHarvestRewardIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -290,7 +290,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record FarmsStakeIxData(Discriminator discriminator, long amount) implements Borsh {  
+  public record FarmsStakeIxData(Discriminator discriminator, long amount) implements SerDe {  
 
     public static FarmsStakeIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -387,7 +387,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record FarmsUnstakeIxData(Discriminator discriminator, BigInteger amount) implements Borsh {  
+  public record FarmsUnstakeIxData(Discriminator discriminator, BigInteger amount) implements SerDe {  
 
     public static FarmsUnstakeIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -597,7 +597,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record LendingBorrowObligationLiquidityV2IxData(Discriminator discriminator, long liquidityAmount) implements Borsh {  
+  public record LendingBorrowObligationLiquidityV2IxData(Discriminator discriminator, long liquidityAmount) implements SerDe {  
 
     public static LendingBorrowObligationLiquidityV2IxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -746,7 +746,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record LendingDepositReserveLiquidityAndObligationCollateralV2IxData(Discriminator discriminator, long liquidityAmount) implements Borsh {  
+  public record LendingDepositReserveLiquidityAndObligationCollateralV2IxData(Discriminator discriminator, long liquidityAmount) implements SerDe {  
 
     public static LendingDepositReserveLiquidityAndObligationCollateralV2IxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -854,7 +854,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record LendingInitObligationIxData(Discriminator discriminator, InitObligationArgs args) implements Borsh {  
+  public record LendingInitObligationIxData(Discriminator discriminator, InitObligationArgs args) implements SerDe {  
 
     public static LendingInitObligationIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -969,7 +969,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record LendingInitObligationFarmsForReserveIxData(Discriminator discriminator, int mode) implements Borsh {  
+  public record LendingInitObligationFarmsForReserveIxData(Discriminator discriminator, int mode) implements SerDe {  
 
     public static LendingInitObligationFarmsForReserveIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1067,7 +1067,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record LendingInitUserMetadataIxData(Discriminator discriminator, PublicKey userLookupTable) implements Borsh {  
+  public record LendingInitUserMetadataIxData(Discriminator discriminator, PublicKey userLookupTable) implements SerDe {  
 
     public static LendingInitUserMetadataIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1200,7 +1200,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record LendingRepayObligationLiquidityV2IxData(Discriminator discriminator, long liquidityAmount) implements Borsh {  
+  public record LendingRepayObligationLiquidityV2IxData(Discriminator discriminator, long liquidityAmount) implements SerDe {  
 
     public static LendingRepayObligationLiquidityV2IxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1349,7 +1349,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record LendingWithdrawObligationCollateralAndRedeemReserveCollateralV2IxData(Discriminator discriminator, long collateralAmount) implements Borsh {  
+  public record LendingWithdrawObligationCollateralAndRedeemReserveCollateralV2IxData(Discriminator discriminator, long collateralAmount) implements SerDe {  
 
     public static LendingWithdrawObligationCollateralAndRedeemReserveCollateralV2IxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1416,7 +1416,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record SetLendingPolicyIxData(Discriminator discriminator, LendingPolicy policy) implements Borsh {  
+  public record SetLendingPolicyIxData(Discriminator discriminator, LendingPolicy policy) implements SerDe {  
 
     public static SetLendingPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1480,7 +1480,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record SetVaultsPolicyIxData(Discriminator discriminator, VaultsPolicy policy) implements Borsh {  
+  public record SetVaultsPolicyIxData(Discriminator discriminator, VaultsPolicy policy) implements SerDe {  
 
     public static SetVaultsPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1608,7 +1608,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record VaultsDepositIxData(Discriminator discriminator, long maxAmount) implements Borsh {  
+  public record VaultsDepositIxData(Discriminator discriminator, long maxAmount) implements SerDe {  
 
     public static VaultsDepositIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1783,7 +1783,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record VaultsWithdrawIxData(Discriminator discriminator, long sharesAmount) implements Borsh {  
+  public record VaultsWithdrawIxData(Discriminator discriminator, long sharesAmount) implements SerDe {  
 
     public static VaultsWithdrawIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());

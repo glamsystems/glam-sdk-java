@@ -5,9 +5,9 @@ import java.util.List;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
-import software.sava.core.borsh.Borsh;
 import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
+import software.sava.idl.clients.core.gen.SerDe;
 
 import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
 
@@ -91,7 +91,7 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
-  public record DeleteAssetMetaIxData(Discriminator discriminator, PublicKey asset, PublicKey oracle) implements Borsh {  
+  public record DeleteAssetMetaIxData(Discriminator discriminator, PublicKey asset, PublicKey oracle) implements SerDe {  
 
     public static DeleteAssetMetaIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -191,7 +191,7 @@ public final class GlamConfigProgram {
                                  PublicKey feeAuthority,
                                  PublicKey referrer,
                                  int baseFeeBps,
-                                 int flowFeeBps) implements Borsh {  
+                                 int flowFeeBps) implements SerDe {  
 
     public static InitializeIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -279,7 +279,7 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
-  public record UpdateAdminIxData(Discriminator discriminator, PublicKey newAdmin) implements Borsh {  
+  public record UpdateAdminIxData(Discriminator discriminator, PublicKey newAdmin) implements SerDe {  
 
     public static UpdateAdminIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -346,7 +346,7 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
-  public record UpdateProtocolFeesIxData(Discriminator discriminator, int baseFeeBps, int flowFeeBps) implements Borsh {  
+  public record UpdateProtocolFeesIxData(Discriminator discriminator, int baseFeeBps, int flowFeeBps) implements SerDe {  
 
     public static UpdateProtocolFeesIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -413,7 +413,7 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
-  public record UpdateReferrerIxData(Discriminator discriminator, PublicKey referrer) implements Borsh {  
+  public record UpdateReferrerIxData(Discriminator discriminator, PublicKey referrer) implements SerDe {  
 
     public static UpdateReferrerIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -480,7 +480,7 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
-  public record UpsertAssetMetaIxData(Discriminator discriminator, AssetMeta assetMeta) implements Borsh {  
+  public record UpsertAssetMetaIxData(Discriminator discriminator, AssetMeta assetMeta) implements SerDe {  
 
     public static UpsertAssetMetaIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());

@@ -1,7 +1,8 @@
 package systems.glam.sdk.idl.programs.glam.config.gen.types;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
@@ -13,7 +14,7 @@ public record AssetMeta(PublicKey asset,
                         OracleSource oracleSource,
                         int maxAgeSeconds,
                         int priority,
-                        byte[] padding) implements Borsh {
+                        byte[] padding) implements SerDe {
 
   public static final int BYTES = 72;
   public static final int PADDING_LEN = 3;
@@ -36,7 +37,7 @@ public record AssetMeta(PublicKey asset,
     final var priority = _data[i] & 0xFF;
     ++i;
     final var padding = new byte[3];
-    Borsh.readArray(padding, _data, i);
+    SerDeUtil.readArray(padding, _data, i);
     return new AssetMeta(asset,
                          decimals,
                          oracle,
@@ -60,7 +61,7 @@ public record AssetMeta(PublicKey asset,
     i += 2;
     _data[i] = (byte) priority;
     ++i;
-    i += Borsh.writeArrayChecked(padding, 3, _data, i);
+    i += SerDeUtil.writeArrayChecked(padding, 3, _data, i);
     return i - _offset;
   }
 

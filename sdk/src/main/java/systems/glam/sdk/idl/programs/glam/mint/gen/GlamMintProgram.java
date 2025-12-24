@@ -6,9 +6,10 @@ import java.util.OptionalInt;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
-import software.sava.core.borsh.Borsh;
 import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import systems.glam.sdk.idl.programs.glam.mint.gen.types.EmergencyUpdateMintArgs;
 import systems.glam.sdk.idl.programs.glam.mint.gen.types.MintModel;
@@ -77,7 +78,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record BurnTokensIxData(Discriminator discriminator, long amount) implements Borsh {  
+  public record BurnTokensIxData(Discriminator discriminator, long amount) implements SerDe {  
 
     public static BurnTokensIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -468,7 +469,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record EmergencyUpdateMintIxData(Discriminator discriminator, EmergencyUpdateMintArgs args) implements Borsh {  
+  public record EmergencyUpdateMintIxData(Discriminator discriminator, EmergencyUpdateMintArgs args) implements SerDe {  
 
     public static EmergencyUpdateMintIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -565,7 +566,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record ForceTransferTokensIxData(Discriminator discriminator, long amount) implements Borsh {  
+  public record ForceTransferTokensIxData(Discriminator discriminator, long amount) implements SerDe {  
 
     public static ForceTransferTokensIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -672,12 +673,12 @@ public final class GlamMintProgram {
     + (limit == null || limit.isEmpty() ? 1 : 5)
     ];
     int i = FULFILL_DISCRIMINATOR.write(_data, 0);
-    Borsh.writeOptional(limit, _data, i);
+    SerDeUtil.writeOptional(1, limit, _data, i);
 
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record FulfillIxData(Discriminator discriminator, OptionalInt limit) implements Borsh {  
+  public record FulfillIxData(Discriminator discriminator, OptionalInt limit) implements SerDe {  
 
     public static FulfillIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -690,7 +691,7 @@ public final class GlamMintProgram {
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
       final OptionalInt limit;
-      if (_data[i] == 0) {
+      if (SerDeUtil.isAbsent(1, _data, i)) {
         limit = OptionalInt.empty();
       } else {
         ++i;
@@ -702,7 +703,7 @@ public final class GlamMintProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.writeOptional(limit, _data, i);
+      i += SerDeUtil.writeOptional(1, limit, _data, i);
       return i - _offset;
     }
 
@@ -802,14 +803,14 @@ public final class GlamMintProgram {
                                            final AccountType accountType,
                                            final OptionalInt decimals) {
     final byte[] _data = new byte[
-    8 + mintModel.l() + Borsh.lenArray(createdKey) + accountType.l()
+    8 + mintModel.l() + SerDeUtil.lenArray(createdKey) + accountType.l()
     + (decimals == null || decimals.isEmpty() ? 1 : 2)
     ];
     int i = INITIALIZE_MINT_DISCRIMINATOR.write(_data, 0);
     i += mintModel.write(_data, i);
-    i += Borsh.writeArrayChecked(createdKey, 8, _data, i);
+    i += SerDeUtil.writeArrayChecked(createdKey, 8, _data, i);
     i += accountType.write(_data, i);
-    Borsh.writeOptionalbyte(decimals, _data, i);
+    SerDeUtil.writeOptionalbyte(1, decimals, _data, i);
 
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
@@ -818,7 +819,7 @@ public final class GlamMintProgram {
                                      MintModel mintModel,
                                      byte[] createdKey,
                                      AccountType accountType,
-                                     OptionalInt decimals) implements Borsh {  
+                                     OptionalInt decimals) implements SerDe {  
 
     public static InitializeMintIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -834,11 +835,11 @@ public final class GlamMintProgram {
       final var mintModel = MintModel.read(_data, i);
       i += mintModel.l();
       final var createdKey = new byte[8];
-      i += Borsh.readArray(createdKey, _data, i);
+      i += SerDeUtil.readArray(createdKey, _data, i);
       final var accountType = AccountType.read(_data, i);
       i += accountType.l();
       final OptionalInt decimals;
-      if (_data[i] == 0) {
+      if (SerDeUtil.isAbsent(1, _data, i)) {
         decimals = OptionalInt.empty();
       } else {
         ++i;
@@ -855,15 +856,15 @@ public final class GlamMintProgram {
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
       i += mintModel.write(_data, i);
-      i += Borsh.writeArrayChecked(createdKey, 8, _data, i);
+      i += SerDeUtil.writeArrayChecked(createdKey, 8, _data, i);
       i += accountType.write(_data, i);
-      i += Borsh.writeOptionalbyte(decimals, _data, i);
+      i += SerDeUtil.writeOptionalbyte(1, decimals, _data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + mintModel.l() + Borsh.lenArray(createdKey) + accountType.l() + (decimals == null || decimals.isEmpty() ? 1 : (1 + 1));
+      return 8 + mintModel.l() + SerDeUtil.lenArray(createdKey) + accountType.l() + (decimals == null || decimals.isEmpty() ? 1 : (1 + 1));
     }
   }
 
@@ -925,7 +926,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record MintTokensIxData(Discriminator discriminator, long amount) implements Borsh {  
+  public record MintTokensIxData(Discriminator discriminator, long amount) implements SerDe {  
 
     public static MintTokensIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1037,7 +1038,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record PriceDriftUsersIxData(Discriminator discriminator, int numUsers) implements Borsh {  
+  public record PriceDriftUsersIxData(Discriminator discriminator, int numUsers) implements SerDe {  
 
     public static PriceDriftUsersIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1169,7 +1170,7 @@ public final class GlamMintProgram {
   public record PriceDriftVaultDepositorsIxData(Discriminator discriminator,
                                                 int numVaultDepositors,
                                                 int numSpotMarkets,
-                                                int numPerpMarkets) implements Borsh {  
+                                                int numPerpMarkets) implements SerDe {  
 
     public static PriceDriftVaultDepositorsIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1341,7 +1342,7 @@ public final class GlamMintProgram {
   public record PriceKaminoObligationsIxData(Discriminator discriminator,
                                              int numObligations,
                                              int numMarkets,
-                                             int numReserves) implements Borsh {  
+                                             int numReserves) implements SerDe {  
 
     public static PriceKaminoObligationsIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1473,7 +1474,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record PriceKaminoVaultSharesIxData(Discriminator discriminator, int numVaults) implements Borsh {  
+  public record PriceKaminoVaultSharesIxData(Discriminator discriminator, int numVaults) implements SerDe {  
 
     public static PriceKaminoVaultSharesIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1593,14 +1594,14 @@ public final class GlamMintProgram {
   public static Instruction priceVaultTokens(final AccountMeta invokedGlamMintProgramMeta,
                                              final List<AccountMeta> keys,
                                              final short[][] aggIndexes) {
-    final byte[] _data = new byte[8 + Borsh.lenVectorArray(aggIndexes)];
+    final byte[] _data = new byte[8 + SerDeUtil.lenVectorArray(4, aggIndexes)];
     int i = PRICE_VAULT_TOKENS_DISCRIMINATOR.write(_data, 0);
-    Borsh.writeVectorArrayChecked(aggIndexes, 4, _data, i);
+    SerDeUtil.writeVectorArrayChecked(4, aggIndexes, 4, _data, i);
 
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record PriceVaultTokensIxData(Discriminator discriminator, short[][] aggIndexes) implements Borsh {  
+  public record PriceVaultTokensIxData(Discriminator discriminator, short[][] aggIndexes) implements SerDe {  
 
     public static PriceVaultTokensIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1612,20 +1613,20 @@ public final class GlamMintProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var aggIndexes = Borsh.readMultiDimensionshortVectorArray(4, _data, i);
+      final var aggIndexes = SerDeUtil.readMultiDimensionshortVectorArray(4, 4, _data, i);
       return new PriceVaultTokensIxData(discriminator, aggIndexes);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.writeVectorArrayChecked(aggIndexes, 4, _data, i);
+      i += SerDeUtil.writeVectorArrayChecked(4, aggIndexes, 4, _data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.lenVectorArray(aggIndexes);
+      return 8 + SerDeUtil.lenVectorArray(4, aggIndexes);
     }
   }
 
@@ -1686,7 +1687,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record QueuedRedeemIxData(Discriminator discriminator, long amountIn) implements Borsh {  
+  public record QueuedRedeemIxData(Discriminator discriminator, long amountIn) implements SerDe {  
 
     public static QueuedRedeemIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1782,7 +1783,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record QueuedSubscribeIxData(Discriminator discriminator, long amountIn) implements Borsh {  
+  public record QueuedSubscribeIxData(Discriminator discriminator, long amountIn) implements SerDe {  
 
     public static QueuedSubscribeIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1849,7 +1850,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record SetMintPolicyIxData(Discriminator discriminator, MintPolicy policy) implements Borsh {  
+  public record SetMintPolicyIxData(Discriminator discriminator, MintPolicy policy) implements SerDe {  
 
     public static SetMintPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1925,7 +1926,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record SetProtocolFeesIxData(Discriminator discriminator, int baseFeeBps, int flowFeeBps) implements Borsh {  
+  public record SetProtocolFeesIxData(Discriminator discriminator, int baseFeeBps, int flowFeeBps) implements SerDe {  
 
     public static SetProtocolFeesIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -2000,7 +2001,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record SetTokenAccountsStatesIxData(Discriminator discriminator, boolean frozen) implements Borsh {  
+  public record SetTokenAccountsStatesIxData(Discriminator discriminator, boolean frozen) implements SerDe {  
 
     public static SetTokenAccountsStatesIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -2123,7 +2124,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record SubscribeIxData(Discriminator discriminator, long amountIn) implements Borsh {  
+  public record SubscribeIxData(Discriminator discriminator, long amountIn) implements SerDe {  
 
     public static SubscribeIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -2199,7 +2200,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record UpdateMintIxData(Discriminator discriminator, MintModel mintModel) implements Borsh {  
+  public record UpdateMintIxData(Discriminator discriminator, MintModel mintModel) implements SerDe {  
 
     public static UpdateMintIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());

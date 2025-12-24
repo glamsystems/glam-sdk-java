@@ -7,7 +7,9 @@ import java.util.Arrays;
 import java.util.OptionalInt;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.borsh.Borsh;
+import software.sava.core.encoding.ByteUtil;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -25,7 +27,7 @@ public record StateModel(AccountType accountType,
                          PublicKey[] borrowable,
                          OptionalInt timelockDuration,
                          IntegrationAcl[] integrationAcls,
-                         DelegateAcl[] delegateAcls) implements Borsh {
+                         DelegateAcl[] delegateAcls) implements SerDe {
 
   public static StateModel createRecord(final AccountType accountType,
                                         final byte[] name,
@@ -41,7 +43,7 @@ public record StateModel(AccountType accountType,
                                         final DelegateAcl[] delegateAcls) {
     return new StateModel(accountType,
                           name,
-                          uri, Borsh.getBytes(uri),
+                          uri, uri == null ? null : uri.getBytes(UTF_8),
                           enabled,
                           assets,
                           created,
@@ -59,7 +61,7 @@ public record StateModel(AccountType accountType,
     }
     int i = _offset;
     final AccountType accountType;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       accountType = null;
       ++i;
     } else {
@@ -68,28 +70,29 @@ public record StateModel(AccountType accountType,
       i += accountType.l();
     }
     final byte[] name;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       name = null;
       ++i;
     } else {
       ++i;
       name = new byte[32];
-      i += Borsh.readArray(name, _data, i);
+      i += SerDeUtil.readArray(name, _data, i);
     }
+    final byte[] _uri;
     final String uri;
-    if (_data[i] == 0) {
+    if (_data[i++] == 0) {
+      _uri = null;
       uri = null;
-      ++i;
     } else {
-      ++i;
-      final int _uriLength = getInt32LE(_data, i);
+      final int _uriLength = ByteUtil.getInt32LE(_data, i);
       i += 4;
-      final byte[] _uri = Arrays.copyOfRange(_data, i, i + _uriLength);
-      uri = new String(_uri, UTF_8);
-      i += _uri.length;
+      _uri = Arrays.copyOfRange(_data, i, i + _uriLength);
+      uri = new String(_uri);
+      i += _uriLength;
     }
+
     final Boolean enabled;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       enabled = null;
       ++i;
     } else {
@@ -98,16 +101,16 @@ public record StateModel(AccountType accountType,
       ++i;
     }
     final PublicKey[] assets;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       assets = null;
       ++i;
     } else {
       ++i;
-      assets = Borsh.readPublicKeyVector(_data, i);
-      i += Borsh.lenVector(assets);
+      assets = SerDeUtil.readPublicKeyVector(4, _data, i);
+      i += SerDeUtil.lenVector(4, assets);
     }
     final CreatedModel created;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       created = null;
       ++i;
     } else {
@@ -116,7 +119,7 @@ public record StateModel(AccountType accountType,
       i += created.l();
     }
     final PublicKey owner;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       owner = null;
       ++i;
     } else {
@@ -125,25 +128,25 @@ public record StateModel(AccountType accountType,
       i += 32;
     }
     final byte[] portfolioManagerName;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       portfolioManagerName = null;
       ++i;
     } else {
       ++i;
       portfolioManagerName = new byte[32];
-      i += Borsh.readArray(portfolioManagerName, _data, i);
+      i += SerDeUtil.readArray(portfolioManagerName, _data, i);
     }
     final PublicKey[] borrowable;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       borrowable = null;
       ++i;
     } else {
       ++i;
-      borrowable = Borsh.readPublicKeyVector(_data, i);
-      i += Borsh.lenVector(borrowable);
+      borrowable = SerDeUtil.readPublicKeyVector(4, _data, i);
+      i += SerDeUtil.lenVector(4, borrowable);
     }
     final OptionalInt timelockDuration;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       timelockDuration = OptionalInt.empty();
       ++i;
     } else {
@@ -152,24 +155,24 @@ public record StateModel(AccountType accountType,
       i += 4;
     }
     final IntegrationAcl[] integrationAcls;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       integrationAcls = null;
       ++i;
     } else {
       ++i;
-      integrationAcls = Borsh.readVector(IntegrationAcl.class, IntegrationAcl::read, _data, i);
-      i += Borsh.lenVector(integrationAcls);
+      integrationAcls = SerDeUtil.readVector(4, IntegrationAcl.class, IntegrationAcl::read, _data, i);
+      i += SerDeUtil.lenVector(4, integrationAcls);
     }
     final DelegateAcl[] delegateAcls;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       delegateAcls = null;
     } else {
       ++i;
-      delegateAcls = Borsh.readVector(DelegateAcl.class, DelegateAcl::read, _data, i);
+      delegateAcls = SerDeUtil.readVector(4, DelegateAcl.class, DelegateAcl::read, _data, i);
     }
     return new StateModel(accountType,
                           name,
-                          uri, Borsh.getBytes(uri),
+                          uri, _uri,
                           enabled,
                           assets,
                           created,
@@ -184,47 +187,47 @@ public record StateModel(AccountType accountType,
   @Override
   public int write(final byte[] _data, final int _offset) {
     int i = _offset;
-    i += Borsh.writeOptional(accountType, _data, i);
+    i += SerDeUtil.writeOptional(1, accountType, _data, i);
     if (name == null || name.length == 0) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
-      i += Borsh.writeArrayChecked(name, 32, _data, i);
+      i += SerDeUtil.writeArrayChecked(name, 32, _data, i);
     }
-    i += Borsh.writeOptionalVector(_uri, _data, i);
-    i += Borsh.writeOptional(enabled, _data, i);
+    i += SerDeUtil.writeOptionalVector(1, 4, _uri, _data, i);
+    i += SerDeUtil.writeOptional(1, enabled, _data, i);
     if (assets == null || assets.length == 0) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
-      i += Borsh.writeVector(assets, _data, i);
+      i += SerDeUtil.writeVector(4, assets, _data, i);
     }
-    i += Borsh.writeOptional(created, _data, i);
-    i += Borsh.writeOptional(owner, _data, i);
+    i += SerDeUtil.writeOptional(1, created, _data, i);
+    i += SerDeUtil.writeOptional(1, owner, _data, i);
     if (portfolioManagerName == null || portfolioManagerName.length == 0) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
-      i += Borsh.writeArrayChecked(portfolioManagerName, 32, _data, i);
+      i += SerDeUtil.writeArrayChecked(portfolioManagerName, 32, _data, i);
     }
     if (borrowable == null || borrowable.length == 0) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
-      i += Borsh.writeVector(borrowable, _data, i);
+      i += SerDeUtil.writeVector(4, borrowable, _data, i);
     }
-    i += Borsh.writeOptional(timelockDuration, _data, i);
+    i += SerDeUtil.writeOptional(1, timelockDuration, _data, i);
     if (integrationAcls == null || integrationAcls.length == 0) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
-      i += Borsh.writeVector(integrationAcls, _data, i);
+      i += SerDeUtil.writeVector(4, integrationAcls, _data, i);
     }
     if (delegateAcls == null || delegateAcls.length == 0) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
-      i += Borsh.writeVector(delegateAcls, _data, i);
+      i += SerDeUtil.writeVector(4, delegateAcls, _data, i);
     }
     return i - _offset;
   }
@@ -232,16 +235,16 @@ public record StateModel(AccountType accountType,
   @Override
   public int l() {
     return (accountType == null ? 1 : (1 + accountType.l()))
-         + (name == null || name.length == 0 ? 1 : (1 + Borsh.lenArray(name)))
+         + (name == null || name.length == 0 ? 1 : (1 + SerDeUtil.lenArray(name)))
          + (_uri == null || _uri.length == 0 ? 1 : (1 + _uri.length))
          + (enabled == null ? 1 : (1 + 1))
-         + (assets == null || assets.length == 0 ? 1 : (1 + Borsh.lenVector(assets)))
+         + (assets == null || assets.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, assets)))
          + (created == null ? 1 : (1 + created.l()))
          + (owner == null ? 1 : (1 + 32))
-         + (portfolioManagerName == null || portfolioManagerName.length == 0 ? 1 : (1 + Borsh.lenArray(portfolioManagerName)))
-         + (borrowable == null || borrowable.length == 0 ? 1 : (1 + Borsh.lenVector(borrowable)))
+         + (portfolioManagerName == null || portfolioManagerName.length == 0 ? 1 : (1 + SerDeUtil.lenArray(portfolioManagerName)))
+         + (borrowable == null || borrowable.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, borrowable)))
          + (timelockDuration == null || timelockDuration.isEmpty() ? 1 : (1 + 4))
-         + (integrationAcls == null || integrationAcls.length == 0 ? 1 : (1 + Borsh.lenVector(integrationAcls)))
-         + (delegateAcls == null || delegateAcls.length == 0 ? 1 : (1 + Borsh.lenVector(delegateAcls)));
+         + (integrationAcls == null || integrationAcls.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, integrationAcls)))
+         + (delegateAcls == null || delegateAcls.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, delegateAcls)));
   }
 }

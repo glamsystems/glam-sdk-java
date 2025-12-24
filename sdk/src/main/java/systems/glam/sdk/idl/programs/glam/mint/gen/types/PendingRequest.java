@@ -1,7 +1,8 @@
 package systems.glam.sdk.idl.programs.glam.mint.gen.types;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
@@ -14,7 +15,7 @@ public record PendingRequest(PublicKey user,
                              long fulfilledAt,
                              int timeUnit,
                              RequestType requestType,
-                             byte[] reserved) implements Borsh {
+                             byte[] reserved) implements SerDe {
 
   public static final int BYTES = 72;
   public static final int RESERVED_LEN = 6;
@@ -39,7 +40,7 @@ public record PendingRequest(PublicKey user,
     final var requestType = RequestType.read(_data, i);
     i += requestType.l();
     final var reserved = new byte[6];
-    Borsh.readArray(reserved, _data, i);
+    SerDeUtil.readArray(reserved, _data, i);
     return new PendingRequest(user,
                               incoming,
                               outgoing,
@@ -66,7 +67,7 @@ public record PendingRequest(PublicKey user,
     _data[i] = (byte) timeUnit;
     ++i;
     i += requestType.write(_data, i);
-    i += Borsh.writeArrayChecked(reserved, 6, _data, i);
+    i += SerDeUtil.writeArrayChecked(reserved, 6, _data, i);
     return i - _offset;
   }
 

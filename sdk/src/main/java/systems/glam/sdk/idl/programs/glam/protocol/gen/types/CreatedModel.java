@@ -1,7 +1,8 @@
 package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
@@ -9,7 +10,7 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
 public record CreatedModel(byte[] key,
                            PublicKey createdBy,
-                           long createdAt) implements Borsh {
+                           long createdAt) implements SerDe {
 
   public static final int BYTES = 48;
   public static final int KEY_LEN = 8;
@@ -20,7 +21,7 @@ public record CreatedModel(byte[] key,
     }
     int i = _offset;
     final var key = new byte[8];
-    i += Borsh.readArray(key, _data, i);
+    i += SerDeUtil.readArray(key, _data, i);
     final var createdBy = readPubKey(_data, i);
     i += 32;
     final var createdAt = getInt64LE(_data, i);
@@ -30,7 +31,7 @@ public record CreatedModel(byte[] key,
   @Override
   public int write(final byte[] _data, final int _offset) {
     int i = _offset;
-    i += Borsh.writeArrayChecked(key, 8, _data, i);
+    i += SerDeUtil.writeArrayChecked(key, 8, _data, i);
     createdBy.write(_data, i);
     i += 32;
     putInt64LE(_data, i, createdAt);

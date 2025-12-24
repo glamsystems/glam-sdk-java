@@ -142,7 +142,7 @@ public interface GlamVaultAccounts {
 
   default Filter vaultTableFilter() {
     return vaultTableFilter(
-        glamAccounts().configProgram(), glamStateKey(), vaultPublicKey()
+        glamStateKey(), vaultPublicKey(), glamAccounts().configProgram()
     );
   }
 

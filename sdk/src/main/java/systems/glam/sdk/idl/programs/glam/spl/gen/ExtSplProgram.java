@@ -5,9 +5,9 @@ import java.util.List;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
-import software.sava.core.borsh.Borsh;
 import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
+import software.sava.idl.clients.core.gen.SerDe;
 
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.TransferPolicy;
 
@@ -56,7 +56,7 @@ public final class ExtSplProgram {
     return Instruction.createInstruction(invokedExtSplProgramMeta, keys, _data);
   }
 
-  public record SetTokenTransferPolicyIxData(Discriminator discriminator, TransferPolicy policy) implements Borsh {  
+  public record SetTokenTransferPolicyIxData(Discriminator discriminator, TransferPolicy policy) implements SerDe {  
 
     public static SetTokenTransferPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -201,7 +201,7 @@ public final class ExtSplProgram {
     return Instruction.createInstruction(invokedExtSplProgramMeta, keys, _data);
   }
 
-  public record TokenTransferCheckedIxData(Discriminator discriminator, long amount, int decimals) implements Borsh {  
+  public record TokenTransferCheckedIxData(Discriminator discriminator, long amount, int decimals) implements SerDe {  
 
     public static TokenTransferCheckedIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());

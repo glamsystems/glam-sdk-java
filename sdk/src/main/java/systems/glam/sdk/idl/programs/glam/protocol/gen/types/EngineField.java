@@ -1,8 +1,8 @@
 package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
 
-public record EngineField(EngineFieldName name, EngineFieldValue value) implements Borsh {
+public record EngineField(EngineFieldName name, EngineFieldValue value) implements SerDe {
 
   public static EngineField read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {

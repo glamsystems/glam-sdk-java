@@ -3,14 +3,15 @@ package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 import java.util.OptionalLong;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 
 public record ExtraParams(ActionType actionType,
                           PublicKey pubkey,
-                          OptionalLong amount) implements Borsh {
+                          OptionalLong amount) implements SerDe {
 
   public static ExtraParams read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
@@ -22,7 +23,7 @@ public record ExtraParams(ActionType actionType,
     final var pubkey = readPubKey(_data, i);
     i += 32;
     final OptionalLong amount;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       amount = OptionalLong.empty();
     } else {
       ++i;
@@ -37,7 +38,7 @@ public record ExtraParams(ActionType actionType,
     i += actionType.write(_data, i);
     pubkey.write(_data, i);
     i += 32;
-    i += Borsh.writeOptional(amount, _data, i);
+    i += SerDeUtil.writeOptional(1, amount, _data, i);
     return i - _offset;
   }
 

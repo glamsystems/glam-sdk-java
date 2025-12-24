@@ -8,7 +8,9 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.borsh.Borsh;
+import software.sava.core.encoding.ByteUtil;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.FeeStructure;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.NotifyAndSettle;
@@ -32,7 +34,7 @@ public record MintModel(String symbol, byte[] _symbol,
                         OptionalLong minSubscription,
                         OptionalLong minRedemption,
                         PublicKey[] allowlist,
-                        PublicKey[] blocklist) implements Borsh {
+                        PublicKey[] blocklist) implements SerDe {
 
   public static MintModel createRecord(final String symbol,
                                        final byte[] name,
@@ -48,9 +50,9 @@ public record MintModel(String symbol, byte[] _symbol,
                                        final OptionalLong minRedemption,
                                        final PublicKey[] allowlist,
                                        final PublicKey[] blocklist) {
-    return new MintModel(symbol, Borsh.getBytes(symbol),
+    return new MintModel(symbol, symbol == null ? null : symbol.getBytes(UTF_8),
                          name,
-                         uri, Borsh.getBytes(uri),
+                         uri, uri == null ? null : uri.getBytes(UTF_8),
                          yearInSeconds,
                          permanentDelegate,
                          defaultAccountStateFrozen,
@@ -69,41 +71,43 @@ public record MintModel(String symbol, byte[] _symbol,
       return null;
     }
     int i = _offset;
+    final byte[] _symbol;
     final String symbol;
-    if (_data[i] == 0) {
+    if (_data[i++] == 0) {
+      _symbol = null;
       symbol = null;
-      ++i;
     } else {
-      ++i;
-      final int _symbolLength = getInt32LE(_data, i);
+      final int _symbolLength = ByteUtil.getInt32LE(_data, i);
       i += 4;
-      final byte[] _symbol = Arrays.copyOfRange(_data, i, i + _symbolLength);
-      symbol = new String(_symbol, UTF_8);
-      i += _symbol.length;
+      _symbol = Arrays.copyOfRange(_data, i, i + _symbolLength);
+      symbol = new String(_symbol);
+      i += _symbolLength;
     }
+
     final byte[] name;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       name = null;
       ++i;
     } else {
       ++i;
       name = new byte[32];
-      i += Borsh.readArray(name, _data, i);
+      i += SerDeUtil.readArray(name, _data, i);
     }
+    final byte[] _uri;
     final String uri;
-    if (_data[i] == 0) {
+    if (_data[i++] == 0) {
+      _uri = null;
       uri = null;
-      ++i;
     } else {
-      ++i;
-      final int _uriLength = getInt32LE(_data, i);
+      final int _uriLength = ByteUtil.getInt32LE(_data, i);
       i += 4;
-      final byte[] _uri = Arrays.copyOfRange(_data, i, i + _uriLength);
-      uri = new String(_uri, UTF_8);
-      i += _uri.length;
+      _uri = Arrays.copyOfRange(_data, i, i + _uriLength);
+      uri = new String(_uri);
+      i += _uriLength;
     }
+
     final OptionalInt yearInSeconds;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       yearInSeconds = OptionalInt.empty();
       ++i;
     } else {
@@ -112,7 +116,7 @@ public record MintModel(String symbol, byte[] _symbol,
       i += 4;
     }
     final PublicKey permanentDelegate;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       permanentDelegate = null;
       ++i;
     } else {
@@ -121,7 +125,7 @@ public record MintModel(String symbol, byte[] _symbol,
       i += 32;
     }
     final Boolean defaultAccountStateFrozen;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       defaultAccountStateFrozen = null;
       ++i;
     } else {
@@ -130,7 +134,7 @@ public record MintModel(String symbol, byte[] _symbol,
       ++i;
     }
     final FeeStructure feeStructure;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       feeStructure = null;
       ++i;
     } else {
@@ -139,7 +143,7 @@ public record MintModel(String symbol, byte[] _symbol,
       i += feeStructure.l();
     }
     final NotifyAndSettle notifyAndSettle;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       notifyAndSettle = null;
       ++i;
     } else {
@@ -148,7 +152,7 @@ public record MintModel(String symbol, byte[] _symbol,
       i += notifyAndSettle.l();
     }
     final OptionalInt lockupPeriod;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       lockupPeriod = OptionalInt.empty();
       ++i;
     } else {
@@ -157,7 +161,7 @@ public record MintModel(String symbol, byte[] _symbol,
       i += 4;
     }
     final OptionalLong maxCap;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       maxCap = OptionalLong.empty();
       ++i;
     } else {
@@ -166,7 +170,7 @@ public record MintModel(String symbol, byte[] _symbol,
       i += 8;
     }
     final OptionalLong minSubscription;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       minSubscription = OptionalLong.empty();
       ++i;
     } else {
@@ -175,7 +179,7 @@ public record MintModel(String symbol, byte[] _symbol,
       i += 8;
     }
     final OptionalLong minRedemption;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       minRedemption = OptionalLong.empty();
       ++i;
     } else {
@@ -184,24 +188,24 @@ public record MintModel(String symbol, byte[] _symbol,
       i += 8;
     }
     final PublicKey[] allowlist;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       allowlist = null;
       ++i;
     } else {
       ++i;
-      allowlist = Borsh.readPublicKeyVector(_data, i);
-      i += Borsh.lenVector(allowlist);
+      allowlist = SerDeUtil.readPublicKeyVector(4, _data, i);
+      i += SerDeUtil.lenVector(4, allowlist);
     }
     final PublicKey[] blocklist;
-    if (_data[i] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
       blocklist = null;
     } else {
       ++i;
-      blocklist = Borsh.readPublicKeyVector(_data, i);
+      blocklist = SerDeUtil.readPublicKeyVector(4, _data, i);
     }
-    return new MintModel(symbol, Borsh.getBytes(symbol),
+    return new MintModel(symbol, _symbol,
                          name,
-                         uri, Borsh.getBytes(uri),
+                         uri, _uri,
                          yearInSeconds,
                          permanentDelegate,
                          defaultAccountStateFrozen,
@@ -218,34 +222,34 @@ public record MintModel(String symbol, byte[] _symbol,
   @Override
   public int write(final byte[] _data, final int _offset) {
     int i = _offset;
-    i += Borsh.writeOptionalVector(_symbol, _data, i);
+    i += SerDeUtil.writeOptionalVector(1, 4, _symbol, _data, i);
     if (name == null || name.length == 0) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
-      i += Borsh.writeArrayChecked(name, 32, _data, i);
+      i += SerDeUtil.writeArrayChecked(name, 32, _data, i);
     }
-    i += Borsh.writeOptionalVector(_uri, _data, i);
-    i += Borsh.writeOptional(yearInSeconds, _data, i);
-    i += Borsh.writeOptional(permanentDelegate, _data, i);
-    i += Borsh.writeOptional(defaultAccountStateFrozen, _data, i);
-    i += Borsh.writeOptional(feeStructure, _data, i);
-    i += Borsh.writeOptional(notifyAndSettle, _data, i);
-    i += Borsh.writeOptional(lockupPeriod, _data, i);
-    i += Borsh.writeOptional(maxCap, _data, i);
-    i += Borsh.writeOptional(minSubscription, _data, i);
-    i += Borsh.writeOptional(minRedemption, _data, i);
+    i += SerDeUtil.writeOptionalVector(1, 4, _uri, _data, i);
+    i += SerDeUtil.writeOptional(1, yearInSeconds, _data, i);
+    i += SerDeUtil.writeOptional(1, permanentDelegate, _data, i);
+    i += SerDeUtil.writeOptional(1, defaultAccountStateFrozen, _data, i);
+    i += SerDeUtil.writeOptional(1, feeStructure, _data, i);
+    i += SerDeUtil.writeOptional(1, notifyAndSettle, _data, i);
+    i += SerDeUtil.writeOptional(1, lockupPeriod, _data, i);
+    i += SerDeUtil.writeOptional(1, maxCap, _data, i);
+    i += SerDeUtil.writeOptional(1, minSubscription, _data, i);
+    i += SerDeUtil.writeOptional(1, minRedemption, _data, i);
     if (allowlist == null || allowlist.length == 0) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
-      i += Borsh.writeVector(allowlist, _data, i);
+      i += SerDeUtil.writeVector(4, allowlist, _data, i);
     }
     if (blocklist == null || blocklist.length == 0) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
-      i += Borsh.writeVector(blocklist, _data, i);
+      i += SerDeUtil.writeVector(4, blocklist, _data, i);
     }
     return i - _offset;
   }
@@ -253,7 +257,7 @@ public record MintModel(String symbol, byte[] _symbol,
   @Override
   public int l() {
     return (_symbol == null || _symbol.length == 0 ? 1 : (1 + _symbol.length))
-         + (name == null || name.length == 0 ? 1 : (1 + Borsh.lenArray(name)))
+         + (name == null || name.length == 0 ? 1 : (1 + SerDeUtil.lenArray(name)))
          + (_uri == null || _uri.length == 0 ? 1 : (1 + _uri.length))
          + (yearInSeconds == null || yearInSeconds.isEmpty() ? 1 : (1 + 4))
          + (permanentDelegate == null ? 1 : (1 + 32))
@@ -264,7 +268,7 @@ public record MintModel(String symbol, byte[] _symbol,
          + (maxCap == null || maxCap.isEmpty() ? 1 : (1 + 8))
          + (minSubscription == null || minSubscription.isEmpty() ? 1 : (1 + 8))
          + (minRedemption == null || minRedemption.isEmpty() ? 1 : (1 + 8))
-         + (allowlist == null || allowlist.length == 0 ? 1 : (1 + Borsh.lenVector(allowlist)))
-         + (blocklist == null || blocklist.length == 0 ? 1 : (1 + Borsh.lenVector(blocklist)));
+         + (allowlist == null || allowlist.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, allowlist)))
+         + (blocklist == null || blocklist.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, blocklist)));
   }
 }

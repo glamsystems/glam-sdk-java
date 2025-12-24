@@ -1,7 +1,8 @@
 package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
@@ -12,7 +13,7 @@ import static software.sava.core.encoding.ByteUtil.putInt16LE;
 ///
 public record IntegrationAcl(PublicKey integrationProgram,
                              int protocolsBitmask,
-                             ProtocolPolicy[] protocolPolicies) implements Borsh {
+                             ProtocolPolicy[] protocolPolicies) implements SerDe {
 
   public static IntegrationAcl read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
@@ -23,7 +24,7 @@ public record IntegrationAcl(PublicKey integrationProgram,
     i += 32;
     final var protocolsBitmask = getInt16LE(_data, i);
     i += 2;
-    final var protocolPolicies = Borsh.readVector(ProtocolPolicy.class, ProtocolPolicy::read, _data, i);
+    final var protocolPolicies = SerDeUtil.readVector(4, ProtocolPolicy.class, ProtocolPolicy::read, _data, i);
     return new IntegrationAcl(integrationProgram, protocolsBitmask, protocolPolicies);
   }
 
@@ -34,12 +35,12 @@ public record IntegrationAcl(PublicKey integrationProgram,
     i += 32;
     putInt16LE(_data, i, protocolsBitmask);
     i += 2;
-    i += Borsh.writeVector(protocolPolicies, _data, i);
+    i += SerDeUtil.writeVector(4, protocolPolicies, _data, i);
     return i - _offset;
   }
 
   @Override
   public int l() {
-    return 32 + 2 + Borsh.lenVector(protocolPolicies);
+    return 32 + 2 + SerDeUtil.lenVector(4, protocolPolicies);
   }
 }

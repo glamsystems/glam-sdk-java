@@ -1,8 +1,9 @@
 package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 
-import software.sava.core.borsh.Borsh;
+import software.sava.idl.clients.core.gen.RustEnum;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
-public enum EngineFieldName implements Borsh.Enum {
+public enum EngineFieldName implements RustEnum {
 
   Owner,
   PortfolioManagerName,
@@ -23,6 +24,6 @@ public enum EngineFieldName implements Borsh.Enum {
   OracleConfigs;
 
   public static EngineFieldName read(final byte[] _data, final int _offset) {
-    return Borsh.read(EngineFieldName.values(), _data, _offset);
+    return SerDeUtil.read(1, EngineFieldName.values(), _data, _offset);
   }
 }

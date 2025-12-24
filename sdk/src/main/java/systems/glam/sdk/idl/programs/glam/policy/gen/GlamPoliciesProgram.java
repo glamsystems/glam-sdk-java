@@ -5,9 +5,10 @@ import java.util.List;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
-import software.sava.core.borsh.Borsh;
 import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import systems.glam.sdk.idl.programs.glam.policy.gen.types.AnchorExtraAccountMeta;
 
@@ -146,7 +147,7 @@ public final class GlamPoliciesProgram {
     return Instruction.createInstruction(invokedGlamPoliciesProgramMeta, keys, _data);
   }
 
-  public record CreatePolicyIxData(Discriminator discriminator, long lockedUntilTs) implements Borsh {  
+  public record CreatePolicyIxData(Discriminator discriminator, long lockedUntilTs) implements SerDe {  
 
     public static CreatePolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -229,7 +230,7 @@ public final class GlamPoliciesProgram {
     return Instruction.createInstruction(invokedGlamPoliciesProgramMeta, keys, _data);
   }
 
-  public record ExecuteIxData(Discriminator discriminator, long amount) implements Borsh {  
+  public record ExecuteIxData(Discriminator discriminator, long amount) implements SerDe {  
 
     public static ExecuteIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -297,14 +298,14 @@ public final class GlamPoliciesProgram {
   public static Instruction initializeExtraMetasAccount(final AccountMeta invokedGlamPoliciesProgramMeta,
                                                         final List<AccountMeta> keys,
                                                         final AnchorExtraAccountMeta[] metas) {
-    final byte[] _data = new byte[8 + Borsh.lenVector(metas)];
+    final byte[] _data = new byte[8 + SerDeUtil.lenVector(4, metas)];
     int i = INITIALIZE_EXTRA_METAS_ACCOUNT_DISCRIMINATOR.write(_data, 0);
-    Borsh.writeVector(metas, _data, i);
+    SerDeUtil.writeVector(4, metas, _data, i);
 
     return Instruction.createInstruction(invokedGlamPoliciesProgramMeta, keys, _data);
   }
 
-  public record InitializeExtraMetasAccountIxData(Discriminator discriminator, AnchorExtraAccountMeta[] metas) implements Borsh {  
+  public record InitializeExtraMetasAccountIxData(Discriminator discriminator, AnchorExtraAccountMeta[] metas) implements SerDe {  
 
     public static InitializeExtraMetasAccountIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -316,20 +317,20 @@ public final class GlamPoliciesProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var metas = Borsh.readVector(AnchorExtraAccountMeta.class, AnchorExtraAccountMeta::read, _data, i);
+      final var metas = SerDeUtil.readVector(4, AnchorExtraAccountMeta.class, AnchorExtraAccountMeta::read, _data, i);
       return new InitializeExtraMetasAccountIxData(discriminator, metas);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += Borsh.writeVector(metas, _data, i);
+      i += SerDeUtil.writeVector(4, metas, _data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + Borsh.lenVector(metas);
+      return 8 + SerDeUtil.lenVector(4, metas);
     }
   }
 
