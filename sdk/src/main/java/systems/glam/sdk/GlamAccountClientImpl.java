@@ -185,6 +185,19 @@ final class GlamAccountClientImpl implements GlamAccountClient {
   }
 
   @Override
+  public Instruction validateAum(final boolean cpiEmitEvents) {
+    final var invoked = glamAccounts.invokedMintIntegrationProgram();
+    final var mintProgram = invoked.publicKey();
+    return GlamMintProgram.validateAum(
+        invoked,
+        glamVaultAccounts.glamStateKey(),
+        feePayer.publicKey(),
+        cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
+        mintProgram
+    );
+  }
+
+  @Override
   public Instruction fulfill(final int mintId,
                              final PublicKey baseAssetMint,
                              final PublicKey baseAssetTokenProgram,

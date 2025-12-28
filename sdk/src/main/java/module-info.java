@@ -14,6 +14,11 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.protocol.gen.types;
   exports systems.glam.sdk.idl.programs.glam.protocol.gen;
   exports systems.glam.sdk.idl.programs.glam.spl.gen;
+  exports systems.glam.sdk.idl.programs.glam.staging.mint.gen.events;
+  exports systems.glam.sdk.idl.programs.glam.staging.mint.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.staging.mint.gen;
+  exports systems.glam.sdk.idl.programs.glam.staging.protocol.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.staging.protocol.gen;
   exports systems.glam.sdk.lut;
   exports systems.glam.sdk.proxy;
   exports systems.glam.sdk;

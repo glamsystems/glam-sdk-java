@@ -1,0 +1,246 @@
+package systems.glam.sdk.idl.programs.glam.staging.protocol.gen.types;
+
+import java.util.function.BiFunction;
+
+import software.sava.core.accounts.PublicKey;
+import software.sava.core.programs.Discriminator;
+import software.sava.core.rpc.Filter;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
+import software.sava.rpc.json.http.response.AccountInfo;
+
+import static software.sava.core.accounts.PublicKey.readPubKey;
+import static software.sava.core.encoding.ByteUtil.getInt32LE;
+import static software.sava.core.encoding.ByteUtil.getInt64LE;
+import static software.sava.core.encoding.ByteUtil.putInt32LE;
+import static software.sava.core.encoding.ByteUtil.putInt64LE;
+import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
+import static software.sava.core.programs.Discriminator.toDiscriminator;
+
+public record StateAccount(PublicKey _address,
+                           Discriminator discriminator,
+                           AccountType accountType,
+                           boolean enabled,
+                           PublicKey vault,
+                           PublicKey owner,
+                           byte[] portfolioManagerName,
+                           CreatedModel created,
+                           PublicKey baseAssetMint,
+                           int baseAssetDecimals,
+                           int baseAssetTokenProgram,
+                           byte[] name,
+                           int timelockDuration,
+                           long timelockExpiresAt,
+                           PublicKey mint,
+                           PublicKey[] assets,
+                           IntegrationAcl[] integrationAcls,
+                           DelegateAcl[] delegateAcls,
+                           PublicKey[] externalPositions,
+                           PricedProtocol[] pricedProtocols,
+                           EngineField[][] params) implements SerDe {
+
+  public static final int PORTFOLIO_MANAGER_NAME_LEN = 32;
+  public static final int NAME_LEN = 32;
+  public static final Discriminator DISCRIMINATOR = toDiscriminator(142, 247, 54, 95, 85, 133, 249, 103);
+  public static final Filter DISCRIMINATOR_FILTER = Filter.createMemCompFilter(0, DISCRIMINATOR.data());
+
+  public static final int ACCOUNT_TYPE_OFFSET = 8;
+  public static final int ENABLED_OFFSET = 9;
+  public static final int VAULT_OFFSET = 10;
+  public static final int OWNER_OFFSET = 42;
+  public static final int PORTFOLIO_MANAGER_NAME_OFFSET = 74;
+  public static final int CREATED_OFFSET = 106;
+  public static final int BASE_ASSET_MINT_OFFSET = 154;
+  public static final int BASE_ASSET_DECIMALS_OFFSET = 186;
+  public static final int BASE_ASSET_TOKEN_PROGRAM_OFFSET = 187;
+  public static final int NAME_OFFSET = 188;
+  public static final int TIMELOCK_DURATION_OFFSET = 220;
+  public static final int TIMELOCK_EXPIRES_AT_OFFSET = 224;
+  public static final int MINT_OFFSET = 232;
+  public static final int ASSETS_OFFSET = 264;
+
+  public static Filter createAccountTypeFilter(final AccountType accountType) {
+    return Filter.createMemCompFilter(ACCOUNT_TYPE_OFFSET, accountType.write());
+  }
+
+  public static Filter createEnabledFilter(final boolean enabled) {
+    return Filter.createMemCompFilter(ENABLED_OFFSET, new byte[]{(byte) (enabled ? 1 : 0)});
+  }
+
+  public static Filter createVaultFilter(final PublicKey vault) {
+    return Filter.createMemCompFilter(VAULT_OFFSET, vault);
+  }
+
+  public static Filter createOwnerFilter(final PublicKey owner) {
+    return Filter.createMemCompFilter(OWNER_OFFSET, owner);
+  }
+
+  public static Filter createCreatedFilter(final CreatedModel created) {
+    return Filter.createMemCompFilter(CREATED_OFFSET, created.write());
+  }
+
+  public static Filter createBaseAssetMintFilter(final PublicKey baseAssetMint) {
+    return Filter.createMemCompFilter(BASE_ASSET_MINT_OFFSET, baseAssetMint);
+  }
+
+  public static Filter createBaseAssetDecimalsFilter(final int baseAssetDecimals) {
+    return Filter.createMemCompFilter(BASE_ASSET_DECIMALS_OFFSET, new byte[]{(byte) baseAssetDecimals});
+  }
+
+  public static Filter createBaseAssetTokenProgramFilter(final int baseAssetTokenProgram) {
+    return Filter.createMemCompFilter(BASE_ASSET_TOKEN_PROGRAM_OFFSET, new byte[]{(byte) baseAssetTokenProgram});
+  }
+
+  public static Filter createTimelockDurationFilter(final int timelockDuration) {
+    final byte[] _data = new byte[4];
+    putInt32LE(_data, 0, timelockDuration);
+    return Filter.createMemCompFilter(TIMELOCK_DURATION_OFFSET, _data);
+  }
+
+  public static Filter createTimelockExpiresAtFilter(final long timelockExpiresAt) {
+    final byte[] _data = new byte[8];
+    putInt64LE(_data, 0, timelockExpiresAt);
+    return Filter.createMemCompFilter(TIMELOCK_EXPIRES_AT_OFFSET, _data);
+  }
+
+  public static Filter createMintFilter(final PublicKey mint) {
+    return Filter.createMemCompFilter(MINT_OFFSET, mint);
+  }
+
+  public static StateAccount read(final byte[] _data, final int _offset) {
+    return read(null, _data, _offset);
+  }
+
+  public static StateAccount read(final AccountInfo<byte[]> accountInfo) {
+    return read(accountInfo.pubKey(), accountInfo.data(), 0);
+  }
+
+  public static StateAccount read(final PublicKey _address, final byte[] _data) {
+    return read(_address, _data, 0);
+  }
+
+  public static final BiFunction<PublicKey, byte[], StateAccount> FACTORY = StateAccount::read;
+
+  public static StateAccount read(final PublicKey _address, final byte[] _data, final int _offset) {
+    if (_data == null || _data.length == 0) {
+      return null;
+    }
+    final var discriminator = createAnchorDiscriminator(_data, _offset);
+    int i = _offset + discriminator.length();
+    final var accountType = AccountType.read(_data, i);
+    i += accountType.l();
+    final var enabled = _data[i] == 1;
+    ++i;
+    final var vault = readPubKey(_data, i);
+    i += 32;
+    final var owner = readPubKey(_data, i);
+    i += 32;
+    final var portfolioManagerName = new byte[32];
+    i += SerDeUtil.readArray(portfolioManagerName, _data, i);
+    final var created = CreatedModel.read(_data, i);
+    i += created.l();
+    final var baseAssetMint = readPubKey(_data, i);
+    i += 32;
+    final var baseAssetDecimals = _data[i] & 0xFF;
+    ++i;
+    final var baseAssetTokenProgram = _data[i] & 0xFF;
+    ++i;
+    final var name = new byte[32];
+    i += SerDeUtil.readArray(name, _data, i);
+    final var timelockDuration = getInt32LE(_data, i);
+    i += 4;
+    final var timelockExpiresAt = getInt64LE(_data, i);
+    i += 8;
+    final var mint = readPubKey(_data, i);
+    i += 32;
+    final var assets = SerDeUtil.readPublicKeyVector(4, _data, i);
+    i += SerDeUtil.lenVector(4, assets);
+    final var integrationAcls = SerDeUtil.readVector(4, IntegrationAcl.class, IntegrationAcl::read, _data, i);
+    i += SerDeUtil.lenVector(4, integrationAcls);
+    final var delegateAcls = SerDeUtil.readVector(4, DelegateAcl.class, DelegateAcl::read, _data, i);
+    i += SerDeUtil.lenVector(4, delegateAcls);
+    final var externalPositions = SerDeUtil.readPublicKeyVector(4, _data, i);
+    i += SerDeUtil.lenVector(4, externalPositions);
+    final var pricedProtocols = SerDeUtil.readVector(4, PricedProtocol.class, PricedProtocol::read, _data, i);
+    i += SerDeUtil.lenVector(4, pricedProtocols);
+    final var params = SerDeUtil.readMultiDimensionVector(4, EngineField.class, EngineField::read, _data, i);
+    return new StateAccount(_address,
+                            discriminator,
+                            accountType,
+                            enabled,
+                            vault,
+                            owner,
+                            portfolioManagerName,
+                            created,
+                            baseAssetMint,
+                            baseAssetDecimals,
+                            baseAssetTokenProgram,
+                            name,
+                            timelockDuration,
+                            timelockExpiresAt,
+                            mint,
+                            assets,
+                            integrationAcls,
+                            delegateAcls,
+                            externalPositions,
+                            pricedProtocols,
+                            params);
+  }
+
+  @Override
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset + discriminator.write(_data, _offset);
+    i += accountType.write(_data, i);
+    _data[i] = (byte) (enabled ? 1 : 0);
+    ++i;
+    vault.write(_data, i);
+    i += 32;
+    owner.write(_data, i);
+    i += 32;
+    i += SerDeUtil.writeArrayChecked(portfolioManagerName, 32, _data, i);
+    i += created.write(_data, i);
+    baseAssetMint.write(_data, i);
+    i += 32;
+    _data[i] = (byte) baseAssetDecimals;
+    ++i;
+    _data[i] = (byte) baseAssetTokenProgram;
+    ++i;
+    i += SerDeUtil.writeArrayChecked(name, 32, _data, i);
+    putInt32LE(_data, i, timelockDuration);
+    i += 4;
+    putInt64LE(_data, i, timelockExpiresAt);
+    i += 8;
+    mint.write(_data, i);
+    i += 32;
+    i += SerDeUtil.writeVector(4, assets, _data, i);
+    i += SerDeUtil.writeVector(4, integrationAcls, _data, i);
+    i += SerDeUtil.writeVector(4, delegateAcls, _data, i);
+    i += SerDeUtil.writeVector(4, externalPositions, _data, i);
+    i += SerDeUtil.writeVector(4, pricedProtocols, _data, i);
+    i += SerDeUtil.writeVector(4, params, _data, i);
+    return i - _offset;
+  }
+
+  @Override
+  public int l() {
+    return 8 + accountType.l()
+         + 1
+         + 32
+         + 32
+         + SerDeUtil.lenArray(portfolioManagerName)
+         + created.l()
+         + 32
+         + 1
+         + 1
+         + SerDeUtil.lenArray(name)
+         + 4
+         + 8
+         + 32
+         + SerDeUtil.lenVector(4, assets)
+         + SerDeUtil.lenVector(4, integrationAcls)
+         + SerDeUtil.lenVector(4, delegateAcls)
+         + SerDeUtil.lenVector(4, externalPositions)
+         + SerDeUtil.lenVector(4, pricedProtocols)
+         + SerDeUtil.lenVector(4, params);
+  }
+}

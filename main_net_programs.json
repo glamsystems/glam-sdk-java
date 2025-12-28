@@ -188,11 +188,41 @@
       ]
     },
     {
+      "name": "Glam Staging Mint",
+      "source": "sdk",
+      "package": "glam.staging.mint",
+      "module": "sdk",
+      "program": "gstgm1M39mhgnvgyScGUDRwNn5kNVSd97hTtyow1Et5",
+      "typeRefs": [
+        {
+          "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
       "name": "Glam Protocol",
       "source": "sdk",
       "package": "glam.protocol",
       "module": "sdk",
       "program": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"
+    },
+    {
+      "name": "Glam Staging Protocol",
+      "source": "sdk",
+      "package": "glam.staging.protocol",
+      "module": "sdk",
+      "program": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
     },
     {
       "name": "GLAM Policy Program",

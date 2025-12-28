@@ -50,6 +50,8 @@ public interface GlamAccountClient extends SPLAccountClient {
 
   ProgramDerivedAddress escrowMintPDA();
 
+  Instruction validateAum(boolean cpiEmitEvents);
+
   Instruction fulfill(final int mintId,
                       final PublicKey baseAssetMint,
                       final PublicKey baseAssetTokenProgram,
