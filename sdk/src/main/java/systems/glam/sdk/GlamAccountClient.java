@@ -6,6 +6,7 @@ import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.spl.SPLAccountClient;
 import software.sava.idl.clients.spl.SPLClient;
+import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateModel;
 
@@ -14,12 +15,17 @@ import java.util.OptionalInt;
 public interface GlamAccountClient extends SPLAccountClient {
 
   static GlamAccountClient createClient(final SPLClient splClient, final GlamVaultAccounts glamVaultAccounts) {
-    return new GlamAccountClientImpl(splClient, glamVaultAccounts);
+    final var glamAccounts = glamVaultAccounts.glamAccounts();
+    if (GlamAccounts.MAIN_NET_STAGING.protocolProgram().equals(glamAccounts.protocolProgram())) {
+      return new GlamStagingAccountClientImpl(splClient, glamVaultAccounts);
+    } else {
+      return new GlamAccountClientImpl(splClient, glamVaultAccounts);
+    }
   }
 
   static GlamAccountClient createClient(final SolanaAccounts solanaAccounts,
                                         final GlamVaultAccounts glamVaultAccounts) {
-    return new GlamAccountClientImpl(SPLClient.createClient(solanaAccounts), glamVaultAccounts);
+    return createClient(SPLClient.createClient(solanaAccounts), glamVaultAccounts);
   }
 
   static GlamAccountClient createClient(final SolanaAccounts solanaAccounts,
@@ -29,8 +35,8 @@ public interface GlamAccountClient extends SPLAccountClient {
     return createClient(solanaAccounts, GlamVaultAccounts.createAccounts(glamAccounts, feePayer, glamStateKey));
   }
 
-  static GlamAccountClient createClient(final PublicKey feePayer, final PublicKey glamStatePKey) {
-    return createClient(SolanaAccounts.MAIN_NET, GlamAccounts.MAIN_NET, feePayer, glamStatePKey);
+  static GlamAccountClient createClient(final PublicKey feePayer, final PublicKey glamStateKey) {
+    return createClient(SolanaAccounts.MAIN_NET, GlamAccounts.MAIN_NET, feePayer, glamStateKey);
   }
 
   static boolean isDelegated(final StateAccount glamAccount, final PublicKey delegate) {
@@ -46,9 +52,18 @@ public interface GlamAccountClient extends SPLAccountClient {
 
   GlamVaultAccounts vaultAccounts();
 
-  ProgramDerivedAddress escrowMintPDA(final PublicKey mint, final PublicKey escrow);
+  StateAccountClient createStateAccountClient(final AccountInfo<byte[]> accountInfo);
 
-  ProgramDerivedAddress escrowMintPDA();
+  ProgramDerivedAddress vaultTokenAccount(final PublicKey tokenProgram, final PublicKey mint);
+
+  ProgramDerivedAddress escrowMintTokenAccount(final PublicKey mint, final PublicKey escrow);
+
+  Instruction createEscrowAssociatedTokenIdempotent(final PublicKey escrowTokenAccount,
+                                                    final PublicKey escrow,
+                                                    final PublicKey mint,
+                                                    final PublicKey tokenProgram);
+
+  ProgramDerivedAddress escrowMintTokenAccount();
 
   Instruction validateAum(boolean cpiEmitEvents);
 
@@ -152,4 +167,6 @@ public interface GlamAccountClient extends SPLAccountClient {
   }
 
   Instruction updateState(final StateModel state);
+
+  Instruction priceSingleAssetVault(final PublicKey baseAssetTokenAccount, final boolean cpiEmitEvents);
 }

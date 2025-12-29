@@ -9,12 +9,8 @@ import software.sava.services.solana.transactions.InstructionService;
 import software.sava.services.solana.transactions.TransactionProcessor;
 import software.sava.services.solana.transactions.TxMonitorService;
 import software.sava.services.solana.websocket.WebSocketManager;
-import systems.glam.sdk.GlamAccountClient;
-import systems.glam.sdk.GlamVaultAccounts;
+import systems.glam.sdk.*;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintConstants;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.IntegrationAcl;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.ProtocolPermissions;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.services.execution.InstructionProcessor;
 import systems.glam.services.tokens.MintContext;
 
@@ -23,13 +19,11 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
 
-public record SingleAssetFulfillmentServiceEntrypoint(ExecutorService executorService,
-                                                      WebSocketManager webSocketManager,
+public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocketManager,
+                                                      EpochInfoService epochInfoService,
                                                       FulfillmentService fulfillmentService) implements Runnable {
 
   private static final System.Logger logger = System.getLogger(SingleAssetFulfillmentServiceEntrypoint.class.getName());
@@ -48,30 +42,28 @@ public record SingleAssetFulfillmentServiceEntrypoint(ExecutorService executorSe
       logger.log(WARNING, "DRY RUN ENABLED");
     }
     try (final var taskExecutor = Executors.newVirtualThreadPerTaskExecutor();
-         final var serviceExecutor = Executors.newFixedThreadPool(1);
          final var httpClient = HttpClient.newBuilder().executor(taskExecutor).build();
          final var wsHttpClient = HttpClient.newHttpClient()) {
-      final var service = createService(
-          taskExecutor, serviceExecutor,
-          httpClient, wsHttpClient
-      );
+      final var service = createService(taskExecutor, httpClient, wsHttpClient);
       if (service != null) {
         service.run();
       }
     } catch (final InterruptedException e) {
       // exit
+    } catch (final Throwable e) {
+      logger.log(ERROR, "Unexpected service failure.", e);
     }
   }
 
-
   private static SingleAssetFulfillmentServiceEntrypoint createService(final ExecutorService taskExecutor,
-                                                                       final ExecutorService serviceExecutor,
                                                                        final HttpClient httpClient,
                                                                        final HttpClient wsHttpClient) throws InterruptedException {
     final var serviceConfig = DelegateServiceConfig.loadConfig(SingleAssetFulfillmentServiceEntrypoint.class, taskExecutor, httpClient);
 
     final var signingService = serviceConfig.signingServiceConfig().signingService();
     final var serviceKeyFuture = signingService.publicKeyWithRetries();
+
+    final var glamAccounts = GlamAccounts.MAIN_NET_STAGING;
 
     final var initAccountsNeeded = HashSet.<PublicKey>newHashSet(8);
 
@@ -80,7 +72,7 @@ public record SingleAssetFulfillmentServiceEntrypoint(ExecutorService executorSe
     final var formatter = serviceConfig.formatter();
 
     final var serviceKey = serviceKeyFuture.join();
-    final var vaultAccounts = GlamVaultAccounts.createAccounts(serviceKey, stateAccountKey);
+    final var vaultAccounts = GlamVaultAccounts.createAccounts(glamAccounts, serviceKey, stateAccountKey);
 
     logger.log(INFO, String.format("""
                 Initializing services for:
@@ -88,7 +80,7 @@ public record SingleAssetFulfillmentServiceEntrypoint(ExecutorService executorSe
                  - Vault: %s
                  - Fee Payer: %s
                  - Max Priority Fee: %s SOL
-                 - Check state at most every %s and at least every %s seconds.
+                 - Check state at most every %s and at least every %s.
                 """,
             formatter.formatAddress(stateAccountKey),
             formatter.formatAddress(vaultAccounts.vaultPublicKey()),
@@ -101,13 +93,6 @@ public record SingleAssetFulfillmentServiceEntrypoint(ExecutorService executorSe
 
     final var rpcCaller = serviceConfig.rpcCaller();
 
-    logger.log(INFO, "Starting epoch info service.");
-    final var epochInfoService = EpochInfoService.createService(
-        serviceConfig.epochServiceConfig(),
-        rpcCaller
-    );
-    serviceExecutor.execute(epochInfoService);
-
 
     initAccountsNeeded.add(stateAccountKey);
     final var mintKey = vaultAccounts.mintPDA().publicKey();
@@ -119,10 +104,8 @@ public record SingleAssetFulfillmentServiceEntrypoint(ExecutorService executorSe
         "rpcClient::getPositionRelatedAccounts"
     );
 
-    final var glamAccounts = vaultAccounts.glamAccounts();
-    final var requiredIntegrations = Map.of(glamAccounts.mintIntegrationProgram(), GlamMintConstants.PROTO_MINT);
     final var requiredPermissions = Map.of(
-        glamAccounts.mintIntegrationProgram(), new ProtocolPermissions(GlamMintConstants.PROTO_MINT, GlamMintConstants.PROTO_MINT_PERM_FULFILL)
+        glamAccounts.mintIntegrationProgram(), Protocol.MINT.permissions(GlamMintConstants.PROTO_MINT_PERM_FULFILL)
     );
 
     final var accountsNeededMap = HashMap.<PublicKey, AccountInfo<byte[]>>newHashMap(accountsNeededList.size());
@@ -132,20 +115,20 @@ public record SingleAssetFulfillmentServiceEntrypoint(ExecutorService executorSe
       }
     }
 
+    final var solanaAccounts = serviceConfig.solanaAccounts();
+    final var glamAccountClient = GlamAccountClient.createClient(solanaAccounts, vaultAccounts);
     final var glamAccountInfo = accountsNeededMap.get(stateAccountKey);
-    final var glamStateAccount = StateAccount.read(glamAccountInfo);
-    if (!validateDelegatePermissions(requiredIntegrations, requiredPermissions, serviceKey, glamStateAccount)) {
+    final var stateAccountClient = glamAccountClient.createStateAccountClient(glamAccountInfo);
+    if (!validateDelegatePermissions(requiredPermissions, serviceKey, stateAccountClient)) {
       return null;
     }
 
-    final var baseAssetMint = glamStateAccount.baseAssetMint();
+    final var baseAssetMint = stateAccountClient.baseAssetMint();
     final var baseAssetAccountFuture = rpcCaller.courteousCall(
         rpcClient -> rpcClient.getAccountInfo(baseAssetMint),
         "rpcClient::getBaseAssetAccount"
     );
 
-    final var solanaAccounts = serviceConfig.solanaAccounts();
-    final var glamAccountClient = GlamAccountClient.createClient(solanaAccounts, vaultAccounts);
     final var vaultMintContext = MintContext.createContext(glamAccountClient, accountsNeededMap.get(mintKey));
 
     final var websocketConfig = serviceConfig.websocketConfig();
@@ -183,6 +166,9 @@ public record SingleAssetFulfillmentServiceEntrypoint(ExecutorService executorSe
         webSocketManager
     );
 
+    logger.log(INFO, "Starting epoch info service.");
+    final var epochInfoService = EpochInfoService.createService(serviceConfig.epochServiceConfig(), rpcCaller);
+
     final var txMonitorConfig = serviceConfig.txMonitorConfig();
     final var txMonitorService = TxMonitorService.createService(
         formatter,
@@ -217,7 +203,7 @@ public record SingleAssetFulfillmentServiceEntrypoint(ExecutorService executorSe
     final var baseAssetMintContext = MintContext.createContext(glamAccountClient, baseAssetAccountFuture.join());
 
     final var fulfillmentService = FulfillmentService.createSingleAssetService(
-        glamStateAccount,
+        stateAccountClient,
         vaultMintContext,
         baseAssetMintContext,
         rpcCaller,
@@ -231,68 +217,31 @@ public record SingleAssetFulfillmentServiceEntrypoint(ExecutorService executorSe
     webSocketConsumers.add(fulfillmentService::subscribe);
     fulfillmentService.subscribe(webSocketManager.webSocket());
 
-    return new SingleAssetFulfillmentServiceEntrypoint(serviceExecutor, webSocketManager, fulfillmentService);
+    return new SingleAssetFulfillmentServiceEntrypoint(webSocketManager, epochInfoService, fulfillmentService);
   }
 
-  private static boolean validateDelegatePermissions(final Map<PublicKey, Integer> requiredIntegrations,
-                                                     final Map<PublicKey, ProtocolPermissions> requiredPermissions,
+  private static boolean validateDelegatePermissions(final Map<PublicKey, ProtocolPermissions> requiredPermissions,
                                                      final PublicKey delegateKey,
-                                                     final StateAccount glamStateAccount) {
-    if (glamStateAccount == null) {
+                                                     final StateAccountClient stateAccountClient) {
+    if (stateAccountClient == null) {
       logger.log(ERROR, "Glam account does not exist, exiting.");
       return false;
-    }
-
-    final var integrationMap = Arrays.stream(glamStateAccount.integrationAcls())
-        .collect(Collectors.toUnmodifiableMap(IntegrationAcl::integrationProgram, Function.identity()));
-
-    for (final var entry : requiredIntegrations.entrySet()) {
-      final int integrationMask = entry.getValue();
-      if (integrationMap.get(entry.getKey()) instanceof IntegrationAcl acl) {
-        if ((acl.protocolsBitmask() & integrationMask) != integrationMask) {
-          logger.log(ERROR, String.format("Missing integrations for program %s.", entry.getKey()));
-          return false;
-        }
-      } else {
-        logger.log(ERROR, "Missing the following extension program: " + entry.getKey());
-        return false;
-      }
-    }
-
-    final var delegateAcls = Arrays.stream(glamStateAccount.delegateAcls())
-        .filter(acl -> acl.pubkey().equals(delegateKey))
-        .findFirst().orElse(null);
-    if (delegateAcls == null) {
-      logger.log(ERROR, String.format("Service key %s does not have any permissions.", delegateKey));
+    } else if (!stateAccountClient.delegateHasPermissions(delegateKey, requiredPermissions)) {
+      logger.log(ERROR, String.format("Service key %s does not have the required permissions.", delegateKey));
       return false;
+    } else {
+      return true;
     }
-
-    final var integrationPermissions = delegateAcls.integrationPermissions();
-    final var integrationPermissionMap = HashMap.<PublicKey, Map<Integer, Long>>newHashMap(integrationPermissions.length);
-    for (final var permission : integrationPermissions) {
-      final var protocolPermissions = Arrays.stream(permission.protocolPermissions())
-          .collect(Collectors.toUnmodifiableMap(ProtocolPermissions::protocolBitflag, ProtocolPermissions::permissionsBitmask));
-      integrationPermissionMap.put(permission.integrationProgram(), protocolPermissions);
-    }
-    for (final var entry : requiredPermissions.entrySet()) {
-      final var delegateIntegrationPermissions = integrationPermissionMap.get(entry.getKey());
-      final var requiredPermissionsBitmask = entry.getValue().permissionsBitmask();
-      if (delegateIntegrationPermissions == null
-          || (delegateIntegrationPermissions.get(entry.getValue().protocolBitflag()) & requiredPermissionsBitmask) != requiredPermissionsBitmask) {
-        logger.log(ERROR, String.format("Service key %s does not have the required permissions for integration program %s.", delegateKey, entry.getKey()));
-        return false;
-      }
-    }
-
-    return true;
   }
 
   @Override
   public void run() {
-    try {
+    try (final var executorService = Executors.newFixedThreadPool(2)) {
+      executorService.execute(epochInfoService);
       executorService.execute(fulfillmentService);
       for (; ; ) {
         webSocketManager.checkConnection();
+        //noinspection BusyWait
         Thread.sleep(3_000);
       }
     } catch (final InterruptedException e) {

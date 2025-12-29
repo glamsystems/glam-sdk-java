@@ -8,7 +8,6 @@ import systems.glam.sdk.idl.programs.glam.config.gen.GlamConfigPDAs;
 import systems.glam.sdk.idl.programs.glam.drift.gen.ExtDriftPDAs;
 import systems.glam.sdk.idl.programs.glam.kamino.gen.ExtKaminoPDAs;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintPDAs;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplPDAs;
 import systems.glam.sdk.proxy.DynamicGlamAccountFactory;
 
@@ -28,6 +27,16 @@ public interface GlamAccounts {
       "G1NTsQ36mjPe89HtPYqxKsjY5HmYsDR6CbD2gd2U2pta",
       "G1NTdrBmBpW43msRQmsf7qXSw3MFBNaqJcAkGiRmRq2F",
       "G1NTkDEUR3pkEqGCKZtmtmVzCUEdYa86pezHkwYbLyde"
+  );
+
+  GlamAccounts MAIN_NET_STAGING = createAccounts(
+      "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+      "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
+      "gstgm1M39mhgnvgyScGUDRwNn5kNVSd97hTtyow1Et5",
+      "po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY",
+      "gstgs9nJgX8PmRHWAAEP9H7xT3ZkaPWSGPYbj3mXdTa",
+      "gstgdpMFXKobURsFtStdaMLRSuwdmDUsrndov7kyu9h",
+      "gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq"
   );
 
   static GlamAccounts createAccounts(final PublicKey protocolProgram,
@@ -154,16 +163,4 @@ public interface GlamAccounts {
   AccountMeta readKaminoIntegrationAuthority();
 
   Map<PublicKey, AccountMeta> integrationAuthorities();
-
-  static boolean usesIntegration(final StateAccount stateAccount,
-                                 final PublicKey program,
-                                 final int bitFlag) {
-    for (final var acl : stateAccount.integrationAcls()) {
-      if (acl.integrationProgram().equals(program)) {
-        final int mask = acl.protocolsBitmask();
-        return (mask & bitFlag) == bitFlag;
-      }
-    }
-    return false;
-  }
 }

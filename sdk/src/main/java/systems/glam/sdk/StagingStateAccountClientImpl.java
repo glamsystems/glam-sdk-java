@@ -2,21 +2,21 @@ package systems.glam.sdk;
 
 import software.sava.core.accounts.ProgramDerivedAddress;
 import software.sava.core.accounts.PublicKey;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.IntegrationAcl;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
+import systems.glam.sdk.idl.programs.glam.staging.protocol.gen.types.IntegrationAcl;
+import systems.glam.sdk.idl.programs.glam.staging.protocol.gen.types.StateAccount;
 
 import java.util.Map;
 
-public final class StateAccountClientImpl extends BaseStateAccountClient {
+public class StagingStateAccountClientImpl extends BaseStateAccountClient {
 
   private final StateAccount stateAccount;
   private final Map<PublicKey, IntegrationAcl> integrationAclMap;
 
-  public StateAccountClientImpl(final StateAccount stateAccount,
-                                final GlamAccountClient accountClient,
-                                final ProgramDerivedAddress escrowAccount,
-                                final Map<PublicKey, IntegrationAcl> integrationAclMap,
-                                final Map<PublicKey, Map<PublicKey, Map<Protocol, ProtocolPermissions>>> delegatePermissions) {
+  public StagingStateAccountClientImpl(final StateAccount stateAccount,
+                                       final GlamAccountClient accountClient,
+                                       final ProgramDerivedAddress escrowAccount,
+                                       final Map<PublicKey, IntegrationAcl> integrationAclMap,
+                                       final Map<PublicKey, Map<PublicKey, Map<Protocol, ProtocolPermissions>>> delegatePermissions) {
     super(accountClient, stateAccount.name(), escrowAccount, delegatePermissions);
     this.stateAccount = stateAccount;
     this.integrationAclMap = integrationAclMap;

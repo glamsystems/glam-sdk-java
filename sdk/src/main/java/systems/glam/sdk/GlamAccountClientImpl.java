@@ -8,25 +8,27 @@ import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.spl.SPLAccountClient;
 import software.sava.idl.clients.spl.SPLClient;
-import software.sava.solana.programs.token.AssociatedTokenProgram;
+import software.sava.idl.clients.spl.associated_token.gen.AssociatedTokenProgram;
+import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintProgram;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolProgram;
+import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateModel;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplProgram;
 
 import java.util.List;
 import java.util.OptionalInt;
 
-final class GlamAccountClientImpl implements GlamAccountClient {
+class GlamAccountClientImpl implements GlamAccountClient {
 
-  private final SolanaAccounts solanaAccounts;
-  private final PublicKey wrappedSolPDA;
-  private final SPLAccountClient splAccountClient;
-  private final GlamVaultAccounts glamVaultAccounts;
-  private final GlamAccounts glamAccounts;
-  private final AccountMeta invokedProtocolProgram;
-  private final AccountMeta feePayer;
-  private final PublicKey globalConfigKey;
+  protected final SolanaAccounts solanaAccounts;
+  protected final PublicKey wrappedSolPDA;
+  protected final SPLAccountClient splAccountClient;
+  protected final GlamVaultAccounts glamVaultAccounts;
+  protected final GlamAccounts glamAccounts;
+  protected final AccountMeta invokedProtocolProgram;
+  protected final AccountMeta feePayer;
+  protected final PublicKey globalConfigKey;
 
   GlamAccountClientImpl(final SPLClient splClient, final GlamVaultAccounts glamVaultAccounts) {
     this.solanaAccounts = splClient.solanaAccounts();
@@ -39,67 +41,97 @@ final class GlamAccountClientImpl implements GlamAccountClient {
     this.globalConfigKey = glamVaultAccounts.glamAccounts().globalConfigPDA().publicKey();
   }
 
+  static ProtocolPermissions adaptPermissions(final GlamAccounts glamAccounts,
+                                              final PublicKey integrationProgram,
+                                              final int protocolBitFlag,
+                                              final long permissionMask) {
+    if (integrationProgram.equals(glamAccounts.mintProgram())) {
+      return Protocol.fromMintProtocolBitFlag(protocolBitFlag, permissionMask);
+    } else if (integrationProgram.equals(glamAccounts.protocolProgram())) {
+      return Protocol.fromGlamProtocolBitFlag(protocolBitFlag, permissionMask);
+    } else if (integrationProgram.equals(glamAccounts.splIntegrationProgram())) {
+      return Protocol.fromSplProtocolBitFlag(protocolBitFlag, permissionMask);
+    } else if (integrationProgram.equals(glamAccounts.driftIntegrationProgram())) {
+      return Protocol.fromDriftProtocolBitFlag(protocolBitFlag, permissionMask);
+    } else if (integrationProgram.equals(glamAccounts.kaminoIntegrationProgram())) {
+      return Protocol.fromKaminoProtocolBitFlag(protocolBitFlag, permissionMask);
+    } else {
+      throw new UnsupportedOperationException("Unknown integration program: " + integrationProgram);
+    }
+  }
+
+  protected final ProtocolPermissions adaptPermissions(final PublicKey integrationProgram,
+                                                       final int protocolBitFlag,
+                                                       final long permissionMask) {
+    return adaptPermissions(glamAccounts, integrationProgram, protocolBitFlag, permissionMask);
+  }
+
   @Override
-  public SolanaAccounts solanaAccounts() {
+  public final SolanaAccounts solanaAccounts() {
     return solanaAccounts;
   }
 
   @Override
-  public GlamAccounts glamAccounts() {
+  public final GlamAccounts glamAccounts() {
     return glamAccounts;
   }
 
   @Override
-  public GlamVaultAccounts vaultAccounts() {
+  public final GlamVaultAccounts vaultAccounts() {
     return glamVaultAccounts;
   }
 
   @Override
-  public SPLClient splClient() {
+  public StateAccountClient createStateAccountClient(final AccountInfo<byte[]> accountInfo) {
+    return StateAccountClient.createClient(StateAccount.read(accountInfo), this);
+  }
+
+  @Override
+  public final SPLClient splClient() {
     return splAccountClient.splClient();
   }
 
   @Override
-  public PublicKey owner() {
+  public final PublicKey owner() {
     return glamVaultAccounts.vaultPublicKey();
   }
 
   @Override
-  public AccountMeta feePayer() {
+  public final AccountMeta feePayer() {
     return feePayer;
   }
 
   @Override
-  public ProgramDerivedAddress wrappedSolPDA() {
+  public final ProgramDerivedAddress wrappedSolPDA() {
     return splAccountClient.wrappedSolPDA();
   }
 
   @Override
-  public ProgramDerivedAddress findATA(final PublicKey tokenProgram, final PublicKey mint) {
+  public final ProgramDerivedAddress findATA(final PublicKey tokenProgram, final PublicKey mint) {
     return splAccountClient.findATA(tokenProgram, mint);
   }
 
   @Override
-  public Instruction createATAForOwnerFundedByFeePayer(final boolean idempotent,
-                                                       final PublicKey ata,
-                                                       final PublicKey mint,
-                                                       final PublicKey tokenProgram) {
+  public final Instruction createATAForOwnerFundedByFeePayer(final boolean idempotent,
+                                                             final PublicKey ata,
+                                                             final PublicKey mint,
+                                                             final PublicKey tokenProgram) {
     return splAccountClient.createATAForOwnerFundedByFeePayer(idempotent, ata, mint, tokenProgram);
   }
 
   @Override
-  public Instruction createAccount(final PublicKey newAccountPublicKey,
-                                   final long lamports,
-                                   final long space,
-                                   final PublicKey programOwner) {
+  public final Instruction createAccount(final PublicKey newAccountPublicKey,
+                                         final long lamports,
+                                         final long space,
+                                         final PublicKey programOwner) {
     return splAccountClient.createAccount(newAccountPublicKey, lamports, space, programOwner);
   }
 
   @Override
-  public Instruction createAccountWithSeed(final AccountWithSeed accountWithSeed,
-                                           final long lamports,
-                                           final long space,
-                                           final PublicKey programOwner) {
+  public final Instruction createAccountWithSeed(final AccountWithSeed accountWithSeed,
+                                                 final long lamports,
+                                                 final long space,
+                                                 final PublicKey programOwner) {
     return splAccountClient.createAccountWithSeed(accountWithSeed, lamports, space, programOwner);
   }
 
@@ -117,7 +149,7 @@ final class GlamAccountClientImpl implements GlamAccountClient {
   }
 
   @Override
-  public Instruction syncNative() {
+  public final Instruction syncNative() {
     return splClient().syncNative(wrappedSolPDA);
   }
 
@@ -173,15 +205,32 @@ final class GlamAccountClientImpl implements GlamAccountClient {
   }
 
   @Override
-  public ProgramDerivedAddress escrowMintPDA(final PublicKey mint, final PublicKey escrow) {
-    return AssociatedTokenProgram.findATA(solanaAccounts, escrow, solanaAccounts.token2022Program(), mint);
+  public final ProgramDerivedAddress vaultTokenAccount(final PublicKey tokenProgram, final PublicKey mint) {
+    return splClient().findATA(vaultAccounts().vaultPublicKey(), tokenProgram, mint);
   }
 
   @Override
-  public ProgramDerivedAddress escrowMintPDA() {
+  public final ProgramDerivedAddress escrowMintTokenAccount(final PublicKey mint, final PublicKey escrow) {
+    return splClient().findATA(escrow, solanaAccounts.token2022Program(), mint);
+  }
+
+  @Override
+  public final ProgramDerivedAddress escrowMintTokenAccount() {
     final var mint = glamVaultAccounts.mintPDA().publicKey();
     final var escrow = glamAccounts.escrowPDA(mint).publicKey();
-    return AssociatedTokenProgram.findATA(solanaAccounts, escrow, solanaAccounts.token2022Program(), mint);
+    return escrowMintTokenAccount(mint, escrow);
+  }
+
+  @Override
+  public Instruction createEscrowAssociatedTokenIdempotent(final PublicKey escrowTokenAccount,
+                                                           final PublicKey escrow,
+                                                           final PublicKey mint, final PublicKey tokenProgram) {
+    return AssociatedTokenProgram.createAssociatedTokenIdempotent(
+        solanaAccounts.invokedAssociatedTokenAccountProgram(), solanaAccounts,
+        feePayerKey(),
+        escrowTokenAccount, escrow,
+        mint, tokenProgram
+    );
   }
 
   @Override
@@ -205,12 +254,12 @@ final class GlamAccountClientImpl implements GlamAccountClient {
     final var mint = glamVaultAccounts.mintPDA(mintId).publicKey();
     final var escrow = glamAccounts.escrowPDA(mint).publicKey();
 
-    final var escrowMintTokenAccount = escrowMintPDA(mint, escrow);
+    final var escrowMintTokenAccount = escrowMintTokenAccount(mint, escrow);
 
     final var vault = glamVaultAccounts.vaultPublicKey();
-    final var vaultTokenAccount = AssociatedTokenProgram.findATA(solanaAccounts, vault, baseAssetTokenProgram, baseAssetMint);
+    final var vaultTokenAccount = vaultTokenAccount(baseAssetTokenProgram, baseAssetMint);
 
-    final var escrowTokenAccount = AssociatedTokenProgram.findATA(solanaAccounts, escrow, baseAssetTokenProgram, baseAssetMint);
+    final var escrowTokenAccount = splClient().findATA(escrow, baseAssetTokenProgram, baseAssetMint);
 
     final var requestQueueKey = glamAccounts.requestQueuePDA(mint).publicKey();
 
@@ -241,12 +290,12 @@ final class GlamAccountClientImpl implements GlamAccountClient {
 //    final var escrow = GlamProtocolPDAs.glamEscrowPDA(glamProgram, glamVaultAccounts.glamPublicKey()).publicKey();
 //
 //    final var mint = glamVaultAccounts.mintPDA(mintId).publicKey();
-//    final var escrowMintTokenAccount = AssociatedTokenProgram.findATA(solanaAccounts, escrow, solanaAccounts.token2022Program(), mint);
+//    final var escrowMintTokenAccount = AssociatedTokenPDAs.associatedTokenPDA(solanaAccounts, escrow, solanaAccounts.token2022Program(), mint);
 //
 //    final var vault = glamVaultAccounts.vaultPublicKey();
-//    final var vaultTokenAccount = AssociatedTokenProgram.findATA(solanaAccounts, vault, baseAssetTokenProgram, baseAssetMint);
+//    final var vaultTokenAccount = AssociatedTokenPDAs.associatedTokenPDA(solanaAccounts, vault, baseAssetTokenProgram, baseAssetMint);
 //
-//    final var escrowTokenAccount = AssociatedTokenProgram.findATA(solanaAccounts, escrow, baseAssetTokenProgram, baseAssetMint);
+//    final var escrowTokenAccount = AssociatedTokenPDAs.associatedTokenPDA(solanaAccounts, escrow, baseAssetTokenProgram, baseAssetMint);
 //
 //    return GlamProtocolProgram.disburseFees(
 //        invokedProgram,
@@ -408,5 +457,14 @@ final class GlamAccountClientImpl implements GlamAccountClient {
         feePayer.publicKey(),
         state
     );
+  }
+
+  private RuntimeException throwStagingOnly() {
+    throw new IllegalStateException("Functionality only available in staging environment.");
+  }
+
+  @Override
+  public Instruction priceSingleAssetVault(final PublicKey baseAssetTokenAccount, final boolean cpiEmitEvents) {
+    throw throwStagingOnly();
   }
 }

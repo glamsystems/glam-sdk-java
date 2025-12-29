@@ -173,11 +173,10 @@ public interface VaultTableBuilder {
     }
 
     public VaultTableBuilder create(final StateAccountClient stateAccountClient) {
-      final var stateAccount = stateAccountClient.stateAccount();
       final var accountsNeeded = HashSet.<PublicKey>newHashSet(256);
-      accountsNeeded.addAll(Arrays.asList(stateAccount.externalPositions()));
-      accountsNeeded.addAll(Arrays.asList(stateAccount.assets())); // Need the token programs to derive the token accounts.
-      final var baseAssetMint = stateAccount.baseAssetMint();
+      accountsNeeded.addAll(Arrays.asList(stateAccountClient.externalPositions()));
+      accountsNeeded.addAll(Arrays.asList(stateAccountClient.assets())); // Need the token programs to derive the token accounts.
+      final var baseAssetMint = stateAccountClient.baseAssetMint();
       if (baseAssetMint != null && !baseAssetMint.equals(PublicKey.NONE)) {
         accountsNeeded.add(baseAssetMint);
       }

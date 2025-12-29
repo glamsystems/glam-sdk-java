@@ -47,3 +47,4 @@ Integ.*
 /.local/
 /idl-clients
 /services/.**
+/.config

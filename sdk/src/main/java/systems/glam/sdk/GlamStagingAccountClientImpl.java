@@ -1,10 +1,13 @@
 package systems.glam.sdk;
 
-import software.sava.core.accounts.ProgramDerivedAddress;
 import software.sava.core.accounts.PublicKey;
-import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintPDAs;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.IntegrationAcl;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
+import software.sava.core.tx.Instruction;
+import software.sava.idl.clients.spl.SPLClient;
+import software.sava.rpc.json.http.response.AccountInfo;
+import systems.glam.sdk.idl.programs.glam.staging.mint.gen.GlamMintPDAs;
+import systems.glam.sdk.idl.programs.glam.staging.mint.gen.GlamMintProgram;
+import systems.glam.sdk.idl.programs.glam.staging.protocol.gen.types.IntegrationAcl;
+import systems.glam.sdk.idl.programs.glam.staging.protocol.gen.types.StateAccount;
 
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -13,23 +16,18 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static systems.glam.sdk.GlamAccountClientImpl.adaptPermissions;
+final class GlamStagingAccountClientImpl extends GlamAccountClientImpl {
 
-public interface StateAccountClient {
-
-  static StateAccountClient createClient(final StateAccount stateAccount, final PublicKey feePayer) {
-    if (stateAccount == null) {
-      return null;
-    }
-    final var accountClient = GlamAccountClient.createClient(feePayer, stateAccount._address());
-    return createClient(stateAccount, accountClient);
+  GlamStagingAccountClientImpl(final SPLClient splClient, final GlamVaultAccounts glamVaultAccounts) {
+    super(splClient, glamVaultAccounts);
   }
 
-  static StateAccountClient createClient(final StateAccount stateAccount, final GlamAccountClient accountClient) {
-    if (stateAccount == null) {
+  @Override
+  public StateAccountClient createStateAccountClient(final AccountInfo<byte[]> accountInfo) {
+    if (accountInfo == null) {
       return null;
     }
-    final var glamAccounts = accountClient.glamAccounts();
+    final var stateAccount = StateAccount.read(accountInfo);
     final var escrowAccount = GlamMintPDAs.glamEscrowPDA(glamAccounts.mintProgram(), stateAccount.mint());
 
     final var integrationAclMap = Arrays.stream(stateAccount.integrationAcls())
@@ -47,7 +45,7 @@ public interface StateAccountClient {
         for (final var protocolPermission : protocolPermissions) {
           final int protocolBitFlag = protocolPermission.protocolBitflag();
           final long permissionMask = protocolPermission.permissionsBitmask();
-          final var adaptedPermissions = adaptPermissions(glamAccounts, integrationProgram, protocolBitFlag, permissionMask);
+          final var adaptedPermissions = adaptPermissions(integrationProgram, protocolBitFlag, permissionMask);
           protocolPermissionsMap.put(adaptedPermissions.protocol(), adaptedPermissions);
         }
         permissionsMap.put(integrationProgram, protocolPermissionsMap);
@@ -55,41 +53,29 @@ public interface StateAccountClient {
       delegatePermissions.put(delegateAcl.pubkey(), permissionsMap);
     }
 
-    return new StateAccountClientImpl(
+    return new StagingStateAccountClientImpl(
         stateAccount,
-        accountClient,
+        this,
         escrowAccount,
         integrationAclMap,
         delegatePermissions
     );
   }
 
-  GlamAccountClient accountClient();
-
-  String name();
-
-  PublicKey mint();
-
-  PublicKey baseAssetMint();
-
-  ProgramDerivedAddress escrowAccount();
-
-  PublicKey[] externalPositions();
-
-  PublicKey[] assets();
-
-  boolean delegateHasPermissions(final PublicKey delegateKey,
-                                 final Map<PublicKey, ProtocolPermissions> requiredPermissions);
-
-  boolean integrationEnabled(final PublicKey integrationProgram, final int bitFlag);
-
-  boolean driftEnabled();
-
-  boolean driftVaultsEnabled();
-
-  boolean kaminoLendEnabled();
-
-  boolean kaminoVaultsEnabled();
-
-  boolean jupiterSwapEnabled();
+  @Override
+  public Instruction priceSingleAssetVault(final PublicKey baseAssetTokenAccount, final boolean cpiEmitEvents) {
+    final var invoked = glamAccounts.invokedMintIntegrationProgram();
+    final var mintProgram = invoked.publicKey();
+    return GlamMintProgram.priceSingleAssetVault(
+        invoked,
+        glamVaultAccounts.glamStateKey(),
+        glamVaultAccounts.vaultPublicKey(),
+        feePayer.publicKey(),
+        baseAssetTokenAccount,
+        glamAccounts.readMintIntegrationAuthority().publicKey(),
+        invokedProtocolProgram.publicKey(),
+        cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
+        mintProgram
+    );
+  }
 }

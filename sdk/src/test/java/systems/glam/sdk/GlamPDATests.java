@@ -2,7 +2,6 @@ package systems.glam.sdk;
 
 import org.junit.jupiter.api.Test;
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.accounts.SolanaAccounts;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static software.sava.core.accounts.PublicKey.fromBase58Encoded;
@@ -35,7 +34,7 @@ final class GlamPDATests {
 
     assertEquals(
         fromBase58Encoded("8m1hHNSiatkEcggN4TxCkuejG7yioyCcSnJWtdwXq9BZ"),
-        glamClient.escrowMintPDA(mint, escrow).publicKey()
+        glamClient.escrowMintTokenAccount(mint, escrow).publicKey()
     );
 
     assertEquals(

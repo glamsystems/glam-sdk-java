@@ -189,8 +189,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
     add(solanaAccounts.systemProgram());
     add(glamAccounts.protocolProgram());
     add(glamAccounts.readSplIntegrationAuthority().publicKey());
-    final var stateAccount = stateAccountClient.stateAccount();
-    final var mintKey = stateAccount.mint();
+    final var mintKey = stateAccountClient.mint();
     if (mintKey != null && !PublicKey.NONE.equals(mintKey)) {
       add(glamAccounts.readMintIntegrationAuthority().publicKey());
       add(glamAccounts.mintEventAuthority());
@@ -203,13 +202,12 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
       );
       add(escrowTokenAccount.publicKey());
     }
-    add(stateAccount.baseAssetMint());
+    add(stateAccountClient.baseAssetMint());
   }
 
   @Override
   public void addGlamVaultTokens(final List<AccountInfo<byte[]>> accountsNeeded) {
-    final var stateAccount = stateAccountClient.stateAccount();
-    final var baseAssetMint = stateAccount.baseAssetMint();
+    final var baseAssetMint = stateAccountClient.baseAssetMint();
     final var accountClient = stateAccountClient.accountClient();
     final var solanaAccounts = accountClient.solanaAccounts();
     final var tokenProgram = solanaAccounts.tokenProgram();
