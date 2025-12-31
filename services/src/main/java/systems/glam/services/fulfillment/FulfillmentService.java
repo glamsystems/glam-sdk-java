@@ -5,7 +5,6 @@ import software.sava.core.tx.Transaction;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.core.remote.call.Backoff;
 import software.sava.services.solana.remote.call.RpcCaller;
-import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.GlamVaultAccounts;
 import systems.glam.sdk.StateAccountClient;
 import systems.glam.services.execution.InstructionProcessor;
@@ -18,23 +17,27 @@ import java.util.List;
 
 public interface FulfillmentService extends Runnable {
 
-  static FulfillmentService createSingleAssetService(final StateAccountClient stateAccountClient,
+  static FulfillmentService createSingleAssetService(final boolean softRedeem,
+                                                     final StateAccountClient stateAccountClient,
                                                      final MintContext vaultMintContext,
                                                      final MintContext baseAssetMintContext,
                                                      final RpcCaller rpcCaller,
                                                      final InstructionProcessor instructionProcessor,
-                                                     final GlamAccountClient glamAccountClient,
                                                      final BigInteger warnFeePayerBalance,
                                                      final BigInteger minFeePayerBalance,
                                                      final Duration minCheckStateDelay,
                                                      final Duration maxCheckStateDelay,
                                                      final Backoff backoff) {
-    final var accountsNeededSet = HashSet.<PublicKey>newHashSet(4);
+    final var accountsNeededSet = HashSet.<PublicKey>newHashSet(5);
 
+    final var glamAccountClient = stateAccountClient.accountClient();
+    final var solanaAccounts = glamAccountClient.solanaAccounts();
     final var glamAccounts = glamAccountClient.glamAccounts();
     final var vaultAccounts = glamAccountClient.vaultAccounts();
     final var vaultMintKey = validateMintKey(stateAccountClient, vaultAccounts, vaultMintContext);
 
+    final var clockSysVar = solanaAccounts.clockSysVar();
+    accountsNeededSet.add(clockSysVar);
     accountsNeededSet.add(vaultMintKey);
     accountsNeededSet.add(baseAssetMintContext.vaultATA());
 
@@ -46,34 +49,23 @@ public interface FulfillmentService extends Runnable {
 
     final var mintProgram = glamAccounts.mintProgram();
 
-//    final var solanaAccounts = glamAccountClient.solanaAccounts();
-//    final var escrow = glamAccounts.escrowPDA(vaultMintKey).publicKey();
-//    final var splClient = glamAccountClient.splClient();
-
-//    final var escrowMintTokenAccount = glamAccountClient.escrowMintTokenAccount(escrow, vaultMintKey).publicKey();
-//    final var createEscrowMintAccountIx = glamAccountClient.createEscrowAssociatedTokenIdempotent(
-//        escrowMintTokenAccount, escrow,
-//        vaultMintKey, solanaAccounts.token2022Program()
-//    );
-//
-//    final var escrowBaseAssetTokenAccount = splClient.findATA(escrow, baseAssetMintContext.tokenProgram(), baseAssetMintContext.mint());
-//    final var createEscrowBaseAssetTokenAccountIx = glamAccountClient.createEscrowAssociatedTokenIdempotent(
-//        escrowBaseAssetTokenAccount.publicKey(), escrow,
-//        baseAssetMintContext.mint(), baseAssetMintContext.tokenProgram()
-//    );
-
     final var priceVaultIx = glamAccountClient.priceSingleAssetVault(baseAssetMintContext.vaultATA(), true);
     final var fulFillIx = glamAccountClient.fulfill(baseAssetMintContext.mint(), baseAssetMintContext.tokenProgram());
 
     final var fulFillInstructions = List.of(priceVaultIx, fulFillIx);
 
     return new SingleAssetFulfillmentService(
+        glamAccountClient,
         mintProgram,
-        vaultAccounts.glamStateKey(),
         stateAccountClient.name(),
         vaultMintContext,
         baseAssetMintContext,
+        clockSysVar,
+        stateAccountClient.softRedeem(),
+        softRedeem,
         requestQueueKey,
+        stateAccountClient.redeemNoticePeriod(),
+        stateAccountClient.redeemWindowInSeconds(),
         List.copyOf(accountsNeededSet),
         rpcCaller,
         fulFillInstructions,

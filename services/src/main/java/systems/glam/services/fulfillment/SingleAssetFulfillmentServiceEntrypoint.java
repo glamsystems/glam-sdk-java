@@ -3,6 +3,7 @@ package systems.glam.services.fulfillment;
 import software.sava.core.accounts.PublicKey;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
+import software.sava.services.core.config.ServiceConfigUtil;
 import software.sava.services.solana.alt.LookupTableCache;
 import software.sava.services.solana.epoch.EpochInfoService;
 import software.sava.services.solana.transactions.InstructionService;
@@ -58,18 +59,20 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
   private static SingleAssetFulfillmentServiceEntrypoint createService(final ExecutorService taskExecutor,
                                                                        final HttpClient httpClient,
                                                                        final HttpClient wsHttpClient) throws InterruptedException {
-    final var serviceConfig = DelegateServiceConfig.loadConfig(SingleAssetFulfillmentServiceEntrypoint.class, taskExecutor, httpClient);
+    final var configPath = ServiceConfigUtil.configFilePath(SingleAssetFulfillmentServiceEntrypoint.class);
+    final var serviceConfig = FulfillmentServiceConfig.loadConfig(configPath, taskExecutor, httpClient);
+    final var delegateServiceConfig = serviceConfig.delegateServiceConfig();
 
-    final var signingService = serviceConfig.signingServiceConfig().signingService();
+    final var signingService = delegateServiceConfig.signingServiceConfig().signingService();
     final var serviceKeyFuture = signingService.publicKeyWithRetries();
 
     final var glamAccounts = GlamAccounts.MAIN_NET_STAGING;
 
     final var initAccountsNeeded = HashSet.<PublicKey>newHashSet(8);
 
-    final var stateAccountKey = serviceConfig.glamStateKey();
+    final var stateAccountKey = delegateServiceConfig.glamStateKey();
 
-    final var formatter = serviceConfig.formatter();
+    final var formatter = delegateServiceConfig.formatter();
 
     final var serviceKey = serviceKeyFuture.join();
     final var vaultAccounts = GlamVaultAccounts.createAccounts(glamAccounts, serviceKey, stateAccountKey);
@@ -85,13 +88,13 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
             formatter.formatAddress(stateAccountKey),
             formatter.formatAddress(vaultAccounts.vaultPublicKey()),
             formatter.formatAddress(vaultAccounts.feePayer()),
-            serviceConfig.maxLamportPriorityFee().toPlainString(),
-            serviceConfig.minCheckStateDelay().toString().substring(2),
-            serviceConfig.maxCheckStateDelay().toString().substring(2)
+            delegateServiceConfig.maxLamportPriorityFee().toPlainString(),
+            delegateServiceConfig.minCheckStateDelay().toString().substring(2),
+            delegateServiceConfig.maxCheckStateDelay().toString().substring(2)
         )
     );
 
-    final var rpcCaller = serviceConfig.rpcCaller();
+    final var rpcCaller = delegateServiceConfig.rpcCaller();
 
 
     initAccountsNeeded.add(stateAccountKey);
@@ -115,7 +118,7 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
       }
     }
 
-    final var solanaAccounts = serviceConfig.solanaAccounts();
+    final var solanaAccounts = delegateServiceConfig.solanaAccounts();
     final var glamAccountClient = GlamAccountClient.createClient(solanaAccounts, vaultAccounts);
     final var glamAccountInfo = accountsNeededMap.get(stateAccountKey);
     final var stateAccountClient = glamAccountClient.createStateAccountClient(glamAccountInfo);
@@ -131,7 +134,7 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
 
     final var vaultMintContext = MintContext.createContext(glamAccountClient, accountsNeededMap.get(mintKey));
 
-    final var websocketConfig = serviceConfig.websocketConfig();
+    final var websocketConfig = delegateServiceConfig.websocketConfig();
     final var webSocketConsumers = new ArrayList<Consumer<SolanaRpcWebsocket>>();
     final var webSocketManager = WebSocketManager.createManager(
         wsHttpClient,
@@ -145,7 +148,7 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
     );
     webSocketManager.checkConnection();
 
-    final var tableCacheConfig = serviceConfig.tableCacheConfig();
+    final var tableCacheConfig = delegateServiceConfig.tableCacheConfig();
     final var tableCache = LookupTableCache.createCache(
         taskExecutor,
         tableCacheConfig.initialCapacity(),
@@ -160,16 +163,16 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
         solanaAccounts,
         formatter,
         rpcCaller.rpcClients(),
-        serviceConfig.sendClients(),
-        serviceConfig.feeProviders(),
+        delegateServiceConfig.sendClients(),
+        delegateServiceConfig.feeProviders(),
         rpcCaller.callWeights(),
         webSocketManager
     );
 
     logger.log(INFO, "Starting epoch info service.");
-    final var epochInfoService = EpochInfoService.createService(serviceConfig.epochServiceConfig(), rpcCaller);
+    final var epochInfoService = EpochInfoService.createService(delegateServiceConfig.epochServiceConfig(), rpcCaller);
 
-    final var txMonitorConfig = serviceConfig.txMonitorConfig();
+    final var txMonitorConfig = delegateServiceConfig.txMonitorConfig();
     final var txMonitorService = TxMonitorService.createService(
         formatter,
         rpcCaller,
@@ -194,8 +197,8 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
     final var instructionProcessor = InstructionProcessor.createProcessor(
         transactionProcessor,
         instructionService,
-        serviceConfig.maxLamportPriorityFee(),
-        serviceConfig.notifyClient(),
+        delegateServiceConfig.maxLamportPriorityFee(),
+        delegateServiceConfig.notifyClient(),
         1.13,
         8
     );
@@ -203,15 +206,15 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
     final var baseAssetMintContext = MintContext.createContext(glamAccountClient, baseAssetAccountFuture.join());
 
     final var fulfillmentService = FulfillmentService.createSingleAssetService(
+        serviceConfig.softRedeem(),
         stateAccountClient,
         vaultMintContext,
         baseAssetMintContext,
         rpcCaller,
         instructionProcessor,
-        glamAccountClient,
-        serviceConfig.warnFeePayerBalance(), serviceConfig.minFeePayerBalance(),
-        serviceConfig.minCheckStateDelay(), serviceConfig.maxCheckStateDelay(),
-        serviceConfig.serviceBackoff()
+        delegateServiceConfig.warnFeePayerBalance(), delegateServiceConfig.minFeePayerBalance(),
+        delegateServiceConfig.minCheckStateDelay(), delegateServiceConfig.maxCheckStateDelay(),
+        delegateServiceConfig.serviceBackoff()
     );
 
     webSocketConsumers.add(fulfillmentService::subscribe);

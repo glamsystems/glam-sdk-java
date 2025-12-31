@@ -78,6 +78,16 @@ public interface StateAccountClient {
 
   PublicKey[] assets();
 
+  long redeemNoticePeriod();
+
+  long redeemSettlementPeriod();
+
+  long redeemCancellationWindow();
+
+  boolean redeemWindowInSeconds();
+
+  boolean softRedeem();
+
   boolean delegateHasPermissions(final PublicKey delegateKey,
                                  final Map<PublicKey, ProtocolPermissions> requiredPermissions);
 

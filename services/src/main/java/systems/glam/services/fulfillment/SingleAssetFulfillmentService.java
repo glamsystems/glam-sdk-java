@@ -1,6 +1,7 @@
 package systems.glam.services.fulfillment;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.accounts.sysvar.Clock;
 import software.sava.core.accounts.token.TokenAccount;
 import software.sava.core.tx.Instruction;
 import software.sava.core.tx.Transaction;
@@ -11,6 +12,7 @@ import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.core.remote.call.Backoff;
 import software.sava.services.solana.remote.call.RpcCaller;
+import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.idl.programs.glam.mint.gen.types.RequestQueue;
 import systems.glam.services.execution.InstructionProcessor;
 import systems.glam.services.tokens.MintContext;
@@ -19,6 +21,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
@@ -34,12 +37,17 @@ final class SingleAssetFulfillmentService implements FulfillmentService, Consume
 
   private static final System.Logger logger = System.getLogger(FulfillmentService.class.getName());
 
+  private final GlamAccountClient glamAccountClient;
   private final PublicKey glamMintProgram;
-  private final PublicKey stateKey;
   private final String vaultName;
   private final MintContext baseAssetMintContext;
   private final PublicKey baseAssetTokenAccountKey;
+  private final PublicKey clockSysVar;
+  private final boolean isSoftRedeem;
+  private final boolean softRedeem;
   private final PublicKey requestQueueKey;
+  private final long redeemNoticePeriod;
+  private final boolean redeemWindowInSeconds;
   private final MintContext vaultMintContext;
   private final List<PublicKey> accountsNeededList;
   private final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap;
@@ -60,12 +68,17 @@ final class SingleAssetFulfillmentService implements FulfillmentService, Consume
   private final ReentrantLock lock;
   private final Condition stateChange;
 
-  SingleAssetFulfillmentService(final PublicKey glamMintProgram,
-                                final PublicKey stateKey,
+  SingleAssetFulfillmentService(final GlamAccountClient glamAccountClient,
+                                final PublicKey glamMintProgram,
                                 final String vaultName,
                                 final MintContext vaultMintContext,
                                 final MintContext baseAssetMintContext,
+                                final PublicKey clockSysVar,
+                                final boolean isSoftRedeem,
+                                final boolean softRedeem,
                                 final PublicKey requestQueueKey,
+                                final long redeemNoticePeriod,
+                                final boolean redeemWindowInSeconds,
                                 final List<PublicKey> accountsNeededList,
                                 final RpcCaller rpcCaller,
                                 final List<Instruction> fulFillInstructions,
@@ -77,13 +90,18 @@ final class SingleAssetFulfillmentService implements FulfillmentService, Consume
                                 final Duration minCheckStateDelay,
                                 final Duration maxCheckStateDelay,
                                 final Backoff backoff) {
+    this.glamAccountClient = glamAccountClient;
     this.glamMintProgram = glamMintProgram;
-    this.stateKey = stateKey;
     this.vaultName = vaultName;
     this.vaultMintContext = vaultMintContext;
     this.baseAssetMintContext = baseAssetMintContext;
     this.baseAssetTokenAccountKey = baseAssetMintContext.vaultATA();
+    this.clockSysVar = clockSysVar;
+    this.isSoftRedeem = isSoftRedeem;
+    this.softRedeem = softRedeem;
     this.requestQueueKey = requestQueueKey;
+    this.redeemNoticePeriod = redeemNoticePeriod;
+    this.redeemWindowInSeconds = redeemWindowInSeconds;
     this.accountsNeededList = accountsNeededList;
     this.accountsNeededMap = HashMap.newHashMap(accountsNeededList.size());
     this.notifyClient = instructionProcessor.notifyClient();
@@ -143,7 +161,7 @@ final class SingleAssetFulfillmentService implements FulfillmentService, Consume
   @Override
   public void run() {
     try {
-      final var fulFillInstructions = new ArrayList<>(this.fulFillInstructions);
+      final boolean softRedeem = this.isSoftRedeem && this.softRedeem;
       boolean notifyLowBalance = true;
       for (long failureCount = 0; ; ) {
         fetchAccounts();
@@ -176,7 +194,6 @@ final class SingleAssetFulfillmentService implements FulfillmentService, Consume
         final var vaultMintSupply = new BigDecimal(toUnsignedString(vaultMint.supply()))
             .movePointLeft(vaultMintContext.decimals())
             .stripTrailingZeros();
-        ;
 
         final var baseAssetTokenAccount = TokenAccount.read(tokenAccountInfo.pubKey(), tokenAccountInfo.data());
         compareAndSet(new TokenBalance(tokenAccountInfo.context().slot(), baseAssetTokenAccount.amount()));
@@ -192,13 +209,40 @@ final class SingleAssetFulfillmentService implements FulfillmentService, Consume
 //          throw new IllegalStateException(msg);
 //        }
 
-        final var redemptionSummary = RedemptionSummary.createSummary(accountsNeededMap.get(requestQueueKey));
+        final var clockAccount = accountsNeededMap.get(clockSysVar);
+        final var clock = Clock.read(clockSysVar, clockAccount.data());
+        final var redemptionSummary = RedemptionSummary.createSummary(
+            clock.unixTimestamp() + 200,
+            accountsNeededMap.get(requestQueueKey),
+            redeemNoticePeriod,
+            redeemWindowInSeconds
+        );
         compareAndSet(redemptionSummary);
-        final var outstandingShares = redemptionSummary.outstandingShares();
-        if (outstandingShares.signum() > 0) {
+
+        final var totalOutstandingShares = redemptionSummary.outstandingShares();
+        final var fulfillableShares = redemptionSummary.fulfillableShares();
+        if (fulfillableShares.signum() > 0 || (softRedeem && totalOutstandingShares.signum() > 0)) {
+          final List<Instruction> fulfillInstructions;
+          if (isSoftRedeem) {
+            if (this.softRedeem) {
+              fulfillInstructions = new ArrayList<>(this.fulFillInstructions);
+            } else {
+              final int numInstructions = this.fulFillInstructions.size();
+              fulfillInstructions = new ArrayList<>(numInstructions);
+              this.fulFillInstructions.stream().limit(numInstructions - 1).forEach(fulFillInstructions::add);
+              final var fulFillIx = glamAccountClient.fulfill(
+                  0,
+                  baseAssetMintContext.mint(), baseAssetMintContext.tokenProgram(),
+                  OptionalInt.of(redemptionSummary.fulfillable().size())
+              );
+              fulfillInstructions.add(fulFillIx);
+            }
+          } else {
+            fulfillInstructions = new ArrayList<>(this.fulFillInstructions);
+          }
           final boolean fulfilled = instructionProcessor.processInstructions(
               vaultName + " Fulfill Redemptions",
-              fulFillInstructions,
+              fulfillInstructions,
               transactionFactory
           );
           if (fulfilled) {
@@ -271,7 +315,11 @@ final class SingleAssetFulfillmentService implements FulfillmentService, Consume
       final var owner = accountInfo.owner();
 
       if (RequestQueue.DISCRIMINATOR.equals(data, 0) && owner.equals(glamMintProgram)) {
-        final var redemptionSummary = RedemptionSummary.createSummary(slot, RequestQueue.read(accountInfo));
+        final var redemptionSummary = RedemptionSummary.createSummary(
+            Instant.now().getEpochSecond(), slot,
+            RequestQueue.read(accountInfo),
+            redeemNoticePeriod, redeemWindowInSeconds
+        );
         final var previousAmount = compareAndSet(redemptionSummary);
         if (previousAmount != null && previousAmount.compareTo(redemptionSummary.outstandingShares()) != 0) {
           wakeUp();
