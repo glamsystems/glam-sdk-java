@@ -17,7 +17,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-final class FormatUtil {
+public final class FormatUtil {
 
   public static String formatAccounts(final Instruction instruction) {
     return instruction.accounts().stream()

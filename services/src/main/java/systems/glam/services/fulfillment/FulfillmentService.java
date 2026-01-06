@@ -4,6 +4,7 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.core.tx.Transaction;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.core.remote.call.Backoff;
+import software.sava.services.solana.epoch.EpochInfoService;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamVaultAccounts;
 import systems.glam.sdk.StateAccountClient;
@@ -17,7 +18,8 @@ import java.util.List;
 
 public interface FulfillmentService extends Runnable {
 
-  static FulfillmentService createSingleAssetService(final boolean softRedeem,
+  static FulfillmentService createSingleAssetService(final EpochInfoService epochInfoService,
+                                                     final boolean softRedeem,
                                                      final StateAccountClient stateAccountClient,
                                                      final MintContext vaultMintContext,
                                                      final MintContext baseAssetMintContext,
@@ -55,17 +57,15 @@ public interface FulfillmentService extends Runnable {
     final var fulFillInstructions = List.of(priceVaultIx, fulFillIx);
 
     return new SingleAssetFulfillmentService(
+        epochInfoService,
         glamAccountClient,
         mintProgram,
-        stateAccountClient.name(),
+        stateAccountClient,
         vaultMintContext,
         baseAssetMintContext,
         clockSysVar,
-        stateAccountClient.softRedeem(),
         softRedeem,
         requestQueueKey,
-        stateAccountClient.redeemNoticePeriod(),
-        stateAccountClient.redeemWindowInSeconds(),
         List.copyOf(accountsNeededSet),
         rpcCaller,
         fulFillInstructions,

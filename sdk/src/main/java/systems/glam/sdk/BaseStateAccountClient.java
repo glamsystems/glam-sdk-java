@@ -49,6 +49,9 @@ public abstract class BaseStateAccountClient implements StateAccountClient {
   public final boolean delegateHasPermissions(final PublicKey delegateKey,
                                               final Map<PublicKey, ProtocolPermissions> requiredPermissions) {
     final var delegatePermissions = this.delegatePermissions.get(delegateKey);
+    if (delegatePermissions == null) {
+      return false;
+    }
     for (final var entry : requiredPermissions.entrySet()) {
       final var integrationPermissions = delegatePermissions.get(entry.getKey());
       final var requiredProtocolPermissions = entry.getValue();

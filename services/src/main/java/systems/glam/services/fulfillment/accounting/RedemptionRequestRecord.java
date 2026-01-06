@@ -1,4 +1,4 @@
-package systems.glam.services.fulfillment;
+package systems.glam.services.fulfillment.accounting;
 
 import software.sava.core.accounts.PublicKey;
 import systems.glam.services.tokens.MintContext;

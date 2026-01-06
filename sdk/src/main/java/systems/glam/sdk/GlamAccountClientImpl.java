@@ -282,39 +282,6 @@ class GlamAccountClientImpl implements GlamAccountClient {
     );
   }
 
-//  public Instruction disburseFees(final int mintId,
-//                                  final PublicKey baseAssetMint,
-//                                  final PublicKey baseAssetTokenProgram) {
-//    final var glamProgram = invokedProgram.publicKey();
-//
-//    final var escrow = GlamProtocolPDAs.glamEscrowPDA(glamProgram, glamVaultAccounts.glamPublicKey()).publicKey();
-//
-//    final var mint = glamVaultAccounts.mintPDA(mintId).publicKey();
-//    final var escrowMintTokenAccount = AssociatedTokenPDAs.associatedTokenPDA(solanaAccounts, escrow, solanaAccounts.token2022Program(), mint);
-//
-//    final var vault = glamVaultAccounts.vaultPublicKey();
-//    final var vaultTokenAccount = AssociatedTokenPDAs.associatedTokenPDA(solanaAccounts, vault, baseAssetTokenProgram, baseAssetMint);
-//
-//    final var escrowTokenAccount = AssociatedTokenPDAs.associatedTokenPDA(solanaAccounts, escrow, baseAssetTokenProgram, baseAssetMint);
-//
-//    return GlamProtocolProgram.disburseFees(
-//        invokedProgram,
-//        solanaAccounts,
-//        glamVaultAccounts.glamPublicKey(),
-//        vault,
-//        escrow,
-//        mint,
-//        feePayer.publicKey(),
-//        escrowMintTokenAccount.publicKey(),
-//        baseAssetMint,
-//        vaultTokenAccount.publicKey(),
-//        escrowTokenAccount.publicKey(),
-//        glamAccounts.glamConfigKey(),
-//        baseAssetTokenProgram,
-//        mintId
-//    );
-//  }
-
   @Override
   public Instruction priceVaultTokens(final PublicKey solUsdOracleKey,
                                       final PublicKey baseAssetUsdOracleKey,
@@ -447,7 +414,6 @@ class GlamAccountClientImpl implements GlamAccountClient {
         numVaults
     );
   }
-
 
   @Override
   public Instruction updateState(final StateModel state) {

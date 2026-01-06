@@ -1,6 +1,8 @@
-package systems.glam.services.fulfillment;
+package systems.glam.services.fulfillment.config;
 
 import systems.comodal.jsoniter.JsonIterator;
+import systems.glam.services.config.BaseDelegateServiceConfig;
+import systems.glam.services.config.DelegateServiceConfig;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

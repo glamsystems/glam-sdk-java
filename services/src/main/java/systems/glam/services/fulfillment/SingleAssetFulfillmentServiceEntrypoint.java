@@ -13,6 +13,7 @@ import software.sava.services.solana.websocket.WebSocketManager;
 import systems.glam.sdk.*;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintConstants;
 import systems.glam.services.execution.InstructionProcessor;
+import systems.glam.services.fulfillment.config.FulfillmentServiceConfig;
 import systems.glam.services.tokens.MintContext;
 
 import java.net.http.HttpClient;
@@ -82,7 +83,7 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
                  - State: %s
                  - Vault: %s
                  - Fee Payer: %s
-                 - Max Priority Fee: %s SOL
+                 - Max Priority Fee: %s lamports
                  - Check state at most every %s and at least every %s.
                 """,
             formatter.formatAddress(stateAccountKey),
@@ -95,7 +96,6 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
     );
 
     final var rpcCaller = delegateServiceConfig.rpcCaller();
-
 
     initAccountsNeeded.add(stateAccountKey);
     final var mintKey = vaultAccounts.mintPDA().publicKey();
@@ -206,6 +206,7 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
     final var baseAssetMintContext = MintContext.createContext(glamAccountClient, baseAssetAccountFuture.join());
 
     final var fulfillmentService = FulfillmentService.createSingleAssetService(
+        epochInfoService,
         serviceConfig.softRedeem(),
         stateAccountClient,
         vaultMintContext,

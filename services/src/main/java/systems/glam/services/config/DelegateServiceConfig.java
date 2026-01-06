@@ -1,4 +1,4 @@
-package systems.glam.services.fulfillment;
+package systems.glam.services.config;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;

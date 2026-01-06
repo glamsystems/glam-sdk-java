@@ -12,6 +12,7 @@ module systems.glam.services {
   requires transitive software.sava.ravina_core;
   requires transitive software.sava.ravina_solana;
 
+  requires software.sava.idl.clients.oracles;
   requires software.sava.idl.clients.spl;
   requires transitive software.sava.idl.clients.kamino;
 
@@ -23,4 +24,8 @@ module systems.glam.services {
   exports systems.glam.services.oracles.scope;
   exports systems.glam.services.oracles.scope.parsers;
   exports systems.glam.services.tokens;
+  exports systems.glam.services.config;
+  exports systems.glam.services.fulfillment.config;
+  exports systems.glam.services.fulfillment.accounting;
+  exports systems.glam.services.pricing.accounting;
 }
