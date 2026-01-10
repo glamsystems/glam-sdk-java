@@ -37,10 +37,10 @@ final class SingleAssetFulfillmentService extends BaseFulfillmentService {
 
   SingleAssetFulfillmentService(final EpochInfoService epochInfoService,
                                 final GlamAccountClient glamAccountClient,
-                                final PublicKey glamMintProgram,
                                 final StateAccountClient stateAccountClient,
                                 final MintContext vaultMintContext,
                                 final MintContext baseAssetMintContext,
+                                final PublicKey baseAssetVaultAta,
                                 final PublicKey clockSysVar,
                                 final boolean softRedeem,
                                 final PublicKey requestQueueKey,
@@ -58,9 +58,9 @@ final class SingleAssetFulfillmentService extends BaseFulfillmentService {
     super(
         epochInfoService,
         glamAccountClient,
-        glamMintProgram,
         stateAccountClient,
         baseAssetMintContext,
+        baseAssetVaultAta,
         clockSysVar,
         softRedeem,
         requestQueueKey,
@@ -81,7 +81,7 @@ final class SingleAssetFulfillmentService extends BaseFulfillmentService {
 
   @Override
   protected void handleVault() throws InterruptedException {
-    final var tokenAccountInfo = accountsNeededMap.get(baseAssetTokenAccountKey);
+    final var tokenAccountInfo = accountsNeededMap.get(baseAssetVaultAta);
     if (tokenAccountInfo == null) { // May be null if yet to receive a deposit.
       logger.log(INFO, "Waiting for base asset token account");
       awaitChange();
@@ -141,7 +141,7 @@ final class SingleAssetFulfillmentService extends BaseFulfillmentService {
   @Override
   public void subscribe(final SolanaRpcWebsocket websocket) {
     websocket.accountSubscribe(requestQueueKey, this);
-    websocket.accountSubscribe(baseAssetTokenAccountKey, this);
+    websocket.accountSubscribe(baseAssetVaultAta, this);
   }
 
   record TokenBalance(long slot, long amount) {

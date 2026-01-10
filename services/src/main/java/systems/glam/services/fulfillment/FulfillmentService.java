@@ -41,7 +41,8 @@ public interface FulfillmentService extends Runnable {
     final var clockSysVar = solanaAccounts.clockSysVar();
     accountsNeededSet.add(clockSysVar);
     accountsNeededSet.add(vaultMintKey);
-    accountsNeededSet.add(baseAssetMintContext.vaultATA());
+    final var baseAssetVaultAta = baseAssetMintContext.ata(solanaAccounts.associatedTokenAccountProgram(), vaultAccounts.vaultPublicKey());
+    accountsNeededSet.add(baseAssetVaultAta);
 
     final var requestQueueKey = glamAccounts.requestQueuePDA(vaultMintKey).publicKey();
     accountsNeededSet.add(requestQueueKey);
@@ -49,9 +50,7 @@ public interface FulfillmentService extends Runnable {
     final var feePayerKey = glamAccountClient.feePayer().publicKey();
     accountsNeededSet.add(feePayerKey);
 
-    final var mintProgram = glamAccounts.mintProgram();
-
-    final var priceVaultIx = glamAccountClient.priceSingleAssetVault(baseAssetMintContext.vaultATA(), true);
+    final var priceVaultIx = glamAccountClient.priceSingleAssetVault(baseAssetVaultAta, true);
     final var fulFillIx = glamAccountClient.fulfill(baseAssetMintContext.mint(), baseAssetMintContext.tokenProgram());
 
     final var fulFillInstructions = List.of(priceVaultIx, fulFillIx);
@@ -59,10 +58,10 @@ public interface FulfillmentService extends Runnable {
     return new SingleAssetFulfillmentService(
         epochInfoService,
         glamAccountClient,
-        mintProgram,
         stateAccountClient,
         vaultMintContext,
         baseAssetMintContext,
+        baseAssetVaultAta,
         clockSysVar,
         softRedeem,
         requestQueueKey,

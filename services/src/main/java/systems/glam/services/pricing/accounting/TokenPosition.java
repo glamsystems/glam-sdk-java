@@ -4,20 +4,24 @@ import software.sava.core.accounts.PublicKey;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.services.tokens.MintContext;
 
-import java.util.List;
 import java.util.Set;
 
-public class TokenPosition extends BasePosition {
+public final class TokenPosition extends BasePosition {
 
-  TokenPosition(final MintContext mintContext,
-                final GlamAccountClient glamClient,
-                final List<PublicKey> lookupTableKeys) {
-    super(mintContext, glamClient, lookupTableKeys);
+  private final PublicKey vaultATA;
+
+  public TokenPosition(final MintContext mintContext, final GlamAccountClient glamClient) {
+    super(mintContext, glamClient);
+    this.vaultATA = glamClient.findATA(mintContext.tokenProgram(), mintContext.mint()).publicKey();
   }
 
   @Override
   public void accountsNeeded(final Set<PublicKey> keys) {
     keys.add(mintContext.mint());
-    keys.add(mintContext.vaultATA());
+    keys.add(vaultATA);
+  }
+
+  public PublicKey vaultATA() {
+    return vaultATA;
   }
 }

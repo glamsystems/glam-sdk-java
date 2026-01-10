@@ -1,0 +1,12 @@
+package systems.glam.services.pricing;
+
+import software.sava.core.accounts.PublicKey;
+import software.sava.rpc.json.http.response.AccountInfo;
+
+import java.util.List;
+import java.util.Map;
+
+public interface AccountConsumer {
+
+  void accept(final List<AccountInfo<byte[]>> accountsList, final Map<PublicKey, AccountInfo<byte[]>> accountMap);
+}

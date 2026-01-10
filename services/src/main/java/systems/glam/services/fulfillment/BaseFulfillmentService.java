@@ -1,6 +1,7 @@
 package systems.glam.services.fulfillment;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.sysvar.Clock;
 import software.sava.core.tx.Instruction;
 import software.sava.core.tx.Transaction;
@@ -12,6 +13,7 @@ import software.sava.services.core.remote.call.Backoff;
 import software.sava.services.solana.epoch.EpochInfoService;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamAccountClient;
+import systems.glam.sdk.GlamAccounts;
 import systems.glam.sdk.StateAccountClient;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.services.execution.InstructionProcessor;
@@ -35,7 +37,9 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
   protected static final System.Logger logger = System.getLogger(FulfillmentService.class.getName());
 
   protected final EpochInfoService epochInfoService;
+  protected final SolanaAccounts solanaAccounts;
   protected final GlamAccountClient glamAccountClient;
+  protected final GlamAccounts glamAccounts;
   protected final PublicKey glamMintProgram;
   protected final PublicKey stateKey;
   protected final String vaultName;
@@ -43,7 +47,7 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
   protected final long redeemNoticePeriod;
   protected final boolean redeemWindowInSeconds;
   protected final MintContext baseAssetMintContext;
-  protected final PublicKey baseAssetTokenAccountKey;
+  protected final PublicKey baseAssetVaultAta;
   protected final PublicKey clockSysVar;
   protected final boolean isSoftRedeem;
   protected final PublicKey requestQueueKey;
@@ -67,9 +71,9 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
 
   protected BaseFulfillmentService(final EpochInfoService epochInfoService,
                                    final GlamAccountClient glamAccountClient,
-                                   final PublicKey glamMintProgram,
                                    final StateAccountClient stateAccountClient,
                                    final MintContext baseAssetMintContext,
+                                   final PublicKey baseAssetVaultAta,
                                    final PublicKey clockSysVar,
                                    final boolean softRedeem,
                                    final PublicKey requestQueueKey,
@@ -86,15 +90,17 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
                                    final Duration maxCheckStateDelay,
                                    final Backoff backoff) {
     this.epochInfoService = epochInfoService;
+    this.solanaAccounts = glamAccountClient.solanaAccounts();
     this.glamAccountClient = glamAccountClient;
-    this.glamMintProgram = glamMintProgram;
+    this.glamAccounts = glamAccountClient.glamAccounts();
+    this.baseAssetVaultAta = baseAssetVaultAta;
+    this.glamMintProgram = glamAccounts.mintProgram();
     this.stateKey = glamAccountClient.vaultAccounts().glamStateKey();
     this.vaultName = stateAccountClient.name();
     this.isSoftRedeem = stateAccountClient.softRedeem();
     this.redeemNoticePeriod = stateAccountClient.redeemNoticePeriod();
     this.redeemWindowInSeconds = stateAccountClient.redeemWindowInSeconds();
     this.baseAssetMintContext = baseAssetMintContext;
-    this.baseAssetTokenAccountKey = baseAssetMintContext.vaultATA();
     this.clockSysVar = clockSysVar;
     this.softRedeem = softRedeem;
     this.requestQueueKey = requestQueueKey;
@@ -160,6 +166,8 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
       }
     } catch (final InterruptedException ex) {
       Thread.currentThread().interrupt();
+    } catch (final Throwable ex) {
+      logger.log(WARNING, "Unexpected service failure.", ex);
     }
   }
 
