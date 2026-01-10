@@ -11,17 +11,18 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static java.lang.System.Logger.Level.ERROR;
+
 final class AccountFetcherImpl implements AccountFetcher {
 
   private static final System.Logger logger = System.getLogger(AccountFetcher.class.getName());
 
-  private final long initialDelayMillis;
-  private final long initialDelayNanos;
   private final long pollDelayMillis;
   private final long pollDelayNanos;
   private final boolean reactive;
   private final RpcCaller rpcCaller;
   private final Set<PublicKey> alwaysFetch;
+  private final LinkedHashSet<PublicKey> batch;
   private final ReentrantLock lock;
   private final Condition newBatch;
   private final ConcurrentLinkedDeque<AccountBatch> queue;
@@ -29,18 +30,17 @@ final class AccountFetcherImpl implements AccountFetcher {
 
   private volatile Set<PublicKey> currentBatchKeys;
 
-  AccountFetcherImpl(final Duration initialDelay,
-                     final Duration fetchDelay,
+  AccountFetcherImpl(final Duration fetchDelay,
                      final boolean reactive,
                      final RpcCaller rpcCaller,
                      final Set<PublicKey> alwaysFetch) {
-    this.initialDelayMillis = initialDelay.toMillis();
-    this.initialDelayNanos = initialDelay.toNanos();
     this.pollDelayMillis = fetchDelay.toMillis();
     this.pollDelayNanos = fetchDelay.toNanos();
     this.reactive = reactive;
     this.rpcCaller = rpcCaller;
     this.alwaysFetch = Set.copyOf(alwaysFetch);
+    this.batch = new LinkedHashSet<>((int) Math.ceil((SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS << 1) / (double) 0.75f));
+    this.batch.addAll(alwaysFetch);
     this.lock = new ReentrantLock();
     this.newBatch = lock.newCondition();
     this.queue = new ConcurrentLinkedDeque<>();
@@ -54,14 +54,13 @@ final class AccountFetcherImpl implements AccountFetcher {
       throw new IllegalStateException("Unable to fetch more than " + SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS + " accounts in a single request.");
     } else if ((numAccounts + alwaysFetch.size()) > SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
       if (!accounts.containsAll(alwaysFetch)) {
-        throw new IllegalStateException("Batch cannot execute because after included the always fetch accounts the rpc limit of " + SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS + " accounts would be exceeded.");
+        throw new IllegalStateException("Batch cannot execute because after including the always fetch accounts the rpc limit of " + SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS + " would be exceeded.");
       }
     }
 
     final var accountBatch = new AccountBatch(accounts, callback);
     lock.lock();
     try {
-      final var currentBatchKeys = this.currentBatchKeys;
       if (currentBatchKeys.containsAll(accounts)) {
         currentBatch.addLast(accountBatch);
       } else {
@@ -89,7 +88,7 @@ final class AccountFetcherImpl implements AccountFetcher {
     queue(false, accounts, callback);
   }
 
-  private List<PublicKey> createBatchKeys(final LinkedHashSet<PublicKey> batch, final int size) {
+  private List<PublicKey> createBatchKeys(final int size) {
     final var batchKeys = new PublicKey[size];
     final var iterator = batch.iterator();
     for (int i = 0; i < size; ++i) {
@@ -99,51 +98,51 @@ final class AccountFetcherImpl implements AccountFetcher {
     return Arrays.asList(batchKeys);
   }
 
-  private List<PublicKey> createBatchKeys(final LinkedHashSet<PublicKey> batch) {
+  private void removeTrailing(final int count) {
+    for (int i = count; i > 0; --i) {
+      batch.removeLast();
+    }
+  }
+
+  private void clearBatch() {
+    removeTrailing(batch.size() - alwaysFetch.size());
+  }
+
+  private List<PublicKey> createBatchKeys() {
     lock.lock();
     try {
       int size = 0;
+      AccountBatch accountBatch;
+      final var iterator = queue.iterator();
       for (int nextSize; ; ) {
-        var accountBatch = queue.peekFirst();
-        if (accountBatch == null) {
-          break;
-        }
+        accountBatch = iterator.next();
         batch.addAll(accountBatch.keys());
         nextSize = batch.size();
         if (nextSize > SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
-          if (queue.size() > 1) {
-            final var queueIterator = queue.iterator();
-            queueIterator.next();
-            while (queueIterator.hasNext()) {
-              for (int i = nextSize - size; i > 0; --i) {
-                batch.removeLast();
-              }
-              accountBatch = queueIterator.next();
-              batch.addAll(accountBatch.keys());
-              nextSize = batch.size();
-              if (nextSize > SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
-                continue;
-              }
-              queueIterator.remove();
-              currentBatch.addLast(accountBatch);
-              size = nextSize;
-              if (size == SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
-                break;
-              }
-            }
+          if (iterator.hasNext()) {
+            removeTrailing(nextSize - size);
+          } else {
+            break;
           }
-          break;
         } else {
-          queue.removeFirst();
-          currentBatch.addLast(accountBatch);
           size = nextSize;
-          if (size == SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
+          iterator.remove();
+          currentBatch.addLast(accountBatch);
+          if (!iterator.hasNext()) {
+            break;
+          } else if (size == SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
+            do { // Check for 100% overlap with the existing batch.
+              accountBatch = iterator.next();
+              if (batch.containsAll(accountBatch.keys())) {
+                iterator.remove();
+                currentBatch.addLast(accountBatch);
+              }
+            } while (iterator.hasNext());
             break;
           }
         }
       }
-
-      return createBatchKeys(batch, size);
+      return createBatchKeys(size);
     } finally {
       lock.unlock();
     }
@@ -167,7 +166,7 @@ final class AccountFetcherImpl implements AccountFetcher {
         lock.unlock();
       }
     } else {
-      do {
+      do { // Amortize (pollDelayMillis / 2) after an initial batch is added.
         //noinspection BusyWait
         Thread.sleep(pollDelayMillis);
       } while (queue.isEmpty());
@@ -177,12 +176,11 @@ final class AccountFetcherImpl implements AccountFetcher {
   @Override
   public void run() {
     try {
-      final var batch = new LinkedHashSet<PublicKey>((int) Math.ceil((SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS << 1) / (double) 0.75f));
-      if (initialDelayMillis > 0) {
-        delay(initialDelayMillis, initialDelayNanos);
+      if (queue.isEmpty()) {
+        delay(pollDelayMillis, pollDelayNanos);
       }
       for (; ; ) {
-        final var keys = createBatchKeys(batch);
+        final var keys = createBatchKeys();
 
         final var accounts = rpcCaller.courteousGet(
             rpcClient -> rpcClient.getAccounts(keys),
@@ -211,15 +209,14 @@ final class AccountFetcherImpl implements AccountFetcher {
           accountBatch.accept(accounts, accountsMap);
         }
 
-        batch.clear();
-        batch.addAll(this.alwaysFetch);
+        clearBatch();
 
         delay(pollDelayMillis, pollDelayNanos);
       }
     } catch (final InterruptedException e) {
       // exit
     } catch (final RuntimeException ex) {
-      logger.log(System.Logger.Level.ERROR, "Unexpected error fetching accounts.", ex);
+      logger.log(ERROR, "Unexpected error fetching accounts.", ex);
     }
   }
 

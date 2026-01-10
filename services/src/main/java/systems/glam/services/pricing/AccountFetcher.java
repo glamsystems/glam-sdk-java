@@ -10,12 +10,11 @@ import java.util.Set;
 
 public interface AccountFetcher extends Runnable {
 
-  static AccountFetcher createFetcher(final Duration initialDelay,
-                                      final Duration fetchDelay,
+  static AccountFetcher createFetcher(final Duration fetchDelay,
                                       final boolean reactive,
                                       final RpcCaller rpcCaller,
                                       final Set<PublicKey> alwaysFetch) {
-    return new AccountFetcherImpl(initialDelay, fetchDelay, reactive, rpcCaller, alwaysFetch);
+    return new AccountFetcherImpl(fetchDelay, reactive, rpcCaller, alwaysFetch);
   }
 
   void priorityQueue(final Collection<PublicKey> account, final AccountConsumer callback);
