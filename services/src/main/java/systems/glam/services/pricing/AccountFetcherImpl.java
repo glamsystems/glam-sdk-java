@@ -104,21 +104,42 @@ final class AccountFetcherImpl implements AccountFetcher {
     try {
       int size = 0;
       for (int nextSize; ; ) {
-        final var accountBatch = queue.peekFirst();
+        var accountBatch = queue.peekFirst();
         if (accountBatch == null) {
           break;
         }
         batch.addAll(accountBatch.keys());
         nextSize = batch.size();
         if (nextSize > SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
-          // TODO: Check if any other batch would fit.
+          if (queue.size() > 1) {
+            final var queueIterator = queue.iterator();
+            queueIterator.next();
+            while (queueIterator.hasNext()) {
+              for (int i = nextSize - size; i > 0; --i) {
+                batch.removeLast();
+              }
+              accountBatch = queueIterator.next();
+              batch.addAll(accountBatch.keys());
+              nextSize = batch.size();
+              if (nextSize > SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
+                continue;
+              }
+              queueIterator.remove();
+              currentBatch.addLast(accountBatch);
+              size = nextSize;
+              if (size == SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
+                break;
+              }
+            }
+          }
           break;
-        }
-        queue.removeFirst();
-        currentBatch.addLast(accountBatch);
-        size = nextSize;
-        if (size == SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
-          break;
+        } else {
+          queue.removeFirst();
+          currentBatch.addLast(accountBatch);
+          size = nextSize;
+          if (size == SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
+            break;
+          }
         }
       }
 
