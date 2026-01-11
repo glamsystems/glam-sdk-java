@@ -12,6 +12,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.WARNING;
 
 final class AccountFetcherImpl implements AccountFetcher {
 
@@ -45,17 +46,13 @@ final class AccountFetcherImpl implements AccountFetcher {
     this.newBatch = lock.newCondition();
     this.queue = new ConcurrentLinkedDeque<>();
     this.currentBatch = new ConcurrentLinkedDeque<>();
-    this.currentBatchKeys = Set.of();
+    this.currentBatchKeys = this.alwaysFetch;
   }
 
   private void queue(final boolean priority, final Collection<PublicKey> accounts, final AccountConsumer callback) {
     final int numAccounts = accounts.size();
     if (numAccounts > SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
       throw new IllegalStateException("Unable to fetch more than " + SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS + " accounts in a single request.");
-    } else if ((numAccounts + alwaysFetch.size()) > SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
-      if (!accounts.containsAll(alwaysFetch)) {
-        throw new IllegalStateException("Batch cannot execute because after including the always fetch accounts the rpc limit of " + SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS + " would be exceeded.");
-      }
     }
 
     final var accountBatch = new AccountBatch(accounts, callback);
@@ -108,17 +105,42 @@ final class AccountFetcherImpl implements AccountFetcher {
     removeTrailing(batch.size() - alwaysFetch.size());
   }
 
-  private List<PublicKey> createBatchKeys() {
+  private List<PublicKey> createBatch() {
     lock.lock();
     try {
-      int size = 0;
+      int size = batch.size();
       AccountBatch accountBatch;
       final var iterator = queue.iterator();
-      for (int nextSize; ; ) {
+      for (int numCallbacks = 0, nextSize; ; ) {
         accountBatch = iterator.next();
-        batch.addAll(accountBatch.keys());
+        final var keys = accountBatch.keys();
+        batch.addAll(keys);
         nextSize = batch.size();
         if (nextSize > SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
+          if (numCallbacks == 0) {
+            final int numAccounts = keys.size();
+            if (numAccounts > SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
+              // Should never happen because an exception is thrown on any attempt to add a batch that exceeds this limit.
+              logger.log(WARNING, "Ignoring batch because it exceeds the RPC limit of " + SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS);
+              iterator.remove();
+              clearBatch();
+              continue;
+            } else {
+              batch.clear();
+              batch.addAll(accountBatch.keys());
+              if (numAccounts < SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
+                // Add as many always fetch accounts as possible
+                final var alwaysFetchIterator = alwaysFetch.iterator();
+                for (int add = SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS - numAccounts; add > 0; ) {
+                  if (batch.add(alwaysFetchIterator.next())) {
+                    --add;
+                  }
+                }
+              }
+              size = SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS;
+              break;
+            }
+          }
           if (iterator.hasNext()) {
             removeTrailing(nextSize - size);
           } else {
@@ -128,6 +150,7 @@ final class AccountFetcherImpl implements AccountFetcher {
           size = nextSize;
           iterator.remove();
           currentBatch.addLast(accountBatch);
+          ++numCallbacks;
           if (!iterator.hasNext()) {
             break;
           } else if (size == SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
@@ -180,7 +203,7 @@ final class AccountFetcherImpl implements AccountFetcher {
         delay(pollDelayMillis, pollDelayNanos);
       }
       for (; ; ) {
-        final var keys = createBatchKeys();
+        final var keys = createBatch();
 
         final var accounts = rpcCaller.courteousGet(
             rpcClient -> rpcClient.getAccounts(keys),
@@ -223,9 +246,8 @@ final class AccountFetcherImpl implements AccountFetcher {
   record AccountBatch(Collection<PublicKey> keys, AccountConsumer accountConsumer) implements AccountConsumer {
 
     @Override
-    public void accept(final List<AccountInfo<byte[]>> accountsList,
-                       final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
-      accountConsumer.accept(accountsList, accountMap);
+    public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
+      accountConsumer.accept(accounts, accountMap);
     }
   }
 }

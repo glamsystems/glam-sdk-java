@@ -18,7 +18,8 @@ public final class DriftVaultPosition extends BasePosition {
   public DriftVaultPosition(final MintContext mintContext,
                             final GlamAccountClient glamClient,
                             final DriftVaultsProgramClient driftVaultClient,
-                            final PublicKey vaultKey, final DriftUserPosition driftUserPosition,
+                            final PublicKey vaultKey,
+                            final DriftUserPosition driftUserPosition,
                             final PublicKey vaultDepositorKey) {
     super(mintContext, glamClient);
     this.driftVaultClient = driftVaultClient;

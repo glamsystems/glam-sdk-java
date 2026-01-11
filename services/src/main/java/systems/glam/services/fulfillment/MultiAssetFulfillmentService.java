@@ -10,6 +10,7 @@ import software.sava.idl.clients.drift.DriftProgramClient;
 import software.sava.idl.clients.drift.gen.types.User;
 import software.sava.idl.clients.drift.vaults.DriftVaultsProgramClient;
 import software.sava.idl.clients.drift.vaults.gen.types.VaultDepositor;
+import software.sava.idl.clients.kamino.lend.KaminoLendClient;
 import software.sava.idl.clients.kamino.vaults.KaminoVaultsClient;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
@@ -20,6 +21,7 @@ import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.StateAccountClient;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.services.execution.InstructionProcessor;
+import systems.glam.services.fulfillment.drfit.DriftMarketCache;
 import systems.glam.services.fulfillment.drfit.DriftUserPosition;
 import systems.glam.services.fulfillment.kamino.KaminoVaultPosition;
 import systems.glam.services.kamino.KaminoVaultCache;
@@ -43,9 +45,13 @@ public class MultiAssetFulfillmentService extends BaseFulfillmentService {
   private final DriftProgramClient driftProgramClient;
   private final DriftAccounts driftAccounts;
   private final PublicKey driftProgramKey;
+  private final DriftMarketCache driftMarketCache;
   private final DriftVaultsProgramClient driftVaultClient;
   private final PublicKey driftVaultsProgramKey;
   private final KaminoVaultsClient kaminoVaultsClient;
+  private final PublicKey kaminoVaultsProgramKey;
+  private final KaminoLendClient kaminoLendClient;
+  private final PublicKey kaminoLendProgramKey;
   private final Set<PublicKey> accountsNeededSet;
   private final Map<PublicKey, Position> positions;
 
@@ -74,6 +80,7 @@ public class MultiAssetFulfillmentService extends BaseFulfillmentService {
                                final Backoff backoff,
                                final MintCache mintContextMap,
                                final KaminoVaultCache kaminoVaultCache,
+                               final DriftMarketCache driftMarketCache,
                                final Map<PublicKey, Position> positions) {
     super(
         epochInfoService,
@@ -98,11 +105,16 @@ public class MultiAssetFulfillmentService extends BaseFulfillmentService {
     this.mintContextMap = mintContextMap;
     this.kaminoVaultCache = kaminoVaultCache;
     this.driftProgramClient = DriftProgramClient.createClient(glamAccountClient);
+    this.driftMarketCache = driftMarketCache;
     this.driftAccounts = driftProgramClient.driftAccounts();
     this.driftProgramKey = driftAccounts.driftProgram();
     this.driftVaultClient = DriftVaultsProgramClient.createClient(glamAccountClient);
     this.driftVaultsProgramKey = driftAccounts.driftVaultsProgram();
+    this.kaminoLendClient = KaminoLendClient.createClient(glamAccountClient);
+    final var kaminoAccounts = kaminoLendClient.kaminoAccounts();
+    this.kaminoLendProgramKey = kaminoAccounts.kLendProgram();
     this.kaminoVaultsClient = KaminoVaultsClient.createClient(glamAccountClient);
+    this.kaminoVaultsProgramKey = kaminoAccounts.kVaultsProgram();
     this.positions = positions;
     this.previousStateAccount = stateAccount;
     this.accountsNeededSet = HashSet.newHashSet(accountsNeededList.size());
@@ -185,7 +197,7 @@ public class MultiAssetFulfillmentService extends BaseFulfillmentService {
           if (programOwner.equals(driftProgramKey)) {
             if (User.BYTES == data.length && User.DISCRIMINATOR.equals(data, 0)) {
               final var driftPosition = new DriftUserPosition(
-                  driftProgramClient, accountInfo.pubKey()
+                  driftMarketCache, driftProgramClient, accountInfo.pubKey()
               );
               driftPosition.accountsNeeded(accountsNeededSet);
               positions.put(externalAccount, driftPosition);
@@ -202,11 +214,7 @@ public class MultiAssetFulfillmentService extends BaseFulfillmentService {
             }
           } else if (programOwner.equals(driftVaultsProgramKey)) {
             if (VaultDepositor.BYTES == data.length && VaultDepositor.DISCRIMINATOR.equals(data, 0)) {
-              final var driftPosition = new DriftUserPosition(
-                  driftProgramClient, accountInfo.pubKey()
-              );
-              driftPosition.accountsNeeded(accountsNeededSet);
-              positions.put(externalAccount, driftPosition);
+
             } else {
               final var msg = String.format("""
                       {
@@ -218,6 +226,10 @@ public class MultiAssetFulfillmentService extends BaseFulfillmentService {
               logger.log(WARNING, msg);
               // TODO: Trigger external alert and put this vault on pause.
             }
+          } else if (programOwner.equals(kaminoLendProgramKey)) {
+
+          } else if (programOwner.equals(kaminoVaultsProgramKey)) {
+
           }
         }
       }
