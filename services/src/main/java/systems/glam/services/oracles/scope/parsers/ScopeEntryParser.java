@@ -29,7 +29,7 @@ public abstract class ScopeEntryParser implements FieldBufferPredicate {
     if (type.equals("Deprecated")) {
       return new Deprecated(); // TODO: use singletons.
     } else {
-      final var oracleType = OracleType.valueOf(type);
+      final var oracleType = type.equals("ScopeTwap") ? OracleType.ScopeTwap1h : OracleType.valueOf(type);
       if (oracleType == OracleType.Unused) {
         return new Unused();  // TODO: use singletons.
       }
@@ -56,7 +56,7 @@ public abstract class ScopeEntryParser implements FieldBufferPredicate {
         case ChainlinkRWA, ChainlinkX -> new ChainlinkStatusEntryParser(oracleType);
         case PythPull, Securitize -> new ReferencesEntryParser(oracleType);
         case PythLazer -> new PythLazerParser(oracleType);
-        case ScopeTwap -> new ScopeTwapParser(oracleType);
+        case ScopeTwap1h, ScopeTwap8h, ScopeTwap24h -> new ScopeTwapParser(oracleType);
         case FixedPrice -> new FixedPriceParser(oracleType);
         case DiscountToMaturity -> new DiscountToMaturityParser(oracleType);
         case CappedFloored -> new CappedFlooredParser(oracleType);

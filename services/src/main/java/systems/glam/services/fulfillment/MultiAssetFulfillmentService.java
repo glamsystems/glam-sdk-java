@@ -1,11 +1,8 @@
 package systems.glam.services.fulfillment;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.token.TokenAccount;
 import software.sava.core.tx.Instruction;
-import software.sava.core.tx.Transaction;
-import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.drift.DriftProgramClient;
 import software.sava.idl.clients.drift.gen.types.User;
 import software.sava.idl.clients.drift.vaults.DriftVaultsProgramClient;
@@ -14,107 +11,64 @@ import software.sava.idl.clients.kamino.lend.KaminoLendClient;
 import software.sava.idl.clients.kamino.vaults.KaminoVaultsClient;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
-import software.sava.services.core.remote.call.Backoff;
-import software.sava.services.solana.epoch.EpochInfoService;
-import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.StateAccountClient;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
-import systems.glam.services.execution.InstructionProcessor;
-import systems.glam.services.fulfillment.drfit.DriftMarketCache;
+import systems.glam.services.ServiceContext;
 import systems.glam.services.fulfillment.drfit.DriftUserPosition;
 import systems.glam.services.fulfillment.kamino.KaminoVaultPosition;
-import systems.glam.services.kamino.KaminoVaultCache;
-import systems.glam.services.pricing.MintCache;
+import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.pricing.accounting.Position;
 import systems.glam.services.pricing.accounting.TokenPosition;
 import systems.glam.services.tokens.MintContext;
 
-import java.math.BigInteger;
-import java.time.Duration;
 import java.util.*;
-import java.util.function.Function;
 
 import static java.lang.System.Logger.Level.WARNING;
 import static systems.glam.sdk.idl.programs.glam.kamino.gen.ExtKaminoConstants.PROTO_KAMINO_VAULTS;
 
 public class MultiAssetFulfillmentService extends BaseFulfillmentService {
 
-  private final MintCache mintContextMap;
-  private final KaminoVaultCache kaminoVaultCache;
+  private final IntegrationServiceContext integContext;
   private final DriftProgramClient driftProgramClient;
-  private final DriftAccounts driftAccounts;
-  private final PublicKey driftProgramKey;
-  private final DriftMarketCache driftMarketCache;
   private final DriftVaultsProgramClient driftVaultClient;
-  private final PublicKey driftVaultsProgramKey;
   private final KaminoVaultsClient kaminoVaultsClient;
-  private final PublicKey kaminoVaultsProgramKey;
   private final KaminoLendClient kaminoLendClient;
-  private final PublicKey kaminoLendProgramKey;
   private final Set<PublicKey> accountsNeededSet;
   private final Map<PublicKey, Position> positions;
 
   private StateAccount previousStateAccount;
 
-  MultiAssetFulfillmentService(final EpochInfoService epochInfoService,
+  MultiAssetFulfillmentService(final ServiceContext serviceContext,
                                final GlamAccountClient glamAccountClient,
                                final StateAccountClient stateAccountClient,
                                final StateAccount stateAccount,
                                final MintContext vaultMintContext,
                                final MintContext baseAssetMintContext,
                                final PublicKey baseAssetVaultAta,
-                               final PublicKey clockSysVar,
                                final boolean softRedeem,
                                final PublicKey requestQueueKey,
                                final List<PublicKey> accountsNeededList,
-                               final RpcCaller rpcCaller,
                                final List<Instruction> fulFillInstructions,
-                               final InstructionProcessor instructionProcessor,
-                               final Function<List<Instruction>, Transaction> transactionFactory,
-                               final PublicKey feePayerKey,
-                               final BigInteger warnFeePayerBalance,
-                               final BigInteger minFeePayerBalance,
-                               final Duration minCheckStateDelay,
-                               final Duration maxCheckStateDelay,
-                               final Backoff backoff,
-                               final MintCache mintContextMap,
-                               final KaminoVaultCache kaminoVaultCache,
-                               final DriftMarketCache driftMarketCache,
+                               final IntegrationServiceContext integContext,
                                final Map<PublicKey, Position> positions) {
     super(
-        epochInfoService,
+        serviceContext,
         glamAccountClient,
         stateAccountClient,
         baseAssetMintContext,
         baseAssetVaultAta,
-        clockSysVar,
         softRedeem,
         requestQueueKey,
         vaultMintContext,
         accountsNeededList,
-        rpcCaller,
-        fulFillInstructions,
-        instructionProcessor,
-        transactionFactory,
-        feePayerKey,
-        warnFeePayerBalance, minFeePayerBalance,
-        minCheckStateDelay, maxCheckStateDelay,
-        backoff
+        fulFillInstructions
     );
-    this.mintContextMap = mintContextMap;
-    this.kaminoVaultCache = kaminoVaultCache;
+    this.integContext = integContext;
     this.driftProgramClient = DriftProgramClient.createClient(glamAccountClient);
-    this.driftMarketCache = driftMarketCache;
-    this.driftAccounts = driftProgramClient.driftAccounts();
-    this.driftProgramKey = driftAccounts.driftProgram();
     this.driftVaultClient = DriftVaultsProgramClient.createClient(glamAccountClient);
-    this.driftVaultsProgramKey = driftAccounts.driftVaultsProgram();
     this.kaminoLendClient = KaminoLendClient.createClient(glamAccountClient);
-    final var kaminoAccounts = kaminoLendClient.kaminoAccounts();
-    this.kaminoLendProgramKey = kaminoAccounts.kLendProgram();
     this.kaminoVaultsClient = KaminoVaultsClient.createClient(glamAccountClient);
-    this.kaminoVaultsProgramKey = kaminoAccounts.kVaultsProgram();
     this.positions = positions;
     this.previousStateAccount = stateAccount;
     this.accountsNeededSet = HashSet.newHashSet(accountsNeededList.size());
@@ -134,7 +88,7 @@ public class MultiAssetFulfillmentService extends BaseFulfillmentService {
     boolean changed = false;
     for (final var assetMint : assets) {
       if (accountsNeededSet.add(assetMint)) {
-        final var mintContext = mintContextMap.get(assetMint);
+        final var mintContext = integContext.mintContext(assetMint);
         final var tokenPosition = new TokenPosition(mintContext, glamAccountClient);
         positions.put(assetMint, tokenPosition);
         accountsNeededSet.add(tokenPosition.vaultATA());
@@ -157,11 +111,12 @@ public class MultiAssetFulfillmentService extends BaseFulfillmentService {
       } else if (!positions.containsKey(externalAccount)) {
         changed = true;
         final var accountInfo = accountsNeededMap.get(externalAccount);
-        if (isTokenAccount(accountInfo, solanaAccounts)) {
+        if (context.isTokenAccount(accountInfo)) {
           final var tokenAccount = TokenAccount.read(accountInfo.pubKey(), accountInfo.data());
-          final var kVaultContext = kaminoVaultCache.vaultForShareMint(tokenAccount.mint());
+          final var kVaultCache = integContext.kaminoVaultCache();
+          final var kVaultContext = kVaultCache.vaultForShareMint(tokenAccount.mint());
           if (kVaultContext == null) {
-            if (protocolEnabled(stateAccount, glamAccounts.kaminoIntegrationProgram(), PROTO_KAMINO_VAULTS)) {
+            if (protocolEnabled(stateAccount, glamAccountClient.glamAccounts().kaminoIntegrationProgram(), PROTO_KAMINO_VAULTS)) {
               // TODO: refresh kamino vaults
               // TODO: consider only fetching this vault with a program account filter by share mint.
             } else {
@@ -181,25 +136,28 @@ public class MultiAssetFulfillmentService extends BaseFulfillmentService {
           } else {
             final var vaultState = kVaultContext.vaultState();
             final var kVaultPosition = new KaminoVaultPosition(
-                mintContextMap.get(vaultState.tokenMint()),
+                integContext.mintContext(vaultState.tokenMint()),
                 glamAccountClient,
                 kaminoVaultsClient,
                 tokenAccount.address(),
-                kaminoVaultCache,
+                kVaultCache,
                 vaultState._address()
             );
-            kVaultPosition.accountsNeeded(accountsNeededSet);
+            kVaultPosition.accountsForPriceInstruction(accountsNeededSet);
             positions.put(externalAccount, kVaultPosition);
           }
         } else {
           final var programOwner = accountInfo.owner();
           final byte[] data = accountInfo.data();
-          if (programOwner.equals(driftProgramKey)) {
+          if (programOwner.equals(integContext.driftProgram())) {
             if (User.BYTES == data.length && User.DISCRIMINATOR.equals(data, 0)) {
-              final var driftPosition = new DriftUserPosition(
-                  driftMarketCache, driftProgramClient, accountInfo.pubKey()
-              );
-              driftPosition.accountsNeeded(accountsNeededSet);
+              final var driftMarketCache = integContext.driftMarketCache();
+              final var driftPosition = positions.values().stream()
+                  .filter(position -> position instanceof DriftUserPosition)
+                  .findFirst().map(position -> (DriftUserPosition) position)
+                  .orElseGet(() -> DriftUserPosition.create(driftMarketCache, glamAccountClient.vaultAccounts().vaultPublicKey()));
+              driftPosition.addUserAccount(externalAccount);
+              driftPosition.accountsForPriceInstruction(accountsNeededSet);
               positions.put(externalAccount, driftPosition);
             } else {
               final var msg = String.format("""
@@ -212,7 +170,7 @@ public class MultiAssetFulfillmentService extends BaseFulfillmentService {
               logger.log(WARNING, msg);
               // TODO: Trigger external alert and put this vault on pause.
             }
-          } else if (programOwner.equals(driftVaultsProgramKey)) {
+          } else if (programOwner.equals(integContext.driftVaultsProgram())) {
             if (VaultDepositor.BYTES == data.length && VaultDepositor.DISCRIMINATOR.equals(data, 0)) {
 
             } else {
@@ -226,9 +184,9 @@ public class MultiAssetFulfillmentService extends BaseFulfillmentService {
               logger.log(WARNING, msg);
               // TODO: Trigger external alert and put this vault on pause.
             }
-          } else if (programOwner.equals(kaminoLendProgramKey)) {
+          } else if (programOwner.equals(integContext.kLendProgram())) {
 
-          } else if (programOwner.equals(kaminoVaultsProgramKey)) {
+          } else if (programOwner.equals(integContext.kVaultsProgram())) {
 
           }
         }
@@ -248,13 +206,12 @@ public class MultiAssetFulfillmentService extends BaseFulfillmentService {
     return false;
   }
 
-  private static boolean isTokenAccount(final AccountInfo<byte[]> accountInfo,
-                                        final SolanaAccounts solanaAccounts) {
+  private boolean isTokenAccount(final AccountInfo<byte[]> accountInfo) {
     final var programOwner = accountInfo.owner();
-    if (programOwner.equals(solanaAccounts.tokenProgram()) && accountInfo.data().length == TokenAccount.BYTES) {
+    if (programOwner.equals(context.tokenProgram()) && accountInfo.data().length == TokenAccount.BYTES) {
       return true;
     } else {
-      return programOwner.equals(solanaAccounts.token2022Program());
+      return programOwner.equals(context.token2022Program());
     }
   }
 

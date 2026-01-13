@@ -1,11 +1,14 @@
 package systems.glam.services.fulfillment.drfit;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.drift.vaults.DriftVaultsProgramClient;
+import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.services.pricing.accounting.BasePosition;
 import systems.glam.services.tokens.MintContext;
 
+import java.util.Map;
 import java.util.Set;
 
 public final class DriftVaultPosition extends BasePosition {
@@ -29,9 +32,18 @@ public final class DriftVaultPosition extends BasePosition {
   }
 
   @Override
-  public void accountsNeeded(final Set<PublicKey> keys) {
+  public void accountsForPriceInstruction(final Set<PublicKey> keys) {
     keys.add(vaultKey);
     keys.add(vaultDepositorKey);
-    driftUserPosition.accountsNeeded(keys);
+    driftUserPosition.accountsForPriceInstruction(keys);
+  }
+
+  @Override
+  public Instruction priceInstruction(final GlamAccountClient glamAccountClient,
+                                      final PublicKey solUSDOracleKey,
+                                      final PublicKey baseAssetUSDOracleKey,
+                                      final Map<PublicKey, AccountInfo<byte[]>> accountMap,
+                                      final Set<PublicKey> returnAccounts) {
+    return null;
   }
 }

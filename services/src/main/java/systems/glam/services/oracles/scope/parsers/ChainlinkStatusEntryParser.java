@@ -18,8 +18,8 @@ final class ChainlinkStatusEntryParser extends OracleEntryParser {
   @Override
   ScopeEntry createEntry() {
     return switch (oracleType) {
-      case ChainlinkRWA -> new ChainlinkRWA(oracle, marketStatusBehavior, twapEnabled);
-      case ChainlinkX -> new ChainlinkX(oracle, marketStatusBehavior, twapEnabled);
+      case ChainlinkRWA -> new ChainlinkRWA(oracle, marketStatusBehavior, emaTypes());
+      case ChainlinkX -> new ChainlinkX(oracle, marketStatusBehavior, emaTypes());
       default -> throw new IllegalStateException("Unexpected chainlink status oracle type: " + oracleType);
     };
   }

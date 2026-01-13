@@ -28,4 +28,5 @@ module systems.glam.services {
   exports systems.glam.services.fulfillment.config;
   exports systems.glam.services.fulfillment.accounting;
   exports systems.glam.services.pricing.accounting;
+  exports systems.glam.services;
 }

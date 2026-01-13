@@ -2,19 +2,26 @@ package systems.glam.services.oracles.scope.parsers;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.kamino.scope.entries.ScopeEntry;
+import software.sava.idl.clients.kamino.scope.gen.types.EmaType;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.rpc.json.PublicKeyEncoding;
 import systems.comodal.jsoniter.JsonIterator;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.EnumSet;
+import java.util.Set;
 
 class OracleEntryParser extends ScopeEntryParser {
 
   protected PublicKey oracle;
-  protected boolean twapEnabled;
+  private Set<EmaType> emaTypes;
 
   OracleEntryParser(final OracleType oracleType) {
     super(oracleType);
+  }
+
+  protected final Set<EmaType> emaTypes() {
+    return emaTypes == null ? Set.of() : emaTypes;
   }
 
   @Override
@@ -40,8 +47,8 @@ class OracleEntryParser extends ScopeEntryParser {
              SplStake,
              SwitchboardOnDemand -> {
           final var clas = Class.forName("software.sava.idl.clients.kamino.scope.entries." + oracleType);
-          final var constructor = clas.getConstructor(PublicKey.class, boolean.class);
-          yield (ScopeEntry) constructor.newInstance(oracle, twapEnabled);
+          final var constructor = clas.getConstructor(PublicKey.class, Set.class);
+          yield (ScopeEntry) constructor.newInstance(oracle, emaTypes());
         }
         default -> throw new IllegalStateException("Unexpected oracle type: " + oracleType);
       };
@@ -55,8 +62,17 @@ class OracleEntryParser extends ScopeEntryParser {
   public boolean test(final char[] buf, final int offset, final int len, final JsonIterator ji) {
     if (JsonIterator.fieldEquals("oracle", buf, offset, len)) {
       this.oracle = PublicKeyEncoding.parseBase58Encoded(ji);
+    } else if (JsonIterator.fieldEquals("emaTypes", buf, offset, len)) {
+      if (ji.readArray()) {
+        this.emaTypes = EnumSet.noneOf(EmaType.class);
+        do {
+          this.emaTypes.add(EmaType.valueOf(ji.readString()));
+        } while (ji.readArray());
+      } else {
+        this.emaTypes = Set.of();
+      }
     } else if (JsonIterator.fieldEquals("twapEnabled", buf, offset, len)) {
-      this.twapEnabled = ji.readBoolean();
+      this.emaTypes = ji.readBoolean() ? EnumSet.of(EmaType.Ema1h) : Set.of();
     } else {
       super.test(buf, offset, len, ji);
     }

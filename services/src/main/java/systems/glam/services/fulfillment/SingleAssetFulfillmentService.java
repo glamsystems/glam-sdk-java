@@ -3,28 +3,21 @@ package systems.glam.services.fulfillment;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.token.TokenAccount;
 import software.sava.core.tx.Instruction;
-import software.sava.core.tx.Transaction;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
-import software.sava.services.core.remote.call.Backoff;
-import software.sava.services.solana.epoch.EpochInfoService;
-import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.StateAccountClient;
 import systems.glam.sdk.idl.programs.glam.mint.gen.types.RequestQueue;
-import systems.glam.services.execution.InstructionProcessor;
+import systems.glam.services.ServiceContext;
 import systems.glam.services.fulfillment.accounting.RedemptionSummary;
 import systems.glam.services.tokens.MintContext;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.math.RoundingMode;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 import static java.lang.Long.toUnsignedString;
 import static java.lang.System.Logger.Level.ERROR;
@@ -35,45 +28,27 @@ final class SingleAssetFulfillmentService extends BaseFulfillmentService {
   private final AtomicReference<TokenBalance> baseAssetTokenBalance;
   private final AtomicReference<RedemptionSummary> redemptionSummary;
 
-  SingleAssetFulfillmentService(final EpochInfoService epochInfoService,
+  SingleAssetFulfillmentService(final ServiceContext serviceContext,
                                 final GlamAccountClient glamAccountClient,
                                 final StateAccountClient stateAccountClient,
                                 final MintContext vaultMintContext,
                                 final MintContext baseAssetMintContext,
                                 final PublicKey baseAssetVaultAta,
-                                final PublicKey clockSysVar,
                                 final boolean softRedeem,
                                 final PublicKey requestQueueKey,
                                 final List<PublicKey> accountsNeededList,
-                                final RpcCaller rpcCaller,
-                                final List<Instruction> fulFillInstructions,
-                                final InstructionProcessor instructionProcessor,
-                                final Function<List<Instruction>, Transaction> transactionFactory,
-                                final PublicKey feePayerKey,
-                                final BigInteger warnFeePayerBalance,
-                                final BigInteger minFeePayerBalance,
-                                final Duration minCheckStateDelay,
-                                final Duration maxCheckStateDelay,
-                                final Backoff backoff) {
+                                final List<Instruction> fulFillInstructions) {
     super(
-        epochInfoService,
+        serviceContext,
         glamAccountClient,
         stateAccountClient,
         baseAssetMintContext,
         baseAssetVaultAta,
-        clockSysVar,
         softRedeem,
         requestQueueKey,
         vaultMintContext,
         accountsNeededList,
-        rpcCaller,
-        fulFillInstructions,
-        instructionProcessor,
-        transactionFactory,
-        feePayerKey,
-        warnFeePayerBalance, minFeePayerBalance,
-        minCheckStateDelay, maxCheckStateDelay,
-        backoff
+        fulFillInstructions
     );
     this.baseAssetTokenBalance = new AtomicReference<>();
     this.redemptionSummary = new AtomicReference<>();
@@ -115,7 +90,7 @@ final class SingleAssetFulfillmentService extends BaseFulfillmentService {
       if (fulfilled) {
         failureCount = 0;
       } else {
-        backoff(++failureCount);
+        context.backoff(++failureCount);
         return;
       }
     }
@@ -155,7 +130,7 @@ final class SingleAssetFulfillmentService extends BaseFulfillmentService {
       final byte[] data = accountInfo.data();
       final var owner = accountInfo.owner();
 
-      if (RequestQueue.DISCRIMINATOR.equals(data, 0) && owner.equals(glamMintProgram)) {
+      if (RequestQueue.DISCRIMINATOR.equals(data, 0) && owner.equals(context.glamMintProgram())) {
         final var redemptionSummary = RedemptionSummary.createSummary(
             Instant.now().getEpochSecond(), slot,
             RequestQueue.read(accountInfo),

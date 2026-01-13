@@ -1,4 +1,4 @@
-package systems.glam.services.kamino;
+package systems.glam.services.integrations.kamino;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.kamino.KaminoAccounts;
@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static systems.glam.services.kamino.KaminoVaultCacheImpl.*;
+import static systems.glam.services.integrations.kamino.KaminoVaultCacheImpl.*;
 
 public interface KaminoVaultCache extends Runnable {
 

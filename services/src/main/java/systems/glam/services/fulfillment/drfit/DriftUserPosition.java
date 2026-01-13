@@ -2,15 +2,17 @@ package systems.glam.services.fulfillment.drfit;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
+import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.core.gen.SerDeUtil;
-import software.sava.idl.clients.drift.DriftAccounts;
-import software.sava.idl.clients.drift.DriftProgramClient;
+import software.sava.idl.clients.drift.DriftPDAs;
 import software.sava.idl.clients.drift.gen.types.PerpPosition;
 import software.sava.idl.clients.drift.gen.types.SpotPosition;
 import software.sava.idl.clients.drift.gen.types.User;
 import software.sava.rpc.json.http.response.AccountInfo;
+import systems.glam.sdk.GlamAccountClient;
 import systems.glam.services.pricing.accounting.Position;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -18,73 +20,98 @@ import java.util.Set;
 public final class DriftUserPosition implements Position {
 
   private final DriftMarketCache driftMarketCache;
-  private final DriftProgramClient driftClient;
-  private final DriftAccounts driftAccounts;
-  private final PublicKey userKey;
-  private final SpotPosition[] spotPositions;
-  private final PerpPosition[] perpPositions;
-  private final Map<PublicKey, AccountMeta> oracleMetas;
-  private final Map<PublicKey, AccountMeta> spotMarketMetas;
-  private final Map<PublicKey, AccountMeta> perpMarketMetas;
+  private final AccountMeta userStatsMeta;
+  private final Map<PublicKey, AccountMeta> userAccounts;
 
-  public DriftUserPosition(final DriftMarketCache driftMarketCache,
-                           final DriftProgramClient driftClient,
-                           final PublicKey userKey) {
+  private DriftUserPosition(final DriftMarketCache driftMarketCache, final AccountMeta userStatsMeta) {
     this.driftMarketCache = driftMarketCache;
-    this.driftClient = driftClient;
-    this.driftAccounts = driftClient.driftAccounts();
-    this.userKey = userKey;
-    this.spotPositions = new SpotPosition[User.SPOT_POSITIONS_LEN];
-    this.perpPositions = new PerpPosition[User.PERP_POSITIONS_OFFSET];
-    this.oracleMetas = HashMap.newHashMap(8);
-    this.spotMarketMetas = HashMap.newHashMap(8);
-    this.perpMarketMetas = HashMap.newHashMap(8);
+    this.userStatsMeta = userStatsMeta;
+    this.userAccounts = HashMap.newHashMap(8);
+  }
+
+  public static DriftUserPosition create(final DriftMarketCache driftMarketCache, final PublicKey glamVaultKey) {
+    final var userStatsKey = DriftPDAs.deriveUserStatsAccount(driftMarketCache.driftAccounts(), glamVaultKey).publicKey();
+    return new DriftUserPosition(driftMarketCache, AccountMeta.createRead(userStatsKey));
+  }
+
+  public void addUserAccount(final PublicKey userKey) {
+    userAccounts.put(userKey, AccountMeta.createRead(userKey));
+  }
+
+  public void removeUserAccount(final PublicKey userKey) {
+    userAccounts.remove(userKey);
   }
 
   @Override
-  public void accountsNeeded(final Set<PublicKey> keys) {
-    keys.add(userKey);
+  public void accountsForPriceInstruction(final Set<PublicKey> keys) {
+    keys.addAll(userAccounts.keySet());
   }
 
-  private void addAccounts(final Set<PublicKey> returnAccounts,
-                           final Map<PublicKey, AccountMeta> marketAccounts,
-                           final DriftMarketContext marketContext) {
-    final var readMarket = marketContext.readMarket();
-    final var marketKey = readMarket.publicKey();
-    marketAccounts.put(marketKey, readMarket);
-    returnAccounts.add(marketKey);
+  private static void addAccounts(final Map<PublicKey, AccountMeta> extraAccounts,
+                                  final DriftMarketContext marketContext) {
     final var readOracle = marketContext.readOracle();
-    final var oracleKey = readOracle.publicKey();
-    oracleMetas.put(oracleKey, readOracle);
-    returnAccounts.add(oracleKey);
+    extraAccounts.put(readOracle.publicKey(), readOracle);
+    final var readMarket = marketContext.readMarket();
+    extraAccounts.put(readMarket.publicKey(), readMarket);
   }
 
-  public boolean returnAccounts(final Map<PublicKey, AccountInfo<byte[]>> accountMap,
-                                final Set<PublicKey> returnAccounts) {
-    final var userAccount = accountMap.get(userKey);
-    final byte[] data = userAccount.data();
+  @Override
+  public Instruction priceInstruction(final GlamAccountClient glamAccountClient,
+                                      final PublicKey solUSDOracleKey,
+                                      final PublicKey baseAssetUSDOracleKey,
+                                      final Map<PublicKey, AccountInfo<byte[]>> accountMap,
+                                      final Set<PublicKey> returnAccounts) {
+    int missingMarkets = 0;
 
-    SerDeUtil.readArray(spotPositions, SpotPosition::read, data, User.SPOT_POSITIONS_OFFSET);
-    for (final var position : spotPositions) {
-      if (position.scaledBalance() != 0) {
-        final var marketContext = driftMarketCache.spotMarket(position.marketIndex());
-        if (marketContext == null) {
-          return false;
+    final int numUsers = userAccounts.size();
+    final var extraAccountsMap = HashMap.<PublicKey, AccountMeta>newHashMap(numUsers * (User.SPOT_POSITIONS_LEN << 1) + (User.PERP_POSITIONS_LEN << 1));
+    final var spotPositions = new SpotPosition[User.SPOT_POSITIONS_LEN];
+    final var perpPositions = new PerpPosition[User.PERP_POSITIONS_LEN];
+
+    for (final var userKey : userAccounts.keySet()) {
+      final var userAccount = accountMap.get(userKey);
+      final byte[] data = userAccount.data();
+
+      SerDeUtil.readArray(spotPositions, SpotPosition::read, data, User.SPOT_POSITIONS_OFFSET);
+      for (final var position : spotPositions) {
+        if (position.scaledBalance() != 0) {
+          final var marketContext = driftMarketCache.spotMarket(position.marketIndex());
+          if (marketContext == null) {
+            ++missingMarkets;
+          } else {
+            addAccounts(extraAccountsMap, marketContext);
+          }
         }
-        addAccounts(returnAccounts, spotMarketMetas, marketContext);
+      }
+
+      SerDeUtil.readArray(perpPositions, PerpPosition::read, data, User.PERP_POSITIONS_OFFSET);
+      for (final var position : perpPositions) {
+        if (position.baseAssetAmount() != 0) {
+          final var marketContext = driftMarketCache.perpMarket(position.marketIndex());
+          if (marketContext == null) {
+            ++missingMarkets;
+          } else {
+            addAccounts(extraAccountsMap, marketContext);
+          }
+        }
       }
     }
 
-    SerDeUtil.readArray(perpPositions, PerpPosition::read, data, User.PERP_POSITIONS_OFFSET);
-    for (final var position : perpPositions) {
-      if (position.baseAssetAmount() != 0) {
-        final var marketContext = driftMarketCache.perpMarket(position.marketIndex());
-        if (marketContext == null) {
-          return false;
-        }
-        addAccounts(returnAccounts, perpMarketMetas, marketContext);
-      }
+    if (missingMarkets == 0) {
+      returnAccounts.add(userStatsMeta.publicKey());
+      returnAccounts.addAll(userAccounts.keySet());
+      returnAccounts.addAll(extraAccountsMap.keySet());
+
+      final var extraAccounts = new ArrayList<AccountMeta>(1 + numUsers + extraAccountsMap.size());
+      extraAccounts.add(userStatsMeta);
+      extraAccounts.addAll(userAccounts.values());
+      extraAccounts.addAll(extraAccountsMap.values());
+
+      return glamAccountClient
+          .priceDriftUsers(solUSDOracleKey, baseAssetUSDOracleKey, numUsers, true)
+          .extraAccounts(extraAccounts);
+    } else {
+      return null;
     }
-    return true;
   }
 }

@@ -4,6 +4,7 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.core.encoding.ByteUtil;
 import software.sava.core.rpc.Filter;
 import software.sava.idl.clients.drift.DriftAccounts;
+import software.sava.idl.clients.drift.gen.types.MarketStatus;
 import software.sava.idl.clients.drift.gen.types.PerpMarket;
 import software.sava.idl.clients.drift.gen.types.SpotMarket;
 import software.sava.rpc.json.http.response.AccountInfo;
@@ -127,7 +128,8 @@ public interface DriftMarketCache {
                                                                                               final PublicKey driftProgram) {
     final var filters = List.of(
         SpotMarket.SIZE_FILTER,
-        SpotMarket.DISCRIMINATOR_FILTER
+        SpotMarket.DISCRIMINATOR_FILTER,
+        Filter.createMemCompFilter(SpotMarket.STATUS_OFFSET, MarketStatus.Active.write())
     );
     return fetchMarkets(marketsDirectory, rpcCaller, filters, driftProgram, DriftMarketContext::createSpotContext);
   }
@@ -137,7 +139,8 @@ public interface DriftMarketCache {
                                                                                               final PublicKey driftProgram) {
     final var filters = List.of(
         PerpMarket.SIZE_FILTER,
-        PerpMarket.DISCRIMINATOR_FILTER
+        PerpMarket.DISCRIMINATOR_FILTER,
+        Filter.createMemCompFilter(PerpMarket.STATUS_OFFSET, MarketStatus.Active.write())
     );
     return fetchMarkets(marketsDirectory, rpcCaller, filters, driftProgram, DriftMarketContext::createPerpContext);
   }
@@ -167,6 +170,8 @@ public interface DriftMarketCache {
       return marketsArray;
     });
   }
+
+  DriftAccounts driftAccounts();
 
   DriftMarketContext spotMarket(final int marketIndex);
 

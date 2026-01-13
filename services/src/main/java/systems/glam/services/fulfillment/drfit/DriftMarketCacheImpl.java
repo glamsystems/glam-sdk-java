@@ -3,6 +3,7 @@ package systems.glam.services.fulfillment.drfit;
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.drift.DriftPDAs;
+import software.sava.idl.clients.drift.gen.types.MarketStatus;
 import software.sava.idl.clients.drift.gen.types.PerpMarket;
 import software.sava.idl.clients.drift.gen.types.SpotMarket;
 import software.sava.rpc.json.http.response.AccountInfo;
@@ -46,6 +47,11 @@ final class DriftMarketCacheImpl implements DriftMarketCache, AccountConsumer {
     this.driftAccounts = driftAccounts;
     this.accountFetcher = accountFetcher;
     this.pendingAccounts = new ConcurrentSkipListSet<>();
+  }
+
+  @Override
+  public DriftAccounts driftAccounts() {
+    return driftAccounts;
   }
 
   private void queueAccount(final PublicKey marketAccount) {
@@ -110,7 +116,8 @@ final class DriftMarketCacheImpl implements DriftMarketCache, AccountConsumer {
             final var currentEntry = spotMarkets.get(marketIndex);
             if (currentEntry == null || !currentEntry.oracle().equals(oracle)) {
               perpMarkets.set(marketIndex, DriftMarketContext.createContext(marketIndex, pubKey, oracle));
-              writeMarketData(spotMarketsDirectory, marketIndex, data);
+              final var marketStatus = MarketStatus.read(data, SpotMarket.STATUS_OFFSET);
+              writeMarketData(spotMarketsDirectory, marketIndex, data, marketStatus);
             }
             pendingAccounts.remove(pubKey);
           } else if (PerpMarket.BYTES == data.length && PerpMarket.DISCRIMINATOR.equals(data, 0)) {
@@ -119,7 +126,8 @@ final class DriftMarketCacheImpl implements DriftMarketCache, AccountConsumer {
             final var currentEntry = perpMarkets.get(marketIndex);
             if (currentEntry == null || !currentEntry.oracle().equals(oracle)) {
               perpMarkets.set(marketIndex, DriftMarketContext.createContext(marketIndex, pubKey, oracle));
-              writeMarketData(perpMarketsDirectory, marketIndex, data);
+              final var marketStatus = MarketStatus.read(data, PerpMarket.STATUS_OFFSET);
+              writeMarketData(perpMarketsDirectory, marketIndex, data, marketStatus);
             }
             pendingAccounts.remove(pubKey);
           } else {
@@ -135,6 +143,21 @@ final class DriftMarketCacheImpl implements DriftMarketCache, AccountConsumer {
       Files.write(directory.resolve(marketIndex + ".dat"), data);
     } catch (final IOException e) {
       logger.log(WARNING, "Failed to write Drift market account data", e);
+    }
+  }
+
+  static void writeMarketData(final Path directory,
+                              final int marketIndex,
+                              final byte[] data,
+                              final MarketStatus status) {
+    if (status == MarketStatus.Delisted) {
+      try {
+        Files.deleteIfExists(directory.resolve(marketIndex + ".dat"));
+      } catch (final IOException e) {
+        logger.log(WARNING, "Failed to delete Drift market account data", e);
+      }
+    } else {
+      writeMarketData(directory, marketIndex, data);
     }
   }
 

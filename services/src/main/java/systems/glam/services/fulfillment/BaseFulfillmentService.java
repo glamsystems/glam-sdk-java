@@ -1,34 +1,22 @@
 package systems.glam.services.fulfillment;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.sysvar.Clock;
 import software.sava.core.tx.Instruction;
-import software.sava.core.tx.Transaction;
-import software.sava.core.util.LamportDecimal;
 import software.sava.idl.clients.spl.token.gen.types.Mint;
 import software.sava.rpc.json.http.response.AccountInfo;
-import software.sava.services.core.net.http.NotifyClient;
-import software.sava.services.core.remote.call.Backoff;
-import software.sava.services.solana.epoch.EpochInfoService;
-import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamAccountClient;
-import systems.glam.sdk.GlamAccounts;
 import systems.glam.sdk.StateAccountClient;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
-import systems.glam.services.execution.InstructionProcessor;
+import systems.glam.services.ServiceContext;
 import systems.glam.services.fulfillment.accounting.RedemptionSummary;
 import systems.glam.services.tokens.MintContext;
 
-import java.math.BigInteger;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
-import static java.lang.System.Logger.Level.INFO;
 import static java.lang.System.Logger.Level.WARNING;
 import static java.util.concurrent.TimeUnit.*;
 
@@ -36,93 +24,53 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
 
   protected static final System.Logger logger = System.getLogger(FulfillmentService.class.getName());
 
-  protected final EpochInfoService epochInfoService;
-  protected final SolanaAccounts solanaAccounts;
+  protected final ServiceContext context;
   protected final GlamAccountClient glamAccountClient;
-  protected final GlamAccounts glamAccounts;
-  protected final PublicKey glamMintProgram;
-  protected final PublicKey stateKey;
   protected final String vaultName;
   protected final boolean softRedeem;
   protected final long redeemNoticePeriod;
   protected final boolean redeemWindowInSeconds;
   protected final MintContext baseAssetMintContext;
   protected final PublicKey baseAssetVaultAta;
-  protected final PublicKey clockSysVar;
   protected final boolean isSoftRedeem;
   protected final PublicKey requestQueueKey;
   protected final MintContext vaultMintContext;
   protected final List<PublicKey> accountsNeededList;
   protected final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap;
-  protected final NotifyClient notifyClient;
-  protected final RpcCaller rpcCaller;
   protected final List<Instruction> fulFillInstructions;
-  protected final InstructionProcessor instructionProcessor;
-  protected final Function<List<Instruction>, Transaction> transactionFactory;
-  protected final PublicKey feePayerKey;
-  protected final BigInteger warnFeePayerBalance;
-  protected final BigInteger minFeePayerBalance;
-  protected final long minCheckStateDelayNanos;
-  protected final long maxCheckStateDelayNanos;
-  protected final Backoff backoff;
   protected final ReentrantLock lock;
   protected final Condition stateChange;
-  private boolean notifyLowBalance;
 
-  protected BaseFulfillmentService(final EpochInfoService epochInfoService,
+  protected BaseFulfillmentService(final ServiceContext context,
                                    final GlamAccountClient glamAccountClient,
                                    final StateAccountClient stateAccountClient,
                                    final MintContext baseAssetMintContext,
                                    final PublicKey baseAssetVaultAta,
-                                   final PublicKey clockSysVar,
                                    final boolean softRedeem,
                                    final PublicKey requestQueueKey,
                                    final MintContext vaultMintContext,
                                    final List<PublicKey> accountsNeededList,
-                                   final RpcCaller rpcCaller,
-                                   final List<Instruction> fulFillInstructions,
-                                   final InstructionProcessor instructionProcessor,
-                                   final Function<List<Instruction>, Transaction> transactionFactory,
-                                   final PublicKey feePayerKey,
-                                   final BigInteger warnFeePayerBalance,
-                                   final BigInteger minFeePayerBalance,
-                                   final Duration minCheckStateDelay,
-                                   final Duration maxCheckStateDelay,
-                                   final Backoff backoff) {
-    this.epochInfoService = epochInfoService;
-    this.solanaAccounts = glamAccountClient.solanaAccounts();
+                                   final List<Instruction> fulFillInstructions) {
+    this.context = context;
     this.glamAccountClient = glamAccountClient;
-    this.glamAccounts = glamAccountClient.glamAccounts();
     this.baseAssetVaultAta = baseAssetVaultAta;
-    this.glamMintProgram = glamAccounts.mintProgram();
-    this.stateKey = glamAccountClient.vaultAccounts().glamStateKey();
     this.vaultName = stateAccountClient.name();
     this.isSoftRedeem = stateAccountClient.softRedeem();
     this.redeemNoticePeriod = stateAccountClient.redeemNoticePeriod();
     this.redeemWindowInSeconds = stateAccountClient.redeemWindowInSeconds();
     this.baseAssetMintContext = baseAssetMintContext;
-    this.clockSysVar = clockSysVar;
     this.softRedeem = softRedeem;
     this.requestQueueKey = requestQueueKey;
     this.vaultMintContext = vaultMintContext;
     this.accountsNeededList = accountsNeededList;
     this.accountsNeededMap = HashMap.newHashMap(accountsNeededList.size());
-    this.notifyClient = instructionProcessor.notifyClient();
-    this.rpcCaller = rpcCaller;
     this.fulFillInstructions = fulFillInstructions;
-    this.instructionProcessor = instructionProcessor;
-    this.transactionFactory = transactionFactory;
-    this.feePayerKey = feePayerKey;
-    this.warnFeePayerBalance = warnFeePayerBalance;
-    this.minFeePayerBalance = minFeePayerBalance;
-    this.minCheckStateDelayNanos = minCheckStateDelay.toNanos();
-    this.maxCheckStateDelayNanos = maxCheckStateDelay.toNanos();
-    this.backoff = backoff;
     this.lock = new ReentrantLock();
     this.stateChange = lock.newCondition();
   }
 
   protected final Clock clock() {
+    final var clockSysVar = context.clockSysVar();
     final var clockAccount = accountsNeededMap.get(clockSysVar);
     return Clock.read(clockSysVar, clockAccount.data());
   }
@@ -141,8 +89,12 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
     return redemptionSummary(clock);
   }
 
+  protected final PublicKey stateKey() {
+    return glamAccountClient.vaultAccounts().glamStateKey();
+  }
+
   protected final StateAccount stateAccount() {
-    return StateAccount.read(accountsNeededMap.get(stateKey));
+    return StateAccount.read(accountsNeededMap.get(stateKey()));
   }
 
   protected final Mint vaultMint() {
@@ -158,7 +110,7 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
     try {
       for (; ; ) {
         fetchAccounts();
-        if (feePayerBalanceLow()) {
+        if (context.feePayerBalanceLow()) {
           awaitChange();
           continue;
         }
@@ -171,29 +123,6 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
     }
   }
 
-  protected final void backoff(final long failureCount) throws InterruptedException {
-    NANOSECONDS.sleep(Math.max(minCheckStateDelayNanos, backoff.delay(failureCount, NANOSECONDS)));
-  }
-
-  protected final void notifyLowBalance(final BigInteger lamports, final boolean notify) {
-    final var sol = LamportDecimal.toBigDecimal(lamports).stripTrailingZeros();
-    final var msg = String.format("""
-            {
-             "event": "Low Fee Payer Balance",
-             "key": "%s",
-             "balance": "%s"
-            }
-            """,
-        feePayerKey.toBase58(),
-        sol.toPlainString()
-    );
-    logger.log(WARNING, msg);
-    if (notify) {
-      for (final var stringCompletableFuture : notifyClient.postMsg(msg)) {
-        logger.log(INFO, stringCompletableFuture.join());
-      }
-    }
-  }
 
   protected final void wakeUp() {
     lock.lock();
@@ -205,6 +134,8 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
   }
 
   protected final void awaitChange(final long delayNanos) throws InterruptedException {
+    final long minCheckStateDelayNanos = context.minCheckStateDelayNanos();
+    final long maxCheckStateDelayNanos = context.maxCheckStateDelayNanos();
     lock.lock();
     try {
       final long remainingNanos = stateChange.awaitNanos(Math.min(Math.max(delayNanos, minCheckStateDelayNanos), maxCheckStateDelayNanos));
@@ -218,11 +149,11 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
   }
 
   protected final void awaitChange() throws InterruptedException {
-    awaitChange(maxCheckStateDelayNanos);
+    awaitChange(context.maxCheckStateDelayNanos());
   }
 
   protected final void fetchAccounts() {
-    final var accountsNeeded = rpcCaller.courteousGet(
+    final var accountsNeeded = context.rpcCaller().courteousGet(
         rpcClient -> rpcClient.getAccounts(accountsNeededList),
         "rpcClient::getPositionRelatedAccounts"
     );
@@ -237,13 +168,13 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
   protected final long redemptionAvailableIn(final RedemptionSummary redemptionSummary) {
     final var softFulfillable = redemptionSummary.softFulfillable();
     if (softFulfillable.isEmpty()) {
-      return maxCheckStateDelayNanos;
+      return context.maxCheckStateDelayNanos();
     }
     final long availableAt = softFulfillable.getFirst().createdAt() + redeemNoticePeriod;
     if (redeemWindowInSeconds) {
       return SECONDS.toNanos(availableAt - redemptionSummary.epochSeconds());
     } else {
-      final long millisPerSlot = epochInfoService.epochInfo().medianMillisPerSlot();
+      final long millisPerSlot = context.medianMillisPerSlot();
       return MILLISECONDS.toNanos((availableAt - redemptionSummary.slot()) * millisPerSlot);
     }
   }
@@ -272,30 +203,8 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
     } else {
       fulfillInstructions = new ArrayList<>(this.fulFillInstructions);
     }
-    return instructionProcessor.processInstructions(
-        vaultName + " Fulfill Redemptions",
-        fulfillInstructions,
-        transactionFactory
-    );
+    return context.processInstructions(vaultName + " Fulfill Redemptions", fulfillInstructions);
   }
 
-  private boolean feePayerBalanceLow() throws InterruptedException {
-    final var feePayerAccountInfo = accountsNeededMap.get(feePayerKey);
-    final var feePayerBalance = feePayerAccountInfo.amount();
-    if (feePayerBalance.compareTo(minFeePayerBalance) < 0) {
-      notifyLowBalance(feePayerBalance, notifyLowBalance);
-      if (notifyLowBalance) {
-        notifyLowBalance = false;
-      }
-      return true;
-    } else if (feePayerBalance.compareTo(warnFeePayerBalance) < 0) {
-      notifyLowBalance(feePayerBalance, notifyLowBalance);
-      if (notifyLowBalance) {
-        notifyLowBalance = false;
-      }
-    } else if (!notifyLowBalance) {
-      notifyLowBalance = true;
-    }
-    return false;
-  }
+
 }

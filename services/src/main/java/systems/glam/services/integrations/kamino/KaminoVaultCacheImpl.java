@@ -1,4 +1,4 @@
-package systems.glam.services.kamino;
+package systems.glam.services.integrations.kamino;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.lookup.AddressLookupTable;

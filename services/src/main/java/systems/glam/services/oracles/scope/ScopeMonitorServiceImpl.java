@@ -5,6 +5,7 @@ import software.sava.idl.clients.kamino.lend.gen.types.Reserve;
 import software.sava.idl.clients.kamino.scope.entries.*;
 import software.sava.idl.clients.kamino.scope.entries.Deprecated;
 import software.sava.idl.clients.kamino.scope.gen.types.Configuration;
+import software.sava.idl.clients.kamino.scope.gen.types.EmaType;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleMappings;
 import software.sava.rpc.json.http.client.SolanaRpcClient;
 import software.sava.rpc.json.http.response.AccountInfo;
@@ -555,6 +556,12 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
     }
   }
 
+  private static String toJson(final Set<EmaType> emaTypes) {
+    return emaTypes == null || emaTypes.isEmpty()
+        ? ""
+        : emaTypes.stream().map(EmaType::name).collect(Collectors.joining("\",\"", ",\n  \"emaTypes\": [\"", "\"]"));
+  }
+
   private static String toJson(final ScopeEntry scopeEntry) {
     if (scopeEntry == null) {
       return null;
@@ -564,11 +571,10 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
         final var prefix = String.format("""
                 {
                   "type": "%s",
-                  "oracle": "%s",
-                  "twapEnabled": %b""",
+                  "oracle": "%s"%s""",
             e.oracleType().name(),
             e.oracle(),
-            e.twapEnabled()
+            toJson(e.emaTypes())
         );
         yield switch (e) {
           case ReferencesEntry re -> {
@@ -680,15 +686,14 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
               {
                 "type": "%s",
                 "oracle": "%s",
-                "twapSource": %s,
-                "twapEnabled": %b,
+                "twapSource": %s,%s
                 "refPrice": %s,
                 "generic": "%s"
               }""",
           notYetSupported.oracleType().name(),
           notYetSupported.priceAccount(),
           toJson(notYetSupported.twapSource()),
-          notYetSupported.twapEnabled(),
+          toJson(notYetSupported.emaTypes()),
           toJson(notYetSupported.refPrice()),
           Base64.getEncoder().encodeToString(notYetSupported.generic())
       );

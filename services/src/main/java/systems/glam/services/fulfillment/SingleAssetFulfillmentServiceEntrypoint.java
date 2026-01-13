@@ -1,6 +1,7 @@
 package systems.glam.services.fulfillment;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.tx.Transaction;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.core.config.ServiceConfigUtil;
@@ -12,6 +13,7 @@ import software.sava.services.solana.transactions.TxMonitorService;
 import software.sava.services.solana.websocket.WebSocketManager;
 import systems.glam.sdk.*;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintConstants;
+import systems.glam.services.ServiceContextImpl;
 import systems.glam.services.execution.InstructionProcessor;
 import systems.glam.services.fulfillment.config.FulfillmentServiceConfig;
 import systems.glam.services.tokens.MintContext;
@@ -205,17 +207,25 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
 
     final var baseAssetMintContext = MintContext.createContext(glamAccountClient, baseAssetAccountFuture.join());
 
-    final var fulfillmentService = FulfillmentService.createSingleAssetService(
+    final var serviceContext = new ServiceContextImpl(
+        serviceKey,
+        delegateServiceConfig.warnFeePayerBalance(), delegateServiceConfig.minFeePayerBalance(),
+        delegateServiceConfig.minCheckStateDelay(), delegateServiceConfig.maxCheckStateDelay(),
+        delegateServiceConfig.serviceBackoff(),
         epochInfoService,
+        solanaAccounts, glamAccounts,
+        serviceConfig.delegateServiceConfig().notifyClient(),
+        rpcCaller,
+        instructionProcessor,
+        instructions -> Transaction.createTx(serviceKey, instructions)
+    );
+
+    final var fulfillmentService = FulfillmentService.createSingleAssetService(
+        serviceContext,
         serviceConfig.softRedeem(),
         stateAccountClient,
         vaultMintContext,
-        baseAssetMintContext,
-        rpcCaller,
-        instructionProcessor,
-        delegateServiceConfig.warnFeePayerBalance(), delegateServiceConfig.minFeePayerBalance(),
-        delegateServiceConfig.minCheckStateDelay(), delegateServiceConfig.maxCheckStateDelay(),
-        delegateServiceConfig.serviceBackoff()
+        baseAssetMintContext
     );
 
     webSocketConsumers.add(fulfillmentService::subscribe);
