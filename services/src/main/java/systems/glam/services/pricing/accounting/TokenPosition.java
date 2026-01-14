@@ -3,7 +3,9 @@ package systems.glam.services.pricing.accounting;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.tx.Instruction;
 import software.sava.rpc.json.http.response.AccountInfo;
+import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
+import systems.glam.services.pricing.PositionReport;
 import systems.glam.services.tokens.MintContext;
 
 import java.util.Map;
@@ -30,6 +32,14 @@ public final class TokenPosition extends BasePosition {
                                       final PublicKey baseAssetUSDOracleKey,
                                       final Map<PublicKey, AccountInfo<byte[]>> accountMap,
                                       final Set<PublicKey> returnAccounts) {
+    return null;
+  }
+
+  @Override
+  public PositionReport positionReport(final PublicKey mintProgram,
+                                       final int baseAssetDecimals,
+                                       final Map<PublicKey, AccountInfo<byte[]>> accountMap,
+                                       final InnerInstructions innerInstructions) {
     return null;
   }
 

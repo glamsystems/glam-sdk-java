@@ -30,7 +30,7 @@ import static systems.glam.services.execution.FormatUtil.formatSimulation;
 public final class TxSimulationPriceGroup implements PriceGroup {
 
   private static final System.Logger logger = System.getLogger(TxSimulationPriceGroup.class.getName());
-  private static final Instruction MAIN_NET_CU_LIMIT_SIMULATION = setComputeUnitLimit(MAIN_NET.invokedComputeBudgetProgram(), MAX_COMPUTE_BUDGET);
+  public static final Instruction MAIN_NET_CU_LIMIT_SIMULATION = setComputeUnitLimit(MAIN_NET.invokedComputeBudgetProgram(), MAX_COMPUTE_BUDGET);
 
   private final NotifyClient notifyClient;
   private final RpcCaller rpcCaller;

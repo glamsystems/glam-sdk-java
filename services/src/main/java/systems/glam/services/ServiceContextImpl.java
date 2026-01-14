@@ -16,6 +16,7 @@ import systems.glam.services.execution.InstructionProcessor;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -29,6 +30,7 @@ public final class ServiceContextImpl implements ServiceContext {
   private final BigInteger minFeePayerBalance;
   private final long minCheckStateDelayNanos;
   private final long maxCheckStateDelayNanos;
+  private final ExecutorService taskExecutor;
   private final Backoff backoff;
   private final EpochInfoService epochInfoService;
   private final SolanaAccounts solanaAccounts;
@@ -41,6 +43,7 @@ public final class ServiceContextImpl implements ServiceContext {
   public ServiceContextImpl(final PublicKey serviceKey,
                             final BigInteger warnFeePayerBalance, final BigInteger minFeePayerBalance,
                             final Duration minCheckStateDelay, final Duration maxCheckStateDelay,
+                            final ExecutorService taskExecutor,
                             final Backoff backoff,
                             final EpochInfoService epochInfoService,
                             final SolanaAccounts solanaAccounts,
@@ -54,6 +57,7 @@ public final class ServiceContextImpl implements ServiceContext {
     this.minFeePayerBalance = minFeePayerBalance;
     this.minCheckStateDelayNanos = minCheckStateDelay.toNanos();
     this.maxCheckStateDelayNanos = maxCheckStateDelay.toNanos();
+    this.taskExecutor = taskExecutor;
     this.backoff = backoff;
     this.epochInfoService = epochInfoService;
     this.solanaAccounts = solanaAccounts;
@@ -97,6 +101,11 @@ public final class ServiceContextImpl implements ServiceContext {
   @Override
   public long medianMillisPerSlot() {
     return epochInfoService.epochInfo().medianMillisPerSlot();
+  }
+
+  @Override
+  public void executeTask(final Runnable task) {
+    taskExecutor.execute(task);
   }
 
   @Override

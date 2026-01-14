@@ -18,16 +18,18 @@ public interface ServiceContext {
 
   PublicKey token2022Program();
 
-  boolean isTokenAccount(AccountInfo<byte[]> accountInfo);
+  boolean isTokenAccount(final AccountInfo<byte[]> accountInfo);
 
   PublicKey glamMintProgram();
 
   long medianMillisPerSlot();
 
-  void backoff(long failureCount) throws InterruptedException;
+  void executeTask(final Runnable task);
 
-  boolean processInstructions(String logContext,
-                              List<Instruction> instructions) throws InterruptedException;
+  void backoff(final long failureCount) throws InterruptedException;
+
+  boolean processInstructions(final String logContext,
+                              final List<Instruction> instructions) throws InterruptedException;
 
   boolean feePayerBalanceLow();
 

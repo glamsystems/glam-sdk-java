@@ -9,7 +9,10 @@ import software.sava.idl.clients.drift.gen.types.PerpPosition;
 import software.sava.idl.clients.drift.gen.types.SpotPosition;
 import software.sava.idl.clients.drift.gen.types.User;
 import software.sava.rpc.json.http.response.AccountInfo;
+import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
+import systems.glam.services.pricing.PositionReport;
+import systems.glam.services.pricing.PositionReportRecord;
 import systems.glam.services.pricing.accounting.Position;
 
 import java.util.ArrayList;
@@ -38,8 +41,9 @@ public final class DriftUserPosition implements Position {
     userAccounts.put(userKey, AccountMeta.createRead(userKey));
   }
 
-  public void removeUserAccount(final PublicKey userKey) {
-    userAccounts.remove(userKey);
+  @Override
+  public void removeAccount(final PublicKey account) {
+    userAccounts.remove(account);
   }
 
   @Override
@@ -113,5 +117,17 @@ public final class DriftUserPosition implements Position {
     } else {
       return null;
     }
+  }
+
+
+  @Override
+  public PositionReport positionReport(final PublicKey mintProgram,
+                                       final int baseAssetDecimals,
+                                       final Map<PublicKey, AccountInfo<byte[]>> accountMap,
+                                       final InnerInstructions innerInstructions) {
+    final var positionAmount = Position.parseAnchorEvent(innerInstructions, mintProgram, baseAssetDecimals);
+    // TODO: Calculate position value independently
+    // TODO: Report all sub-positions, e.g. each spot and perp position.
+    return new PositionReportRecord(positionAmount);
   }
 }

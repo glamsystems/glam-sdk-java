@@ -211,6 +211,7 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
         serviceKey,
         delegateServiceConfig.warnFeePayerBalance(), delegateServiceConfig.minFeePayerBalance(),
         delegateServiceConfig.minCheckStateDelay(), delegateServiceConfig.maxCheckStateDelay(),
+        taskExecutor,
         delegateServiceConfig.serviceBackoff(),
         epochInfoService,
         solanaAccounts, glamAccounts,

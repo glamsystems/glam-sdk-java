@@ -7,7 +7,6 @@ import software.sava.idl.clients.spl.token.gen.types.Mint;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.StateAccountClient;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.fulfillment.accounting.RedemptionSummary;
 import systems.glam.services.tokens.MintContext;
@@ -20,13 +19,13 @@ import java.util.function.Consumer;
 import static java.lang.System.Logger.Level.WARNING;
 import static java.util.concurrent.TimeUnit.*;
 
-public abstract class BaseFulfillmentService implements FulfillmentService, Consumer<AccountInfo<byte[]>> {
+public abstract class BaseFulfillmentService extends BaseDelegateService
+    implements FulfillmentService, Consumer<AccountInfo<byte[]>> {
 
   protected static final System.Logger logger = System.getLogger(FulfillmentService.class.getName());
 
-  protected final ServiceContext context;
-  protected final GlamAccountClient glamAccountClient;
-  protected final String vaultName;
+  protected final List<PublicKey> accountsNeededList;
+  protected final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap;
   protected final boolean softRedeem;
   protected final long redeemNoticePeriod;
   protected final boolean redeemWindowInSeconds;
@@ -35,8 +34,6 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
   protected final boolean isSoftRedeem;
   protected final PublicKey requestQueueKey;
   protected final MintContext vaultMintContext;
-  protected final List<PublicKey> accountsNeededList;
-  protected final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap;
   protected final List<Instruction> fulFillInstructions;
   protected final ReentrantLock lock;
   protected final Condition stateChange;
@@ -51,10 +48,8 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
                                    final MintContext vaultMintContext,
                                    final List<PublicKey> accountsNeededList,
                                    final List<Instruction> fulFillInstructions) {
-    this.context = context;
-    this.glamAccountClient = glamAccountClient;
+    super(context, glamAccountClient, stateAccountClient.name());
     this.baseAssetVaultAta = baseAssetVaultAta;
-    this.vaultName = stateAccountClient.name();
     this.isSoftRedeem = stateAccountClient.softRedeem();
     this.redeemNoticePeriod = stateAccountClient.redeemNoticePeriod();
     this.redeemWindowInSeconds = stateAccountClient.redeemWindowInSeconds();
@@ -69,10 +64,19 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
     this.stateChange = lock.newCondition();
   }
 
-  protected final Clock clock() {
-    final var clockSysVar = context.clockSysVar();
-    final var clockAccount = accountsNeededMap.get(clockSysVar);
-    return Clock.read(clockSysVar, clockAccount.data());
+  protected abstract void handleVault() throws InterruptedException;
+
+  protected final void fetchAccounts() {
+    final var accountsNeeded = context.rpcCaller().courteousGet(
+        rpcClient -> rpcClient.getAccounts(accountsNeededList),
+        "rpcClient::getPositionRelatedAccounts"
+    );
+    accountsNeededMap.clear();
+    for (final var accountInfo : accountsNeeded) {
+      if (accountInfo != null) {
+        accountsNeededMap.put(accountInfo.pubKey(), accountInfo);
+      }
+    }
   }
 
   protected final RedemptionSummary redemptionSummary(final Clock clock) {
@@ -85,16 +89,8 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
   }
 
   protected final RedemptionSummary redemptionSummary() {
-    final var clock = clock();
+    final var clock = clock(accountsNeededMap);
     return redemptionSummary(clock);
-  }
-
-  protected final PublicKey stateKey() {
-    return glamAccountClient.vaultAccounts().glamStateKey();
-  }
-
-  protected final StateAccount stateAccount() {
-    return StateAccount.read(accountsNeededMap.get(stateKey()));
   }
 
   protected final Mint vaultMint() {
@@ -102,8 +98,6 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
   }
 
   protected long failureCount = 0;
-
-  protected abstract void handleVault() throws InterruptedException;
 
   @Override
   public final void run() {
@@ -150,19 +144,6 @@ public abstract class BaseFulfillmentService implements FulfillmentService, Cons
 
   protected final void awaitChange() throws InterruptedException {
     awaitChange(context.maxCheckStateDelayNanos());
-  }
-
-  protected final void fetchAccounts() {
-    final var accountsNeeded = context.rpcCaller().courteousGet(
-        rpcClient -> rpcClient.getAccounts(accountsNeededList),
-        "rpcClient::getPositionRelatedAccounts"
-    );
-    accountsNeededMap.clear();
-    for (final var accountInfo : accountsNeeded) {
-      if (accountInfo != null) {
-        accountsNeededMap.put(accountInfo.pubKey(), accountInfo);
-      }
-    }
   }
 
   protected final long redemptionAvailableIn(final RedemptionSummary redemptionSummary) {

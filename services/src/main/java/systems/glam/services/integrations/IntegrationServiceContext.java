@@ -5,9 +5,19 @@ import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import systems.glam.services.fulfillment.drfit.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoVaultCache;
+import systems.glam.services.pricing.RunnableAccountConsumer;
 import systems.glam.services.tokens.MintContext;
 
+import java.util.Collection;
+
 public interface IntegrationServiceContext {
+
+  void queue(final Collection<PublicKey> accounts, final RunnableAccountConsumer callback);
+
+  PublicKey solUSDOracleKey();
+
+  PublicKey baseAssetUSDOracleKey();
+
   DriftMarketCache driftMarketCache();
 
   DriftAccounts driftAccounts();
@@ -24,5 +34,5 @@ public interface IntegrationServiceContext {
 
   PublicKey kVaultsProgram();
 
-  MintContext mintContext(PublicKey mint);
+  MintContext mintContext(final PublicKey mint);
 }
