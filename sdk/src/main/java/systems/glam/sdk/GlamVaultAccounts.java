@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import static software.sava.core.accounts.lookup.AddressLookupTable.LOOKUP_TABLE_META_SIZE;
-import static systems.glam.sdk.GlamVaultAccountsRecord.ACTIVE_FILTER;
+import static systems.glam.sdk.GlamVaultAccountsRecord.ACTIVE_TABLE_FILTER;
 
 public interface GlamVaultAccounts {
 
@@ -124,7 +124,7 @@ public interface GlamVaultAccounts {
   static List<Filter> activeVaultTableFilters(final PublicKey stateKey,
                                               final PublicKey vaultKey,
                                               final PublicKey glamConfigProgramKey) {
-    return List.of(ACTIVE_FILTER, vaultTableFilter(stateKey, vaultKey, glamConfigProgramKey));
+    return List.of(ACTIVE_TABLE_FILTER, vaultTableFilter(stateKey, vaultKey, glamConfigProgramKey));
   }
 
   static Filter deriveVaulKeyTableFilter(final PublicKey glamProgramKey,
@@ -137,7 +137,7 @@ public interface GlamVaultAccounts {
   static List<Filter> deriveVaultActiveTableFilters(final PublicKey glamProgramKey,
                                                     final PublicKey glamConfigProgramKey,
                                                     final PublicKey stateKey) {
-    return List.of(ACTIVE_FILTER, deriveVaulKeyTableFilter(glamProgramKey, glamConfigProgramKey, stateKey));
+    return List.of(ACTIVE_TABLE_FILTER, deriveVaulKeyTableFilter(glamProgramKey, glamConfigProgramKey, stateKey));
   }
 
   default Filter vaultTableFilter() {
@@ -147,6 +147,6 @@ public interface GlamVaultAccounts {
   }
 
   default List<Filter> activeVaultTableFilters() {
-    return List.of(ACTIVE_FILTER, vaultTableFilter());
+    return List.of(ACTIVE_TABLE_FILTER, vaultTableFilter());
   }
 }

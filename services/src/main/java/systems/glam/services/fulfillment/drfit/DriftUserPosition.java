@@ -51,8 +51,8 @@ public final class DriftUserPosition implements Position {
     keys.addAll(userAccounts.keySet());
   }
 
-  private static void addAccounts(final Map<PublicKey, AccountMeta> extraAccounts,
-                                  final DriftMarketContext marketContext) {
+  private static void addExtraAccounts(final Map<PublicKey, AccountMeta> extraAccounts,
+                                       final DriftMarketContext marketContext) {
     final var readOracle = marketContext.readOracle();
     extraAccounts.put(readOracle.publicKey(), readOracle);
     final var readMarket = marketContext.readMarket();
@@ -83,7 +83,7 @@ public final class DriftUserPosition implements Position {
           if (marketContext == null) {
             ++missingMarkets;
           } else {
-            addAccounts(extraAccountsMap, marketContext);
+            addExtraAccounts(extraAccountsMap, marketContext);
           }
         }
       }
@@ -95,7 +95,7 @@ public final class DriftUserPosition implements Position {
           if (marketContext == null) {
             ++missingMarkets;
           } else {
-            addAccounts(extraAccountsMap, marketContext);
+            addExtraAccounts(extraAccountsMap, marketContext);
           }
         }
       }

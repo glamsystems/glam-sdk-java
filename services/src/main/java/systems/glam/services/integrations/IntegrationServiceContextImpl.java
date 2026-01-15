@@ -6,17 +6,20 @@ import software.sava.idl.clients.kamino.KaminoAccounts;
 import systems.glam.services.fulfillment.drfit.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoVaultCache;
 import systems.glam.services.pricing.AccountFetcher;
+import systems.glam.services.pricing.IntegTableCache;
 import systems.glam.services.pricing.MintCache;
 import systems.glam.services.pricing.RunnableAccountConsumer;
 import systems.glam.services.tokens.MintContext;
 
 import java.util.Collection;
+import java.util.Set;
 
 final class IntegrationServiceContextImpl implements IntegrationServiceContext {
 
   private final PublicKey solUSDOracleKey;
   private final PublicKey baseAssetUSDOracleKey;
   private final MintCache mintContextMap;
+  private final IntegTableCache integTableCache;
   private final AccountFetcher accountFetcher;
   private final DriftAccounts driftAccounts;
   private final DriftMarketCache driftMarketCache;
@@ -26,6 +29,7 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
   IntegrationServiceContextImpl(final PublicKey solUSDOracleKey,
                                 final PublicKey baseAssetUSDOracleKey,
                                 final MintCache mintContextMap,
+                                final IntegTableCache integTableCache,
                                 final AccountFetcher accountFetcher,
                                 final DriftAccounts driftAccounts,
                                 final DriftMarketCache driftMarketCache,
@@ -34,6 +38,7 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
     this.solUSDOracleKey = solUSDOracleKey;
     this.baseAssetUSDOracleKey = baseAssetUSDOracleKey;
     this.mintContextMap = mintContextMap;
+    this.integTableCache = integTableCache;
     this.accountFetcher = accountFetcher;
     this.driftAccounts = driftAccounts;
     this.driftMarketCache = driftMarketCache;
@@ -85,6 +90,11 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
   }
 
   @Override
+  public Set<PublicKey> kaminoTableKeys() {
+    return Set.of();
+  }
+
+  @Override
   public PublicKey kLendProgram() {
     return kaminoAccounts.kLendProgram();
   }
@@ -97,5 +107,10 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
   @Override
   public MintContext mintContext(final PublicKey mint) {
     return mintContextMap.get(mint);
+  }
+
+  @Override
+  public IntegTableCache integTableCache() {
+    return integTableCache;
   }
 }

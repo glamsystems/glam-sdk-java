@@ -15,13 +15,13 @@ public record GlamVaultAccountsRecord(GlamAccounts glamAccounts,
                                       AccountMeta readVault,
                                       AccountMeta writeVault) implements GlamVaultAccounts {
 
-  static final Filter ACTIVE_FILTER;
+  static final Filter ACTIVE_TABLE_FILTER;
 
   static {
     final byte[] notDeActivated = new byte[Integer.BYTES + Long.BYTES];
     ByteUtil.putInt32LE(notDeActivated, 0, 1);
     ByteUtil.putInt64LE(notDeActivated, Integer.BYTES, -1);
-    ACTIVE_FILTER = Filter.createMemCompFilter(0, notDeActivated);
+    ACTIVE_TABLE_FILTER = Filter.createMemCompFilter(0, notDeActivated);
   }
 
   @Override
