@@ -20,6 +20,15 @@ public record PendingRequest(PublicKey user,
   public static final int BYTES = 72;
   public static final int RESERVED_LEN = 6;
 
+  public static final int USER_OFFSET = 0;
+  public static final int INCOMING_OFFSET = 32;
+  public static final int OUTGOING_OFFSET = 40;
+  public static final int CREATED_AT_OFFSET = 48;
+  public static final int FULFILLED_AT_OFFSET = 56;
+  public static final int TIME_UNIT_OFFSET = 64;
+  public static final int REQUEST_TYPE_OFFSET = 65;
+  public static final int RESERVED_OFFSET = 66;
+
   public static PendingRequest read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

@@ -8,6 +8,8 @@ import software.sava.idl.clients.core.gen.SerDeUtil;
 public record OracleConfigs(short[][] maxAgesSeconds, byte[] padding) implements SerDe {
 
   public static final int PADDING_LEN = 12;
+  public static final int MAX_AGES_SECONDS_OFFSET = 0;
+
   public static OracleConfigs read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

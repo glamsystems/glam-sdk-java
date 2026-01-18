@@ -14,6 +14,8 @@ public record AumRecord(Discriminator discriminator, BigInteger baseAssetAmount)
   public static final int BYTES = 24;
   public static final Discriminator DISCRIMINATOR = toDiscriminator(162, 116, 55, 29, 223, 230, 239, 205);
 
+  public static final int BASE_ASSET_AMOUNT_OFFSET = 8;
+
   public static AumRecord read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

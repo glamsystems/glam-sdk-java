@@ -21,6 +21,14 @@ public record FeeParams(int yearInSeconds,
 
   public static final int BYTES = 76;
 
+  public static final int YEAR_IN_SECONDS_OFFSET = 0;
+  public static final int PA_HIGH_WATER_MARK_OFFSET = 4;
+  public static final int PA_LAST_NAV_OFFSET = 20;
+  public static final int LAST_AUM_OFFSET = 36;
+  public static final int LAST_PERFORMANCE_FEE_CRYSTALLIZED_OFFSET = 52;
+  public static final int LAST_MANAGEMENT_FEE_CRYSTALLIZED_OFFSET = 60;
+  public static final int LAST_PROTOCOL_FEE_CRYSTALLIZED_OFFSET = 68;
+
   public static FeeParams read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

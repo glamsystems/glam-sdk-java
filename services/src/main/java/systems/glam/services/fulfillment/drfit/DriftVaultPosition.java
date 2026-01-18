@@ -6,45 +6,46 @@ import software.sava.idl.clients.drift.vaults.DriftVaultsProgramClient;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
+import systems.glam.services.integrations.IntegrationServiceContext;
+import systems.glam.services.pricing.MinStateAccount;
 import systems.glam.services.pricing.PositionReport;
-import systems.glam.services.pricing.accounting.BasePosition;
-import systems.glam.services.tokens.MintContext;
+import systems.glam.services.pricing.accounting.Position;
 
 import java.util.Map;
 import java.util.Set;
 
-public final class DriftVaultPosition extends BasePosition {
+public final class DriftVaultPosition implements Position {
 
   private final DriftVaultsProgramClient driftVaultClient;
   private final PublicKey vaultKey;
-  private final DriftUserPosition driftUserPosition;
+  private final DriftUsersPosition driftUsersPosition;
   private final PublicKey vaultDepositorKey;
 
-  public DriftVaultPosition(final MintContext mintContext,
-                            final GlamAccountClient glamClient,
-                            final DriftVaultsProgramClient driftVaultClient,
+  public DriftVaultPosition(final DriftVaultsProgramClient driftVaultClient,
                             final PublicKey vaultKey,
-                            final DriftUserPosition driftUserPosition,
+                            final DriftUsersPosition driftUsersPosition,
                             final PublicKey vaultDepositorKey) {
-    super(mintContext, glamClient);
     this.driftVaultClient = driftVaultClient;
     this.vaultKey = vaultKey;
-    this.driftUserPosition = driftUserPosition;
+    this.driftUsersPosition = driftUsersPosition;
     this.vaultDepositorKey = vaultDepositorKey;
+  }
+
+  @Override
+  public void removeAccount(final PublicKey account) {
+
   }
 
   @Override
   public void accountsForPriceInstruction(final Set<PublicKey> keys) {
     keys.add(vaultKey);
     keys.add(vaultDepositorKey);
-    driftUserPosition.accountsForPriceInstruction(keys);
+    driftUsersPosition.accountsForPriceInstruction(keys);
   }
 
   @Override
-  public Instruction priceInstruction(final GlamAccountClient glamAccountClient,
-                                      final PublicKey solUSDOracleKey,
-                                      final PublicKey baseAssetUSDOracleKey,
-                                      final Map<PublicKey, AccountInfo<byte[]>> accountMap,
+  public Instruction priceInstruction(final IntegrationServiceContext serviceContext, final GlamAccountClient glamAccountClient,
+                                      final PublicKey baseAssetUSDOracleKey, final MinStateAccount stateAccount, final Map<PublicKey, AccountInfo<byte[]>> accountMap,
                                       final Set<PublicKey> returnAccounts) {
     return null;
   }

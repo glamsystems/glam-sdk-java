@@ -131,6 +131,8 @@ public final class ExtKaminoProgram {
 
     public static final int BYTES = 16;
 
+    public static final int REWARD_INDEX_OFFSET = 8;
+
     public static FarmsHarvestRewardIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -298,6 +300,8 @@ public final class ExtKaminoProgram {
 
     public static final int BYTES = 16;
 
+    public static final int AMOUNT_OFFSET = 8;
+
     public static FarmsStakeIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -394,6 +398,8 @@ public final class ExtKaminoProgram {
     }
 
     public static final int BYTES = 24;
+
+    public static final int AMOUNT_OFFSET = 8;
 
     public static FarmsUnstakeIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -605,6 +611,8 @@ public final class ExtKaminoProgram {
 
     public static final int BYTES = 16;
 
+    public static final int LIQUIDITY_AMOUNT_OFFSET = 8;
+
     public static LendingBorrowObligationLiquidityV2IxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -754,6 +762,8 @@ public final class ExtKaminoProgram {
 
     public static final int BYTES = 16;
 
+    public static final int LIQUIDITY_AMOUNT_OFFSET = 8;
+
     public static LendingDepositReserveLiquidityAndObligationCollateralV2IxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -861,6 +871,8 @@ public final class ExtKaminoProgram {
     }
 
     public static final int BYTES = 10;
+
+    public static final int ARGS_OFFSET = 8;
 
     public static LendingInitObligationIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -977,6 +989,8 @@ public final class ExtKaminoProgram {
 
     public static final int BYTES = 9;
 
+    public static final int MODE_OFFSET = 8;
+
     public static LendingInitObligationFarmsForReserveIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -1074,6 +1088,8 @@ public final class ExtKaminoProgram {
     }
 
     public static final int BYTES = 40;
+
+    public static final int USER_LOOKUP_TABLE_OFFSET = 8;
 
     public static LendingInitUserMetadataIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1207,6 +1223,8 @@ public final class ExtKaminoProgram {
     }
 
     public static final int BYTES = 16;
+
+    public static final int LIQUIDITY_AMOUNT_OFFSET = 8;
 
     public static LendingRepayObligationLiquidityV2IxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1357,6 +1375,8 @@ public final class ExtKaminoProgram {
 
     public static final int BYTES = 16;
 
+    public static final int COLLATERAL_AMOUNT_OFFSET = 8;
+
     public static LendingWithdrawObligationCollateralAndRedeemReserveCollateralV2IxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -1422,6 +1442,8 @@ public final class ExtKaminoProgram {
       return read(instruction.data(), instruction.offset());
     }
 
+    public static final int POLICY_OFFSET = 8;
+
     public static SetLendingPolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -1485,6 +1507,8 @@ public final class ExtKaminoProgram {
     public static SetVaultsPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
+
+    public static final int POLICY_OFFSET = 8;
 
     public static SetVaultsPolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1615,6 +1639,8 @@ public final class ExtKaminoProgram {
     }
 
     public static final int BYTES = 16;
+
+    public static final int MAX_AMOUNT_OFFSET = 8;
 
     public static VaultsDepositIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1790,6 +1816,8 @@ public final class ExtKaminoProgram {
     }
 
     public static final int BYTES = 16;
+
+    public static final int SHARES_AMOUNT_OFFSET = 8;
 
     public static VaultsWithdrawIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {

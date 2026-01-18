@@ -4,6 +4,9 @@ import software.sava.idl.clients.core.gen.SerDe;
 
 public record EngineField(EngineFieldName name, EngineFieldValue value) implements SerDe {
 
+  public static final int NAME_OFFSET = 0;
+  public static final int VALUE_OFFSET = 1;
+
   public static EngineField read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

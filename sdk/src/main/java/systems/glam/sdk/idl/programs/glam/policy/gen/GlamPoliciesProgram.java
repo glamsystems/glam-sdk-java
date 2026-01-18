@@ -155,6 +155,8 @@ public final class GlamPoliciesProgram {
 
     public static final int BYTES = 16;
 
+    public static final int LOCKED_UNTIL_TS_OFFSET = 8;
+
     public static CreatePolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -238,6 +240,8 @@ public final class GlamPoliciesProgram {
 
     public static final int BYTES = 16;
 
+    public static final int AMOUNT_OFFSET = 8;
+
     public static ExecuteIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -310,6 +314,8 @@ public final class GlamPoliciesProgram {
     public static InitializeExtraMetasAccountIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
+
+    public static final int METAS_OFFSET = 8;
 
     public static InitializeExtraMetasAccountIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {

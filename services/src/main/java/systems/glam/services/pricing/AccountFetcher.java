@@ -28,6 +28,4 @@ public interface AccountFetcher extends Runnable {
   default void queue(final PublicKey account, final AccountConsumer callback) {
     queue(List.of(account), callback);
   }
-
-  void queue(final Collection<PublicKey> accounts, final RunnableAccountConsumer callback);
 }

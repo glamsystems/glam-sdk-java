@@ -8,7 +8,7 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.services.ServiceContext;
-import systems.glam.services.fulfillment.MultiAssetPriceService;
+import systems.glam.services.fulfillment.VaultPriceService;
 import systems.glam.services.integrations.IntegrationServiceContext;
 
 import java.io.IOException;
@@ -33,7 +33,7 @@ final class PriceVaultsExecutorImpl implements PriceVaultsExecutor, Consumer<Acc
   private final Path vaultTableDirectory;
   private final List<Filter> tableFilters;
   private final AccountFetcher accountFetcher;
-  private final Map<PublicKey, MultiAssetPriceService> priceServicesByState;
+  private final Map<PublicKey, VaultPriceService> priceServicesByState;
   private final Set<PublicKey> unsupportedVaults;
 
   PriceVaultsExecutorImpl(final ServiceContext serviceContext,
@@ -41,7 +41,7 @@ final class PriceVaultsExecutorImpl implements PriceVaultsExecutor, Consumer<Acc
                           final Path vaultStateDirectory,
                           final Path vaultTableDirectory,
                           final AccountFetcher accountFetcher,
-                          final Map<PublicKey, MultiAssetPriceService> priceServicesByState,
+                          final Map<PublicKey, VaultPriceService> priceServicesByState,
                           final Set<PublicKey> unsupportedVaults) {
     this.serviceContext = serviceContext;
     this.integContext = integContext;
@@ -83,13 +83,16 @@ final class PriceVaultsExecutorImpl implements PriceVaultsExecutor, Consumer<Acc
     final var programOwner = accountInfo.owner();
     final var accountKey = accountInfo.pubKey();
     if (programOwner.equals(serviceContext.glamAccounts().protocolProgram())) {
-      final var priceService = priceServicesByState.get(accountKey);
+      var priceService = priceServicesByState.get(accountKey);
       if (priceService == null) {
         if (!unsupportedVaults.contains(accountKey)) {
-          // TODO: Create new service
+          priceService = VaultPriceService.createService(serviceContext, integContext, accountInfo);
+          priceService.init();
+          priceServicesByState.put(accountKey, priceService);
         }
       } else if (!priceService.stateChange(accountInfo)) {
         unsupportedVaults.add(accountKey);
+        priceServicesByState.remove(accountKey);
       }
     } else if (programOwner.equals(serviceContext.solanaAccounts().addressLookupTableProgram())) {
       final byte[] data = accountInfo.data();

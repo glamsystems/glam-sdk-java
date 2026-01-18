@@ -5,29 +5,32 @@ import software.sava.core.tx.Instruction;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
+import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.integrations.kamino.KaminoVaultCache;
+import systems.glam.services.pricing.MinStateAccount;
 import systems.glam.services.pricing.PositionReport;
-import systems.glam.services.pricing.accounting.BasePosition;
-import systems.glam.services.tokens.MintContext;
+import systems.glam.services.pricing.accounting.Position;
 
 import java.util.Map;
 import java.util.Set;
 
-public final class KaminoVaultPosition extends BasePosition {
+public final class KaminoVaultPosition implements Position {
 
   private final PublicKey glamVaultSharesTokenAccount;
   private final KaminoVaultCache kaminoVaultCache;
   private final PublicKey kVaultKey;
 
-  public KaminoVaultPosition(final MintContext mintContext,
-                             final GlamAccountClient glamClient,
-                             final PublicKey glamVaultSharesTokenAccount,
+  public KaminoVaultPosition(final PublicKey glamVaultSharesTokenAccount,
                              final KaminoVaultCache kaminoVaultCache,
                              final PublicKey kVaultKey) {
-    super(mintContext, glamClient);
     this.glamVaultSharesTokenAccount = glamVaultSharesTokenAccount;
     this.kaminoVaultCache = kaminoVaultCache;
     this.kVaultKey = kVaultKey;
+  }
+
+  @Override
+  public void removeAccount(final PublicKey account) {
+
   }
 
   @Override
@@ -37,9 +40,9 @@ public final class KaminoVaultPosition extends BasePosition {
   }
 
   @Override
-  public Instruction priceInstruction(final GlamAccountClient glamAccountClient,
-                                      final PublicKey solUSDOracleKey,
-                                      final PublicKey baseAssetUSDOracleKey,
+  public Instruction priceInstruction(final IntegrationServiceContext serviceContext,
+                                      final GlamAccountClient glamAccountClient,
+                                      final PublicKey baseAssetUSDOracleKey, final MinStateAccount stateAccount,
                                       final Map<PublicKey, AccountInfo<byte[]>> accountMap,
                                       final Set<PublicKey> returnAccounts) {
     return null;

@@ -85,11 +85,6 @@ final class AccountFetcherImpl implements AccountFetcher {
     queue(false, accounts, callback);
   }
 
-  @Override
-  public void queue(final Collection<PublicKey> accounts, final RunnableAccountConsumer callback) {
-    queue(false, accounts, callback);
-  }
-
   private List<PublicKey> createBatchKeys(final int size) {
     final var batchKeys = new PublicKey[size];
     final var iterator = batch.iterator();

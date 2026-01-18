@@ -99,6 +99,9 @@ public final class GlamConfigProgram {
 
     public static final int BYTES = 72;
 
+    public static final int ASSET_OFFSET = 8;
+    public static final int ORACLE_OFFSET = 40;
+
     public static DeleteAssetMetaIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -199,6 +202,12 @@ public final class GlamConfigProgram {
 
     public static final int BYTES = 108;
 
+    public static final int ADMIN_OFFSET = 8;
+    public static final int FEE_AUTHORITY_OFFSET = 40;
+    public static final int REFERRER_OFFSET = 72;
+    public static final int BASE_FEE_BPS_OFFSET = 104;
+    public static final int FLOW_FEE_BPS_OFFSET = 106;
+
     public static InitializeIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -287,6 +296,8 @@ public final class GlamConfigProgram {
 
     public static final int BYTES = 40;
 
+    public static final int NEW_ADMIN_OFFSET = 8;
+
     public static UpdateAdminIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -353,6 +364,9 @@ public final class GlamConfigProgram {
     }
 
     public static final int BYTES = 12;
+
+    public static final int BASE_FEE_BPS_OFFSET = 8;
+    public static final int FLOW_FEE_BPS_OFFSET = 10;
 
     public static UpdateProtocolFeesIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -421,6 +435,8 @@ public final class GlamConfigProgram {
 
     public static final int BYTES = 40;
 
+    public static final int REFERRER_OFFSET = 8;
+
     public static UpdateReferrerIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -487,6 +503,8 @@ public final class GlamConfigProgram {
     }
 
     public static final int BYTES = 80;
+
+    public static final int ASSET_META_OFFSET = 8;
 
     public static UpsertAssetMetaIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {

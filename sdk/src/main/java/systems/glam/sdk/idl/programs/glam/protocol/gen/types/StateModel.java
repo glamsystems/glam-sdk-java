@@ -29,6 +29,8 @@ public record StateModel(AccountType accountType,
                          IntegrationAcl[] integrationAcls,
                          DelegateAcl[] delegateAcls) implements SerDe {
 
+  public static final int ACCOUNT_TYPE_OFFSET = 1;
+
   public static StateModel createRecord(final AccountType accountType,
                                         final byte[] name,
                                         final String uri,

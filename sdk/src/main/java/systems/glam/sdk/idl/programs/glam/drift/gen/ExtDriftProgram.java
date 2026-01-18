@@ -120,6 +120,8 @@ public final class ExtDriftProgram {
       return read(instruction.data(), instruction.offset());
     }
 
+    public static final int MARKET_TYPE_OFFSET = 9;
+
     public static CancelOrdersIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -233,6 +235,8 @@ public final class ExtDriftProgram {
     public static CancelOrdersByIdsIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
+
+    public static final int ORDER_IDS_OFFSET = 8;
 
     public static CancelOrdersByIdsIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -414,6 +418,10 @@ public final class ExtDriftProgram {
 
     public static final int BYTES = 19;
 
+    public static final int MARKET_INDEX_OFFSET = 8;
+    public static final int AMOUNT_OFFSET = 10;
+    public static final int REDUCE_ONLY_OFFSET = 18;
+
     public static DepositIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -522,6 +530,9 @@ public final class ExtDriftProgram {
 
     public static final int BYTES = 42;
     public static final int NAME_LEN = 32;
+
+    public static final int SUB_ACCOUNT_ID_OFFSET = 8;
+    public static final int NAME_OFFSET = 10;
 
     public static InitializeUserIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -676,6 +687,8 @@ public final class ExtDriftProgram {
       return read(instruction.data(), instruction.offset());
     }
 
+    public static final int ORDER_ID_OFFSET = 9;
+
     public static ModifyOrderIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -773,6 +786,8 @@ public final class ExtDriftProgram {
     public static PlaceOrdersIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
+
+    public static final int PARAMS_OFFSET = 8;
 
     public static PlaceOrdersIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -896,6 +911,8 @@ public final class ExtDriftProgram {
       return read(instruction.data(), instruction.offset());
     }
 
+    public static final int POLICY_OFFSET = 8;
+
     public static SetDriftProtocolPolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -959,6 +976,8 @@ public final class ExtDriftProgram {
     public static SetDriftVaultsPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
+
+    public static final int POLICY_OFFSET = 8;
 
     public static SetDriftVaultsPolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1054,6 +1073,8 @@ public final class ExtDriftProgram {
     public static SettleMultiplePnlsIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
+
+    public static final int MARKET_INDEXES_OFFSET = 8;
 
     public static SettleMultiplePnlsIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1152,6 +1173,8 @@ public final class ExtDriftProgram {
 
     public static final int BYTES = 10;
 
+    public static final int MARKET_INDEX_OFFSET = 8;
+
     public static SettlePnlIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -1242,6 +1265,9 @@ public final class ExtDriftProgram {
     }
 
     public static final int BYTES = 14;
+
+    public static final int SUB_ACCOUNT_ID_OFFSET = 8;
+    public static final int MARGIN_RATIO_OFFSET = 10;
 
     public static UpdateUserCustomMarginRatioIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1338,6 +1364,9 @@ public final class ExtDriftProgram {
 
     public static final int BYTES = 42;
 
+    public static final int SUB_ACCOUNT_ID_OFFSET = 8;
+    public static final int DELEGATE_OFFSET = 10;
+
     public static UpdateUserDelegateIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -1433,6 +1462,9 @@ public final class ExtDriftProgram {
 
     public static final int BYTES = 11;
 
+    public static final int SUB_ACCOUNT_ID_OFFSET = 8;
+    public static final int MARGIN_TRADING_ENABLED_OFFSET = 10;
+
     public static UpdateUserMarginTradingEnabledIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -1527,6 +1559,9 @@ public final class ExtDriftProgram {
     }
 
     public static final int BYTES = 11;
+
+    public static final int SUB_ACCOUNT_ID_OFFSET = 8;
+    public static final int POOL_ID_OFFSET = 10;
 
     public static UpdateUserPoolIdIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1716,6 +1751,8 @@ public final class ExtDriftProgram {
 
     public static final int BYTES = 16;
 
+    public static final int AMOUNT_OFFSET = 8;
+
     public static VaultsDepositIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -1872,6 +1909,9 @@ public final class ExtDriftProgram {
     }
 
     public static final int BYTES = 17;
+
+    public static final int WITHDRAW_AMOUNT_OFFSET = 8;
+    public static final int WITHDRAW_UNIT_OFFSET = 16;
 
     public static VaultsRequestWithdrawIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -2092,6 +2132,10 @@ public final class ExtDriftProgram {
     }
 
     public static final int BYTES = 19;
+
+    public static final int MARKET_INDEX_OFFSET = 8;
+    public static final int AMOUNT_OFFSET = 10;
+    public static final int REDUCE_ONLY_OFFSET = 18;
 
     public static WithdrawIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {

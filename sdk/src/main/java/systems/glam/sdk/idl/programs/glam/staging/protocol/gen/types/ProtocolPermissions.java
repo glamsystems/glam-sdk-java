@@ -13,6 +13,9 @@ public record ProtocolPermissions(int protocolBitflag, long permissionsBitmask) 
 
   public static final int BYTES = 10;
 
+  public static final int PROTOCOL_BITFLAG_OFFSET = 0;
+  public static final int PERMISSIONS_BITMASK_OFFSET = 2;
+
   public static ProtocolPermissions read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

@@ -17,6 +17,13 @@ public record MintPolicy(int lockupPeriod,
                          PublicKey[] allowlist,
                          PublicKey[] blocklist) implements SerDe {
 
+  public static final int LOCKUP_PERIOD_OFFSET = 0;
+  public static final int MAX_CAP_OFFSET = 4;
+  public static final int MIN_SUBSCRIPTION_OFFSET = 12;
+  public static final int MIN_REDEMPTION_OFFSET = 20;
+  public static final int RESERVED_OFFSET = 28;
+  public static final int ALLOWLIST_OFFSET = 37;
+
   public static MintPolicy read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

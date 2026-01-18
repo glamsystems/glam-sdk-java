@@ -6,6 +6,9 @@ public record EmergencyUpdateMintArgs(RequestType requestType, boolean setPaused
 
   public static final int BYTES = 2;
 
+  public static final int REQUEST_TYPE_OFFSET = 0;
+  public static final int SET_PAUSED_OFFSET = 1;
+
   public static EmergencyUpdateMintArgs read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

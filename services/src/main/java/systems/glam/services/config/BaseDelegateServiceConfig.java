@@ -31,6 +31,7 @@ import systems.comodal.jsoniter.JsonIterator;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.http.HttpClient;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -46,6 +47,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
                                         SolanaAccounts solanaAccounts,
                                         ChainItemFormatter formatter,
                                         NotifyClient notifyClient,
+                                        Path glamStateAccountCacheDirectory,
                                         TableCacheConfig tableCacheConfig,
                                         RpcCaller rpcCaller,
                                         LoadBalancer<SolanaRpcClient> sendClients,
@@ -68,8 +70,9 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
     private PublicKey glamStateKey;
     private SigningServiceConfig signingServiceConfig;
     private ChainItemFormatter formatter;
-    private TableCacheConfig tableCacheConfig;
     private NotifyClient notifyClient;
+    private Path glamStateAccountCacheDirectory;
+    private TableCacheConfig tableCacheConfig;
     private CallWeights callWeights;
     private Backoff defaultRPCBackoff = DEFAULT_NETWORK_BACKOFF;
     private LoadBalancer<SolanaRpcClient> rpcClients;
@@ -140,6 +143,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
           SolanaAccounts.MAIN_NET,
           formatter,
           notifyClient,
+          glamStateAccountCacheDirectory,
           tableCacheConfig,
           new RpcCaller(taskExecutor, rpcClients, callWeights),
           sendClients,
@@ -177,6 +181,8 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
             DEFAULT_NETWORK_BACKOFF
         );
         this.notifyClient = createNotifyClient(webHookConfigs);
+      } else if (fieldEquals("glamStateAccountCacheDirectory", buf, offset, len)) {
+        glamStateAccountCacheDirectory = Path.of(ji.readString());
       } else if (fieldEquals("tableCache", buf, offset, len)) {
         tableCacheConfig = TableCacheConfig.parse(ji);
       } else if (fieldEquals("rpcCallWeights", buf, offset, len)) {

@@ -15,67 +15,77 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.IxError;
 import software.sava.rpc.json.http.response.TransactionError;
 import systems.glam.sdk.GlamAccountClient;
-import systems.glam.sdk.GlamUtil;
+import systems.glam.sdk.Protocol;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.AumRecord;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.GlamMintEvent;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolError;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.services.ServiceContext;
-import systems.glam.services.fulfillment.drfit.DriftUserPosition;
+import systems.glam.services.fulfillment.drfit.DriftUsersPosition;
 import systems.glam.services.fulfillment.kamino.KaminoVaultPosition;
 import systems.glam.services.integrations.IntegrationServiceContext;
+import systems.glam.services.pricing.AccountConsumer;
+import systems.glam.services.pricing.MinStateAccount;
 import systems.glam.services.pricing.PositionReport;
-import systems.glam.services.pricing.RunnableAccountConsumer;
 import systems.glam.services.pricing.accounting.Position;
-import systems.glam.services.pricing.accounting.TokenPosition;
+import systems.glam.services.pricing.accounting.VaultTokensPosition;
+import systems.glam.services.tokens.MintContext;
 
+import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.lang.System.Logger.Level.WARNING;
 import static systems.glam.services.pricing.accounting.TxSimulationPriceGroup.MAIN_NET_CU_LIMIT_SIMULATION;
 
-public class MultiAssetPriceService extends BaseDelegateService implements RunnableAccountConsumer, VaultPriceService {
+public class MultiAssetPriceService extends BaseDelegateService
+    implements AccountConsumer, VaultPriceService, Runnable {
 
   private static final System.Logger logger = System.getLogger(MultiAssetPriceService.class.getName());
 
   private final IntegrationServiceContext integContext;
+  private final int baseAssetDecimals;
   private final Set<PublicKey> accountsNeededSet;
   private final Map<PublicKey, Position> positions;
+  private final VaultTokensPosition vaultTokensPosition;
+  private final Map<Protocol, Position> protocolPositions;
   private final Instruction validateAUMInstruction;
 
-  private StateAccount previousStateAccount;
+  private final AtomicReference<MinStateAccount> stateAccount;
+  private final AtomicReference<AumTransaction> aumTransaction;
   private volatile Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap;
   private final AtomicReference<LookupTableAccountMeta[]> glamVaultTables;
 
   MultiAssetPriceService(final ServiceContext serviceContext,
                          final IntegrationServiceContext integContext,
+                         final PublicKey baseAssetMint,
+                         final int baseAssetDecimals,
                          final GlamAccountClient glamAccountClient,
-                         final StateAccount stateAccount,
-                         final List<PublicKey> accountsNeededList,
-                         final Map<PublicKey, Position> positions) {
-    super(
-        serviceContext,
-        glamAccountClient,
-        GlamUtil.parseFixLengthString(stateAccount.name())
-    );
+                         final MinStateAccount stateAccount,
+                         final Set<PublicKey> accountsNeededSet) {
+    super(serviceContext, glamAccountClient);
     this.integContext = integContext;
-    this.positions = positions;
-    this.previousStateAccount = stateAccount;
-    this.accountsNeededSet = HashSet.newHashSet(accountsNeededList.size());
-    this.accountsNeededSet.addAll(accountsNeededList);
+    this.baseAssetDecimals = baseAssetDecimals;
+    this.accountsNeededSet = accountsNeededSet;
+    this.positions = HashMap.newHashMap(stateAccount.numAccounts());
+    this.vaultTokensPosition = new VaultTokensPosition(baseAssetMint, stateAccount.assets().length);
+    this.protocolPositions = new EnumMap<>(Protocol.class);
+    this.stateAccount = new AtomicReference<>(stateAccount);
+    this.aumTransaction = new AtomicReference<>(null);
     this.validateAUMInstruction = glamAccountClient.validateAum(true);
     this.glamVaultTables = new AtomicReference<>(null);
   }
 
-  enum ChangeState {
+  enum StateChange {
     NO_CHANGE,
     ACCOUNTS_NEEDED,
     UNSUPPORTED
   }
 
-  private ChangeState createPosition(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap,
+  private StateChange createPosition(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap,
                                      final PublicKey externalAccount) {
     final var accountInfo = accountsNeededMap.get(externalAccount);
     if (context.isTokenAccount(accountInfo)) {
@@ -90,12 +100,13 @@ public class MultiAssetPriceService extends BaseDelegateService implements Runna
         return createKaminoLendPosition(accountInfo);
       } else {
         logger.log(WARNING, "Unsupported integration program: {0}", programOwner);
-        return ChangeState.UNSUPPORTED;
+        return StateChange.UNSUPPORTED;
       }
     }
   }
 
-  private LookupTableAccountMeta[] createTableMetaArray(final StateAccount stateAccount) {
+  private LookupTableAccountMeta[] createTableMetaArray(final MinStateAccount stateAccount,
+                                                        final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap) {
     int numKVaults = 0;
     for (final var externalAccount : stateAccount.externalPositions()) {
       final var accountInfo = accountsNeededMap.get(externalAccount);
@@ -141,65 +152,72 @@ public class MultiAssetPriceService extends BaseDelegateService implements Runna
         : tableMetas;
   }
 
-  private ChangeState stateAccountChanged(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap,
-                                          final StateAccount stateAccount) {
-    final var assets = stateAccount.assets();
-
-    Arrays.sort(assets);
-    for (final var previousMint : previousStateAccount.assets()) {
-      if (Arrays.binarySearch(assets, previousMint) < 0) {
-        accountsNeededSet.remove(previousMint);
-        positions.remove(previousMint);
+  private void putTokenPosition(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap,
+                                final PublicKey assetMint) {
+    var mintContext = integContext.mintContext(assetMint);
+    if (mintContext == null) {
+      final var mintAccountInfo = accountsNeededMap.get(assetMint);
+      if (mintAccountInfo == null) {
+        accountsNeededSet.add(assetMint);
+        return;
       }
+      mintContext = integContext.setMintContext(MintContext.createContext(context.solanaAccounts(), mintAccountInfo));
     }
+    final var vaultATA = glamAccountClient.findATA(mintContext.tokenProgram(), mintContext.mint()).publicKey();
+    vaultTokensPosition.addVaultATA(assetMint, vaultATA);
+    accountsNeededSet.add(vaultATA);
+    if (!assetMint.equals(vaultTokensPosition.baseAssetMint())) {
+      accountsNeededSet.remove(assetMint);
+    }
+  }
 
-    var changeState = ChangeState.NO_CHANGE;
-    for (final var assetMint : assets) {
-      if (accountsNeededSet.add(assetMint)) {
-        final var mintContext = integContext.mintContext(assetMint);
-        final var tokenPosition = new TokenPosition(mintContext, glamAccountClient);
-        positions.put(assetMint, tokenPosition);
-        accountsNeededSet.add(tokenPosition.vaultATA());
-        changeState = ChangeState.ACCOUNTS_NEEDED;
+  private StateChange stateAccountChanged(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap,
+                                          final MinStateAccount stateAccount) {
+    final var assets = stateAccount.assets();
+    final var iterator = vaultTokensPosition.vaultATAMap().entrySet().iterator();
+    while (iterator.hasNext()) {
+      final var entry = iterator.next();
+      final var mint = entry.getKey();
+      if (Arrays.binarySearch(assets, mint) < 0) {
+        accountsNeededSet.remove(entry.getValue().publicKey());
+        iterator.remove();
       }
     }
 
     final var externalPositions = stateAccount.externalPositions();
+    for (final var positionKey : positions.keySet()) {
+      if (Arrays.binarySearch(externalPositions, positionKey) < 0) {
+        accountsNeededSet.remove(positionKey);
+        // TODO: Remove upstream accounts.
+        final var position = positions.remove(positionKey);
+        position.removeAccount(positionKey);
+      }
+    }
 
-    Arrays.sort(externalPositions);
-    for (final var externalAccount : previousStateAccount.externalPositions()) {
-      if (Arrays.binarySearch(externalPositions, externalAccount) < 0) {
-        accountsNeededSet.remove(externalAccount);
-        final var position = positions.remove(externalAccount);
-        position.removeAccount(externalAccount);
+    var changeState = StateChange.NO_CHANGE;
+    for (final var assetMint : assets) {
+      if (!vaultTokensPosition.hasContext(assetMint)) {
+        changeState = StateChange.ACCOUNTS_NEEDED;
+        putTokenPosition(accountsNeededMap, assetMint);
       }
     }
 
     for (final var externalAccount : stateAccount.externalPositions()) {
       if (accountsNeededSet.add(externalAccount)) {
-        changeState = ChangeState.ACCOUNTS_NEEDED;
+        changeState = StateChange.ACCOUNTS_NEEDED;
       } else if (!positions.containsKey(externalAccount)) {
         final var positionChangeState = createPosition(accountsNeededMap, externalAccount);
-        if (positionChangeState == ChangeState.UNSUPPORTED) {
-          return ChangeState.UNSUPPORTED;
-        } else if (positionChangeState == ChangeState.ACCOUNTS_NEEDED) {
-          changeState = ChangeState.ACCOUNTS_NEEDED;
+        if (positionChangeState == StateChange.UNSUPPORTED) {
+          return StateChange.UNSUPPORTED;
+        } else if (positionChangeState == StateChange.ACCOUNTS_NEEDED) {
+          changeState = StateChange.ACCOUNTS_NEEDED;
         }
       }
     }
 
+    // TODO: Check for oracle configuration changes.
+
     return changeState;
-  }
-
-  @Override
-  public boolean unsupported() {
-    return this.accountsNeededMap == null;
-  }
-
-  @Override
-  public boolean stateChange(final AccountInfo<byte[]> account) {
-    // TODO: Only check asset and external account changes.
-    return false;
   }
 
   @Override
@@ -220,8 +238,14 @@ public class MultiAssetPriceService extends BaseDelegateService implements Runna
         for (int i = 0; i < witness.length; i++) {
           if (witness[i].lookupTable().address().equals(tableKey)) {
             final var newArray = new LookupTableAccountMeta[witness.length - 1];
-            System.arraycopy(witness, 0, newArray, 0, i);
-            System.arraycopy(witness, i + 1, newArray, i, witness.length - i - 1);
+            if (i == 0) {
+              System.arraycopy(witness, 1, newArray, 0, witness.length - 1);
+            } else {
+              System.arraycopy(witness, 0, newArray, 0, i);
+              if (i < newArray.length) {
+                System.arraycopy(witness, i + 1, newArray, i, newArray.length - i);
+              }
+            }
             if (this.glamVaultTables.compareAndSet(witness, newArray)) {
               return;
             } else {
@@ -276,89 +300,193 @@ public class MultiAssetPriceService extends BaseDelegateService implements Runna
 
   @Override
   public void run() {
-    final var accountsNeededMap = this.accountsNeededMap;
-    final var stateAccount = stateAccount(accountsNeededMap);
-    // TODO: Persist Position State locally.
-    final var changeState = stateAccountChanged(accountsNeededMap, stateAccount);
-    if (changeState == ChangeState.UNSUPPORTED) {
-      this.accountsNeededMap = null;
-      accountsNeededMap.clear();
-      accountsNeededSet.clear();
-      this.previousStateAccount = null;
-      // TODO: Add ability to remove this from scheduling via integContext.
-    } else if (changeState == ChangeState.ACCOUNTS_NEEDED) {
-      integContext.queue(accountsNeededSet, this);
-    } else {
-      final var positions = this.positions.values();
-      final var instructions = new ArrayList<Instruction>(2 + positions.size());
-      instructions.add(MAIN_NET_CU_LIMIT_SIMULATION);
-      final var returnAccountsSet = HashSet.<PublicKey>newHashSet(accountsNeededMap.size());
-      for (final var position : positions) {
-        final var priceInstruction = position.priceInstruction(
-            glamAccountClient,
-            integContext.solUSDOracleKey(), integContext.baseAssetUSDOracleKey(),
-            accountsNeededMap, returnAccountsSet
-        );
-        instructions.add(priceInstruction);
+    try {
+      final var accountsNeededMap = this.accountsNeededMap;
+      if (accountsNeededMap == null) {
+        return;
       }
-      instructions.add(validateAUMInstruction);
+      final var stateAccount = this.stateAccount.get();
+      if (stateAccount == null) {
+        return;
+      }
+      final var changeState = stateAccountChanged(accountsNeededMap, stateAccount);
+      if (changeState == StateChange.UNSUPPORTED) {
+        this.stateAccount.set(null);
+        this.accountsNeededMap = null;
+        this.accountsNeededSet.clear();
+        accountsNeededMap.clear();
+        protocolPositions.clear();
+        vaultTokensPosition.vaultATAMap().clear();
+        glamVaultTables.set(null);
+      } else {
+        if (changeState == StateChange.ACCOUNTS_NEEDED) {
+          integContext.queue(accountsNeededSet, this);
+        } else {
+          prepareAUMTransaction(stateAccount, accountsNeededMap);
+        }
+        final var stateAccountPath = context.glamStateAccountCacheDirectory().resolve(glamAccountClient.vaultAccounts().glamStateKey() + ".dat");
+        final byte[] stateAccountData = stateAccount.serialize(vaultTokensPosition.baseAssetMint(), baseAssetDecimals);
+        try {
+          Files.write(
+              stateAccountPath,
+              stateAccountData,
+              StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE
+          );
+        } catch (final IOException e) {
+          logger.log(WARNING, "Failed to write state account to file", e);
+        }
+      }
+    } catch (final RuntimeException ex) {
+      logger.log(WARNING, "Error processing state account update", ex);
+    }
+  }
 
-      final var tableAccounts = createTableMetaArray(stateAccount);
-      final var transaction = Transaction.createTx(glamAccountClient.feePayer(), instructions, tableAccounts);
-      final var base64Encoded = transaction.base64EncodeToString();
-      final var returnAccounts = List.copyOf(returnAccountsSet);
-      final var simulationResult = context.rpcCaller().courteousGet(
-          rpcClient -> rpcClient.simulateTransaction(
-              Commitment.PROCESSED, base64Encoded,
-              true, true,
-              returnAccounts
-          ),
-          "rpcClient::simulatePriceGLAMVault"
+  @Override
+  public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
+    this.accountsNeededMap = accountMap;
+    stateChange(accountMap.get(stateKey()));
+  }
+
+  @Override
+  public void init() {
+    context.executeTask(this);
+  }
+
+  @Override
+  public boolean stateChange(final AccountInfo<byte[]> account) {
+    var witness = this.stateAccount.get();
+    if (witness == null) {
+      return false;
+    }
+    final long slot = account.context().slot();
+    if (Long.compareUnsigned(slot, witness.slot()) <= 0) {
+      return true;
+    }
+
+    for (final var stateAccount = witness.createIfChanged(slot, account.data()); ; ) {
+      if (stateAccount == null) {
+        return true;
+      }
+      if (this.stateAccount.compareAndSet(witness, stateAccount)) {
+        context.executeTask(this);
+      } else {
+        witness = this.stateAccount.get();
+        if (Long.compareUnsigned(slot, witness.slot()) <= 0) {
+          return true;
+        }
+      }
+    }
+  }
+
+  record AumTransaction(MinStateAccount minStateAccount,
+                        Transaction transaction,
+                        String base64Encoded,
+                        List<PublicKey> returnAccounts) {
+
+    long slot() {
+      return minStateAccount.slot();
+    }
+  }
+
+  private void prepareAUMTransaction(final MinStateAccount stateAccount,
+                                     final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap) {
+    final var positions = this.positions.values();
+    final var instructions = new ArrayList<Instruction>(2 + positions.size());
+    instructions.add(MAIN_NET_CU_LIMIT_SIMULATION);
+    final var returnAccountsSet = HashSet.<PublicKey>newHashSet(accountsNeededMap.size());
+
+    // TODO: Check if State overrides default oracle.
+    final var baseAssetMeta = integContext.globalConfigAssetMeta(vaultTokensPosition.baseAssetMint());
+    if (baseAssetMeta == null) {
+      return;
+    }
+    for (final var position : positions) {
+      final var priceInstruction = position.priceInstruction(
+          integContext,
+          glamAccountClient,
+          baseAssetMeta.oracle(),
+          stateAccount,
+          accountsNeededMap,
+          returnAccountsSet
       );
+      instructions.add(priceInstruction);
+    }
+    instructions.add(validateAUMInstruction);
 
-      if (simulationResult.error() instanceof TransactionError.InstructionError(_, final IxError ixError)) {
-        if (ixError instanceof IxError.Custom(final long errorCode)) {
-          try {
-            final var error = GlamProtocolError.getInstance(Math.toIntExact(errorCode));
-            if (error instanceof GlamProtocolError.PriceTooOld) {
-              // TODO: retry in N seconds up to X times.
-            } else if (error instanceof GlamProtocolError.InvalidPricingOracle) {
-              // TODO: refresh oracle caches, trigger alert.
-            } else {
-              // TODO: trigger alert and remove vault
-            }
-          } catch (final RuntimeException e) {
+    final var tableAccounts = createTableMetaArray(stateAccount, accountsNeededMap);
+    final var transaction = Transaction.createTx(glamAccountClient.feePayer(), instructions, tableAccounts);
+    final var base64Encoded = transaction.base64EncodeToString();
+    final var returnAccounts = List.copyOf(returnAccountsSet);
+    final long slot = stateAccount.slot();
+    final var aumTransaction = new AumTransaction(stateAccount, transaction, base64Encoded, returnAccounts);
+
+    for (var witness = this.aumTransaction.get(); ; ) {
+      if (Long.compareUnsigned(slot, witness.slot()) <= 0) {
+        return;
+      } else if (this.aumTransaction.compareAndSet(witness, aumTransaction)) {
+        return;
+      } else {
+        witness = this.aumTransaction.get();
+      }
+    }
+  }
+
+  public void simulateAumTransaction() {
+    final var aumTransaction = this.aumTransaction.get();
+    final var base64Encoded = aumTransaction.base64Encoded();
+    final var returnAccounts = aumTransaction.returnAccounts();
+    final var simulationResult = context.rpcCaller().courteousGet(
+        rpcClient -> rpcClient.simulateTransaction(
+            Commitment.PROCESSED, base64Encoded,
+            true, true,
+            returnAccounts
+        ),
+        "rpcClient::simulatePriceGLAMVault"
+    );
+
+    if (simulationResult.error() instanceof TransactionError.InstructionError(_, final IxError ixError)) {
+      if (ixError instanceof IxError.Custom(final long errorCode)) {
+        try {
+          final var error = GlamProtocolError.getInstance(Math.toIntExact(errorCode));
+          if (error instanceof GlamProtocolError.PriceTooOld) {
+            // TODO: retry in N seconds up to X times.
+          } else if (error instanceof GlamProtocolError.InvalidPricingOracle) {
+            // TODO: refresh oracle caches, trigger alert.
+          } else {
             // TODO: trigger alert and remove vault
           }
-        } else {
+        } catch (final RuntimeException e) {
           // TODO: trigger alert and remove vault
         }
       } else {
-        int ixIndex = 0;
-        final var innerInstructionsList = simulationResult.innerInstructions();
-        final var returnedAccounts = simulationResult.accounts();
-        for (final var returnedAccount : returnedAccounts) {
-          accountsNeededMap.put(returnedAccount.pubKey(), returnedAccount);
-        }
-        final var mintProgram = context.glamMintProgram();
-        final var positionReports = new ArrayList<PositionReport>(positions.size());
-        var eventSum = BigInteger.ZERO;
-        for (final var position : positions) {
-          final var priceInstruction = innerInstructionsList.get(++ixIndex);
-          final var positionReport = position.positionReport(mintProgram, stateAccount.baseAssetDecimals(), accountsNeededMap, priceInstruction);
-          positionReports.add(positionReport);
-        }
+        // TODO: trigger alert and remove vault
+      }
+    } else {
+      int ixIndex = 0;
+      final var innerInstructionsList = simulationResult.innerInstructions();
+      final var returnedAccounts = simulationResult.accounts();
+      final var accountsNeededMap = HashMap.<PublicKey, AccountInfo<byte[]>>newHashMap(returnedAccounts.size());
+      for (final var returnedAccount : returnedAccounts) {
+        accountsNeededMap.put(returnedAccount.pubKey(), returnedAccount);
+      }
+      final var mintProgram = context.glamMintProgram();
+      final var positionReports = new ArrayList<PositionReport>(positions.size());
+      var eventSum = BigInteger.ZERO;
+      for (final var position : positions.values()) {
+        final var priceInstruction = innerInstructionsList.get(++ixIndex);
+        final var positionReport = position.positionReport(mintProgram, baseAssetDecimals, accountsNeededMap, priceInstruction);
+        positionReports.add(positionReport);
+      }
 
-        final var aumInstruction = innerInstructionsList.get(++ixIndex);
-        for (final var innerIx : aumInstruction.instructions()) {
-          if (innerIx.programId().equals(mintProgram)) {
-            final var event = GlamMintEvent.readCPI(innerIx.data());
-            if (event instanceof AumRecord(_, final BigInteger vaultAum)) {
-              if (vaultAum.equals(eventSum)) {
-                // Persist to DB
-              } else {
-                // TODO trigger alert and remove from pricing.
-              }
+      final var aumInstruction = innerInstructionsList.get(++ixIndex);
+      for (final var innerIx : aumInstruction.instructions()) {
+        if (innerIx.programId().equals(mintProgram)) {
+          final var event = GlamMintEvent.readCPI(innerIx.data());
+          if (event instanceof AumRecord(_, final BigInteger vaultAum)) {
+            if (vaultAum.equals(eventSum)) {
+              // Persist to DB
+            } else {
+              // TODO trigger alert and remove from pricing.
             }
           }
         }
@@ -366,24 +494,24 @@ public class MultiAssetPriceService extends BaseDelegateService implements Runna
     }
   }
 
-  private DriftUserPosition driftUserPosition() {
+  private DriftUsersPosition driftUserPosition() {
     for (final var position : positions.values()) {
-      if (position instanceof DriftUserPosition driftPosition) {
+      if (position instanceof DriftUsersPosition driftPosition) {
         return driftPosition;
       }
     }
-    return DriftUserPosition.create(integContext.driftMarketCache(), glamAccountClient.vaultAccounts().vaultPublicKey());
+    return DriftUsersPosition.create(integContext.driftMarketCache(), glamAccountClient.vaultAccounts().vaultPublicKey());
   }
 
-  private ChangeState createDriftPosition(final AccountInfo<byte[]> accountInfo) {
+  private StateChange createDriftPosition(final AccountInfo<byte[]> accountInfo) {
     final byte[] data = accountInfo.data();
     if (User.BYTES == data.length && User.DISCRIMINATOR.equals(data, 0)) {
       final var userKey = accountInfo.pubKey();
       final var driftPosition = driftUserPosition();
-      driftPosition.addUserAccount(userKey);
+      driftPosition.addAccount(userKey);
       positions.put(userKey, driftPosition);
       // TODO: Check if cache is missing
-      return ChangeState.NO_CHANGE;
+      return StateChange.NO_CHANGE;
     } else {
       final var msg = String.format("""
               {
@@ -394,11 +522,11 @@ public class MultiAssetPriceService extends BaseDelegateService implements Runna
       );
       logger.log(WARNING, msg);
       // TODO: Trigger external alert and put this vault on pause.
-      return ChangeState.UNSUPPORTED;
+      return StateChange.UNSUPPORTED;
     }
   }
 
-  private ChangeState createDriftVaultPosition(final AccountInfo<byte[]> accountInfo) {
+  private StateChange createDriftVaultPosition(final AccountInfo<byte[]> accountInfo) {
     final byte[] data = accountInfo.data();
     if (VaultDepositor.BYTES == data.length && VaultDepositor.DISCRIMINATOR.equals(data, 0)) {
       final var vaultDepositor = VaultDepositor.read(accountInfo.pubKey(), data);
@@ -413,10 +541,10 @@ public class MultiAssetPriceService extends BaseDelegateService implements Runna
       logger.log(WARNING, msg);
       // TODO: Trigger external alert and put this vault on pause.
     }
-    return ChangeState.UNSUPPORTED;
+    return StateChange.UNSUPPORTED;
   }
 
-  private ChangeState createKaminoVaultPosition(final AccountInfo<byte[]> accountInfo) {
+  private StateChange createKaminoVaultPosition(final AccountInfo<byte[]> accountInfo) {
     final byte[] data = accountInfo.data();
     if (VaultState.BYTES == data.length && VaultState.DISCRIMINATOR.equals(data, 0)) {
       final var vaultState = VaultState.read(accountInfo.pubKey(), data);
@@ -431,10 +559,10 @@ public class MultiAssetPriceService extends BaseDelegateService implements Runna
       logger.log(WARNING, msg);
       // TODO: Trigger external alert and put this vault on pause.
     }
-    return ChangeState.UNSUPPORTED;
+    return StateChange.UNSUPPORTED;
   }
 
-  private ChangeState createKaminoLendPosition(final AccountInfo<byte[]> accountInfo) {
+  private StateChange createKaminoLendPosition(final AccountInfo<byte[]> accountInfo) {
     final byte[] data = accountInfo.data();
     if (Obligation.BYTES == data.length && Obligation.DISCRIMINATOR.equals(data, 0)) {
       final var obligation = Obligation.read(accountInfo.pubKey(), data);
@@ -449,7 +577,7 @@ public class MultiAssetPriceService extends BaseDelegateService implements Runna
       logger.log(WARNING, msg);
       // TODO: Trigger external alert and put this vault on pause.
     }
-    return ChangeState.UNSUPPORTED;
+    return StateChange.UNSUPPORTED;
   }
 
   static boolean protocolEnabled(final StateAccount stateAccount,
@@ -463,10 +591,10 @@ public class MultiAssetPriceService extends BaseDelegateService implements Runna
     return false;
   }
 
-  private ChangeState createKVaultPosition(final AccountInfo<byte[]> accountInfo) {
+  private StateChange createKVaultPosition(final AccountInfo<byte[]> accountInfo) {
     final var tokenAccount = TokenAccount.read(accountInfo.pubKey(), accountInfo.data());
     if (tokenAccount.amount() == 0) {
-      return ChangeState.NO_CHANGE;
+      return StateChange.NO_CHANGE;
     }
     final var kVaultCache = integContext.kaminoVaultCache();
     final var kVaultContext = kVaultCache.vaultForShareMint(tokenAccount.mint());
@@ -476,19 +604,12 @@ public class MultiAssetPriceService extends BaseDelegateService implements Runna
     } else {
       final var vaultState = kVaultContext.vaultState();
       final var kVaultPosition = new KaminoVaultPosition(
-          integContext.mintContext(vaultState.tokenMint()),
-          glamAccountClient,
           tokenAccount.address(),
           kVaultCache,
           vaultState._address()
       );
       positions.put(accountInfo.pubKey(), kVaultPosition);
     }
-    return ChangeState.UNSUPPORTED;
-  }
-
-  @Override
-  public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
-    this.accountsNeededMap = accountMap;
+    return StateChange.UNSUPPORTED;
   }
 }

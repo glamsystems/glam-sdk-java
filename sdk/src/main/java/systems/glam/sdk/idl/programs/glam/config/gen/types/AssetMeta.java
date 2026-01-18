@@ -19,6 +19,14 @@ public record AssetMeta(PublicKey asset,
   public static final int BYTES = 72;
   public static final int PADDING_LEN = 3;
 
+  public static final int ASSET_OFFSET = 0;
+  public static final int DECIMALS_OFFSET = 32;
+  public static final int ORACLE_OFFSET = 33;
+  public static final int ORACLE_SOURCE_OFFSET = 65;
+  public static final int MAX_AGE_SECONDS_OFFSET = 66;
+  public static final int PRIORITY_OFFSET = 68;
+  public static final int PADDING_OFFSET = 69;
+
   public static AssetMeta read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

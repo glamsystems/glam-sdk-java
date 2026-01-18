@@ -11,6 +11,10 @@ public record PerformanceFee(int feeBps,
 
   public static final int BYTES = 5;
 
+  public static final int FEE_BPS_OFFSET = 0;
+  public static final int HURDLE_RATE_BPS_OFFSET = 2;
+  public static final int HURDLE_TYPE_OFFSET = 4;
+
   public static PerformanceFee read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

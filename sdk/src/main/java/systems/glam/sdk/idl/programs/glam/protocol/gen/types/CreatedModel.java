@@ -15,6 +15,10 @@ public record CreatedModel(byte[] key,
   public static final int BYTES = 48;
   public static final int KEY_LEN = 8;
 
+  public static final int KEY_OFFSET = 0;
+  public static final int CREATED_BY_OFFSET = 8;
+  public static final int CREATED_AT_OFFSET = 40;
+
   public static CreatedModel read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

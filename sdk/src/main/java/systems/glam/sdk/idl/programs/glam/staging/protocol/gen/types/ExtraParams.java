@@ -13,6 +13,10 @@ public record ExtraParams(ActionType actionType,
                           PublicKey pubkey,
                           OptionalLong amount) implements SerDe {
 
+  public static final int ACTION_TYPE_OFFSET = 0;
+  public static final int PUBKEY_OFFSET = 1;
+  public static final int AMOUNT_OFFSET = 34;
+
   public static ExtraParams read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

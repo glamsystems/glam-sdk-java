@@ -6,6 +6,8 @@ import software.sava.idl.clients.core.gen.SerDeUtil;
 
 public record TransferPolicy(PublicKey[] allowlist) implements SerDe {
 
+  public static final int ALLOWLIST_OFFSET = 0;
+
   public static TransferPolicy read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

@@ -10,6 +10,9 @@ import static software.sava.core.accounts.PublicKey.readPubKey;
 ///
 public record IntegrationPermissions(PublicKey integrationProgram, ProtocolPermissions[] protocolPermissions) implements SerDe {
 
+  public static final int INTEGRATION_PROGRAM_OFFSET = 0;
+  public static final int PROTOCOL_PERMISSIONS_OFFSET = 32;
+
   public static IntegrationPermissions read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

@@ -22,6 +22,14 @@ public record PricedProtocol(long rent,
                              int protocolBitflag,
                              PublicKey[] positions) implements SerDe {
 
+  public static final int RENT_OFFSET = 0;
+  public static final int AMOUNT_OFFSET = 8;
+  public static final int DECIMALS_OFFSET = 24;
+  public static final int LAST_UPDATED_SLOT_OFFSET = 25;
+  public static final int INTEGRATION_PROGRAM_OFFSET = 33;
+  public static final int PROTOCOL_BITFLAG_OFFSET = 65;
+  public static final int POSITIONS_OFFSET = 67;
+
   public static PricedProtocol read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

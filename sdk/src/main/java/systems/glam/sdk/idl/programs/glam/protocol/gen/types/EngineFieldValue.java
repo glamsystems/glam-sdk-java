@@ -2,7 +2,6 @@ package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.core.gen.RustEnum;
-import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -134,6 +133,8 @@ public sealed interface EngineFieldValue extends RustEnum permits
 
   record VecPubkey(PublicKey[] val) implements EngineFieldValue {
 
+    public static final int VAL_OFFSET = 0;
+
     public static VecPubkey read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -161,6 +162,8 @@ public sealed interface EngineFieldValue extends RustEnum permits
   }
 
   record VecU8(byte[] val) implements EngineFieldValue {
+
+    public static final int VAL_OFFSET = 0;
 
     public static VecU8 read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -190,6 +193,8 @@ public sealed interface EngineFieldValue extends RustEnum permits
 
   record VecU32(int[] val) implements EngineFieldValue {
 
+    public static final int VAL_OFFSET = 0;
+
     public static VecU32 read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -218,6 +223,8 @@ public sealed interface EngineFieldValue extends RustEnum permits
 
   record VecDelegateAcl(DelegateAcl[] val) implements EngineFieldValue {
 
+    public static final int VAL_OFFSET = 0;
+
     public static VecDelegateAcl read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -245,6 +252,8 @@ public sealed interface EngineFieldValue extends RustEnum permits
   }
 
   record VecIntegrationAcl(IntegrationAcl[] val) implements EngineFieldValue {
+
+    public static final int VAL_OFFSET = 0;
 
     public static VecIntegrationAcl read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {

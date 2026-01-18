@@ -7,22 +7,16 @@ import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.services.ServiceContext;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public abstract class BaseDelegateService implements DelegateService {
 
   protected final ServiceContext context;
   protected final GlamAccountClient glamAccountClient;
-  protected final String vaultName;
 
-  public BaseDelegateService(final ServiceContext context,
-                             final GlamAccountClient glamAccountClient,
-                             final String vaultName) {
+  public BaseDelegateService(final ServiceContext context, final GlamAccountClient glamAccountClient) {
     this.context = context;
     this.glamAccountClient = glamAccountClient;
-    this.vaultName = vaultName;
   }
 
   protected final Clock clock(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap) {

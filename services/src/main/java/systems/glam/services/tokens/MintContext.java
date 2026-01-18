@@ -39,14 +39,12 @@ public record MintContext(PublicKey mint,
     );
   }
 
-  public static MintContext createContext(final GlamAccountClient glamClient,
+  public static MintContext createContext(final SolanaAccounts solanaAccounts,
                                           final AccountInfo<byte[]> mintAccountInfo) {
     final var mint = Mint.read(mintAccountInfo.pubKey(), mintAccountInfo.data());
     final var mintKey = mint.address();
     final var readMintMeta = AccountMeta.createRead(mintKey);
     final var tokenProgram = mintAccountInfo.owner();
-//    final var vaultATA = glamClient.findATA(tokenProgram, mintKey).publicKey();
-    final var solanaAccounts = glamClient.solanaAccounts();
     return new MintContext(
         mintKey,
         readMintMeta,

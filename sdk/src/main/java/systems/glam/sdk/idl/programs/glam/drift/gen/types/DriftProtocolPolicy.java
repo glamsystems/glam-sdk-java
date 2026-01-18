@@ -8,6 +8,8 @@ public record DriftProtocolPolicy(short[] spotMarketsAllowlist,
                                   short[] perpMarketsAllowlist,
                                   PublicKey[] borrowAllowlist) implements SerDe {
 
+  public static final int SPOT_MARKETS_ALLOWLIST_OFFSET = 0;
+
   public static DriftProtocolPolicy read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

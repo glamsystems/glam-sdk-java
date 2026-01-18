@@ -134,7 +134,7 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
         "rpcClient::getBaseAssetAccount"
     );
 
-    final var vaultMintContext = MintContext.createContext(glamAccountClient, accountsNeededMap.get(mintKey));
+    final var vaultMintContext = MintContext.createContext(solanaAccounts, accountsNeededMap.get(mintKey));
 
     final var websocketConfig = delegateServiceConfig.websocketConfig();
     final var webSocketConsumers = new ArrayList<Consumer<SolanaRpcWebsocket>>();
@@ -205,11 +205,12 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
         8
     );
 
-    final var baseAssetMintContext = MintContext.createContext(glamAccountClient, baseAssetAccountFuture.join());
+    final var baseAssetMintContext = MintContext.createContext(solanaAccounts, baseAssetAccountFuture.join());
 
     final var serviceContext = new ServiceContextImpl(
         serviceKey,
         delegateServiceConfig.warnFeePayerBalance(), delegateServiceConfig.minFeePayerBalance(),
+        delegateServiceConfig.glamStateAccountCacheDirectory(),
         delegateServiceConfig.minCheckStateDelay(), delegateServiceConfig.maxCheckStateDelay(),
         taskExecutor,
         delegateServiceConfig.serviceBackoff(),

@@ -86,6 +86,8 @@ public final class GlamMintProgram {
 
     public static final int BYTES = 16;
 
+    public static final int AMOUNT_OFFSET = 8;
+
     public static BurnTokensIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -477,6 +479,8 @@ public final class GlamMintProgram {
 
     public static final int BYTES = 10;
 
+    public static final int ARGS_OFFSET = 8;
+
     public static EmergencyUpdateMintIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -573,6 +577,8 @@ public final class GlamMintProgram {
     }
 
     public static final int BYTES = 16;
+
+    public static final int AMOUNT_OFFSET = 8;
 
     public static ForceTransferTokensIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -683,6 +689,8 @@ public final class GlamMintProgram {
     public static FulfillIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
+
+    public static final int LIMIT_OFFSET = 9;
 
     public static FulfillIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -826,6 +834,8 @@ public final class GlamMintProgram {
     }
 
     public static final int CREATED_KEY_LEN = 8;
+    public static final int MINT_MODEL_OFFSET = 8;
+
     public static InitializeMintIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -933,6 +943,8 @@ public final class GlamMintProgram {
     }
 
     public static final int BYTES = 16;
+
+    public static final int AMOUNT_OFFSET = 8;
 
     public static MintTokensIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1045,6 +1057,8 @@ public final class GlamMintProgram {
     }
 
     public static final int BYTES = 9;
+
+    public static final int NUM_USERS_OFFSET = 8;
 
     public static PriceDriftUsersIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1177,6 +1191,10 @@ public final class GlamMintProgram {
     }
 
     public static final int BYTES = 11;
+
+    public static final int NUM_VAULT_DEPOSITORS_OFFSET = 8;
+    public static final int NUM_SPOT_MARKETS_OFFSET = 9;
+    public static final int NUM_PERP_MARKETS_OFFSET = 10;
 
     public static PriceDriftVaultDepositorsIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1383,6 +1401,8 @@ public final class GlamMintProgram {
     }
 
     public static final int BYTES = 9;
+
+    public static final int NUM_VAULTS_OFFSET = 8;
 
     public static PriceKaminoVaultSharesIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1625,6 +1645,8 @@ public final class GlamMintProgram {
       return read(instruction.data(), instruction.offset());
     }
 
+    public static final int AGG_INDEXES_OFFSET = 8;
+
     public static PriceVaultTokensIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -1712,6 +1734,8 @@ public final class GlamMintProgram {
     }
 
     public static final int BYTES = 16;
+
+    public static final int AMOUNT_IN_OFFSET = 8;
 
     public static QueuedRedeemIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1809,6 +1833,8 @@ public final class GlamMintProgram {
 
     public static final int BYTES = 16;
 
+    public static final int AMOUNT_IN_OFFSET = 8;
+
     public static QueuedSubscribeIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -1873,6 +1899,8 @@ public final class GlamMintProgram {
     public static SetMintPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
+
+    public static final int POLICY_OFFSET = 8;
 
     public static SetMintPolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1952,6 +1980,9 @@ public final class GlamMintProgram {
 
     public static final int BYTES = 12;
 
+    public static final int BASE_FEE_BPS_OFFSET = 8;
+    public static final int FLOW_FEE_BPS_OFFSET = 10;
+
     public static SetProtocolFeesIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -2026,6 +2057,8 @@ public final class GlamMintProgram {
     }
 
     public static final int BYTES = 9;
+
+    public static final int FROZEN_OFFSET = 8;
 
     public static SetTokenAccountsStatesIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -2150,6 +2183,8 @@ public final class GlamMintProgram {
 
     public static final int BYTES = 16;
 
+    public static final int AMOUNT_IN_OFFSET = 8;
+
     public static SubscribeIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -2223,6 +2258,8 @@ public final class GlamMintProgram {
     public static UpdateMintIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
+
+    public static final int MINT_MODEL_OFFSET = 8;
 
     public static UpdateMintIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {

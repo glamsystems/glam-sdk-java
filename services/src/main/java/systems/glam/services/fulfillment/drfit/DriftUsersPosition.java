@@ -11,6 +11,8 @@ import software.sava.idl.clients.drift.gen.types.User;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
+import systems.glam.services.integrations.IntegrationServiceContext;
+import systems.glam.services.pricing.MinStateAccount;
 import systems.glam.services.pricing.PositionReport;
 import systems.glam.services.pricing.PositionReportRecord;
 import systems.glam.services.pricing.accounting.Position;
@@ -20,25 +22,25 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public final class DriftUserPosition implements Position {
+public final class DriftUsersPosition implements Position {
 
   private final DriftMarketCache driftMarketCache;
   private final AccountMeta userStatsMeta;
   private final Map<PublicKey, AccountMeta> userAccounts;
 
-  private DriftUserPosition(final DriftMarketCache driftMarketCache, final AccountMeta userStatsMeta) {
+  private DriftUsersPosition(final DriftMarketCache driftMarketCache, final AccountMeta userStatsMeta) {
     this.driftMarketCache = driftMarketCache;
     this.userStatsMeta = userStatsMeta;
     this.userAccounts = HashMap.newHashMap(8);
   }
 
-  public static DriftUserPosition create(final DriftMarketCache driftMarketCache, final PublicKey glamVaultKey) {
+  public static DriftUsersPosition create(final DriftMarketCache driftMarketCache, final PublicKey glamVaultKey) {
     final var userStatsKey = DriftPDAs.deriveUserStatsAccount(driftMarketCache.driftAccounts(), glamVaultKey).publicKey();
-    return new DriftUserPosition(driftMarketCache, AccountMeta.createRead(userStatsKey));
+    return new DriftUsersPosition(driftMarketCache, AccountMeta.createRead(userStatsKey));
   }
 
-  public void addUserAccount(final PublicKey userKey) {
-    userAccounts.put(userKey, AccountMeta.createRead(userKey));
+  public void addAccount(final PublicKey accountKey) {
+    userAccounts.put(accountKey, AccountMeta.createRead(accountKey));
   }
 
   @Override
@@ -60,9 +62,9 @@ public final class DriftUserPosition implements Position {
   }
 
   @Override
-  public Instruction priceInstruction(final GlamAccountClient glamAccountClient,
-                                      final PublicKey solUSDOracleKey,
-                                      final PublicKey baseAssetUSDOracleKey,
+  public Instruction priceInstruction(final IntegrationServiceContext serviceContext,
+                                      final GlamAccountClient glamAccountClient,
+                                      final PublicKey baseAssetUSDOracleKey, final MinStateAccount stateAccount,
                                       final Map<PublicKey, AccountInfo<byte[]>> accountMap,
                                       final Set<PublicKey> returnAccounts) {
     int missingMarkets = 0;
@@ -111,8 +113,10 @@ public final class DriftUserPosition implements Position {
       extraAccounts.addAll(userAccounts.values());
       extraAccounts.addAll(extraAccountsMap.values());
 
-      return glamAccountClient
-          .priceDriftUsers(solUSDOracleKey, baseAssetUSDOracleKey, numUsers, true)
+      return glamAccountClient.priceDriftUsers(
+              serviceContext.solUSDOracleKey(), baseAssetUSDOracleKey,
+              numUsers, true
+          )
           .extraAccounts(extraAccounts);
     } else {
       return null;

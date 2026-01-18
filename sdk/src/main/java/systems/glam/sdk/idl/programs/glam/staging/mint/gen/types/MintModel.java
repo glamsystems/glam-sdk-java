@@ -36,6 +36,8 @@ public record MintModel(String symbol, byte[] _symbol,
                         PublicKey[] allowlist,
                         PublicKey[] blocklist) implements SerDe {
 
+  public static final int SYMBOL_OFFSET = 1;
+
   public static MintModel createRecord(final String symbol,
                                        final byte[] name,
                                        final String uri,

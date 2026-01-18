@@ -14,6 +14,8 @@ public record PricedProtocolRecord(Discriminator discriminator, BigInteger baseA
   public static final int BYTES = 24;
   public static final Discriminator DISCRIMINATOR = toDiscriminator(232, 89, 187, 82, 49, 200, 127, 132);
 
+  public static final int BASE_ASSET_AMOUNT_OFFSET = 8;
+
   public static PricedProtocolRecord read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

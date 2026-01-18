@@ -9,6 +9,8 @@ public record ManagementFee(int feeBps) implements SerDe {
 
   public static final int BYTES = 2;
 
+  public static final int FEE_BPS_OFFSET = 0;
+
   public static ManagementFee read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

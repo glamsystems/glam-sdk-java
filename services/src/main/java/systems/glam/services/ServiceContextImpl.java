@@ -14,6 +14,7 @@ import systems.glam.sdk.GlamAccounts;
 import systems.glam.services.execution.InstructionProcessor;
 
 import java.math.BigInteger;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -28,6 +29,7 @@ public final class ServiceContextImpl implements ServiceContext {
   private final PublicKey serviceKey;
   private final BigInteger warnFeePayerBalance;
   private final BigInteger minFeePayerBalance;
+  private final Path glamStateAccountCacheDirectory;
   private final long minCheckStateDelayNanos;
   private final long maxCheckStateDelayNanos;
   private final ExecutorService taskExecutor;
@@ -42,6 +44,7 @@ public final class ServiceContextImpl implements ServiceContext {
 
   public ServiceContextImpl(final PublicKey serviceKey,
                             final BigInteger warnFeePayerBalance, final BigInteger minFeePayerBalance,
+                            final Path glamStateAccountCacheDirectory,
                             final Duration minCheckStateDelay, final Duration maxCheckStateDelay,
                             final ExecutorService taskExecutor,
                             final Backoff backoff,
@@ -55,6 +58,7 @@ public final class ServiceContextImpl implements ServiceContext {
     this.serviceKey = serviceKey;
     this.warnFeePayerBalance = warnFeePayerBalance;
     this.minFeePayerBalance = minFeePayerBalance;
+    this.glamStateAccountCacheDirectory = glamStateAccountCacheDirectory;
     this.minCheckStateDelayNanos = minCheckStateDelay.toNanos();
     this.maxCheckStateDelayNanos = maxCheckStateDelay.toNanos();
     this.taskExecutor = taskExecutor;
@@ -201,6 +205,11 @@ public final class ServiceContextImpl implements ServiceContext {
   }
 
   @Override
+  public Path glamStateAccountCacheDirectory() {
+    return glamStateAccountCacheDirectory;
+  }
+
+  @Override
   public String toString() {
     return "ServiceContext[" +
         "serviceKey=" + serviceKey + ", " +
@@ -212,8 +221,8 @@ public final class ServiceContextImpl implements ServiceContext {
         "epochInfoService=" + epochInfoService + ", " +
         "solanaAccounts=" + solanaAccounts + ", " +
         "glamAccounts=" + glamAccounts + ", " +
-        "notifyClient=" + notifyClient + ", " +
         "rpcCaller=" + rpcCaller + ", " +
+        "glamStateAccountCacheDirectory=" + glamStateAccountCacheDirectory + ", " +
         "instructionProcessor=" + instructionProcessor + ", " +
         "transactionFactory=" + transactionFactory + ']';
   }

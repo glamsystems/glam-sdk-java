@@ -18,6 +18,15 @@ public record AccruedFees(BigInteger vaultSubscriptionFee,
 
   public static final int BYTES = 128;
 
+  public static final int VAULT_SUBSCRIPTION_FEE_OFFSET = 0;
+  public static final int VAULT_REDEMPTION_FEE_OFFSET = 16;
+  public static final int MANAGER_SUBSCRIPTION_FEE_OFFSET = 32;
+  public static final int MANAGER_REDEMPTION_FEE_OFFSET = 48;
+  public static final int MANAGEMENT_FEE_OFFSET = 64;
+  public static final int PERFORMANCE_FEE_OFFSET = 80;
+  public static final int PROTOCOL_BASE_FEE_OFFSET = 96;
+  public static final int PROTOCOL_FLOW_FEE_OFFSET = 112;
+
   public static AccruedFees read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

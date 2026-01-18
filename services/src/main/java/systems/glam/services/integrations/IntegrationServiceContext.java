@@ -3,10 +3,11 @@ package systems.glam.services.integrations;
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
+import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
 import systems.glam.services.fulfillment.drfit.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoVaultCache;
+import systems.glam.services.pricing.AccountConsumer;
 import systems.glam.services.pricing.IntegTableCache;
-import systems.glam.services.pricing.RunnableAccountConsumer;
 import systems.glam.services.tokens.MintContext;
 
 import java.nio.file.Path;
@@ -19,13 +20,17 @@ public interface IntegrationServiceContext {
     return directory.resolve(accountKey + ".dat");
   }
 
-  void queue(final Collection<PublicKey> accounts, final RunnableAccountConsumer callback);
+  void queue(final Collection<PublicKey> accounts, final AccountConsumer callback);
 
   PublicKey solUSDOracleKey();
 
   PublicKey baseAssetUSDOracleKey();
 
   MintContext mintContext(final PublicKey mint);
+
+  MintContext setMintContext(final MintContext mintContext);
+
+  AssetMeta globalConfigAssetMeta(final PublicKey mint);
 
   IntegTableCache integTableCache();
 

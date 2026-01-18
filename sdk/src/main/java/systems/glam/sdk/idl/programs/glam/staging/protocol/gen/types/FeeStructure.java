@@ -10,6 +10,12 @@ public record FeeStructure(EntryExitFees vault,
 
   public static final int BYTES = 19;
 
+  public static final int VAULT_OFFSET = 0;
+  public static final int MANAGER_OFFSET = 4;
+  public static final int MANAGEMENT_OFFSET = 8;
+  public static final int PERFORMANCE_OFFSET = 10;
+  public static final int PROTOCOL_OFFSET = 15;
+
   public static FeeStructure read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

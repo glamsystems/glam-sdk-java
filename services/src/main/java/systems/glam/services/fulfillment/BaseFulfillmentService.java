@@ -29,6 +29,7 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
   protected final boolean softRedeem;
   protected final long redeemNoticePeriod;
   protected final boolean redeemWindowInSeconds;
+  protected final String vaultName;
   protected final MintContext baseAssetMintContext;
   protected final PublicKey baseAssetVaultAta;
   protected final boolean isSoftRedeem;
@@ -48,8 +49,9 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
                                    final MintContext vaultMintContext,
                                    final List<PublicKey> accountsNeededList,
                                    final List<Instruction> fulFillInstructions) {
-    super(context, glamAccountClient, stateAccountClient.name());
+    super(context, glamAccountClient);
     this.baseAssetVaultAta = baseAssetVaultAta;
+    this.vaultName = stateAccountClient.name();
     this.isSoftRedeem = stateAccountClient.softRedeem();
     this.redeemNoticePeriod = stateAccountClient.redeemNoticePeriod();
     this.redeemWindowInSeconds = stateAccountClient.redeemWindowInSeconds();

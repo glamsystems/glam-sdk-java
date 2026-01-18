@@ -6,6 +6,8 @@ import software.sava.idl.clients.core.gen.SerDeUtil;
 
 public record DriftVaultsPolicy(PublicKey[] vaultsAllowlist) implements SerDe {
 
+  public static final int VAULTS_ALLOWLIST_OFFSET = 0;
+
   public static DriftVaultsPolicy read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

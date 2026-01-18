@@ -12,6 +12,9 @@ public record DelegateAcl(PublicKey pubkey,
                           IntegrationPermissions[] integrationPermissions,
                           long expiresAt) implements SerDe {
 
+  public static final int PUBKEY_OFFSET = 0;
+  public static final int INTEGRATION_PERMISSIONS_OFFSET = 32;
+
   public static DelegateAcl read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

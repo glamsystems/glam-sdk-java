@@ -11,6 +11,9 @@ import static software.sava.core.encoding.ByteUtil.putInt16LE;
 ///
 public record ProtocolPolicy(int protocolBitflag, byte[] data) implements SerDe {
 
+  public static final int PROTOCOL_BITFLAG_OFFSET = 0;
+  public static final int DATA_OFFSET = 2;
+
   public static ProtocolPolicy read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

@@ -9,6 +9,9 @@ public record ProtocolFees(int baseFeeBps, int flowFeeBps) implements SerDe {
 
   public static final int BYTES = 4;
 
+  public static final int BASE_FEE_BPS_OFFSET = 0;
+  public static final int FLOW_FEE_BPS_OFFSET = 2;
+
   public static ProtocolFees read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

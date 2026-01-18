@@ -17,6 +17,7 @@ import software.sava.services.solana.transactions.TxMonitorConfig;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.file.Path;
 import java.time.Duration;
 
 public interface DelegateServiceConfig {
@@ -30,6 +31,8 @@ public interface DelegateServiceConfig {
   ChainItemFormatter formatter();
 
   NotifyClient notifyClient();
+
+  Path glamStateAccountCacheDirectory();
 
   TableCacheConfig tableCacheConfig();
 

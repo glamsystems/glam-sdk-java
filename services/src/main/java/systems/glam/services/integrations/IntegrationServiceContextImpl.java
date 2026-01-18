@@ -3,12 +3,13 @@ package systems.glam.services.integrations;
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
+import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
 import systems.glam.services.fulfillment.drfit.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoVaultCache;
+import systems.glam.services.pricing.AccountConsumer;
 import systems.glam.services.pricing.AccountFetcher;
 import systems.glam.services.pricing.IntegTableCache;
 import systems.glam.services.pricing.MintCache;
-import systems.glam.services.pricing.RunnableAccountConsumer;
 import systems.glam.services.tokens.MintContext;
 
 import java.util.Collection;
@@ -18,7 +19,7 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
 
   private final PublicKey solUSDOracleKey;
   private final PublicKey baseAssetUSDOracleKey;
-  private final MintCache mintContextMap;
+  private final MintCache mintCache;
   private final IntegTableCache integTableCache;
   private final AccountFetcher accountFetcher;
   private final DriftAccounts driftAccounts;
@@ -28,7 +29,7 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
 
   IntegrationServiceContextImpl(final PublicKey solUSDOracleKey,
                                 final PublicKey baseAssetUSDOracleKey,
-                                final MintCache mintContextMap,
+                                final MintCache mintCache,
                                 final IntegTableCache integTableCache,
                                 final AccountFetcher accountFetcher,
                                 final DriftAccounts driftAccounts,
@@ -37,7 +38,7 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
                                 final KaminoVaultCache kaminoVaultCache) {
     this.solUSDOracleKey = solUSDOracleKey;
     this.baseAssetUSDOracleKey = baseAssetUSDOracleKey;
-    this.mintContextMap = mintContextMap;
+    this.mintCache = mintCache;
     this.integTableCache = integTableCache;
     this.accountFetcher = accountFetcher;
     this.driftAccounts = driftAccounts;
@@ -55,7 +56,7 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
   }
 
   @Override
-  public void queue(final Collection<PublicKey> accounts, final RunnableAccountConsumer callback) {
+  public void queue(final Collection<PublicKey> accounts, final AccountConsumer callback) {
     accountFetcher.queue(accounts, callback);
   }
 
@@ -106,7 +107,17 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
 
   @Override
   public MintContext mintContext(final PublicKey mint) {
-    return mintContextMap.get(mint);
+    return mintCache.get(mint);
+  }
+
+  @Override
+  public MintContext setMintContext(final MintContext mintContext) {
+    return mintCache.setGet(mintContext);
+  }
+
+  @Override
+  public AssetMeta globalConfigAssetMeta(final PublicKey mint) {
+    return null;
   }
 
   @Override

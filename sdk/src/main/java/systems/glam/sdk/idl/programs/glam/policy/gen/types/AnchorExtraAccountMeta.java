@@ -11,6 +11,11 @@ public record AnchorExtraAccountMeta(int discriminator,
   public static final int BYTES = 35;
   public static final int ADDRESS_CONFIG_LEN = 32;
 
+  public static final int DISCRIMINATOR_OFFSET = 0;
+  public static final int ADDRESS_CONFIG_OFFSET = 1;
+  public static final int IS_SIGNER_OFFSET = 33;
+  public static final int IS_WRITABLE_OFFSET = 34;
+
   public static AnchorExtraAccountMeta read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

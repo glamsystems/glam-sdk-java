@@ -7,6 +7,8 @@ import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.GlamMintEvent;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.PricedProtocolRecord;
+import systems.glam.services.integrations.IntegrationServiceContext;
+import systems.glam.services.pricing.MinStateAccount;
 import systems.glam.services.pricing.PositionReport;
 
 import java.math.BigDecimal;
@@ -16,15 +18,13 @@ import java.util.Set;
 
 public interface Position {
 
-  default void removeAccount(final PublicKey account) {
-
-  }
+  void removeAccount(final PublicKey account);
 
   void accountsForPriceInstruction(final Set<PublicKey> keys);
 
-  Instruction priceInstruction(final GlamAccountClient glamAccountClient,
-                               final PublicKey solUSDOracleKey,
-                               final PublicKey baseAssetUSDOracleKey,
+  Instruction priceInstruction(final IntegrationServiceContext serviceContext,
+                               final GlamAccountClient glamAccountClient,
+                               final PublicKey baseAssetUSDOracleKey, final MinStateAccount stateAccount,
                                final Map<PublicKey, AccountInfo<byte[]>> accountMap,
                                final Set<PublicKey> returnAccounts);
 
@@ -45,6 +45,7 @@ public interface Position {
   }
 
   PositionReport positionReport(final PublicKey mintProgram,
-                                final int baseAssetDecimals, final Map<PublicKey, AccountInfo<byte[]>> accountMap,
+                                final int baseAssetDecimals,
+                                final Map<PublicKey, AccountInfo<byte[]>> accountMap,
                                 final InnerInstructions innerInstructions);
 }

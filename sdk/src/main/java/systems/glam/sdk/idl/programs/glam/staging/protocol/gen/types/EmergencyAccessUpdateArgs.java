@@ -10,6 +10,8 @@ public record EmergencyAccessUpdateArgs(PublicKey[] disabledIntegrations,
                                         PublicKey[] disabledDelegates,
                                         Boolean stateEnabled) implements SerDe {
 
+  public static final int DISABLED_INTEGRATIONS_OFFSET = 0;
+
   public static EmergencyAccessUpdateArgs read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

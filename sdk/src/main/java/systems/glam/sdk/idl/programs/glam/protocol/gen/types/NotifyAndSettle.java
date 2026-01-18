@@ -22,6 +22,19 @@ public record NotifyAndSettle(ValuationModel model,
   public static final int BYTES = 56;
   public static final int PADDING_LEN = 3;
 
+  public static final int MODEL_OFFSET = 0;
+  public static final int PERMISSIONLESS_FULFILLMENT_OFFSET = 1;
+  public static final int SUBSCRIBE_NOTICE_PERIOD_TYPE_OFFSET = 2;
+  public static final int SUBSCRIBE_NOTICE_PERIOD_OFFSET = 3;
+  public static final int SUBSCRIBE_SETTLEMENT_PERIOD_OFFSET = 11;
+  public static final int SUBSCRIBE_CANCELLATION_WINDOW_OFFSET = 19;
+  public static final int REDEEM_NOTICE_PERIOD_TYPE_OFFSET = 27;
+  public static final int REDEEM_NOTICE_PERIOD_OFFSET = 28;
+  public static final int REDEEM_SETTLEMENT_PERIOD_OFFSET = 36;
+  public static final int REDEEM_CANCELLATION_WINDOW_OFFSET = 44;
+  public static final int TIME_UNIT_OFFSET = 52;
+  public static final int PADDING_OFFSET = 53;
+
   public static NotifyAndSettle read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

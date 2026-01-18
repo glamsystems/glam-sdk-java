@@ -6,4 +6,6 @@ import systems.glam.services.tokens.MintContext;
 public interface MintCache {
 
   MintContext get(final PublicKey mintPubkey);
+
+  MintContext setGet(final MintContext mintContext);
 }

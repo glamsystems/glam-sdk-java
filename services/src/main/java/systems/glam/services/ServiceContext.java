@@ -8,6 +8,7 @@ import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamAccounts;
 
+import java.nio.file.Path;
 import java.util.List;
 
 public interface ServiceContext {
@@ -46,4 +47,6 @@ public interface ServiceContext {
   NotifyClient notifyClient();
 
   RpcCaller rpcCaller();
+
+  Path glamStateAccountCacheDirectory();
 }

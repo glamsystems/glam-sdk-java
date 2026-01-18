@@ -62,6 +62,8 @@ public final class ExtSplProgram {
       return read(instruction.data(), instruction.offset());
     }
 
+    public static final int POLICY_OFFSET = 8;
+
     public static SetTokenTransferPolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -208,6 +210,9 @@ public final class ExtSplProgram {
     }
 
     public static final int BYTES = 17;
+
+    public static final int AMOUNT_OFFSET = 8;
+    public static final int DECIMALS_OFFSET = 16;
 
     public static TokenTransferCheckedIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {

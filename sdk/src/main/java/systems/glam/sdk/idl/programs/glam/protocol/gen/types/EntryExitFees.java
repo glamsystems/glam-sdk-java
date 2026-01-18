@@ -9,6 +9,9 @@ public record EntryExitFees(int subscriptionFeeBps, int redemptionFeeBps) implem
 
   public static final int BYTES = 4;
 
+  public static final int SUBSCRIPTION_FEE_BPS_OFFSET = 0;
+  public static final int REDEMPTION_FEE_BPS_OFFSET = 2;
+
   public static EntryExitFees read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

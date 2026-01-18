@@ -9,6 +9,9 @@ import static software.sava.core.encoding.ByteUtil.putInt16LE;
 
 public record JupiterSwapPolicy(int maxSlippageBps, PublicKey[] swapAllowlist) implements SerDe {
 
+  public static final int MAX_SLIPPAGE_BPS_OFFSET = 0;
+  public static final int SWAP_ALLOWLIST_OFFSET = 3;
+
   public static JupiterSwapPolicy read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

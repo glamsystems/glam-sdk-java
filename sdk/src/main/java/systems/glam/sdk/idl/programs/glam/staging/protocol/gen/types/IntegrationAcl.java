@@ -15,6 +15,10 @@ public record IntegrationAcl(PublicKey integrationProgram,
                              int protocolsBitmask,
                              ProtocolPolicy[] protocolPolicies) implements SerDe {
 
+  public static final int INTEGRATION_PROGRAM_OFFSET = 0;
+  public static final int PROTOCOLS_BITMASK_OFFSET = 32;
+  public static final int PROTOCOL_POLICIES_OFFSET = 34;
+
   public static IntegrationAcl read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;

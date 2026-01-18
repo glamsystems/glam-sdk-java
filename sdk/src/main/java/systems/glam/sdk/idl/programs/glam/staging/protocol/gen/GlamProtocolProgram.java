@@ -156,6 +156,8 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
+    public static final int DATA_OFFSET = 8;
+
     public static CpiProxyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -233,6 +235,8 @@ public final class GlamProtocolProgram {
     public static EmergencyAccessUpdateIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
+
+    public static final int ARGS_OFFSET = 8;
 
     public static EmergencyAccessUpdateIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -313,6 +317,10 @@ public final class GlamProtocolProgram {
 
     public static final int BYTES = 43;
 
+    public static final int INTEGRATION_PROGRAM_OFFSET = 8;
+    public static final int PROTOCOLS_BITMASK_OFFSET = 40;
+    public static final int SET_ENABLED_OFFSET = 42;
+
     public static EnableDisableProtocolsIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -387,6 +395,8 @@ public final class GlamProtocolProgram {
     }
 
     public static final int BYTES = 12;
+
+    public static final int BYTES_OFFSET = 8;
 
     public static ExtendStateIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -480,6 +490,12 @@ public final class GlamProtocolProgram {
 
     public static final int BYTES = 83;
 
+    public static final int DELEGATE_OFFSET = 8;
+    public static final int INTEGRATION_PROGRAM_OFFSET = 40;
+    public static final int PROTOCOL_BITFLAG_OFFSET = 72;
+    public static final int PERMISSIONS_BITMASK_OFFSET = 74;
+    public static final int SET_GRANTED_OFFSET = 82;
+
     public static GrantRevokeDelegatePermissionsIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -570,6 +586,8 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
+    public static final int STATE_OFFSET = 8;
+
     public static InitializeStateIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -648,6 +666,8 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
+    public static final int DATA_OFFSET = 8;
+
     public static JupiterSwapIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -719,6 +739,8 @@ public final class GlamProtocolProgram {
     }
 
     public static final int BYTES = 9;
+
+    public static final int LINK_OFFSET = 8;
 
     public static LinkUnlinkMintByMintAuthorityIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -816,6 +838,8 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
+    public static final int POLICY_OFFSET = 8;
+
     public static SetJupiterSwapPolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -893,6 +917,10 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
+    public static final int INTEGRATION_PROGRAM_OFFSET = 8;
+    public static final int PROTOCOL_BITFLAG_OFFSET = 40;
+    public static final int DATA_OFFSET = 42;
+
     public static SetProtocolPolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -960,6 +988,8 @@ public final class GlamProtocolProgram {
     public static SetSystemTransferPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
+
+    public static final int POLICY_OFFSET = 8;
 
     public static SetSystemTransferPolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1039,6 +1069,9 @@ public final class GlamProtocolProgram {
     }
 
     public static final int BYTES = 44;
+
+    public static final int NEW_AUTHORITY_OFFSET = 8;
+    public static final int STAKER_OR_WITHDRAWER_OFFSET = 40;
 
     public static StakeAuthorizeIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1294,6 +1327,9 @@ public final class GlamProtocolProgram {
 
     public static final int BYTES = 17;
 
+    public static final int MOVE_STAKE_OFFSET = 8;
+    public static final int LAMPORTS_OFFSET = 9;
+
     public static StakeMoveIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -1377,6 +1413,8 @@ public final class GlamProtocolProgram {
 
     public static final int BYTES = 16;
 
+    public static final int LAMPORTS_OFFSET = 8;
+
     public static StakeSplitIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -1454,6 +1492,8 @@ public final class GlamProtocolProgram {
     }
 
     public static final int BYTES = 16;
+
+    public static final int LAMPORTS_OFFSET = 8;
 
     public static StakeWithdrawIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1541,6 +1581,8 @@ public final class GlamProtocolProgram {
     }
 
     public static final int BYTES = 16;
+
+    public static final int LAMPORTS_OFFSET = 8;
 
     public static SystemTransferIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1639,6 +1681,9 @@ public final class GlamProtocolProgram {
 
     public static final int BYTES = 17;
 
+    public static final int AMOUNT_OFFSET = 8;
+    public static final int DECIMALS_OFFSET = 16;
+
     public static TokenTransferCheckedByMintAuthorityIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -1703,6 +1748,8 @@ public final class GlamProtocolProgram {
     public static UpdateMintParamsIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
+
+    public static final int PARAMS_OFFSET = 8;
 
     public static UpdateMintParamsIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -1774,6 +1821,8 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
+    public static final int PARAMS_OFFSET = 8;
+
     public static UpdateMintParamsByMintAuthorityIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -1840,6 +1889,8 @@ public final class GlamProtocolProgram {
       return read(instruction.data(), instruction.offset());
     }
 
+    public static final int PRICED_PROTOCOL_OFFSET = 8;
+
     public static UpdatePricedProtocolIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
@@ -1899,6 +1950,8 @@ public final class GlamProtocolProgram {
     public static UpdateStateIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
+
+    public static final int STATE_OFFSET = 8;
 
     public static UpdateStateIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
