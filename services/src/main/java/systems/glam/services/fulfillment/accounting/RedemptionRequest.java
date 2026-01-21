@@ -3,7 +3,7 @@ package systems.glam.services.fulfillment.accounting;
 import software.sava.core.accounts.PublicKey;
 import systems.glam.sdk.idl.programs.glam.mint.gen.types.RequestQueue;
 import systems.glam.sdk.idl.programs.glam.mint.gen.types.RequestType;
-import systems.glam.services.tokens.MintContext;
+import systems.glam.services.mints.MintContext;
 
 import java.math.BigDecimal;
 import java.util.Arrays;

@@ -7,7 +7,7 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.services.integrations.IntegrationServiceContext;
-import systems.glam.services.pricing.MinStateAccount;
+import systems.glam.services.pricing.MinGlamStateAccount;
 import systems.glam.services.pricing.PositionReport;
 
 import java.util.ArrayList;
@@ -59,7 +59,7 @@ public final class VaultTokensPosition implements Position {
   public Instruction priceInstruction(final IntegrationServiceContext serviceContext,
                                       final GlamAccountClient glamAccountClient,
                                       final PublicKey baseAssetUSDOracleKey,
-                                      final MinStateAccount stateAccount,
+                                      final MinGlamStateAccount stateAccount,
                                       final Map<PublicKey, AccountInfo<byte[]>> accountMap,
                                       final Set<PublicKey> returnAccounts) {
     // Don't cache instruction without re-acting to State Account oracle priority changes and global config changes.

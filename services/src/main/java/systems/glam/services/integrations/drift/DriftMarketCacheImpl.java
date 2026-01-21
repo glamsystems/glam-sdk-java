@@ -1,4 +1,4 @@
-package systems.glam.services.fulfillment.drfit;
+package systems.glam.services.integrations.drift;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.drift.DriftAccounts;
@@ -7,8 +7,8 @@ import software.sava.idl.clients.drift.gen.types.MarketStatus;
 import software.sava.idl.clients.drift.gen.types.PerpMarket;
 import software.sava.idl.clients.drift.gen.types.SpotMarket;
 import software.sava.rpc.json.http.response.AccountInfo;
-import systems.glam.services.pricing.AccountConsumer;
-import systems.glam.services.pricing.AccountFetcher;
+import systems.glam.services.rpc.AccountConsumer;
+import systems.glam.services.rpc.AccountFetcher;
 
 import java.io.IOException;
 import java.nio.file.Files;

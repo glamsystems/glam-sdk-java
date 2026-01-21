@@ -1,4 +1,4 @@
-package systems.glam.services.fulfillment.drfit;
+package systems.glam.services.integrations.drift;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.encoding.ByteUtil;
@@ -9,7 +9,7 @@ import software.sava.idl.clients.drift.gen.types.PerpMarket;
 import software.sava.idl.clients.drift.gen.types.SpotMarket;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
-import systems.glam.services.pricing.AccountFetcher;
+import systems.glam.services.rpc.AccountFetcher;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

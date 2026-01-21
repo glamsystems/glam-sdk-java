@@ -8,11 +8,11 @@ import systems.glam.sdk.idl.programs.glam.protocol.gen.types.*;
 
 import java.util.Arrays;
 
-public record MinStateAccount(long slot,
-                              byte[] assetBytes,
-                              PublicKey[] assets,
-                              byte[] externalPositionsBytes,
-                              PublicKey[] externalPositions) {
+public record MinGlamStateAccount(long slot,
+                                  byte[] assetBytes,
+                                  PublicKey[] assets,
+                                  byte[] externalPositionsBytes,
+                                  PublicKey[] externalPositions) {
 
   public int numAccounts() {
     return assets.length + externalPositions.length;
@@ -67,7 +67,7 @@ public record MinStateAccount(long slot,
     return i;
   }
 
-  private static MinStateAccount createRecord(final long slot, final byte[] data) {
+  private static MinGlamStateAccount createRecord(final long slot, final byte[] data) {
     final var assets = SerDeUtil.readPublicKeyVector(4, data, StateAccount.ASSETS_OFFSET);
     Arrays.sort(assets);
     int i = StateAccount.ASSETS_OFFSET + 4 + SerDeUtil.lenVector(4, assets);
@@ -80,14 +80,14 @@ public record MinStateAccount(long slot,
     i += SerDeUtil.lenVector(4, externalPositions);
     final byte[] externalPositionsBytes = Arrays.copyOfRange(data, externalPositionOffset + 4, i);
 
-    return new MinStateAccount(slot, assetBytes, assets, externalPositionsBytes, externalPositions);
+    return new MinGlamStateAccount(slot, assetBytes, assets, externalPositionsBytes, externalPositions);
   }
 
-  public static MinStateAccount createRecord(final AccountInfo<byte[]> data) {
+  public static MinGlamStateAccount createRecord(final AccountInfo<byte[]> data) {
     return createRecord(data.context().slot(), data.data());
   }
 
-  public MinStateAccount createIfChanged(final long slot, final byte[] data) {
+  public MinGlamStateAccount createIfChanged(final long slot, final byte[] data) {
     final int numAssets = SerDeUtil.val(4, data, StateAccount.ASSETS_OFFSET);
     final int fromAssetsOffset = StateAccount.ASSETS_OFFSET + 4;
 
@@ -134,13 +134,13 @@ public record MinStateAccount(long slot,
       externalPositions = this.externalPositions;
     }
 
-    return new MinStateAccount(slot, assetBytes, assets, externalPositionsBytes, externalPositions);
+    return new MinGlamStateAccount(slot, assetBytes, assets, externalPositionsBytes, externalPositions);
   }
 
   @Override
   public boolean equals(final Object o) {
     //noinspection PatternVariableHidesField
-    if (o instanceof MinStateAccount(_, _, final var assets, _, final var externalPositions)) {
+    if (o instanceof MinGlamStateAccount(_, _, final var assets, _, final var externalPositions)) {
       return Arrays.equals(this.assets, assets) && Arrays.equals(this.externalPositions, externalPositions);
     } else {
       return false;

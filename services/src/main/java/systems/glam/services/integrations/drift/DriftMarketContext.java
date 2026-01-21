@@ -1,4 +1,4 @@
-package systems.glam.services.fulfillment.drfit;
+package systems.glam.services.integrations.drift;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;

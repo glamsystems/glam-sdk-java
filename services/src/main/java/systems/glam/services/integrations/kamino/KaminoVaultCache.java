@@ -7,7 +7,7 @@ import software.sava.rpc.json.http.client.SolanaRpcClient;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.core.request_capacity.context.CallContext;
 import software.sava.services.solana.remote.call.RpcCaller;
-import systems.glam.services.pricing.MintCache;
+import systems.glam.services.mints.MintCache;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

@@ -3,6 +3,7 @@ package systems.glam.services.pricing;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.integrations.IntegrationServiceContext;
+import systems.glam.services.rpc.AccountFetcher;
 
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;

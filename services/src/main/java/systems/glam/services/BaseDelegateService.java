@@ -1,11 +1,10 @@
-package systems.glam.services.fulfillment;
+package systems.glam.services;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.sysvar.Clock;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
-import systems.glam.services.ServiceContext;
 
 import java.util.Map;
 

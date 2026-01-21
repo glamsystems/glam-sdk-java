@@ -5,7 +5,7 @@ import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import systems.glam.sdk.GlamVaultAccounts;
 import systems.glam.sdk.StateAccountClient;
 import systems.glam.services.ServiceContext;
-import systems.glam.services.tokens.MintContext;
+import systems.glam.services.mints.MintContext;
 
 import java.util.HashSet;
 import java.util.List;

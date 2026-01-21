@@ -10,7 +10,7 @@ import systems.glam.sdk.StateAccountClient;
 import systems.glam.sdk.idl.programs.glam.mint.gen.types.RequestQueue;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.fulfillment.accounting.RedemptionSummary;
-import systems.glam.services.tokens.MintContext;
+import systems.glam.services.mints.MintContext;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

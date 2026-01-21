@@ -1,4 +1,4 @@
-package systems.glam.services.tokens;
+package systems.glam.services.mints;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
@@ -7,20 +7,16 @@ import software.sava.core.accounts.token.Mint;
 import software.sava.core.util.DecimalInteger;
 import software.sava.idl.clients.spl.associated_token.gen.AssociatedTokenPDAs;
 import software.sava.rpc.json.http.response.AccountInfo;
-import systems.glam.sdk.GlamAccountClient;
 
 import java.math.BigDecimal;
 
 import static java.math.RoundingMode.DOWN;
 
-public record MintContext(PublicKey mint,
-                          AccountMeta readMintMeta,
+public record MintContext(AccountMeta readMintMeta,
                           int decimals,
-                          PublicKey tokenProgram,
                           AccountMeta readTokenProgram) implements DecimalInteger {
 
-  private static AccountMeta readTokenProgram(final SolanaAccounts solanaAccounts,
-                                              final PublicKey tokenProgram) {
+  private static AccountMeta readTokenProgram(final SolanaAccounts solanaAccounts, final PublicKey tokenProgram) {
     return solanaAccounts.tokenProgram().equals(tokenProgram)
         ? solanaAccounts.readTokenProgram()
         : solanaAccounts.readToken2022Program();
@@ -31,10 +27,8 @@ public record MintContext(PublicKey mint,
                                           final int decimals,
                                           final PublicKey tokenProgram) {
     return new MintContext(
-        mint,
         AccountMeta.createRead(mint),
         decimals,
-        tokenProgram,
         readTokenProgram(solanaAccounts, tokenProgram)
     );
   }
@@ -44,14 +38,19 @@ public record MintContext(PublicKey mint,
     final var mint = Mint.read(mintAccountInfo.pubKey(), mintAccountInfo.data());
     final var mintKey = mint.address();
     final var readMintMeta = AccountMeta.createRead(mintKey);
-    final var tokenProgram = mintAccountInfo.owner();
     return new MintContext(
-        mintKey,
         readMintMeta,
         mint.decimals(),
-        tokenProgram,
-        readTokenProgram(solanaAccounts, tokenProgram)
+        readTokenProgram(solanaAccounts, mintAccountInfo.owner())
     );
+  }
+
+  public PublicKey mint() {
+    return readMintMeta.publicKey();
+  }
+
+  public PublicKey tokenProgram() {
+    return readTokenProgram.publicKey();
   }
 
   public long setScale(final BigDecimal amount) {
@@ -62,8 +61,8 @@ public record MintContext(PublicKey mint,
     return AssociatedTokenPDAs.associatedTokenPDA(
         associatedTokenProgram,
         owner,
-        tokenProgram,
-        mint
+        tokenProgram(),
+        mint()
     ).publicKey();
   }
 }

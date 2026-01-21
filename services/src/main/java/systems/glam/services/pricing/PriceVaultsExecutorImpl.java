@@ -8,8 +8,8 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.services.ServiceContext;
-import systems.glam.services.fulfillment.VaultPriceService;
 import systems.glam.services.integrations.IntegrationServiceContext;
+import systems.glam.services.rpc.AccountFetcher;
 
 import java.io.IOException;
 import java.nio.file.Files;

@@ -8,7 +8,7 @@ import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.GlamMintEvent;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.PricedProtocolRecord;
 import systems.glam.services.integrations.IntegrationServiceContext;
-import systems.glam.services.pricing.MinStateAccount;
+import systems.glam.services.pricing.MinGlamStateAccount;
 import systems.glam.services.pricing.PositionReport;
 
 import java.math.BigDecimal;
@@ -24,7 +24,7 @@ public interface Position {
 
   Instruction priceInstruction(final IntegrationServiceContext serviceContext,
                                final GlamAccountClient glamAccountClient,
-                               final PublicKey baseAssetUSDOracleKey, final MinStateAccount stateAccount,
+                               final PublicKey baseAssetUSDOracleKey, final MinGlamStateAccount stateAccount,
                                final Map<PublicKey, AccountInfo<byte[]>> accountMap,
                                final Set<PublicKey> returnAccounts);
 

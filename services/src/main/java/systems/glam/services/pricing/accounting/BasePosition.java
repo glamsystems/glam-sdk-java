@@ -1,6 +1,6 @@
 package systems.glam.services.pricing.accounting;
 
-import systems.glam.services.tokens.MintContext;
+import systems.glam.services.mints.MintContext;
 
 public abstract class BasePosition implements Position {
 

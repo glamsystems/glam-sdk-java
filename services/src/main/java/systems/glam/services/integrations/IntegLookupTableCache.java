@@ -1,8 +1,9 @@
-package systems.glam.services.pricing;
+package systems.glam.services.integrations;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.lookup.AddressLookupTable;
 import software.sava.services.solana.remote.call.RpcCaller;
+import systems.glam.services.rpc.AccountFetcher;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -14,18 +15,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import static java.lang.System.Logger.Level.WARNING;
-import static systems.glam.services.pricing.IntegTableCacheImpl.logger;
-import static systems.glam.services.pricing.IntegTableCacheImpl.writeTableData;
+import static systems.glam.services.integrations.IntegLookupTableCacheImpl.logger;
+import static systems.glam.services.integrations.IntegLookupTableCacheImpl.writeTableData;
 
-public interface IntegTableCache extends Runnable {
+public interface IntegLookupTableCache extends Runnable {
 
-  static CompletableFuture<IntegTableCache> createCache(final Path integrationTablesDirectory,
-                                                        final Set<PublicKey> integrationTableKeys,
-                                                        final RpcCaller rpcCaller,
-                                                        final AccountFetcher accountFetcher) {
+  static CompletableFuture<IntegLookupTableCache> createCache(final Path integrationTablesDirectory,
+                                                              final Set<PublicKey> integrationTableKeys,
+                                                              final RpcCaller rpcCaller,
+                                                              final AccountFetcher accountFetcher) {
     final var integrationTables = new ConcurrentHashMap<PublicKey, AddressLookupTable>();
 
-    // Read all .dat files from the directory
     try {
       Files.createDirectories(integrationTablesDirectory);
       try (final Stream<Path> files = Files.list(integrationTablesDirectory)) {
@@ -52,7 +52,7 @@ public interface IntegTableCache extends Runnable {
 
     if (missingKeys.isEmpty()) {
       return CompletableFuture.completedFuture(
-          new IntegTableCacheImpl(integrationTablesDirectory, integrationTables, accountFetcher)
+          new IntegLookupTableCacheImpl(integrationTablesDirectory, integrationTables, accountFetcher)
       );
     }
 
@@ -73,7 +73,7 @@ public interface IntegTableCache extends Runnable {
           logger.log(WARNING, "Integration lookup table does not exist: " + expectedKey.toBase58());
         }
       }
-      return new IntegTableCacheImpl(integrationTablesDirectory, integrationTables, accountFetcher);
+      return new IntegLookupTableCacheImpl(integrationTablesDirectory, integrationTables, accountFetcher);
     });
   }
 

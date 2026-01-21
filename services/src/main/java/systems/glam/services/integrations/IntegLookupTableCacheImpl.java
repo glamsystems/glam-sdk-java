@@ -1,10 +1,11 @@
-package systems.glam.services.pricing;
+package systems.glam.services.integrations;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.lookup.AddressLookupTable;
 import software.sava.core.encoding.ByteUtil;
 import software.sava.rpc.json.http.response.AccountInfo;
-import systems.glam.services.integrations.IntegrationServiceContext;
+import systems.glam.services.rpc.AccountConsumer;
+import systems.glam.services.rpc.AccountFetcher;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,17 +16,17 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.System.Logger.Level.WARNING;
 
-final class IntegTableCacheImpl implements IntegTableCache, AccountConsumer {
+final class IntegLookupTableCacheImpl implements IntegLookupTableCache, AccountConsumer {
 
-  static final System.Logger logger = System.getLogger(IntegTableCache.class.getName());
+  static final System.Logger logger = System.getLogger(IntegLookupTableCache.class.getName());
 
   private final Path integrationTablesDirectory;
   private final ConcurrentHashMap<PublicKey, AddressLookupTable> integrationTables;
   private final AccountFetcher accountFetcher;
 
-  IntegTableCacheImpl(final Path integrationTablesDirectory,
-                      final ConcurrentHashMap<PublicKey, AddressLookupTable> integrationTables,
-                      final AccountFetcher accountFetcher) {
+  IntegLookupTableCacheImpl(final Path integrationTablesDirectory,
+                            final ConcurrentHashMap<PublicKey, AddressLookupTable> integrationTables,
+                            final AccountFetcher accountFetcher) {
     this.integrationTablesDirectory = integrationTablesDirectory;
     this.integrationTables = integrationTables;
     this.accountFetcher = accountFetcher;

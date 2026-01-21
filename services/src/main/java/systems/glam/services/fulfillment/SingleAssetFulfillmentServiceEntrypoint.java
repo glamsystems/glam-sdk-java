@@ -16,7 +16,7 @@ import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintConstants;
 import systems.glam.services.ServiceContextImpl;
 import systems.glam.services.execution.InstructionProcessor;
 import systems.glam.services.fulfillment.config.FulfillmentServiceConfig;
-import systems.glam.services.tokens.MintContext;
+import systems.glam.services.mints.MintContext;
 
 import java.net.http.HttpClient;
 import java.util.*;

@@ -7,9 +7,10 @@ import software.sava.idl.clients.spl.token.gen.types.Mint;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.StateAccountClient;
+import systems.glam.services.BaseDelegateService;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.fulfillment.accounting.RedemptionSummary;
-import systems.glam.services.tokens.MintContext;
+import systems.glam.services.mints.MintContext;
 
 import java.util.*;
 import java.util.concurrent.locks.Condition;

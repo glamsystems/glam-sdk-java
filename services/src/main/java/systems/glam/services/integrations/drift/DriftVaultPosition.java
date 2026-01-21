@@ -1,4 +1,4 @@
-package systems.glam.services.fulfillment.drfit;
+package systems.glam.services.integrations.drift;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.tx.Instruction;
@@ -7,7 +7,7 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.services.integrations.IntegrationServiceContext;
-import systems.glam.services.pricing.MinStateAccount;
+import systems.glam.services.pricing.MinGlamStateAccount;
 import systems.glam.services.pricing.PositionReport;
 import systems.glam.services.pricing.accounting.Position;
 
@@ -44,8 +44,11 @@ public final class DriftVaultPosition implements Position {
   }
 
   @Override
-  public Instruction priceInstruction(final IntegrationServiceContext serviceContext, final GlamAccountClient glamAccountClient,
-                                      final PublicKey baseAssetUSDOracleKey, final MinStateAccount stateAccount, final Map<PublicKey, AccountInfo<byte[]>> accountMap,
+  public Instruction priceInstruction(final IntegrationServiceContext serviceContext,
+                                      final GlamAccountClient glamAccountClient,
+                                      final PublicKey baseAssetUSDOracleKey,
+                                      final MinGlamStateAccount stateAccount,
+                                      final Map<PublicKey, AccountInfo<byte[]>> accountMap,
                                       final Set<PublicKey> returnAccounts) {
     return null;
   }

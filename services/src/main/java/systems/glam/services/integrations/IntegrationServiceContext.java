@@ -4,11 +4,10 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
-import systems.glam.services.fulfillment.drfit.DriftMarketCache;
+import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoVaultCache;
-import systems.glam.services.pricing.AccountConsumer;
-import systems.glam.services.pricing.IntegTableCache;
-import systems.glam.services.tokens.MintContext;
+import systems.glam.services.rpc.AccountConsumer;
+import systems.glam.services.mints.MintContext;
 
 import java.nio.file.Path;
 import java.util.Collection;
@@ -32,7 +31,7 @@ public interface IntegrationServiceContext {
 
   AssetMeta globalConfigAssetMeta(final PublicKey mint);
 
-  IntegTableCache integTableCache();
+  IntegLookupTableCache integTableCache();
 
   DriftMarketCache driftMarketCache();
 

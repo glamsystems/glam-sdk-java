@@ -4,13 +4,12 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
-import systems.glam.services.fulfillment.drfit.DriftMarketCache;
+import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoVaultCache;
-import systems.glam.services.pricing.AccountConsumer;
-import systems.glam.services.pricing.AccountFetcher;
-import systems.glam.services.pricing.IntegTableCache;
-import systems.glam.services.pricing.MintCache;
-import systems.glam.services.tokens.MintContext;
+import systems.glam.services.rpc.AccountConsumer;
+import systems.glam.services.rpc.AccountFetcher;
+import systems.glam.services.mints.MintCache;
+import systems.glam.services.mints.MintContext;
 
 import java.util.Collection;
 import java.util.Set;
@@ -20,7 +19,7 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
   private final PublicKey solUSDOracleKey;
   private final PublicKey baseAssetUSDOracleKey;
   private final MintCache mintCache;
-  private final IntegTableCache integTableCache;
+  private final IntegLookupTableCache integLookupTableCache;
   private final AccountFetcher accountFetcher;
   private final DriftAccounts driftAccounts;
   private final DriftMarketCache driftMarketCache;
@@ -30,7 +29,7 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
   IntegrationServiceContextImpl(final PublicKey solUSDOracleKey,
                                 final PublicKey baseAssetUSDOracleKey,
                                 final MintCache mintCache,
-                                final IntegTableCache integTableCache,
+                                final IntegLookupTableCache integLookupTableCache,
                                 final AccountFetcher accountFetcher,
                                 final DriftAccounts driftAccounts,
                                 final DriftMarketCache driftMarketCache,
@@ -39,7 +38,7 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
     this.solUSDOracleKey = solUSDOracleKey;
     this.baseAssetUSDOracleKey = baseAssetUSDOracleKey;
     this.mintCache = mintCache;
-    this.integTableCache = integTableCache;
+    this.integLookupTableCache = integLookupTableCache;
     this.accountFetcher = accountFetcher;
     this.driftAccounts = driftAccounts;
     this.driftMarketCache = driftMarketCache;
@@ -121,7 +120,7 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
   }
 
   @Override
-  public IntegTableCache integTableCache() {
-    return integTableCache;
+  public IntegLookupTableCache integTableCache() {
+    return integLookupTableCache;
   }
 }

@@ -1,4 +1,4 @@
-package systems.glam.services.fulfillment;
+package systems.glam.services.pricing;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.lookup.AddressLookupTable;
@@ -21,15 +21,14 @@ import systems.glam.sdk.idl.programs.glam.mint.gen.events.GlamMintEvent;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolError;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.services.ServiceContext;
-import systems.glam.services.fulfillment.drfit.DriftUsersPosition;
-import systems.glam.services.fulfillment.kamino.KaminoVaultPosition;
+import systems.glam.services.BaseDelegateService;
+import systems.glam.services.integrations.drift.DriftUsersPosition;
+import systems.glam.services.integrations.kamino.KaminoVaultPosition;
 import systems.glam.services.integrations.IntegrationServiceContext;
-import systems.glam.services.pricing.AccountConsumer;
-import systems.glam.services.pricing.MinStateAccount;
-import systems.glam.services.pricing.PositionReport;
+import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.pricing.accounting.Position;
 import systems.glam.services.pricing.accounting.VaultTokensPosition;
-import systems.glam.services.tokens.MintContext;
+import systems.glam.services.mints.MintContext;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -47,6 +46,7 @@ public class MultiAssetPriceService extends BaseDelegateService
   private static final System.Logger logger = System.getLogger(MultiAssetPriceService.class.getName());
 
   private final IntegrationServiceContext integContext;
+  private final PublicKey mintPDA;
   private final int baseAssetDecimals;
   private final Set<PublicKey> accountsNeededSet;
   private final Map<PublicKey, Position> positions;
@@ -54,20 +54,22 @@ public class MultiAssetPriceService extends BaseDelegateService
   private final Map<Protocol, Position> protocolPositions;
   private final Instruction validateAUMInstruction;
 
-  private final AtomicReference<MinStateAccount> stateAccount;
+  private final AtomicReference<MinGlamStateAccount> stateAccount;
   private final AtomicReference<AumTransaction> aumTransaction;
   private volatile Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap;
   private final AtomicReference<LookupTableAccountMeta[]> glamVaultTables;
 
   MultiAssetPriceService(final ServiceContext serviceContext,
                          final IntegrationServiceContext integContext,
+                         final PublicKey mintPDA,
                          final PublicKey baseAssetMint,
                          final int baseAssetDecimals,
                          final GlamAccountClient glamAccountClient,
-                         final MinStateAccount stateAccount,
+                         final MinGlamStateAccount stateAccount,
                          final Set<PublicKey> accountsNeededSet) {
     super(serviceContext, glamAccountClient);
     this.integContext = integContext;
+    this.mintPDA = mintPDA;
     this.baseAssetDecimals = baseAssetDecimals;
     this.accountsNeededSet = accountsNeededSet;
     this.positions = HashMap.newHashMap(stateAccount.numAccounts());
@@ -105,7 +107,7 @@ public class MultiAssetPriceService extends BaseDelegateService
     }
   }
 
-  private LookupTableAccountMeta[] createTableMetaArray(final MinStateAccount stateAccount,
+  private LookupTableAccountMeta[] createTableMetaArray(final MinGlamStateAccount stateAccount,
                                                         final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap) {
     int numKVaults = 0;
     for (final var externalAccount : stateAccount.externalPositions()) {
@@ -166,13 +168,11 @@ public class MultiAssetPriceService extends BaseDelegateService
     final var vaultATA = glamAccountClient.findATA(mintContext.tokenProgram(), mintContext.mint()).publicKey();
     vaultTokensPosition.addVaultATA(assetMint, vaultATA);
     accountsNeededSet.add(vaultATA);
-    if (!assetMint.equals(vaultTokensPosition.baseAssetMint())) {
-      accountsNeededSet.remove(assetMint);
-    }
+    accountsNeededSet.remove(assetMint);
   }
 
   private StateChange stateAccountChanged(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap,
-                                          final MinStateAccount stateAccount) {
+                                          final MinGlamStateAccount stateAccount) {
     final var assets = stateAccount.assets();
     final var iterator = vaultTokensPosition.vaultATAMap().entrySet().iterator();
     while (iterator.hasNext()) {
@@ -378,17 +378,17 @@ public class MultiAssetPriceService extends BaseDelegateService
     }
   }
 
-  record AumTransaction(MinStateAccount minStateAccount,
+  record AumTransaction(MinGlamStateAccount minGlamStateAccount,
                         Transaction transaction,
                         String base64Encoded,
                         List<PublicKey> returnAccounts) {
 
     long slot() {
-      return minStateAccount.slot();
+      return minGlamStateAccount.slot();
     }
   }
 
-  private void prepareAUMTransaction(final MinStateAccount stateAccount,
+  private void prepareAUMTransaction(final MinGlamStateAccount stateAccount,
                                      final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap) {
     final var positions = this.positions.values();
     final var instructions = new ArrayList<Instruction>(2 + positions.size());

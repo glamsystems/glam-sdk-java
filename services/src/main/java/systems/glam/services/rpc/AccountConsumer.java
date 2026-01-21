@@ -1,4 +1,4 @@
-package systems.glam.services.pricing;
+package systems.glam.services.rpc;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.rpc.json.http.response.AccountInfo;
