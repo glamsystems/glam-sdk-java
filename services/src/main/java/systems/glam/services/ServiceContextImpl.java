@@ -2,74 +2,68 @@ package systems.glam.services;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
+import software.sava.core.accounts.sysvar.Clock;
 import software.sava.core.accounts.token.TokenAccount;
-import software.sava.core.tx.Instruction;
-import software.sava.core.tx.Transaction;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.core.remote.call.Backoff;
-import software.sava.services.solana.epoch.EpochInfoService;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamAccounts;
-import systems.glam.services.execution.InstructionProcessor;
 
 import java.math.BigInteger;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public final class ServiceContextImpl implements ServiceContext {
 
-  private static final System.Logger logger = System.getLogger(ServiceContextImpl.class.getName());
-
   private final PublicKey serviceKey;
   private final BigInteger warnFeePayerBalance;
   private final BigInteger minFeePayerBalance;
+  private final Path cacheDirectory;
+  private final Path accountsCacheDirectory;
   private final Path glamStateAccountCacheDirectory;
   private final long minCheckStateDelayNanos;
   private final long maxCheckStateDelayNanos;
   private final ExecutorService taskExecutor;
   private final Backoff backoff;
-  private final EpochInfoService epochInfoService;
   private final SolanaAccounts solanaAccounts;
   private final GlamAccounts glamAccounts;
   private final NotifyClient notifyClient;
   private final RpcCaller rpcCaller;
-  private final InstructionProcessor instructionProcessor;
-  private final Function<List<Instruction>, Transaction> transactionFactory;
 
   public ServiceContextImpl(final PublicKey serviceKey,
                             final BigInteger warnFeePayerBalance, final BigInteger minFeePayerBalance,
-                            final Path glamStateAccountCacheDirectory,
+                            final Path cacheDirectory,
                             final Duration minCheckStateDelay, final Duration maxCheckStateDelay,
                             final ExecutorService taskExecutor,
                             final Backoff backoff,
-                            final EpochInfoService epochInfoService,
                             final SolanaAccounts solanaAccounts,
                             final GlamAccounts glamAccounts,
                             final NotifyClient notifyClient,
-                            final RpcCaller rpcCaller,
-                            final InstructionProcessor instructionProcessor,
-                            final Function<List<Instruction>, Transaction> transactionFactory) {
+                            final RpcCaller rpcCaller) {
     this.serviceKey = serviceKey;
     this.warnFeePayerBalance = warnFeePayerBalance;
     this.minFeePayerBalance = minFeePayerBalance;
-    this.glamStateAccountCacheDirectory = glamStateAccountCacheDirectory;
+    this.cacheDirectory = cacheDirectory;
+    this.accountsCacheDirectory = cacheDirectory.resolve("accounts");
+    this.glamStateAccountCacheDirectory = accountsCacheDirectory.resolve("glam/state");
     this.minCheckStateDelayNanos = minCheckStateDelay.toNanos();
     this.maxCheckStateDelayNanos = maxCheckStateDelay.toNanos();
     this.taskExecutor = taskExecutor;
     this.backoff = backoff;
-    this.epochInfoService = epochInfoService;
     this.solanaAccounts = solanaAccounts;
     this.glamAccounts = glamAccounts;
     this.notifyClient = notifyClient;
     this.rpcCaller = rpcCaller;
-    this.instructionProcessor = instructionProcessor;
-    this.transactionFactory = transactionFactory;
+  }
+
+  @Override
+  public Path accountsCacheDirectory() {
+    return accountsCacheDirectory;
   }
 
   @Override
@@ -103,11 +97,6 @@ public final class ServiceContextImpl implements ServiceContext {
   }
 
   @Override
-  public long medianMillisPerSlot() {
-    return epochInfoService.epochInfo().medianMillisPerSlot();
-  }
-
-  @Override
   public void executeTask(final Runnable task) {
     taskExecutor.execute(task);
   }
@@ -115,12 +104,6 @@ public final class ServiceContextImpl implements ServiceContext {
   @Override
   public void backoff(final long failureCount) throws InterruptedException {
     NANOSECONDS.sleep(Math.max(minCheckStateDelayNanos, backoff.delay(failureCount, NANOSECONDS)));
-  }
-
-  @Override
-  public boolean processInstructions(final String logContext,
-                                     final List<Instruction> instructions) throws InterruptedException {
-    return instructionProcessor.processInstructions(logContext, instructions, transactionFactory);
   }
 
   // TODO: Move to dedicated service
@@ -205,8 +188,20 @@ public final class ServiceContextImpl implements ServiceContext {
   }
 
   @Override
-  public Path glamStateAccountCacheDirectory() {
-    return glamStateAccountCacheDirectory;
+  public Path cacheDirectory() {
+    return cacheDirectory;
+  }
+
+  @Override
+  public Path resolveGlamStateFilePath(final PublicKey glamStateKey) {
+    return glamStateAccountCacheDirectory.resolve(glamStateKey.toBase58() + ".json");
+  }
+
+  @Override
+  public Clock clock(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap) {
+    final var clockSysVar = clockSysVar();
+    final var clockAccount = accountsNeededMap.get(clockSysVar);
+    return Clock.read(clockSysVar, clockAccount.data());
   }
 
   @Override
@@ -218,12 +213,9 @@ public final class ServiceContextImpl implements ServiceContext {
         "minCheckStateDelayNanos=" + minCheckStateDelayNanos + ", " +
         "maxCheckStateDelayNanos=" + maxCheckStateDelayNanos + ", " +
         "backoff=" + backoff + ", " +
-        "epochInfoService=" + epochInfoService + ", " +
         "solanaAccounts=" + solanaAccounts + ", " +
         "glamAccounts=" + glamAccounts + ", " +
         "rpcCaller=" + rpcCaller + ", " +
-        "glamStateAccountCacheDirectory=" + glamStateAccountCacheDirectory + ", " +
-        "instructionProcessor=" + instructionProcessor + ", " +
-        "transactionFactory=" + transactionFactory + ']';
+        "glamStateAccountCacheDirectory=" + glamStateAccountCacheDirectory;
   }
 }

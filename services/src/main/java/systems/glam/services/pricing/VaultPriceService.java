@@ -37,7 +37,7 @@ public interface VaultPriceService extends DelegateService {
     }
 
     return new MultiAssetPriceService(
-        serviceContext, integContext, mintPDA,
+        integContext, mintPDA,
         baseAssetMint, baseAssetDecimals, glamClient, minGlamStateAccount,
         accountsNeeded
     );

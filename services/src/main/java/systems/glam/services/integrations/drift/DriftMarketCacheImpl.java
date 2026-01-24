@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import static java.lang.System.Logger.Level.WARNING;
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
+import static systems.glam.services.io.FileUtils.ACCOUNT_FILE_EXTENSION;
 
 final class DriftMarketCacheImpl implements DriftMarketCache, AccountConsumer {
 
@@ -140,7 +141,7 @@ final class DriftMarketCacheImpl implements DriftMarketCache, AccountConsumer {
 
   static void writeMarketData(final Path directory, final int marketIndex, final byte[] data) {
     try {
-      Files.write(directory.resolve(marketIndex + ".dat"), data);
+      Files.write(directory.resolve(marketIndex + ACCOUNT_FILE_EXTENSION), data);
     } catch (final IOException e) {
       logger.log(WARNING, "Failed to write Drift market account data", e);
     }
@@ -152,7 +153,7 @@ final class DriftMarketCacheImpl implements DriftMarketCache, AccountConsumer {
                               final MarketStatus status) {
     if (status == MarketStatus.Delisted) {
       try {
-        Files.deleteIfExists(directory.resolve(marketIndex + ".dat"));
+        Files.deleteIfExists(directory.resolve(marketIndex + ACCOUNT_FILE_EXTENSION));
       } catch (final IOException e) {
         logger.log(WARNING, "Failed to delete Drift market account data", e);
       }

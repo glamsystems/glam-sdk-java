@@ -9,7 +9,7 @@ import java.nio.file.Path;
 
 public final class FileUtils {
 
-  private static final String ACCOUNT_FILE_EXTENSION = ".dat";
+  public static final String ACCOUNT_FILE_EXTENSION = ".dat";
 
   public static Path resolveAccountPath(final Path path, final PublicKey pubKey) {
     return path.resolve(pubKey.toBase58() + ACCOUNT_FILE_EXTENSION);

@@ -8,7 +8,7 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.StateAccountClient;
 import systems.glam.services.BaseDelegateService;
-import systems.glam.services.ServiceContext;
+import systems.glam.services.execution.ExecutionServiceContext;
 import systems.glam.services.fulfillment.accounting.RedemptionSummary;
 import systems.glam.services.mints.MintContext;
 
@@ -25,6 +25,7 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
 
   protected static final System.Logger logger = System.getLogger(FulfillmentService.class.getName());
 
+  protected final ExecutionServiceContext serviceContext;
   protected final List<PublicKey> accountsNeededList;
   protected final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap;
   protected final boolean softRedeem;
@@ -40,8 +41,8 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
   protected final ReentrantLock lock;
   protected final Condition stateChange;
 
-  protected BaseFulfillmentService(final ServiceContext context,
-                                   final GlamAccountClient glamAccountClient,
+  protected BaseFulfillmentService(final GlamAccountClient glamAccountClient,
+                                   final ExecutionServiceContext serviceContext,
                                    final StateAccountClient stateAccountClient,
                                    final MintContext baseAssetMintContext,
                                    final PublicKey baseAssetVaultAta,
@@ -50,7 +51,8 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
                                    final MintContext vaultMintContext,
                                    final List<PublicKey> accountsNeededList,
                                    final List<Instruction> fulFillInstructions) {
-    super(context, glamAccountClient);
+    super(glamAccountClient);
+    this.serviceContext = serviceContext;
     this.baseAssetVaultAta = baseAssetVaultAta;
     this.vaultName = stateAccountClient.name();
     this.isSoftRedeem = stateAccountClient.softRedeem();
@@ -70,7 +72,7 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
   protected abstract void handleVault() throws InterruptedException;
 
   protected final void fetchAccounts() {
-    final var accountsNeeded = context.rpcCaller().courteousGet(
+    final var accountsNeeded = serviceContext.rpcCaller().courteousGet(
         rpcClient -> rpcClient.getAccounts(accountsNeededList),
         "rpcClient::getPositionRelatedAccounts"
     );
@@ -92,7 +94,7 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
   }
 
   protected final RedemptionSummary redemptionSummary() {
-    final var clock = clock(accountsNeededMap);
+    final var clock = serviceContext.clock(accountsNeededMap);
     return redemptionSummary(clock);
   }
 
@@ -107,7 +109,7 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
     try {
       for (; ; ) {
         fetchAccounts();
-        if (context.feePayerBalanceLow()) {
+        if (serviceContext.feePayerBalanceLow()) {
           awaitChange();
           continue;
         }
@@ -131,8 +133,8 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
   }
 
   protected final void awaitChange(final long delayNanos) throws InterruptedException {
-    final long minCheckStateDelayNanos = context.minCheckStateDelayNanos();
-    final long maxCheckStateDelayNanos = context.maxCheckStateDelayNanos();
+    final long minCheckStateDelayNanos = serviceContext.minCheckStateDelayNanos();
+    final long maxCheckStateDelayNanos = serviceContext.maxCheckStateDelayNanos();
     lock.lock();
     try {
       final long remainingNanos = stateChange.awaitNanos(Math.min(Math.max(delayNanos, minCheckStateDelayNanos), maxCheckStateDelayNanos));
@@ -146,19 +148,19 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
   }
 
   protected final void awaitChange() throws InterruptedException {
-    awaitChange(context.maxCheckStateDelayNanos());
+    awaitChange(serviceContext.maxCheckStateDelayNanos());
   }
 
   protected final long redemptionAvailableIn(final RedemptionSummary redemptionSummary) {
     final var softFulfillable = redemptionSummary.softFulfillable();
     if (softFulfillable.isEmpty()) {
-      return context.maxCheckStateDelayNanos();
+      return serviceContext.maxCheckStateDelayNanos();
     }
     final long availableAt = softFulfillable.getFirst().createdAt() + redeemNoticePeriod;
     if (redeemWindowInSeconds) {
       return SECONDS.toNanos(availableAt - redemptionSummary.epochSeconds());
     } else {
-      final long millisPerSlot = context.medianMillisPerSlot();
+      final long millisPerSlot = serviceContext.medianMillisPerSlot();
       return MILLISECONDS.toNanos((availableAt - redemptionSummary.slot()) * millisPerSlot);
     }
   }
@@ -187,8 +189,6 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
     } else {
       fulfillInstructions = new ArrayList<>(this.fulFillInstructions);
     }
-    return context.processInstructions(vaultName + " Fulfill Redemptions", fulfillInstructions);
+    return serviceContext.processInstructions(vaultName + " Fulfill Redemptions", fulfillInstructions);
   }
-
-
 }

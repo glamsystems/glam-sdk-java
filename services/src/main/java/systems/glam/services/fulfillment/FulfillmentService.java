@@ -4,7 +4,7 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import systems.glam.sdk.GlamVaultAccounts;
 import systems.glam.sdk.StateAccountClient;
-import systems.glam.services.ServiceContext;
+import systems.glam.services.execution.ExecutionServiceContext;
 import systems.glam.services.mints.MintContext;
 
 import java.util.HashSet;
@@ -12,7 +12,7 @@ import java.util.List;
 
 public interface FulfillmentService extends Runnable {
 
-  static FulfillmentService createSingleAssetService(final ServiceContext serviceContext,
+  static FulfillmentService createSingleAssetService(final ExecutionServiceContext serviceContext,
                                                      final boolean softRedeem,
                                                      final StateAccountClient stateAccountClient,
                                                      final MintContext vaultMintContext,

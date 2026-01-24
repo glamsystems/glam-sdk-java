@@ -2,16 +2,18 @@ package systems.glam.services;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
-import software.sava.core.tx.Instruction;
+import software.sava.core.accounts.sysvar.Clock;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamAccounts;
 
 import java.nio.file.Path;
-import java.util.List;
+import java.util.Map;
 
 public interface ServiceContext {
+
+  Path accountsCacheDirectory();
 
   PublicKey clockSysVar();
 
@@ -21,20 +23,15 @@ public interface ServiceContext {
 
   boolean isTokenAccount(final AccountInfo<byte[]> accountInfo);
 
-  PublicKey glamMintProgram();
+  PublicKey serviceKey();
 
-  long medianMillisPerSlot();
+  boolean feePayerBalanceLow();
+
+  PublicKey glamMintProgram();
 
   void executeTask(final Runnable task);
 
   void backoff(final long failureCount) throws InterruptedException;
-
-  boolean processInstructions(final String logContext,
-                              final List<Instruction> instructions) throws InterruptedException;
-
-  boolean feePayerBalanceLow();
-
-  PublicKey serviceKey();
 
   long minCheckStateDelayNanos();
 
@@ -48,5 +45,9 @@ public interface ServiceContext {
 
   RpcCaller rpcCaller();
 
-  Path glamStateAccountCacheDirectory();
+  Path cacheDirectory();
+
+  Path resolveGlamStateFilePath(final PublicKey glamStateKey);
+
+  Clock clock(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap);
 }

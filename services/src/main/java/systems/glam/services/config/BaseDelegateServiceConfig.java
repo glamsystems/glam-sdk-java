@@ -2,10 +2,13 @@ package systems.glam.services.config;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
+import software.sava.core.tx.Transaction;
 import software.sava.core.util.LamportDecimal;
+import software.sava.kms.core.signing.SigningService;
 import software.sava.kms.core.signing.SigningServiceConfig;
 import software.sava.rpc.json.PublicKeyEncoding;
 import software.sava.rpc.json.http.client.SolanaRpcClient;
+import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.core.config.RemoteResourceConfig;
 import software.sava.services.core.config.ServiceConfigUtil;
 import software.sava.services.core.net.http.NotifyClient;
@@ -17,25 +20,37 @@ import software.sava.services.core.remote.load_balance.LoadBalancer;
 import software.sava.services.core.remote.load_balance.LoadBalancerConfig;
 import software.sava.services.core.request_capacity.CapacityConfig;
 import software.sava.services.core.request_capacity.context.CallContext;
+import software.sava.services.solana.alt.LookupTableCache;
 import software.sava.services.solana.alt.TableCacheConfig;
 import software.sava.services.solana.config.ChainItemFormatter;
 import software.sava.services.solana.config.HeliusConfig;
+import software.sava.services.solana.epoch.EpochInfoService;
 import software.sava.services.solana.epoch.EpochServiceConfig;
 import software.sava.services.solana.remote.call.CallWeights;
 import software.sava.services.solana.remote.call.RpcCaller;
-import software.sava.services.solana.transactions.HeliusFeeProvider;
-import software.sava.services.solana.transactions.TxMonitorConfig;
+import software.sava.services.solana.transactions.*;
+import software.sava.services.solana.websocket.WebSocketManager;
 import systems.comodal.jsoniter.FieldBufferPredicate;
 import systems.comodal.jsoniter.JsonIterator;
+import systems.glam.sdk.GlamAccounts;
+import systems.glam.services.ServiceContext;
+import systems.glam.services.ServiceContextImpl;
+import systems.glam.services.execution.ExecutionServiceContext;
+import systems.glam.services.execution.InstructionProcessor;
+import systems.glam.services.mints.MintCache;
+import systems.glam.services.rpc.AccountFetcher;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNullElse;
 import static software.sava.services.solana.config.ChainItemFormatter.parseFormatter;
@@ -47,7 +62,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
                                         SolanaAccounts solanaAccounts,
                                         ChainItemFormatter formatter,
                                         NotifyClient notifyClient,
-                                        Path glamStateAccountCacheDirectory,
+                                        Path cacheDirectory,
                                         TableCacheConfig tableCacheConfig,
                                         RpcCaller rpcCaller,
                                         LoadBalancer<SolanaRpcClient> sendClients,
@@ -55,12 +70,140 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
                                         RemoteResourceConfig websocketConfig,
                                         EpochServiceConfig epochServiceConfig,
                                         TxMonitorConfig txMonitorConfig,
+                                        AccountFetcherConfig accountFetcherConfig,
+                                        DefensivePollingConfig defensivePollingConfig,
                                         BigDecimal maxLamportPriorityFee,
                                         BigInteger warnFeePayerBalance, BigInteger minFeePayerBalance,
                                         Duration minCheckStateDelay, Duration maxCheckStateDelay,
-                                        Backoff serviceBackoff) implements DelegateServiceConfig {
+                                        Backoff serviceBackoff,
+                                        double defaultCuBudgetMultiplier,
+                                        int maxTransactionRetries) implements DelegateServiceConfig {
 
   private static final Backoff DEFAULT_NETWORK_BACKOFF = Backoff.fibonacci(1, 21);
+
+  @Override
+  public WebSocketManager createWebSocketManager(final HttpClient wsHttpClient,
+                                                 final Collection<Consumer<SolanaRpcWebsocket>> webSocketConsumers) {
+    return WebSocketManager.createManager(
+        wsHttpClient,
+        websocketConfig.endpoint(),
+        websocketConfig.backoff(),
+        websocket -> {
+          for (final var webSocketConsumer : webSocketConsumers) {
+            webSocketConsumer.accept(websocket);
+          }
+        }
+    );
+  }
+
+  @Override
+  public LookupTableCache createLookupTableCache(final ExecutorService taskExecutor) {
+    return LookupTableCache.createCache(
+        taskExecutor,
+        tableCacheConfig.initialCapacity(),
+        rpcCaller.rpcClients()
+    );
+  }
+
+  @Override
+  public TransactionProcessor createTransactionProcessor(final ExecutorService taskExecutor,
+                                                         final SigningService signingService,
+                                                         final LookupTableCache tableCache,
+                                                         final PublicKey serviceKey,
+                                                         final WebSocketManager webSocketManager) {
+    return TransactionProcessor.createProcessor(
+        taskExecutor,
+        signingService,
+        tableCache,
+        serviceKey,
+        solanaAccounts,
+        formatter,
+        rpcCaller.rpcClients(),
+        sendClients,
+        feeProviders,
+        rpcCaller.callWeights(),
+        webSocketManager
+    );
+  }
+
+  @Override
+  public TxMonitorService createTxMonitorService(final EpochInfoService epochInfoService,
+                                                 final WebSocketManager webSocketManager,
+                                                 final TransactionProcessor transactionProcessor) {
+    return TxMonitorService.createService(
+        formatter,
+        rpcCaller,
+        epochInfoService,
+        webSocketManager,
+        txMonitorConfig.minSleepBetweenSigStatusPolling(),
+        txMonitorConfig.webSocketConfirmationTimeout(),
+        transactionProcessor,
+        txMonitorConfig.retrySendDelay(),
+        txMonitorConfig.minBlocksRemainingToResend()
+    );
+  }
+
+  @Override
+  public EpochInfoService createEpochInfoService() {
+    return EpochInfoService.createService(epochServiceConfig, rpcCaller);
+  }
+
+  @Override
+  public InstructionProcessor createInstructionProcessor(final TransactionProcessor transactionProcessor,
+                                                         final InstructionService instructionService) {
+    return InstructionProcessor.createProcessor(
+        transactionProcessor,
+        instructionService,
+        maxLamportPriorityFee,
+        notifyClient,
+        defaultCuBudgetMultiplier,
+        maxTransactionRetries
+    );
+  }
+
+  @Override
+  public ServiceContext createServiceContext(final ExecutorService taskExecutor,
+                                             final PublicKey serviceKey,
+                                             final GlamAccounts glamAccounts) {
+    return new ServiceContextImpl(
+        serviceKey,
+        warnFeePayerBalance, minFeePayerBalance,
+        cacheDirectory,
+        minCheckStateDelay, maxCheckStateDelay,
+        taskExecutor,
+        serviceBackoff,
+        solanaAccounts, glamAccounts,
+        notifyClient,
+        rpcCaller
+    );
+  }
+
+  @Override
+  public MintCache createMintCache() {
+    return MintCache.createCache(solanaAccounts, cacheDirectory.resolve("mints"));
+  }
+
+  @Override
+  public ExecutionServiceContext createExecutionServiceContext(final ServiceContext serviceContext,
+                                                               final EpochInfoService epochInfoService,
+                                                               final InstructionProcessor instructionProcessor) {
+    return ExecutionServiceContext.createContext(
+        serviceContext,
+        epochInfoService,
+        instructionProcessor,
+        instructions -> Transaction.createTx(serviceContext.serviceKey(), instructions)
+    );
+  }
+
+  @Override
+  public AccountFetcher createAccountFetcher(final Set<PublicKey> alwaysFetch) {
+    return AccountFetcher.createFetcher(
+        accountFetcherConfig.fetchDelay(),
+        accountFetcherConfig.reactive(),
+        rpcCaller,
+        alwaysFetch
+    );
+  }
 
   public static class ConfigParser implements FieldBufferPredicate {
 
@@ -71,7 +214,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
     private SigningServiceConfig signingServiceConfig;
     private ChainItemFormatter formatter;
     private NotifyClient notifyClient;
-    private Path glamStateAccountCacheDirectory;
+    private Path cacheDirectory;
     private TableCacheConfig tableCacheConfig;
     private CallWeights callWeights;
     private Backoff defaultRPCBackoff = DEFAULT_NETWORK_BACKOFF;
@@ -81,12 +224,16 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
     private RemoteResourceConfig websocketConfig;
     private EpochServiceConfig epochServiceConfig;
     private TxMonitorConfig txMonitorConfig;
+    private AccountFetcherConfig accountFetcherConfig;
+    private DefensivePollingConfig defensivePollingConfig;
     private BigDecimal maxSOLPriorityFee;
     private BigDecimal warnFeePayerBalance;
     private BigDecimal minFeePayerBalance;
     private Duration minCheckStateDelay;
     private Duration maxCheckStateDelay;
     private Backoff serviceBackoff;
+    private double defaultCuBudgetMultiplier = 1.13;
+    private int maxTransactionRetries = 3;
 
     protected ConfigParser(final ExecutorService taskExecutor, final HttpClient httpClient) {
       this.taskExecutor = taskExecutor;
@@ -133,6 +280,12 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
       if (serviceBackoff == null) {
         serviceBackoff = DEFAULT_NETWORK_BACKOFF;
       }
+      if (accountFetcherConfig == null) {
+        accountFetcherConfig = AccountFetcherConfig.createDefault();
+      }
+      if (defensivePollingConfig == null) {
+        defensivePollingConfig = DefensivePollingConfig.createDefaultConfig();
+      }
     }
 
     protected final DelegateServiceConfig createBaseConfig() {
@@ -143,7 +296,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
           SolanaAccounts.MAIN_NET,
           formatter,
           notifyClient,
-          glamStateAccountCacheDirectory,
+          cacheDirectory,
           tableCacheConfig,
           new RpcCaller(taskExecutor, rpcClients, callWeights),
           sendClients,
@@ -151,11 +304,15 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
           websocketConfig,
           epochServiceConfig,
           txMonitorConfig,
+          accountFetcherConfig,
+          defensivePollingConfig,
           LamportDecimal.fromBigDecimal(maxSOLPriorityFee),
           LamportDecimal.fromBigDecimal(warnFeePayerBalance).toBigInteger(),
           LamportDecimal.fromBigDecimal(minFeePayerBalance).toBigInteger(),
           minCheckStateDelay, maxCheckStateDelay,
-          serviceBackoff
+          serviceBackoff,
+          defaultCuBudgetMultiplier,
+          maxTransactionRetries
       );
     }
 
@@ -181,8 +338,8 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
             DEFAULT_NETWORK_BACKOFF
         );
         this.notifyClient = createNotifyClient(webHookConfigs);
-      } else if (fieldEquals("glamStateAccountCacheDirectory", buf, offset, len)) {
-        glamStateAccountCacheDirectory = Path.of(ji.readString());
+      } else if (fieldEquals("cacheDirectory", buf, offset, len)) {
+        cacheDirectory = Path.of(ji.readString());
       } else if (fieldEquals("tableCache", buf, offset, len)) {
         tableCacheConfig = TableCacheConfig.parse(ji);
       } else if (fieldEquals("rpcCallWeights", buf, offset, len)) {
@@ -233,6 +390,10 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
         epochServiceConfig = EpochServiceConfig.parseConfig(ji);
       } else if (fieldEquals("txMonitor", buf, offset, len)) {
         txMonitorConfig = TxMonitorConfig.parseConfig(ji);
+      } else if (fieldEquals("accountFetcher", buf, offset, len)) {
+        accountFetcherConfig = AccountFetcherConfig.parseConfig(ji);
+      } else if (fieldEquals("defensivePolling", buf, offset, len)) {
+        defensivePollingConfig = DefensivePollingConfig.parseConfig(ji);
       } else if (fieldEquals("maxSOLPriorityFee", buf, offset, len)) {
         maxSOLPriorityFee = ji.readBigDecimalDropZeroes();
       } else if (fieldEquals("warnFeePayerBalance", buf, offset, len)) {
@@ -243,6 +404,10 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
         minCheckStateDelay = ServiceConfigUtil.parseDuration(ji);
       } else if (fieldEquals("maxCheckStateDelay", buf, offset, len)) {
         maxCheckStateDelay = ServiceConfigUtil.parseDuration(ji);
+      } else if (fieldEquals("defaultCuBudgetMultiplier", buf, offset, len)) {
+        defaultCuBudgetMultiplier = ji.readDouble();
+      } else if (fieldEquals("maxTransactionRetries", buf, offset, len)) {
+        maxTransactionRetries = ji.readInt();
       } else {
         throw new IllegalStateException("Unknown service config field " + new String(buf, offset, len));
       }

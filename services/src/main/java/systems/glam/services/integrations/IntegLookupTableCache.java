@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 import static java.lang.System.Logger.Level.WARNING;
 import static systems.glam.services.integrations.IntegLookupTableCacheImpl.logger;
 import static systems.glam.services.integrations.IntegLookupTableCacheImpl.writeTableData;
+import static systems.glam.services.io.FileUtils.ACCOUNT_FILE_EXTENSION;
 
 public interface IntegLookupTableCache extends Runnable {
 
@@ -29,19 +30,18 @@ public interface IntegLookupTableCache extends Runnable {
     try {
       Files.createDirectories(integrationTablesDirectory);
       try (final Stream<Path> files = Files.list(integrationTablesDirectory)) {
-        files.filter(p -> p.getFileName().toString().endsWith(".dat"))
-            .forEach(datFile -> {
-              try {
-                final var fileName = datFile.getFileName().toString();
-                final var tableKeyStr = fileName.substring(0, fileName.length() - 4);
-                final var tableKey = PublicKey.fromBase58Encoded(tableKeyStr);
-                final byte[] data = Files.readAllBytes(datFile);
-                final var table = AddressLookupTable.read(tableKey, data);
-                integrationTables.put(tableKey, table);
-              } catch (final IOException ex) {
-                throw new UncheckedIOException(ex);
-              }
-            });
+        files.filter(p -> p.getFileName().toString().endsWith(ACCOUNT_FILE_EXTENSION)).forEach(datFile -> {
+          try {
+            final var fileName = datFile.getFileName().toString();
+            final var tableKeyStr = fileName.substring(0, fileName.length() - 4);
+            final var tableKey = PublicKey.fromBase58Encoded(tableKeyStr);
+            final byte[] data = Files.readAllBytes(datFile);
+            final var table = AddressLookupTable.read(tableKey, data);
+            integrationTables.put(tableKey, table);
+          } catch (final IOException ex) {
+            throw new UncheckedIOException(ex);
+          }
+        });
       }
     } catch (final IOException ex) {
       throw new UncheckedIOException(ex);

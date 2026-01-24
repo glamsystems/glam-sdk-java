@@ -20,9 +20,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import static java.lang.System.Logger.Level.WARNING;
+import static systems.glam.services.io.FileUtils.ACCOUNT_FILE_EXTENSION;
 
 public interface DriftMarketCache {
 
@@ -98,9 +98,9 @@ public interface DriftMarketCache {
                                                                                          final DriftAccounts driftAccounts,
                                                                                          final Function<byte[], DriftMarketContext> createContext,
                                                                                          final Supplier<CompletableFuture<AtomicReferenceArray<DriftMarketContext>>> fallback) {
-    try (final Stream<Path> files = Files.list(marketsDirectory)) {
+    try (final var files = Files.list(marketsDirectory)) {
       final var datFiles = files
-          .filter(p -> p.getFileName().toString().endsWith(".dat"))
+          .filter(p -> p.getFileName().toString().endsWith(ACCOUNT_FILE_EXTENSION))
           .toList();
 
       if (datFiles.isEmpty()) {
@@ -150,6 +150,7 @@ public interface DriftMarketCache {
                                                                                           final List<Filter> filters,
                                                                                           final PublicKey driftProgram,
                                                                                           final Function<AccountInfo<byte[]>, DriftMarketContext> contextFactory) {
+    // TODO: only fetch the slice of data needed.
     final var fetchFuture = rpcCaller.courteousCall(
         rpcClient -> rpcClient.getProgramAccounts(driftProgram, filters),
         "rpcClient::getDriftSpotMarkets"

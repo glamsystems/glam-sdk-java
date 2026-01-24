@@ -82,20 +82,14 @@ final class MintCacheImpl implements MintCache {
 
   @Override
   public MintContext setGet(final MintContext mintContext) {
-    final var mintKey = mintContext.mint();
-    var previous = mintMap.get(mintKey);
+    final var previous = mintMap.putIfAbsent(mintContext.mint(), mintContext);
     if (previous != null) {
       return previous;
     }
     lock.lock();
     try {
-      previous = mintMap.putIfAbsent(mintKey, mintContext);
-      if (previous != null) {
-        return previous;
-      } else {
-        writeEntry(mintContext);
-        return mintContext;
-      }
+      writeEntry(mintContext);
+      return mintContext;
     } finally {
       lock.unlock();
     }

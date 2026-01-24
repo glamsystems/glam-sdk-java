@@ -3,21 +3,23 @@ package systems.glam.services.integrations;
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
+import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
+import systems.glam.services.ServiceContext;
+import systems.glam.services.execution.BaseServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoVaultCache;
-import systems.glam.services.rpc.AccountConsumer;
-import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.mints.MintCache;
 import systems.glam.services.mints.MintContext;
+import systems.glam.services.rpc.AccountConsumer;
+import systems.glam.services.rpc.AccountFetcher;
 
 import java.util.Collection;
 import java.util.Set;
 
-final class IntegrationServiceContextImpl implements IntegrationServiceContext {
+final class IntegrationServiceContextImpl extends BaseServiceContext implements IntegrationServiceContext {
 
   private final PublicKey solUSDOracleKey;
-  private final PublicKey baseAssetUSDOracleKey;
   private final MintCache mintCache;
   private final IntegLookupTableCache integLookupTableCache;
   private final AccountFetcher accountFetcher;
@@ -26,8 +28,8 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
   private final KaminoAccounts kaminoAccounts;
   private final KaminoVaultCache kaminoVaultCache;
 
-  IntegrationServiceContextImpl(final PublicKey solUSDOracleKey,
-                                final PublicKey baseAssetUSDOracleKey,
+  IntegrationServiceContextImpl(final ServiceContext serviceContext,
+                                final PublicKey solUSDOracleKey,
                                 final MintCache mintCache,
                                 final IntegLookupTableCache integLookupTableCache,
                                 final AccountFetcher accountFetcher,
@@ -35,8 +37,8 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
                                 final DriftMarketCache driftMarketCache,
                                 final KaminoAccounts kaminoAccounts,
                                 final KaminoVaultCache kaminoVaultCache) {
+    super(serviceContext);
     this.solUSDOracleKey = solUSDOracleKey;
-    this.baseAssetUSDOracleKey = baseAssetUSDOracleKey;
     this.mintCache = mintCache;
     this.integLookupTableCache = integLookupTableCache;
     this.accountFetcher = accountFetcher;
@@ -46,12 +48,34 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
     this.kaminoVaultCache = kaminoVaultCache;
   }
 
+  @Override
+  public ServiceContext serviceContext() {
+    return serviceContext;
+  }
+
+  @Override
   public PublicKey solUSDOracleKey() {
     return solUSDOracleKey;
   }
 
-  public PublicKey baseAssetUSDOracleKey() {
-    return baseAssetUSDOracleKey;
+  @Override
+  public MintContext mintContext(final PublicKey mint) {
+    return mintCache.get(mint);
+  }
+
+  @Override
+  public MintContext setMintContext(final MintContext mintContext) {
+    return mintCache.setGet(mintContext);
+  }
+
+  @Override
+  public MintContext setMintContext(final AccountInfo<byte[]> accountInfo) {
+    return setMintContext(MintContext.createContext(serviceContext.solanaAccounts(), accountInfo));
+  }
+
+  @Override
+  public AssetMeta globalConfigAssetMeta(final PublicKey mint) {
+    return null; // TODO
   }
 
   @Override
@@ -102,21 +126,6 @@ final class IntegrationServiceContextImpl implements IntegrationServiceContext {
   @Override
   public PublicKey kVaultsProgram() {
     return kaminoAccounts.kVaultsProgram();
-  }
-
-  @Override
-  public MintContext mintContext(final PublicKey mint) {
-    return mintCache.get(mint);
-  }
-
-  @Override
-  public MintContext setMintContext(final MintContext mintContext) {
-    return mintCache.setGet(mintContext);
-  }
-
-  @Override
-  public AssetMeta globalConfigAssetMeta(final PublicKey mint) {
-    return null;
   }
 
   @Override

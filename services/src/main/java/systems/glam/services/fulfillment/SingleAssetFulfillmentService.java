@@ -8,7 +8,7 @@ import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.StateAccountClient;
 import systems.glam.sdk.idl.programs.glam.mint.gen.types.RequestQueue;
-import systems.glam.services.ServiceContext;
+import systems.glam.services.execution.ExecutionServiceContext;
 import systems.glam.services.fulfillment.accounting.RedemptionSummary;
 import systems.glam.services.mints.MintContext;
 
@@ -28,7 +28,7 @@ final class SingleAssetFulfillmentService extends BaseFulfillmentService {
   private final AtomicReference<TokenBalance> baseAssetTokenBalance;
   private final AtomicReference<RedemptionSummary> redemptionSummary;
 
-  SingleAssetFulfillmentService(final ServiceContext serviceContext,
+  SingleAssetFulfillmentService(final ExecutionServiceContext serviceContext,
                                 final GlamAccountClient glamAccountClient,
                                 final StateAccountClient stateAccountClient,
                                 final MintContext vaultMintContext,
@@ -39,8 +39,8 @@ final class SingleAssetFulfillmentService extends BaseFulfillmentService {
                                 final List<PublicKey> accountsNeededList,
                                 final List<Instruction> fulFillInstructions) {
     super(
-        serviceContext,
         glamAccountClient,
+        serviceContext,
         stateAccountClient,
         baseAssetMintContext,
         baseAssetVaultAta,
@@ -90,7 +90,7 @@ final class SingleAssetFulfillmentService extends BaseFulfillmentService {
       if (fulfilled) {
         failureCount = 0;
       } else {
-        context.backoff(++failureCount);
+        serviceContext.backoff(++failureCount);
         return;
       }
     }
@@ -130,7 +130,8 @@ final class SingleAssetFulfillmentService extends BaseFulfillmentService {
       final byte[] data = accountInfo.data();
       final var owner = accountInfo.owner();
 
-      if (RequestQueue.DISCRIMINATOR.equals(data, 0) && owner.equals(context.glamMintProgram())) {
+      final var mintProgram = glamAccountClient.glamAccounts().mintProgram();
+      if (RequestQueue.DISCRIMINATOR.equals(data, 0) && owner.equals(mintProgram)) {
         final var redemptionSummary = RedemptionSummary.createSummary(
             Instant.now().getEpochSecond(), slot,
             RequestQueue.read(accountInfo),

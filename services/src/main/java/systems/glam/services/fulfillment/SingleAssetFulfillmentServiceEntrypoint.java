@@ -1,20 +1,14 @@
 package systems.glam.services.fulfillment;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.tx.Transaction;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.core.config.ServiceConfigUtil;
-import software.sava.services.solana.alt.LookupTableCache;
 import software.sava.services.solana.epoch.EpochInfoService;
 import software.sava.services.solana.transactions.InstructionService;
-import software.sava.services.solana.transactions.TransactionProcessor;
-import software.sava.services.solana.transactions.TxMonitorService;
 import software.sava.services.solana.websocket.WebSocketManager;
 import systems.glam.sdk.*;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintConstants;
-import systems.glam.services.ServiceContextImpl;
-import systems.glam.services.execution.InstructionProcessor;
 import systems.glam.services.fulfillment.config.FulfillmentServiceConfig;
 import systems.glam.services.mints.MintContext;
 
@@ -136,55 +130,20 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
 
     final var vaultMintContext = MintContext.createContext(solanaAccounts, accountsNeededMap.get(mintKey));
 
-    final var websocketConfig = delegateServiceConfig.websocketConfig();
     final var webSocketConsumers = new ArrayList<Consumer<SolanaRpcWebsocket>>();
-    final var webSocketManager = WebSocketManager.createManager(
-        wsHttpClient,
-        websocketConfig.endpoint(),
-        websocketConfig.backoff(),
-        websocket -> {
-          for (final var webSocketConsumer : webSocketConsumers) {
-            webSocketConsumer.accept(websocket);
-          }
-        }
-    );
+    final var webSocketManager = delegateServiceConfig.createWebSocketManager(wsHttpClient, webSocketConsumers);
     webSocketManager.checkConnection();
 
-    final var tableCacheConfig = delegateServiceConfig.tableCacheConfig();
-    final var tableCache = LookupTableCache.createCache(
-        taskExecutor,
-        tableCacheConfig.initialCapacity(),
-        rpcCaller.rpcClients()
+    final var tableCache = delegateServiceConfig.createLookupTableCache(taskExecutor);
+
+    final var transactionProcessor = delegateServiceConfig.createTransactionProcessor(
+        taskExecutor, signingService, tableCache, serviceKey, webSocketManager
     );
 
-    final var transactionProcessor = TransactionProcessor.createProcessor(
-        taskExecutor,
-        signingService,
-        tableCache,
-        serviceKey,
-        solanaAccounts,
-        formatter,
-        rpcCaller.rpcClients(),
-        delegateServiceConfig.sendClients(),
-        delegateServiceConfig.feeProviders(),
-        rpcCaller.callWeights(),
-        webSocketManager
-    );
+    final var epochInfoService = delegateServiceConfig.createEpochInfoService();
 
-    logger.log(INFO, "Starting epoch info service.");
-    final var epochInfoService = EpochInfoService.createService(delegateServiceConfig.epochServiceConfig(), rpcCaller);
-
-    final var txMonitorConfig = delegateServiceConfig.txMonitorConfig();
-    final var txMonitorService = TxMonitorService.createService(
-        formatter,
-        rpcCaller,
-        epochInfoService,
-        webSocketManager,
-        txMonitorConfig.minSleepBetweenSigStatusPolling(),
-        txMonitorConfig.webSocketConfirmationTimeout(),
-        transactionProcessor,
-        txMonitorConfig.retrySendDelay(),
-        txMonitorConfig.minBlocksRemainingToResend()
+    final var txMonitorService = delegateServiceConfig.createTxMonitorService(
+        epochInfoService, webSocketManager, transactionProcessor
     );
 
     final var splClient = glamAccountClient.splClient();
@@ -196,34 +155,22 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
         txMonitorService
     );
 
-    final var instructionProcessor = InstructionProcessor.createProcessor(
-        transactionProcessor,
-        instructionService,
-        delegateServiceConfig.maxLamportPriorityFee(),
-        delegateServiceConfig.notifyClient(),
-        1.13,
-        8
-    );
+    final var instructionProcessor = delegateServiceConfig.createInstructionProcessor(transactionProcessor, instructionService);
 
     final var baseAssetMintContext = MintContext.createContext(solanaAccounts, baseAssetAccountFuture.join());
 
-    final var serviceContext = new ServiceContextImpl(
-        serviceKey,
-        delegateServiceConfig.warnFeePayerBalance(), delegateServiceConfig.minFeePayerBalance(),
-        delegateServiceConfig.glamStateAccountCacheDirectory(),
-        delegateServiceConfig.minCheckStateDelay(), delegateServiceConfig.maxCheckStateDelay(),
+    final var serviceContext = delegateServiceConfig.createServiceContext(
         taskExecutor,
-        delegateServiceConfig.serviceBackoff(),
-        epochInfoService,
-        solanaAccounts, glamAccounts,
-        serviceConfig.delegateServiceConfig().notifyClient(),
-        rpcCaller,
-        instructionProcessor,
-        instructions -> Transaction.createTx(serviceKey, instructions)
+        serviceKey,
+        glamAccounts
+    );
+
+    final var executionServiceContext = delegateServiceConfig.createExecutionServiceContext(
+        serviceContext, epochInfoService, instructionProcessor
     );
 
     final var fulfillmentService = FulfillmentService.createSingleAssetService(
-        serviceContext,
+        executionServiceContext,
         serviceConfig.softRedeem(),
         stateAccountClient,
         vaultMintContext,

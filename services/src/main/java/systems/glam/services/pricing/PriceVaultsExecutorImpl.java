@@ -9,7 +9,6 @@ import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.integrations.IntegrationServiceContext;
-import systems.glam.services.rpc.AccountFetcher;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,24 +27,19 @@ final class PriceVaultsExecutorImpl implements PriceVaultsExecutor, Consumer<Acc
 
   private final ServiceContext serviceContext;
   private final IntegrationServiceContext integContext;
-  private final Path vaultStateDirectory;
   private final List<Filter> stateFilters;
   private final Path vaultTableDirectory;
   private final List<Filter> tableFilters;
-  private final AccountFetcher accountFetcher;
   private final Map<PublicKey, VaultPriceService> priceServicesByState;
   private final Set<PublicKey> unsupportedVaults;
 
   PriceVaultsExecutorImpl(final ServiceContext serviceContext,
                           final IntegrationServiceContext integContext,
-                          final Path vaultStateDirectory,
                           final Path vaultTableDirectory,
-                          final AccountFetcher accountFetcher,
                           final Map<PublicKey, VaultPriceService> priceServicesByState,
                           final Set<PublicKey> unsupportedVaults) {
     this.serviceContext = serviceContext;
     this.integContext = integContext;
-    this.vaultStateDirectory = vaultStateDirectory;
     this.stateFilters = List.of(StateAccount.DISCRIMINATOR_FILTER);
     // 0: State Key
     // 1: Vault Key
@@ -57,7 +51,6 @@ final class PriceVaultsExecutorImpl implements PriceVaultsExecutor, Consumer<Acc
         )
     );
     this.vaultTableDirectory = vaultTableDirectory;
-    this.accountFetcher = accountFetcher;
     this.priceServicesByState = priceServicesByState;
     this.unsupportedVaults = unsupportedVaults;
   }

@@ -20,15 +20,13 @@ import systems.glam.sdk.idl.programs.glam.mint.gen.events.AumRecord;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.GlamMintEvent;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolError;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
-import systems.glam.services.ServiceContext;
 import systems.glam.services.BaseDelegateService;
+import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.integrations.drift.DriftUsersPosition;
 import systems.glam.services.integrations.kamino.KaminoVaultPosition;
-import systems.glam.services.integrations.IntegrationServiceContext;
-import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.pricing.accounting.Position;
 import systems.glam.services.pricing.accounting.VaultTokensPosition;
-import systems.glam.services.mints.MintContext;
+import systems.glam.services.rpc.AccountConsumer;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -45,7 +43,7 @@ public class MultiAssetPriceService extends BaseDelegateService
 
   private static final System.Logger logger = System.getLogger(MultiAssetPriceService.class.getName());
 
-  private final IntegrationServiceContext integContext;
+  private final IntegrationServiceContext serviceContext;
   private final PublicKey mintPDA;
   private final int baseAssetDecimals;
   private final Set<PublicKey> accountsNeededSet;
@@ -59,16 +57,15 @@ public class MultiAssetPriceService extends BaseDelegateService
   private volatile Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap;
   private final AtomicReference<LookupTableAccountMeta[]> glamVaultTables;
 
-  MultiAssetPriceService(final ServiceContext serviceContext,
-                         final IntegrationServiceContext integContext,
+  MultiAssetPriceService(final IntegrationServiceContext serviceContext,
                          final PublicKey mintPDA,
                          final PublicKey baseAssetMint,
                          final int baseAssetDecimals,
                          final GlamAccountClient glamAccountClient,
                          final MinGlamStateAccount stateAccount,
                          final Set<PublicKey> accountsNeededSet) {
-    super(serviceContext, glamAccountClient);
-    this.integContext = integContext;
+    super(glamAccountClient);
+    this.serviceContext = serviceContext;
     this.mintPDA = mintPDA;
     this.baseAssetDecimals = baseAssetDecimals;
     this.accountsNeededSet = accountsNeededSet;
@@ -90,15 +87,15 @@ public class MultiAssetPriceService extends BaseDelegateService
   private StateChange createPosition(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap,
                                      final PublicKey externalAccount) {
     final var accountInfo = accountsNeededMap.get(externalAccount);
-    if (context.isTokenAccount(accountInfo)) {
+    if (serviceContext.isTokenAccount(accountInfo)) {
       return createKVaultPosition(accountInfo);
     } else {
       final var programOwner = accountInfo.owner();
-      if (programOwner.equals(integContext.driftProgram())) {
+      if (programOwner.equals(serviceContext.driftProgram())) {
         return createDriftPosition(accountInfo);
-      } else if (programOwner.equals(integContext.driftVaultsProgram())) {
+      } else if (programOwner.equals(serviceContext.driftVaultsProgram())) {
         return createDriftVaultPosition(accountInfo);
-      } else if (programOwner.equals(integContext.kLendProgram())) {
+      } else if (programOwner.equals(serviceContext.kLendProgram())) {
         return createKaminoLendPosition(accountInfo);
       } else {
         logger.log(WARNING, "Unsupported integration program: {0}", programOwner);
@@ -112,15 +109,15 @@ public class MultiAssetPriceService extends BaseDelegateService
     int numKVaults = 0;
     for (final var externalAccount : stateAccount.externalPositions()) {
       final var accountInfo = accountsNeededMap.get(externalAccount);
-      if (context.isTokenAccount(accountInfo)) {
+      if (serviceContext.isTokenAccount(accountInfo)) {
         ++numKVaults;
       }
     }
 
-    final var driftTableKeys = integContext.driftAccounts().marketLookupTables();
-    final var kaminoTableKeys = integContext.kaminoTableKeys();
+    final var driftTableKeys = serviceContext.driftAccounts().marketLookupTables();
+    final var kaminoTableKeys = serviceContext.kaminoTableKeys();
 
-    final var tableCache = integContext.integTableCache();
+    final var tableCache = serviceContext.integTableCache();
 
     final var glamTables = glamVaultTables.get();
     int i = glamTables.length;
@@ -139,9 +136,9 @@ public class MultiAssetPriceService extends BaseDelegateService
 
     for (final var externalAccount : stateAccount.externalPositions()) {
       final var accountInfo = accountsNeededMap.get(externalAccount);
-      if (context.isTokenAccount(accountInfo)) {
+      if (serviceContext.isTokenAccount(accountInfo)) {
         final var mint = PublicKey.readPubKey(accountInfo.data(), TokenAccount.MINT_OFFSET);
-        final var vaultContext = integContext.kaminoVaultCache().vaultForShareMint(mint);
+        final var vaultContext = serviceContext.kaminoVaultCache().vaultForShareMint(mint);
         final var vaultTable = vaultContext.table();
         if (vaultTable != null) {
           tableMetas[i++] = LookupTableAccountMeta.createMeta(vaultTable, Transaction.MAX_ACCOUNTS);
@@ -156,14 +153,14 @@ public class MultiAssetPriceService extends BaseDelegateService
 
   private void putTokenPosition(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap,
                                 final PublicKey assetMint) {
-    var mintContext = integContext.mintContext(assetMint);
+    var mintContext = serviceContext.mintContext(assetMint);
     if (mintContext == null) {
       final var mintAccountInfo = accountsNeededMap.get(assetMint);
       if (mintAccountInfo == null) {
         accountsNeededSet.add(assetMint);
         return;
       }
-      mintContext = integContext.setMintContext(MintContext.createContext(context.solanaAccounts(), mintAccountInfo));
+      mintContext = serviceContext.setMintContext(mintAccountInfo);
     }
     final var vaultATA = glamAccountClient.findATA(mintContext.tokenProgram(), mintContext.mint()).publicKey();
     vaultTokensPosition.addVaultATA(assetMint, vaultATA);
@@ -320,11 +317,11 @@ public class MultiAssetPriceService extends BaseDelegateService
         glamVaultTables.set(null);
       } else {
         if (changeState == StateChange.ACCOUNTS_NEEDED) {
-          integContext.queue(accountsNeededSet, this);
+          serviceContext.queue(accountsNeededSet, this);
         } else {
           prepareAUMTransaction(stateAccount, accountsNeededMap);
         }
-        final var stateAccountPath = context.glamStateAccountCacheDirectory().resolve(glamAccountClient.vaultAccounts().glamStateKey() + ".dat");
+        final var stateAccountPath = serviceContext.resolveGlamStateFilePath(glamAccountClient.vaultAccounts().glamStateKey());
         final byte[] stateAccountData = stateAccount.serialize(vaultTokensPosition.baseAssetMint(), baseAssetDecimals);
         try {
           Files.write(
@@ -349,7 +346,7 @@ public class MultiAssetPriceService extends BaseDelegateService
 
   @Override
   public void init() {
-    context.executeTask(this);
+    serviceContext.executeTask(this);
   }
 
   @Override
@@ -368,7 +365,7 @@ public class MultiAssetPriceService extends BaseDelegateService
         return true;
       }
       if (this.stateAccount.compareAndSet(witness, stateAccount)) {
-        context.executeTask(this);
+        serviceContext.executeTask(this);
       } else {
         witness = this.stateAccount.get();
         if (Long.compareUnsigned(slot, witness.slot()) <= 0) {
@@ -396,13 +393,13 @@ public class MultiAssetPriceService extends BaseDelegateService
     final var returnAccountsSet = HashSet.<PublicKey>newHashSet(accountsNeededMap.size());
 
     // TODO: Check if State overrides default oracle.
-    final var baseAssetMeta = integContext.globalConfigAssetMeta(vaultTokensPosition.baseAssetMint());
+    final var baseAssetMeta = serviceContext.globalConfigAssetMeta(vaultTokensPosition.baseAssetMint());
     if (baseAssetMeta == null) {
       return;
     }
     for (final var position : positions) {
       final var priceInstruction = position.priceInstruction(
-          integContext,
+          serviceContext,
           glamAccountClient,
           baseAssetMeta.oracle(),
           stateAccount,
@@ -435,7 +432,7 @@ public class MultiAssetPriceService extends BaseDelegateService
     final var aumTransaction = this.aumTransaction.get();
     final var base64Encoded = aumTransaction.base64Encoded();
     final var returnAccounts = aumTransaction.returnAccounts();
-    final var simulationResult = context.rpcCaller().courteousGet(
+    final var simulationResult = serviceContext.rpcCaller().courteousGet(
         rpcClient -> rpcClient.simulateTransaction(
             Commitment.PROCESSED, base64Encoded,
             true, true,
@@ -469,7 +466,7 @@ public class MultiAssetPriceService extends BaseDelegateService
       for (final var returnedAccount : returnedAccounts) {
         accountsNeededMap.put(returnedAccount.pubKey(), returnedAccount);
       }
-      final var mintProgram = context.glamMintProgram();
+      final var mintProgram = glamAccountClient.glamAccounts().mintProgram();
       final var positionReports = new ArrayList<PositionReport>(positions.size());
       var eventSum = BigInteger.ZERO;
       for (final var position : positions.values()) {
@@ -500,7 +497,7 @@ public class MultiAssetPriceService extends BaseDelegateService
         return driftPosition;
       }
     }
-    return DriftUsersPosition.create(integContext.driftMarketCache(), glamAccountClient.vaultAccounts().vaultPublicKey());
+    return DriftUsersPosition.create(serviceContext.driftMarketCache(), glamAccountClient.vaultAccounts().vaultPublicKey());
   }
 
   private StateChange createDriftPosition(final AccountInfo<byte[]> accountInfo) {
@@ -596,7 +593,7 @@ public class MultiAssetPriceService extends BaseDelegateService
     if (tokenAccount.amount() == 0) {
       return StateChange.NO_CHANGE;
     }
-    final var kVaultCache = integContext.kaminoVaultCache();
+    final var kVaultCache = serviceContext.kaminoVaultCache();
     final var kVaultContext = kVaultCache.vaultForShareMint(tokenAccount.mint());
     if (kVaultContext == null) {
       // TODO: refresh kamino vaults
