@@ -51,7 +51,9 @@ final class AccountFetcherImpl implements AccountFetcher {
 
   private void queue(final boolean priority, final Collection<PublicKey> accounts, final AccountConsumer callback) {
     final int numAccounts = accounts.size();
-    if (numAccounts > SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
+    if (numAccounts == 0) {
+      return;
+    } else if (numAccounts > SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
       throw new IllegalStateException("Unable to fetch more than " + SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS + " accounts in a single request.");
     }
 
@@ -73,6 +75,33 @@ final class AccountFetcherImpl implements AccountFetcher {
     } finally {
       lock.unlock();
     }
+  }
+
+  private void queueBatchable(final boolean priority, final List<PublicKey> accounts, final AccountConsumer callback) {
+    final int numAccounts = accounts.size();
+    if (numAccounts > SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
+      for (int from = 0, to = SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS; ; ) {
+        final var batch = accounts.subList(from, to);
+        queue(priority, batch, callback);
+        if (to >= numAccounts) {
+          return;
+        }
+        from = to;
+        to = Math.min(to + SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS, numAccounts);
+      }
+    } else {
+      queue(priority, accounts, callback);
+    }
+  }
+
+  @Override
+  public void priorityQueueBatchable(final List<PublicKey> accounts, final AccountConsumer callback) {
+    queueBatchable(true, accounts, callback);
+  }
+
+  @Override
+  public void queueBatchable(final List<PublicKey> accounts, final AccountConsumer callback) {
+    queueBatchable(false, accounts, callback);
   }
 
   @Override

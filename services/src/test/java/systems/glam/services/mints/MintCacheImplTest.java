@@ -21,7 +21,7 @@ final class MintCacheImplTest {
   private static final SolanaAccounts SOLANA_ACCOUNTS = SolanaAccounts.MAIN_NET;
 
   @Test
-  void testBasicSetGet(@TempDir Path tempDir) {
+  void testBasicSetGet(@TempDir final Path tempDir) {
     final var cacheFile = tempDir.resolve("mint_cache.dat");
     try (final var cache = MintCache.createCache(SOLANA_ACCOUNTS, cacheFile)) {
 
@@ -41,7 +41,7 @@ final class MintCacheImplTest {
   }
 
   @Test
-  void testSetGetReturnsExisting(@TempDir Path tempDir) {
+  void testSetGetReturnsExisting(@TempDir final Path tempDir) {
     final var cacheFile = tempDir.resolve("mint_cache.dat");
     try (final var cache = MintCache.createCache(SOLANA_ACCOUNTS, cacheFile)) {
 
@@ -66,7 +66,7 @@ final class MintCacheImplTest {
   }
 
   @Test
-  void testFilePersistence(@TempDir Path tempDir) throws Exception {
+  void testFilePersistence(@TempDir final Path tempDir) throws Exception {
     final var cacheFile = tempDir.resolve("mint_cache.dat");
 
     final var mintKey1 = PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
@@ -105,7 +105,7 @@ final class MintCacheImplTest {
   }
 
   @Test
-  void testConcurrentAccess(@TempDir Path tempDir) throws Exception {
+  void testConcurrentAccess(@TempDir final Path tempDir) throws Exception {
     final int numConcurrentWrites = 128;
     final var cacheFile = tempDir.resolve("mint_cache.dat");
     try (final var cache = MintCache.createCache(SOLANA_ACCOUNTS, cacheFile);
@@ -157,7 +157,7 @@ final class MintCacheImplTest {
   }
 
   @Test
-  void testGetNonExistent(@TempDir Path tempDir) {
+  void testGetNonExistent(@TempDir final Path tempDir) {
     final var cacheFile = tempDir.resolve("mint_cache.dat");
     try (final var cache = MintCache.createCache(SOLANA_ACCOUNTS, cacheFile)) {
       final var mintKey = PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
@@ -166,7 +166,7 @@ final class MintCacheImplTest {
   }
 
   @Test
-  void testCloseAndReopen(@TempDir Path tempDir) {
+  void testCloseAndReopen(@TempDir final Path tempDir) {
     final var cacheFile = tempDir.resolve("mint_cache.dat");
 
     final var mintKey = PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
@@ -191,7 +191,7 @@ final class MintCacheImplTest {
   }
 
   @Test
-  void testDelete(@TempDir Path tempDir) throws Exception {
+  void testDelete(@TempDir final Path tempDir) throws Exception {
     final var mintKey1 = PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
     final var mintKey2 = PublicKey.fromBase58Encoded("So11111111111111111111111111111111111111112");
     final var mintKey3 = PublicKey.fromBase58Encoded("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB");
@@ -220,7 +220,7 @@ final class MintCacheImplTest {
       assertNull(cache.delete(mintKey2));
     }
 
-    try (final MintCache cache2 = MintCache.createCache(SOLANA_ACCOUNTS, cacheFile)) {
+    try (final var cache2 = MintCache.createCache(SOLANA_ACCOUNTS, cacheFile)) {
       assertNull(cache2.get(mintKey2));
       assertNotNull(cache2.get(mintKey1));
       assertNotNull(cache2.get(mintKey3));

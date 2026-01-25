@@ -84,10 +84,18 @@ public class MultiAssetPriceService extends BaseDelegateService
     UNSUPPORTED
   }
 
+  private boolean isKVaultTokenAccount(final AccountInfo<byte[]> accountInfo) {
+    if (serviceContext.isTokenAccount(accountInfo)) {
+      return true; // TODO: Add more validation.
+    } else {
+      return false;
+    }
+  }
+
   private StateChange createPosition(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap,
                                      final PublicKey externalAccount) {
     final var accountInfo = accountsNeededMap.get(externalAccount);
-    if (serviceContext.isTokenAccount(accountInfo)) {
+    if (isKVaultTokenAccount(accountInfo)) {
       return createKVaultPosition(accountInfo);
     } else {
       final var programOwner = accountInfo.owner();
@@ -109,7 +117,7 @@ public class MultiAssetPriceService extends BaseDelegateService
     int numKVaults = 0;
     for (final var externalAccount : stateAccount.externalPositions()) {
       final var accountInfo = accountsNeededMap.get(externalAccount);
-      if (serviceContext.isTokenAccount(accountInfo)) {
+      if (isKVaultTokenAccount(accountInfo)) {
         ++numKVaults;
       }
     }
@@ -136,7 +144,7 @@ public class MultiAssetPriceService extends BaseDelegateService
 
     for (final var externalAccount : stateAccount.externalPositions()) {
       final var accountInfo = accountsNeededMap.get(externalAccount);
-      if (serviceContext.isTokenAccount(accountInfo)) {
+      if (isKVaultTokenAccount(accountInfo)) {
         final var mint = PublicKey.readPubKey(accountInfo.data(), TokenAccount.MINT_OFFSET);
         final var vaultContext = serviceContext.kaminoVaultCache().vaultForShareMint(mint);
         final var vaultTable = vaultContext.table();

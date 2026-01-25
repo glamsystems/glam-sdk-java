@@ -14,7 +14,7 @@ public final class ResourceUtil {
 
   public static byte[] readResource(final String resourcePath) throws IOException {
     try (final var in = ResourceUtil.class.getClassLoader().getResourceAsStream(resourcePath)) {
-      assertNotNull(in, "Resource scope/klend_reserves.json.json not found on classpath");
+      assertNotNull(in, resourcePath + " not found on classpath");
       try {
         if (resourcePath.endsWith(".zip")) {
           try (final var zin = new ZipInputStream(in)) {

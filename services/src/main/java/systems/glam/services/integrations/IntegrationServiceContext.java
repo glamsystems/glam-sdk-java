@@ -48,6 +48,8 @@ public interface IntegrationServiceContext {
 
   ServiceContext serviceContext();
 
+  boolean isTokenMint(final AccountInfo<byte[]> accountInfo);
+
   boolean isTokenAccount(final AccountInfo<byte[]> accountInfo);
 
   Path resolveGlamStateFilePath(final PublicKey glamStateKey);

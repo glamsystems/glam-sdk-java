@@ -1,10 +1,13 @@
 package systems.glam.services;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.accounts.SolanaAccounts;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.GlobalConfig;
+import systems.glam.services.mints.MintCache;
+import systems.glam.services.mints.MintContext;
 import systems.glam.services.rpc.AccountFetcher;
 
 import java.io.IOException;
@@ -12,6 +15,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
 import static systems.glam.services.GlobalConfigCacheImpl.*;
@@ -20,6 +24,8 @@ public interface GlobalConfigCache extends Runnable {
 
   static CompletableFuture<GlobalConfigCache> initCache(final Path globalConfigFilePath,
                                                         final PublicKey configProgram, final PublicKey globalConfigKey,
+                                                        final SolanaAccounts solanaAccounts,
+                                                        final MintCache mintCache,
                                                         final RpcCaller rpcCaller,
                                                         final AccountFetcher accountFetcher,
                                                         final Duration fetchDelay) {
@@ -32,7 +38,11 @@ public interface GlobalConfigCache extends Runnable {
         final var cache = new GlobalConfigCacheImpl(
             globalConfigFilePath,
             configProgram, globalConfigKey,
-            accountFetcher, fetchDelay, globalConfigUpdate, assetMetaMap
+            solanaAccounts,
+            mintCache,
+            accountFetcher,
+            fetchDelay,
+            globalConfigUpdate, assetMetaMap
         );
         return CompletableFuture.completedFuture(cache);
       } catch (final IOException e) {
@@ -47,16 +57,31 @@ public interface GlobalConfigCache extends Runnable {
         final byte[] data = accountInfo.data();
         if (checkAccount(configProgram, accountInfo.owner(), slot, accountInfo.pubKey(), data)) {
           final var globalConfig = GlobalConfig.read(accountInfo.pubKey(), data);
-          final var assetMetaMap = createMapChecked(slot, globalConfig);
+          final var assetMetaMap = createMapChecked(slot, globalConfig, mintCache);
           final var globalConfigUpdate = new GlobalConfigCacheImpl.GlobalConfigUpdate(
               slot, globalConfig, data
           );
           persistGlobalConfig(globalConfigFilePath, data);
-          return new GlobalConfigCacheImpl(
+          final var mintsNeeded = Arrays.stream(globalConfig.assetMetas()).<PublicKey>mapMulti((assetMeta, downstream) -> {
+            final var asset = assetMeta.asset();
+            final var mintContext = mintCache.get(asset);
+            if (mintContext == null) {
+              downstream.accept(asset);
+            }
+          }).toList();
+          final var cache = new GlobalConfigCacheImpl(
               globalConfigFilePath,
               configProgram, globalConfigKey,
-              accountFetcher, fetchDelay, globalConfigUpdate, assetMetaMap
+              solanaAccounts,
+              mintCache,
+              accountFetcher,
+              fetchDelay,
+              globalConfigUpdate, assetMetaMap
           );
+          if (!mintsNeeded.isEmpty()) {
+            accountFetcher.priorityQueueBatchable(mintsNeeded, cache);
+          }
+          return cache;
         } else {
           throw new IllegalStateException("Unexpected GlobalConfig Account.");
         }
@@ -64,9 +89,15 @@ public interface GlobalConfigCache extends Runnable {
     }
   }
 
+  GlobalConfig globalConfig();
+
   AssetMeta getByIndex(final int index);
 
   AssetMeta topPriorityForMint(final PublicKey mint);
+
+  AssetMeta topPriorityForMintChecked(final PublicKey mint);
+
+  AssetMeta topPriorityForMintChecked(final MintContext mintContext);
 
   void subscribe(final SolanaRpcWebsocket websocket);
 }

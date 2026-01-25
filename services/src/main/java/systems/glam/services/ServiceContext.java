@@ -21,6 +21,8 @@ public interface ServiceContext {
 
   PublicKey token2022Program();
 
+  boolean isTokenMint(final AccountInfo<byte[]> accountInfo);
+
   boolean isTokenAccount(final AccountInfo<byte[]> accountInfo);
 
   PublicKey serviceKey();

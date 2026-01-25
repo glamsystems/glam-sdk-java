@@ -3,7 +3,9 @@ package systems.glam.services;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.sysvar.Clock;
+import software.sava.core.accounts.token.Mint;
 import software.sava.core.accounts.token.TokenAccount;
+import software.sava.core.accounts.token.extensions.AccountType;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.core.remote.call.Backoff;
@@ -82,12 +84,30 @@ public final class ServiceContextImpl implements ServiceContext {
   }
 
   @Override
+  public boolean isTokenMint(final AccountInfo<byte[]> accountInfo) {
+    final var programOwner = accountInfo.owner();
+    final byte[] data = accountInfo.data();
+    if (programOwner.equals(tokenProgram())) {
+      return accountInfo.data().length == Mint.BYTES;
+    } else if (programOwner.equals(token2022Program()) && data.length > TokenAccount.BYTES) {
+      final int accountType = data[TokenAccount.BYTES] & 0xFF;
+      return accountType == AccountType.Mint.ordinal();
+    } else {
+      return false;
+    }
+  }
+
+  @Override
   public boolean isTokenAccount(final AccountInfo<byte[]> accountInfo) {
     final var programOwner = accountInfo.owner();
-    if (programOwner.equals(tokenProgram()) && accountInfo.data().length == TokenAccount.BYTES) {
-      return true;
+    final byte[] data = accountInfo.data();
+    if (programOwner.equals(tokenProgram())) {
+      return data.length == TokenAccount.BYTES;
+    } else if (programOwner.equals(token2022Program()) && data.length > TokenAccount.BYTES) {
+      final int accountType = data[TokenAccount.BYTES] & 0xFF;
+      return accountType == AccountType.Account.ordinal();
     } else {
-      return programOwner.equals(token2022Program());
+      return false;
     }
   }
 

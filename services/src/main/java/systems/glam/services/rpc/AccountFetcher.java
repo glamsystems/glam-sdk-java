@@ -17,7 +17,11 @@ public interface AccountFetcher extends Runnable {
     return new AccountFetcherImpl(fetchDelay, reactive, rpcCaller, alwaysFetch);
   }
 
-  void priorityQueue(final Collection<PublicKey> account, final AccountConsumer callback);
+  void priorityQueueBatchable(final List<PublicKey> accounts, final AccountConsumer callback);
+
+  void queueBatchable(final List<PublicKey> accounts, final AccountConsumer callback);
+
+  void priorityQueue(final Collection<PublicKey> accounts, final AccountConsumer callback);
 
   default void priorityQueue(final PublicKey account, final AccountConsumer callback) {
     priorityQueue(List.of(account), callback);

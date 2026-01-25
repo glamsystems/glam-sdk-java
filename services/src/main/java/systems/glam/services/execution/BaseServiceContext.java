@@ -37,6 +37,10 @@ public class BaseServiceContext {
     serviceContext.backoff(failureCount);
   }
 
+  public final boolean isTokenMint(final AccountInfo<byte[]> accountInfo) {
+    return serviceContext.isTokenMint(accountInfo);
+  }
+
   public final boolean isTokenAccount(final AccountInfo<byte[]> accountInfo) {
     return serviceContext.isTokenAccount(accountInfo);
   }
