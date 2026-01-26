@@ -8,7 +8,8 @@ import java.time.Duration;
 
 import static systems.comodal.jsoniter.JsonIterator.fieldEquals;
 
-public record DefensivePollingConfig(Duration globalConfig) {
+public record DefensivePollingConfig(Duration globalConfig,
+                                     Duration glamStateAccounts) {
 
   static DefensivePollingConfig parseConfig(final JsonIterator ji) {
     final var parser = new DefensivePollingConfig.Parser();
@@ -18,6 +19,7 @@ public record DefensivePollingConfig(Duration globalConfig) {
 
   static DefensivePollingConfig createDefaultConfig() {
     return new DefensivePollingConfig(
+        Duration.ofMinutes(30),
         Duration.ofMinutes(30)
     );
   }
@@ -25,6 +27,7 @@ public record DefensivePollingConfig(Duration globalConfig) {
   private static final class Parser implements FieldBufferPredicate {
 
     private Duration globalConfig;
+    private Duration glamStateAccounts;
 
     private Parser() {
     }
@@ -33,13 +36,18 @@ public record DefensivePollingConfig(Duration globalConfig) {
       if (globalConfig == null) {
         globalConfig = Duration.ofMinutes(30);
       }
-      return new DefensivePollingConfig(globalConfig);
+      if (glamStateAccounts == null) {
+        glamStateAccounts = Duration.ofHours(8);
+      }
+      return new DefensivePollingConfig(globalConfig, glamStateAccounts);
     }
 
     @Override
     public boolean test(final char[] buf, final int offset, final int len, final JsonIterator ji) {
       if (fieldEquals("globalConfig", buf, offset, len)) {
         globalConfig = ServiceConfigUtil.parseDuration(ji);
+      } else if (fieldEquals("glamStateAccounts", buf, offset, len)) {
+        glamStateAccounts = ServiceConfigUtil.parseDuration(ji);
       } else {
         throw new IllegalStateException("Unknown DefensivePollingConfiguration field " + new String(buf, offset, len));
       }

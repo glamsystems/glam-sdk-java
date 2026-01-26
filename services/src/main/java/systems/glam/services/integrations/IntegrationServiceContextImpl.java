@@ -5,6 +5,7 @@ import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
+import systems.glam.services.GlobalConfigCache;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.execution.BaseServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
@@ -19,8 +20,8 @@ import java.util.Set;
 
 final class IntegrationServiceContextImpl extends BaseServiceContext implements IntegrationServiceContext {
 
-  private final PublicKey solUSDOracleKey;
   private final MintCache mintCache;
+  private final GlobalConfigCache globalConfigCache;
   private final IntegLookupTableCache integLookupTableCache;
   private final AccountFetcher accountFetcher;
   private final DriftAccounts driftAccounts;
@@ -29,8 +30,8 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   private final KaminoVaultCache kaminoVaultCache;
 
   IntegrationServiceContextImpl(final ServiceContext serviceContext,
-                                final PublicKey solUSDOracleKey,
                                 final MintCache mintCache,
+                                final GlobalConfigCache globalConfigCache,
                                 final IntegLookupTableCache integLookupTableCache,
                                 final AccountFetcher accountFetcher,
                                 final DriftAccounts driftAccounts,
@@ -38,8 +39,8 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
                                 final KaminoAccounts kaminoAccounts,
                                 final KaminoVaultCache kaminoVaultCache) {
     super(serviceContext);
-    this.solUSDOracleKey = solUSDOracleKey;
     this.mintCache = mintCache;
+    this.globalConfigCache = globalConfigCache;
     this.integLookupTableCache = integLookupTableCache;
     this.accountFetcher = accountFetcher;
     this.driftAccounts = driftAccounts;
@@ -51,11 +52,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   @Override
   public ServiceContext serviceContext() {
     return serviceContext;
-  }
-
-  @Override
-  public PublicKey solUSDOracleKey() {
-    return solUSDOracleKey;
   }
 
   @Override
@@ -75,7 +71,7 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
 
   @Override
   public AssetMeta globalConfigAssetMeta(final PublicKey mint) {
-    return null; // TODO
+    return globalConfigCache.topPriorityForMint(mint);
   }
 
   @Override
@@ -111,11 +107,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   @Override
   public KaminoAccounts kaminoAccounts() {
     return kaminoAccounts;
-  }
-
-  @Override
-  public Set<PublicKey> kaminoTableKeys() {
-    return Set.of();
   }
 
   @Override

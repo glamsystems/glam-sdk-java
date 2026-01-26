@@ -58,6 +58,7 @@ public final class VaultTokensPosition implements Position {
   @Override
   public Instruction priceInstruction(final IntegrationServiceContext serviceContext,
                                       final GlamAccountClient glamAccountClient,
+                                      final PublicKey solUSDOracleKey,
                                       final PublicKey baseAssetUSDOracleKey,
                                       final MinGlamStateAccount stateAccount,
                                       final Map<PublicKey, AccountInfo<byte[]>> accountMap,
@@ -98,7 +99,7 @@ public final class VaultTokensPosition implements Position {
 
 
     final var priceVaultIx = glamAccountClient.priceVaultTokens(
-        serviceContext.solUSDOracleKey(),
+        solUSDOracleKey,
         baseAssetUSDOracleKey,
         aggIndexes,
         true

@@ -7,13 +7,25 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamAccounts;
+import systems.glam.services.io.FileUtils;
 
 import java.nio.file.Path;
 import java.util.Map;
 
 public interface ServiceContext {
 
+  Path cacheDirectory();
+
   Path accountsCacheDirectory();
+
+  Path resolveGlamStateFilePath(final PublicKey glamStateKey);
+
+  default Path globalConfigCacheFile() {
+    return FileUtils.resolveAccountPath(
+        accountsCacheDirectory().resolve("glam/global/"),
+        glamAccounts().globalConfigPDA().publicKey()
+    );
+  }
 
   PublicKey clockSysVar();
 
@@ -47,9 +59,7 @@ public interface ServiceContext {
 
   RpcCaller rpcCaller();
 
-  Path cacheDirectory();
-
-  Path resolveGlamStateFilePath(final PublicKey glamStateKey);
+  Path glamMinStateAccountCacheDirectory();
 
   Clock clock(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap);
 }

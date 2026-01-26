@@ -27,7 +27,7 @@ public final class ServiceContextImpl implements ServiceContext {
   private final BigInteger minFeePayerBalance;
   private final Path cacheDirectory;
   private final Path accountsCacheDirectory;
-  private final Path glamStateAccountCacheDirectory;
+  private final Path glamMinStateAccountCacheDirectory;
   private final long minCheckStateDelayNanos;
   private final long maxCheckStateDelayNanos;
   private final ExecutorService taskExecutor;
@@ -52,7 +52,7 @@ public final class ServiceContextImpl implements ServiceContext {
     this.minFeePayerBalance = minFeePayerBalance;
     this.cacheDirectory = cacheDirectory;
     this.accountsCacheDirectory = cacheDirectory.resolve("accounts");
-    this.glamStateAccountCacheDirectory = accountsCacheDirectory.resolve("glam/state");
+    this.glamMinStateAccountCacheDirectory = accountsCacheDirectory.resolve("glam/min_state");
     this.minCheckStateDelayNanos = minCheckStateDelay.toNanos();
     this.maxCheckStateDelayNanos = maxCheckStateDelay.toNanos();
     this.taskExecutor = taskExecutor;
@@ -214,7 +214,12 @@ public final class ServiceContextImpl implements ServiceContext {
 
   @Override
   public Path resolveGlamStateFilePath(final PublicKey glamStateKey) {
-    return glamStateAccountCacheDirectory.resolve(glamStateKey.toBase58() + ".json");
+    return glamMinStateAccountCacheDirectory.resolve(glamStateKey.toBase58() + ".json");
+  }
+
+  @Override
+  public Path glamMinStateAccountCacheDirectory() {
+    return glamMinStateAccountCacheDirectory;
   }
 
   @Override
@@ -235,7 +240,6 @@ public final class ServiceContextImpl implements ServiceContext {
         "backoff=" + backoff + ", " +
         "solanaAccounts=" + solanaAccounts + ", " +
         "glamAccounts=" + glamAccounts + ", " +
-        "rpcCaller=" + rpcCaller + ", " +
-        "glamStateAccountCacheDirectory=" + glamStateAccountCacheDirectory;
+        "glamMinStateAccountCacheDirectory=" + glamMinStateAccountCacheDirectory;
   }
 }

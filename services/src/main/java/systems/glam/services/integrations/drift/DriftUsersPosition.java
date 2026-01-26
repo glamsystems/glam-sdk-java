@@ -64,7 +64,9 @@ public final class DriftUsersPosition implements Position {
   @Override
   public Instruction priceInstruction(final IntegrationServiceContext serviceContext,
                                       final GlamAccountClient glamAccountClient,
-                                      final PublicKey baseAssetUSDOracleKey, final MinGlamStateAccount stateAccount,
+                                      final PublicKey solUSDOracleKey,
+                                      final PublicKey baseAssetUSDOracleKey,
+                                      final MinGlamStateAccount stateAccount,
                                       final Map<PublicKey, AccountInfo<byte[]>> accountMap,
                                       final Set<PublicKey> returnAccounts) {
     int missingMarkets = 0;
@@ -114,10 +116,9 @@ public final class DriftUsersPosition implements Position {
       extraAccounts.addAll(extraAccountsMap.values());
 
       return glamAccountClient.priceDriftUsers(
-              serviceContext.solUSDOracleKey(), baseAssetUSDOracleKey,
-              numUsers, true
-          )
-          .extraAccounts(extraAccounts);
+          solUSDOracleKey, baseAssetUSDOracleKey,
+          numUsers, true
+      ).extraAccounts(extraAccounts);
     } else {
       return null;
     }

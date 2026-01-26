@@ -27,8 +27,7 @@ import static systems.glam.services.io.FileUtils.ACCOUNT_FILE_EXTENSION;
 public interface DriftMarketCache {
 
   static CompletableFuture<DriftMarketCache> initCache(final Path driftCacheDirectory,
-                                                       final RpcCaller rpcCaller,
-                                                       final DriftAccounts driftAccounts,
+                                                       final DriftAccounts driftAccounts, final RpcCaller rpcCaller,
                                                        final AccountFetcher accountFetcher) {
     final var driftProgram = driftAccounts.driftProgram();
     try {
@@ -72,9 +71,10 @@ public interface DriftMarketCache {
       final int marketIndex = ByteUtil.getInt16LE(data, SpotMarket.MARKET_INDEX_OFFSET);
       return DriftMarketContext.createContext(marketIndex, marketKey, oracle);
     };
+    final var driftProgram = driftAccounts.driftProgram();
     return loadMarkets(
-        marketsDirectory, rpcCaller, driftAccounts, createContext,
-        () -> fetchSpotMarkets(marketsDirectory, rpcCaller, driftAccounts.driftProgram())
+        marketsDirectory, createContext,
+        () -> fetchSpotMarkets(marketsDirectory, rpcCaller, driftProgram)
     );
   }
 
@@ -87,15 +87,14 @@ public interface DriftMarketCache {
       final int marketIndex = ByteUtil.getInt16LE(data, PerpMarket.MARKET_INDEX_OFFSET);
       return DriftMarketContext.createContext(marketIndex, marketKey, oracle);
     };
+    final var driftProgram = driftAccounts.driftProgram();
     return loadMarkets(
-        marketsDirectory, rpcCaller, driftAccounts, createContext,
-        () -> fetchPerpMarkets(marketsDirectory, rpcCaller, driftAccounts.driftProgram())
+        marketsDirectory, createContext,
+        () -> fetchPerpMarkets(marketsDirectory, rpcCaller, driftProgram)
     );
   }
 
   private static CompletableFuture<AtomicReferenceArray<DriftMarketContext>> loadMarkets(final Path marketsDirectory,
-                                                                                         final RpcCaller rpcCaller,
-                                                                                         final DriftAccounts driftAccounts,
                                                                                          final Function<byte[], DriftMarketContext> createContext,
                                                                                          final Supplier<CompletableFuture<AtomicReferenceArray<DriftMarketContext>>> fallback) {
     try (final var files = Files.list(marketsDirectory)) {

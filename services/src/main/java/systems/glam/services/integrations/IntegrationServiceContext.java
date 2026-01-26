@@ -6,6 +6,7 @@ import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
+import systems.glam.services.GlobalConfigCache;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoVaultCache;
@@ -23,8 +24,8 @@ import static systems.glam.services.io.FileUtils.ACCOUNT_FILE_EXTENSION;
 public interface IntegrationServiceContext {
 
   static IntegrationServiceContext createContext(final ServiceContext serviceContext,
-                                                 final PublicKey solUSDOracleKey,
                                                  final MintCache mintCache,
+                                                 final GlobalConfigCache globalConfigCache,
                                                  final IntegLookupTableCache integLookupTableCache,
                                                  final AccountFetcher accountFetcher,
                                                  final DriftAccounts driftAccounts,
@@ -33,8 +34,8 @@ public interface IntegrationServiceContext {
                                                  final KaminoVaultCache kaminoVaultCache) {
     return new IntegrationServiceContextImpl(
         serviceContext,
-        solUSDOracleKey, // TODO: Should this per Vault?
         mintCache,
+        globalConfigCache,
         integLookupTableCache,
         accountFetcher,
         driftAccounts, driftMarketCache,
@@ -57,8 +58,6 @@ public interface IntegrationServiceContext {
   void queue(final Collection<PublicKey> accounts, final AccountConsumer callback);
 
   void executeTask(final Runnable task);
-
-  PublicKey solUSDOracleKey();
 
   RpcCaller rpcCaller();
 
@@ -87,8 +86,6 @@ public interface IntegrationServiceContext {
   KaminoVaultCache kaminoVaultCache();
 
   KaminoAccounts kaminoAccounts();
-
-  Set<PublicKey> kaminoTableKeys();
 
   PublicKey kLendProgram();
 

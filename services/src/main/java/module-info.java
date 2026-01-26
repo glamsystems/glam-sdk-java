@@ -1,4 +1,5 @@
 module systems.glam.services {
+  requires java.logging;
   requires java.net.http;
 
   requires transitive systems.comodal.json_iterator;
@@ -36,6 +37,4 @@ module systems.glam.services {
   exports systems.glam.services.pricing;
   exports systems.glam.services.rpc;
   exports systems.glam.services;
-
-
 }

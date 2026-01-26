@@ -7,7 +7,6 @@ import software.sava.idl.clients.core.gen.SerDeUtil;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
-import systems.glam.services.ServiceContext;
 import systems.glam.services.DelegateService;
 import systems.glam.services.integrations.IntegrationServiceContext;
 
@@ -16,12 +15,12 @@ import java.util.HashSet;
 
 public interface VaultPriceService extends DelegateService {
 
-  static VaultPriceService createService(final ServiceContext serviceContext,
-                                         final IntegrationServiceContext integContext,
+  static VaultPriceService createService(final IntegrationServiceContext integContext,
                                          final PublicKey stateAccountKey,
                                          final PublicKey baseAssetMint,
                                          final int baseAssetDecimals,
                                          final MinGlamStateAccount minGlamStateAccount) {
+    final var serviceContext = integContext.serviceContext();
     final var glamClient = GlamAccountClient.createClient(serviceContext.serviceKey(), stateAccountKey);
     final var mintPDA = glamClient.vaultAccounts().mintPDA().publicKey();
     final var accountsNeeded = HashSet.<PublicKey>newHashSet((3 + (minGlamStateAccount.numAccounts() << 2)));
@@ -43,18 +42,16 @@ public interface VaultPriceService extends DelegateService {
     );
   }
 
-  static VaultPriceService createService(final ServiceContext serviceContext,
-                                         final IntegrationServiceContext integContext,
+  static VaultPriceService createService(final IntegrationServiceContext integContext,
                                          final AccountInfo<byte[]> stateAccountInfo) {
     final byte[] data = stateAccountInfo.data();
     final var baseAssetMint = PublicKey.readPubKey(data, StateAccount.BASE_ASSET_MINT_OFFSET);
     final int baseAssetDecimals = data[StateAccount.BASE_ASSET_DECIMALS_OFFSET] & 0xFF;
     final var minStateAccount = MinGlamStateAccount.createRecord(stateAccountInfo);
-    return createService(serviceContext, integContext, stateAccountInfo.pubKey(), baseAssetMint, baseAssetDecimals, minStateAccount);
+    return createService(integContext, stateAccountInfo.pubKey(), baseAssetMint, baseAssetDecimals, minStateAccount);
   }
 
-  static VaultPriceService createService(final ServiceContext serviceContext,
-                                         final IntegrationServiceContext integContext,
+  static VaultPriceService createService(final IntegrationServiceContext integContext,
                                          final PublicKey stateAccountKey,
                                          final byte[] data) {
     final long slot = ByteUtil.getInt64LE(data, 0);
@@ -70,7 +67,7 @@ public interface VaultPriceService extends DelegateService {
     Arrays.sort(externalPositions);
     final byte[] externalPositionsBytes = Arrays.copyOfRange(data, i, data.length);
     final var minStateAccount = new MinGlamStateAccount(slot, assetBytes, assets, externalPositionsBytes, externalPositions);
-    return createService(serviceContext, integContext, stateAccountKey, assets[baseAssetMintIndex], baseAssetDecimals, minStateAccount);
+    return createService(integContext, stateAccountKey, assets[baseAssetMintIndex], baseAssetDecimals, minStateAccount);
   }
 
   void init();

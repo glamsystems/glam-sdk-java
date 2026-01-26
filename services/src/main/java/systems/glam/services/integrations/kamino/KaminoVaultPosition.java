@@ -41,6 +41,7 @@ public final class KaminoVaultPosition implements Position {
   @Override
   public Instruction priceInstruction(final IntegrationServiceContext serviceContext,
                                       final GlamAccountClient glamAccountClient,
+                                      final PublicKey solUSDOracleKey,
                                       final PublicKey baseAssetUSDOracleKey, final MinGlamStateAccount stateAccount,
                                       final Map<PublicKey, AccountInfo<byte[]>> accountMap,
                                       final Set<PublicKey> returnAccounts) {

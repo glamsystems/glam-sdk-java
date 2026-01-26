@@ -123,24 +123,22 @@ public class MultiAssetPriceService extends BaseDelegateService
     }
 
     final var driftTableKeys = serviceContext.driftAccounts().marketLookupTables();
-    final var kaminoTableKeys = serviceContext.kaminoTableKeys();
 
     final var tableCache = serviceContext.integTableCache();
 
     final var glamTables = glamVaultTables.get();
     int i = glamTables.length;
-    final LookupTableAccountMeta[] tableMetas = new LookupTableAccountMeta[driftTableKeys.size() + kaminoTableKeys.size() + numKVaults + i];
+    final LookupTableAccountMeta[] tableMetas = new LookupTableAccountMeta[driftTableKeys.size() + 1 + numKVaults + i];
     System.arraycopy(glamTables, 0, tableMetas, 0, i);
 
+    // Always include drift and kamino main tables as they are typically useful regardless.
+    // Tables will be scored on Transaction creation for optimal usage.
     for (final var driftTableKey : driftTableKeys) {
       final var table = tableCache.getTable(driftTableKey);
       tableMetas[i++] = LookupTableAccountMeta.createMeta(table, Transaction.MAX_ACCOUNTS);
     }
-
-    for (final var kaminoTableKey : kaminoTableKeys) {
-      final var table = tableCache.getTable(kaminoTableKey);
-      tableMetas[i++] = LookupTableAccountMeta.createMeta(table, Transaction.MAX_ACCOUNTS);
-    }
+    final var table = tableCache.getTable(serviceContext.kaminoAccounts().mainMarketLUT());
+    tableMetas[i++] = LookupTableAccountMeta.createMeta(table, Transaction.MAX_ACCOUNTS);
 
     for (final var externalAccount : stateAccount.externalPositions()) {
       final var accountInfo = accountsNeededMap.get(externalAccount);
@@ -329,20 +327,24 @@ public class MultiAssetPriceService extends BaseDelegateService
         } else {
           prepareAUMTransaction(stateAccount, accountsNeededMap);
         }
-        final var stateAccountPath = serviceContext.resolveGlamStateFilePath(glamAccountClient.vaultAccounts().glamStateKey());
-        final byte[] stateAccountData = stateAccount.serialize(vaultTokensPosition.baseAssetMint(), baseAssetDecimals);
-        try {
-          Files.write(
-              stateAccountPath,
-              stateAccountData,
-              StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE
-          );
-        } catch (final IOException e) {
-          logger.log(WARNING, "Failed to write state account to file", e);
-        }
+        persist(stateAccount);
       }
     } catch (final RuntimeException ex) {
       logger.log(WARNING, "Error processing state account update", ex);
+    }
+  }
+
+  private void persist(final MinGlamStateAccount stateAccount) {
+    final var stateAccountPath = serviceContext.resolveGlamStateFilePath(glamAccountClient.vaultAccounts().glamStateKey());
+    final byte[] stateAccountData = stateAccount.serialize(vaultTokensPosition.baseAssetMint(), baseAssetDecimals);
+    try {
+      Files.write(
+          stateAccountPath,
+          stateAccountData,
+          StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE
+      );
+    } catch (final IOException e) {
+      logger.log(WARNING, "Failed to write state account to file", e);
     }
   }
 
@@ -401,6 +403,10 @@ public class MultiAssetPriceService extends BaseDelegateService
     final var returnAccountsSet = HashSet.<PublicKey>newHashSet(accountsNeededMap.size());
 
     // TODO: Check if State overrides default oracle.
+    final var solAssetMeta = serviceContext.globalConfigAssetMeta(serviceContext.serviceContext().solanaAccounts().wrappedSolTokenMint());
+    if (solAssetMeta == null) {
+      return;
+    }
     final var baseAssetMeta = serviceContext.globalConfigAssetMeta(vaultTokensPosition.baseAssetMint());
     if (baseAssetMeta == null) {
       return;
@@ -409,6 +415,7 @@ public class MultiAssetPriceService extends BaseDelegateService
       final var priceInstruction = position.priceInstruction(
           serviceContext,
           glamAccountClient,
+          solAssetMeta.oracle(),
           baseAssetMeta.oracle(),
           stateAccount,
           accountsNeededMap,

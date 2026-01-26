@@ -245,7 +245,6 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                                                       final Map<PublicKey, AssetMeta[]> previousMetaMap,
                                                       final GlobalConfig globalConfig,
                                                       final MintCache mintCache) {
-
     final var previousAssetMetaList = previousGlobalConfig.assetMetas();
     final var assetMetaList = globalConfig.assetMetas();
     if (previousAssetMetaList.length > assetMetaList.length) {
@@ -366,7 +365,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
         if (expectedDecimals != previousDecimals) {
           final var msg = String.format("""
                   {
-                   "event": "Inconsistent Asset Decimals Within GlobalConfig",
+                   "event": "Inconsistent Asset Decimals Across GlobalConfig's",
                    "slot": %s,
                    "previous": %s,
                    "new": %s
@@ -443,7 +442,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
       if (otherMeta != null && !otherMeta.oracleSource().equals(oracleSource)) {
         final var msg = String.format("""
                 {
-                 "event": "Inconsistent OracleSource Within Config",
+                 "event": "Inconsistent OracleSource Within GlobalConfig",
                  "slot": %s,
                  "a": %s,
                  "b": %s

@@ -21,10 +21,10 @@ import static systems.glam.services.io.FileUtils.ACCOUNT_FILE_EXTENSION;
 
 public interface IntegLookupTableCache extends Runnable {
 
-  static CompletableFuture<IntegLookupTableCache> createCache(final Path integrationTablesDirectory,
-                                                              final Set<PublicKey> integrationTableKeys,
-                                                              final RpcCaller rpcCaller,
-                                                              final AccountFetcher accountFetcher) {
+  static CompletableFuture<IntegLookupTableCache> initCache(final Path integrationTablesDirectory,
+                                                            final Set<PublicKey> integrationTableKeys,
+                                                            final RpcCaller rpcCaller,
+                                                            final AccountFetcher accountFetcher) {
     final var integrationTables = new ConcurrentHashMap<PublicKey, AddressLookupTable>();
 
     try {

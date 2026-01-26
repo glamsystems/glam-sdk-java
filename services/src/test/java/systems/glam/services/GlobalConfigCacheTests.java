@@ -19,6 +19,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -52,6 +54,7 @@ final class GlobalConfigCacheTests {
 
   @BeforeAll
   static void beforeAll() throws IOException {
+    Logger.getLogger(GlobalConfigCache.class.getName()).setLevel(Level.OFF);
     globalConfigData = ResourceUtil.readResource("accounts/glam/global/" + GLOBAL_CONFIG_KEY + ".zip");
   }
 
@@ -277,7 +280,7 @@ final class GlobalConfigCacheTests {
     final var differentPubKey = PublicKey.NONE;
 
     // Case 1: Same asset but different oracle (without negative priority)
-    final var oracleChangedMetas = previousAssetMetas.clone();
+    final var oracleChangedMetas = Arrays.copyOf(previousAssetMetas, previousAssetMetas.length);
     oracleChangedMetas[0] = new AssetMeta(
         originalMeta.asset(),       // same asset
         originalMeta.decimals(),
@@ -308,7 +311,7 @@ final class GlobalConfigCacheTests {
     ));
 
     // Case 2: Different asset (without negative priority)
-    final var assetChangedMetas = previousAssetMetas.clone();
+    final var assetChangedMetas = Arrays.copyOf(previousAssetMetas, previousAssetMetas.length);
     assetChangedMetas[0] = new AssetMeta(
         differentPubKey,            // different asset
         originalMeta.decimals(),
@@ -496,8 +499,7 @@ final class GlobalConfigCacheTests {
 
     final var firstMeta = previousAssetMetas[0];
 
-    // Create a new config where the first entry has the same asset and oracle but different decimals
-    final var modifiedMetas = previousAssetMetas.clone();
+    final var modifiedMetas = Arrays.copyOf(previousAssetMetas, previousAssetMetas.length);
     modifiedMetas[0] = new AssetMeta(
         firstMeta.asset(),
         firstMeta.decimals() + 1,  // different decimals - this is invalid
