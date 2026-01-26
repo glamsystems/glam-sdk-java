@@ -22,9 +22,9 @@ import java.util.function.Consumer;
 import static java.lang.System.Logger.Level.WARNING;
 import static software.sava.core.accounts.lookup.AddressLookupTable.LOOKUP_TABLE_META_SIZE;
 
-final class PriceVaultsCacheImpl implements PriceVaultsCache, Consumer<AccountInfo<byte[]>> {
+final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer<AccountInfo<byte[]>> {
 
-  static final System.Logger logger = System.getLogger(PriceVaultsCache.class.getName());
+  static final System.Logger logger = System.getLogger(GlamStateContextCache.class.getName());
 
   private final long fetchDelayMillis;
   private final PublicKey protocolProgram;
@@ -36,10 +36,10 @@ final class PriceVaultsCacheImpl implements PriceVaultsCache, Consumer<AccountIn
   private final Map<PublicKey, VaultPriceService> priceServicesByState;
   private final Set<PublicKey> unsupportedVaults;
 
-  PriceVaultsCacheImpl(final Duration fetchDelay,
-                       final IntegrationServiceContext integContext,
-                       final Path vaultTableDirectory,
-                       final Map<PublicKey, VaultPriceService> priceServicesByState) {
+  GlamStateContextCacheImpl(final Duration fetchDelay,
+                            final IntegrationServiceContext integContext,
+                            final Path vaultTableDirectory,
+                            final Map<PublicKey, VaultPriceService> priceServicesByState) {
     this.fetchDelayMillis = fetchDelay.toNanos();
     this.integContext = integContext;
     final var serviceContext = integContext.serviceContext();

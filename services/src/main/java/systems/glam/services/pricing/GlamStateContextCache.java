@@ -14,15 +14,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.System.Logger.Level.WARNING;
 import static systems.glam.services.io.FileUtils.ACCOUNT_FILE_EXTENSION;
-import static systems.glam.services.pricing.PriceVaultsCacheImpl.logger;
+import static systems.glam.services.pricing.GlamStateContextCacheImpl.logger;
 
-public interface PriceVaultsCache extends Runnable {
+public interface GlamStateContextCache extends Runnable {
 
-  static PriceVaultsCache loadCache(final Duration fetchDelay,
-                                    final IntegrationServiceContext integContext,
-                                    final Path vaultTableDirectory) {
+  static GlamStateContextCache loadCache(final Duration fetchDelay,
+                                         final IntegrationServiceContext integContext,
+                                         final Path vaultTableDirectory) {
     final var cachedState = loadPriceServicesFromDisk(integContext);
-    return new PriceVaultsCacheImpl(
+    return new GlamStateContextCacheImpl(
         fetchDelay,
         integContext,
         vaultTableDirectory,

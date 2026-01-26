@@ -40,7 +40,6 @@ final class PriceVaultsServiceEntrypoint {
     }
   }
 
-
   private static void createService(final ExecutorService taskExecutor,
                                     final HttpClient httpClient,
                                     final HttpClient wsHttpClient) throws InterruptedException {
@@ -121,7 +120,7 @@ final class PriceVaultsServiceEntrypoint {
         null // TODO: kVaults
     );
 
-    final var priceVaultsCache = PriceVaultsCache.loadCache(
+    final var priceVaultsCache = GlamStateContextCache.loadCache(
         defensivePollingConfig.glamStateAccounts(),
         integrationServiceContext,
         serviceContext.accountsCacheDirectory().resolve("glam/vault_tables")
