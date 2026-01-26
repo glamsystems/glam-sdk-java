@@ -88,10 +88,14 @@ public final class ServiceContextImpl implements ServiceContext {
     final var programOwner = accountInfo.owner();
     final byte[] data = accountInfo.data();
     if (programOwner.equals(tokenProgram())) {
-      return accountInfo.data().length == Mint.BYTES;
-    } else if (programOwner.equals(token2022Program()) && data.length > TokenAccount.BYTES) {
-      final int accountType = data[TokenAccount.BYTES] & 0xFF;
-      return accountType == AccountType.Mint.ordinal();
+      return data.length == Mint.BYTES;
+    } else if (programOwner.equals(token2022Program())) {
+      if (data.length > TokenAccount.BYTES) {
+        final int accountType = data[TokenAccount.BYTES] & 0xFF;
+        return accountType == AccountType.Mint.ordinal();
+      } else {
+        return data.length == Mint.BYTES;
+      }
     } else {
       return false;
     }

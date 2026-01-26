@@ -9,6 +9,8 @@ import systems.glam.sdk.idl.programs.glam.protocol.gen.types.*;
 import java.util.Arrays;
 
 public record MinGlamStateAccount(long slot,
+                                  int baseAssetIndex,
+                                  int baseAssetDecimals,
                                   byte[] assetBytes,
                                   PublicKey[] assets,
                                   byte[] externalPositionsBytes,
@@ -18,19 +20,44 @@ public record MinGlamStateAccount(long slot,
     return assets.length + externalPositions.length;
   }
 
-  public byte[] serialize(final PublicKey baseAssetMint, final int baseAssetDecimals) {
+  public PublicKey baseAssetMint() {
+    return assets[baseAssetIndex];
+  }
+
+  public byte[] serialize() {
     final int len = Long.BYTES + 1 + 1 + 1 + assetBytes.length + 1 + externalPositionsBytes.length;
     final byte[] data = new byte[len];
     ByteUtil.putInt64LE(data, 0, slot);
     int i = Long.BYTES;
-    data[i++] = (byte) Arrays.binarySearch(assets, baseAssetMint);
+    data[i++] = (byte) baseAssetIndex;
     data[i++] = (byte) baseAssetDecimals;
     data[i++] = (byte) assets.length;
     System.arraycopy(assetBytes, 0, data, i, assetBytes.length);
     i += assetBytes.length;
-    data[i++] = (byte) externalPositionsBytes.length;
+    data[i++] = (byte) externalPositions.length;
     System.arraycopy(externalPositionsBytes, 0, data, i, externalPositionsBytes.length);
     return data;
+  }
+
+  public static MinGlamStateAccount deserialize(final byte[] data) {
+    final long slot = ByteUtil.getInt64LE(data, 0);
+    int i = Long.BYTES;
+    final var baseAssetMintIndex = data[i++] & 0xFF;
+    final int baseAssetDecimals = data[i++] & 0xFF;
+    final var assets = SerDeUtil.readPublicKeyVector(1, data, i++);
+    Arrays.sort(assets);
+    final int to = i + (assets.length * PublicKey.PUBLIC_KEY_LENGTH);
+    final byte[] assetBytes = Arrays.copyOfRange(data, i, to);
+    i = to;
+    final var externalPositions = SerDeUtil.readPublicKeyVector(1, data, i++);
+    Arrays.sort(externalPositions);
+    final byte[] externalPositionsBytes = Arrays.copyOfRange(data, i, data.length);
+    return new MinGlamStateAccount(
+        slot,
+        baseAssetMintIndex, baseAssetDecimals,
+        assetBytes, assets,
+        externalPositionsBytes, externalPositions
+    );
   }
 
   private static int externalPositionsOffset(final byte[] data, int i) {
@@ -67,20 +94,28 @@ public record MinGlamStateAccount(long slot,
     return i;
   }
 
-  private static MinGlamStateAccount createRecord(final long slot, final byte[] data) {
+  public static MinGlamStateAccount createRecord(final long slot, final byte[] data) {
     final var assets = SerDeUtil.readPublicKeyVector(4, data, StateAccount.ASSETS_OFFSET);
     Arrays.sort(assets);
-    int i = StateAccount.ASSETS_OFFSET + 4 + SerDeUtil.lenVector(4, assets);
+
+    int i = StateAccount.ASSETS_OFFSET + SerDeUtil.lenVector(4, assets);
     final byte[] assetBytes = Arrays.copyOfRange(data, StateAccount.ASSETS_OFFSET + 4, i);
 
-    final int externalPositionOffset = externalPositionsOffset(data, i);
-
-    final var externalPositions = SerDeUtil.readPublicKeyVector(4, data, externalPositionOffset);
+    i = externalPositionsOffset(data, i);
+    final var externalPositions = SerDeUtil.readPublicKeyVector(4, data, i);
     Arrays.sort(externalPositions);
-    i += SerDeUtil.lenVector(4, externalPositions);
-    final byte[] externalPositionsBytes = Arrays.copyOfRange(data, externalPositionOffset + 4, i);
+    i += 4; // 1295
+    final byte[] externalPositionsBytes = Arrays.copyOfRange(data, i, i + (externalPositions.length * PublicKey.PUBLIC_KEY_LENGTH));
 
-    return new MinGlamStateAccount(slot, assetBytes, assets, externalPositionsBytes, externalPositions);
+    final var baseAssetMint = PublicKey.readPubKey(data, StateAccount.BASE_ASSET_MINT_OFFSET);
+    final int baseAssetIndex = Arrays.binarySearch(assets, baseAssetMint);
+    final int baseAssetDecimals = data[StateAccount.BASE_ASSET_DECIMALS_OFFSET] & 0xFF;
+
+    return new MinGlamStateAccount(
+        slot,
+        baseAssetIndex, baseAssetDecimals,
+        assetBytes, assets, externalPositionsBytes, externalPositions
+    );
   }
 
   public static MinGlamStateAccount createRecord(final AccountInfo<byte[]> data) {
@@ -88,21 +123,24 @@ public record MinGlamStateAccount(long slot,
   }
 
   public MinGlamStateAccount createIfChanged(final long slot, final byte[] data) {
+    if (Long.compareUnsigned(slot, this.slot) <= 0) {
+      return null;
+    }
     final int numAssets = SerDeUtil.val(4, data, StateAccount.ASSETS_OFFSET);
     final int fromAssetsOffset = StateAccount.ASSETS_OFFSET + 4;
 
     final int toAssetsOffset = fromAssetsOffset + (numAssets * PublicKey.PUBLIC_KEY_LENGTH);
     int fromExternalPositionOffset = externalPositionsOffset(data, toAssetsOffset);
     final int numExternalPositions = SerDeUtil.val(4, data, fromExternalPositionOffset);
-    fromExternalPositionOffset += 4;
+    fromExternalPositionOffset += 4; // 1295
     final int toExternalPositionOffset = fromExternalPositionOffset + (numExternalPositions * PublicKey.PUBLIC_KEY_LENGTH);
 
-    final boolean assetsChanged = numAssets == this.assets.length && Arrays.equals(
+    final boolean assetsChanged = numAssets != this.assets.length || !Arrays.equals(
         this.assetBytes, 0, this.assetBytes.length,
         data, fromAssetsOffset, toAssetsOffset
     );
-    final boolean externalPositionsChanged = numExternalPositions == this.externalPositions.length && Arrays.equals(
-        this.externalPositionsBytes, 0, numExternalPositions,
+    final boolean externalPositionsChanged = numExternalPositions != this.externalPositions.length || !Arrays.equals(
+        this.externalPositionsBytes, 0, this.externalPositionsBytes.length,
         data, fromExternalPositionOffset, toExternalPositionOffset
     );
 
@@ -110,14 +148,17 @@ public record MinGlamStateAccount(long slot,
       return null;
     }
 
+    final int baseAssetIndex;
     final byte[] assetBytes;
     final PublicKey[] assets;
     if (assetsChanged) {
       assets = new PublicKey[numAssets];
       SerDeUtil.readArray(assets, data, fromAssetsOffset);
       Arrays.sort(assets);
+      baseAssetIndex = Arrays.binarySearch(assets, this.baseAssetMint());
       assetBytes = Arrays.copyOfRange(data, fromAssetsOffset, toAssetsOffset);
     } else {
+      baseAssetIndex = this.baseAssetIndex;
       assetBytes = this.assetBytes;
       assets = this.assets;
     }
@@ -134,13 +175,18 @@ public record MinGlamStateAccount(long slot,
       externalPositions = this.externalPositions;
     }
 
-    return new MinGlamStateAccount(slot, assetBytes, assets, externalPositionsBytes, externalPositions);
+    return new MinGlamStateAccount(
+        slot,
+        baseAssetIndex, baseAssetDecimals,
+        assetBytes, assets,
+        externalPositionsBytes, externalPositions
+    );
   }
 
   @Override
   public boolean equals(final Object o) {
     //noinspection PatternVariableHidesField
-    if (o instanceof MinGlamStateAccount(_, _, final var assets, _, final var externalPositions)) {
+    if (o instanceof MinGlamStateAccount(_, _, _, _, final var assets, _, final var externalPositions)) {
       return Arrays.equals(this.assets, assets) && Arrays.equals(this.externalPositions, externalPositions);
     } else {
       return false;

@@ -145,7 +145,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
 
     @Override
     public int write(final byte[] _data, final int _offset) {
-      int i = writeOrdinal(_data, _offset);
+      int i = _offset + writeOrdinal(_data, _offset);
       i += SerDeUtil.writeVector(4, val, _data, i);
       return i - _offset;
     }
@@ -175,7 +175,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
 
     @Override
     public int write(final byte[] _data, final int _offset) {
-      int i = writeOrdinal(_data, _offset);
+      int i = _offset + writeOrdinal(_data, _offset);
       i += SerDeUtil.writeVector(4, val, _data, i);
       return i - _offset;
     }
@@ -205,7 +205,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
 
     @Override
     public int write(final byte[] _data, final int _offset) {
-      int i = writeOrdinal(_data, _offset);
+      int i = _offset + writeOrdinal(_data, _offset);
       i += SerDeUtil.writeVector(4, val, _data, i);
       return i - _offset;
     }
@@ -235,7 +235,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
 
     @Override
     public int write(final byte[] _data, final int _offset) {
-      int i = writeOrdinal(_data, _offset);
+      int i = _offset + writeOrdinal(_data, _offset);
       i += SerDeUtil.writeVector(4, val, _data, i);
       return i - _offset;
     }
@@ -265,7 +265,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
 
     @Override
     public int write(final byte[] _data, final int _offset) {
-      int i = writeOrdinal(_data, _offset);
+      int i = _offset + writeOrdinal(_data, _offset);
       i += SerDeUtil.writeVector(4, val, _data, i);
       return i - _offset;
     }

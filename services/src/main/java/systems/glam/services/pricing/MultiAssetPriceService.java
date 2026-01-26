@@ -45,7 +45,6 @@ public class MultiAssetPriceService extends BaseDelegateService
 
   private final IntegrationServiceContext serviceContext;
   private final PublicKey mintPDA;
-  private final int baseAssetDecimals;
   private final Set<PublicKey> accountsNeededSet;
   private final Map<PublicKey, Position> positions;
   private final VaultTokensPosition vaultTokensPosition;
@@ -59,18 +58,15 @@ public class MultiAssetPriceService extends BaseDelegateService
 
   MultiAssetPriceService(final IntegrationServiceContext serviceContext,
                          final PublicKey mintPDA,
-                         final PublicKey baseAssetMint,
-                         final int baseAssetDecimals,
                          final GlamAccountClient glamAccountClient,
                          final MinGlamStateAccount stateAccount,
                          final Set<PublicKey> accountsNeededSet) {
     super(glamAccountClient);
     this.serviceContext = serviceContext;
     this.mintPDA = mintPDA;
-    this.baseAssetDecimals = baseAssetDecimals;
     this.accountsNeededSet = accountsNeededSet;
     this.positions = HashMap.newHashMap(stateAccount.numAccounts());
-    this.vaultTokensPosition = new VaultTokensPosition(baseAssetMint, stateAccount.assets().length);
+    this.vaultTokensPosition = new VaultTokensPosition(stateAccount.baseAssetMint(), stateAccount.assets().length);
     this.protocolPositions = new EnumMap<>(Protocol.class);
     this.stateAccount = new AtomicReference<>(stateAccount);
     this.aumTransaction = new AtomicReference<>(null);
@@ -336,7 +332,7 @@ public class MultiAssetPriceService extends BaseDelegateService
 
   private void persist(final MinGlamStateAccount stateAccount) {
     final var stateAccountPath = serviceContext.resolveGlamStateFilePath(glamAccountClient.vaultAccounts().glamStateKey());
-    final byte[] stateAccountData = stateAccount.serialize(vaultTokensPosition.baseAssetMint(), baseAssetDecimals);
+    final byte[] stateAccountData = stateAccount.serialize();
     try {
       Files.write(
           stateAccountPath,
@@ -443,7 +439,7 @@ public class MultiAssetPriceService extends BaseDelegateService
     }
   }
 
-  public void simulateAumTransaction() {
+  public void simulateAumTransaction(final MinGlamStateAccount stateAccount) {
     final var aumTransaction = this.aumTransaction.get();
     final var base64Encoded = aumTransaction.base64Encoded();
     final var returnAccounts = aumTransaction.returnAccounts();
@@ -486,7 +482,7 @@ public class MultiAssetPriceService extends BaseDelegateService
       var eventSum = BigInteger.ZERO;
       for (final var position : positions.values()) {
         final var priceInstruction = innerInstructionsList.get(++ixIndex);
-        final var positionReport = position.positionReport(mintProgram, baseAssetDecimals, accountsNeededMap, priceInstruction);
+        final var positionReport = position.positionReport(mintProgram, stateAccount.baseAssetDecimals(), accountsNeededMap, priceInstruction);
         positionReports.add(positionReport);
       }
 
