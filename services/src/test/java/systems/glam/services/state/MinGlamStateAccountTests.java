@@ -1,4 +1,4 @@
-package systems.glam.services.pricing;
+package systems.glam.services.state;
 
 import org.junit.jupiter.api.Test;
 import software.sava.core.accounts.PublicKey;
@@ -46,8 +46,8 @@ final class MinGlamStateAccountTests {
     assertArrayEquals(minStateAccount.externalPositions(), deserialized.externalPositions());
     assertArrayEquals(minStateAccount.externalPositionsBytes(), deserialized.externalPositionsBytes());
 
-    assertNull(minStateAccount.createIfChanged(slot, null));
-    assertNull(minStateAccount.createIfChanged(slot + 1, stateAccountData));
+    assertNull(minStateAccount.createIfChanged(slot, STATE_ACCOUNT_KEY, null));
+    assertNull(minStateAccount.createIfChanged(slot + 1, STATE_ACCOUNT_KEY, stateAccountData));
 
     final var changedAssets = stateAccount.assets().clone();
     changedAssets[0] = PublicKey.fromBase58Encoded("11111111111111111111111111111111");
@@ -77,7 +77,7 @@ final class MinGlamStateAccountTests {
 
     byte[] data = stateAccountWithChangedAssets.write();
     ++slot;
-    var changed = minStateAccount.createIfChanged(slot, data);
+    var changed = minStateAccount.createIfChanged(slot, STATE_ACCOUNT_KEY, data);
     assertNotNull(changed);
     assertEquals(slot, changed.slot());
     validateBaseNotChanged(minStateAccount, deserialized);
@@ -114,7 +114,7 @@ final class MinGlamStateAccountTests {
 
     data = stateAccountWithChangedPositions.write();
     ++slot;
-    changed = minStateAccount.createIfChanged(slot, data);
+    changed = minStateAccount.createIfChanged(slot, STATE_ACCOUNT_KEY, data);
     assertNotNull(changed);
     assertEquals(slot, changed.slot());
     validateBaseNotChanged(minStateAccount, deserialized);

@@ -7,8 +7,7 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.services.integrations.IntegrationServiceContext;
-import systems.glam.services.pricing.MinGlamStateAccount;
-import systems.glam.services.pricing.PositionReport;
+import systems.glam.services.state.MinGlamStateAccount;
 
 import java.util.ArrayList;
 import java.util.HashMap;

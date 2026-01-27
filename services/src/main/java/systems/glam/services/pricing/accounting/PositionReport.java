@@ -1,4 +1,4 @@
-package systems.glam.services.pricing;
+package systems.glam.services.pricing.accounting;
 
 import java.math.BigDecimal;
 

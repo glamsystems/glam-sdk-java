@@ -5,7 +5,7 @@ import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
-import systems.glam.services.GlobalConfigCache;
+import systems.glam.services.state.GlobalConfigCache;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.execution.BaseServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
@@ -16,7 +16,6 @@ import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
 
 import java.util.Collection;
-import java.util.Set;
 
 final class IntegrationServiceContextImpl extends BaseServiceContext implements IntegrationServiceContext {
 

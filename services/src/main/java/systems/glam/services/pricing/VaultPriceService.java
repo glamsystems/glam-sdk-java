@@ -6,6 +6,7 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.services.DelegateService;
 import systems.glam.services.integrations.IntegrationServiceContext;
+import systems.glam.services.state.MinGlamStateAccount;
 
 import java.util.HashSet;
 

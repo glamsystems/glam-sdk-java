@@ -6,7 +6,7 @@ import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.core.config.ServiceConfigUtil;
 import systems.glam.sdk.GlamAccounts;
-import systems.glam.services.GlobalConfigCache;
+import systems.glam.services.state.GlobalConfigCache;
 import systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint;
 import systems.glam.services.integrations.IntegLookupTableCache;
 import systems.glam.services.integrations.IntegrationServiceContext;

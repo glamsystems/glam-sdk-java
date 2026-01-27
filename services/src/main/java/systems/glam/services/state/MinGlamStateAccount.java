@@ -1,4 +1,4 @@
-package systems.glam.services.pricing;
+package systems.glam.services.state;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.encoding.ByteUtil;
@@ -122,10 +122,21 @@ public record MinGlamStateAccount(long slot,
     return createRecord(data.context().slot(), data.data());
   }
 
-  public MinGlamStateAccount createIfChanged(final long slot, final byte[] data) {
+  public MinGlamStateAccount createIfChanged(final long slot, final PublicKey stateKey, final byte[] data) {
     if (Long.compareUnsigned(slot, this.slot) <= 0) {
       return null;
     }
+    if (baseAssetDecimals != (data[StateAccount.BASE_ASSET_DECIMALS_OFFSET] & 0xFF)) {
+      throw new IllegalStateException("Base asset decimals changed for state account " + stateKey);
+    }
+    final var expectedBaseAssetMint = baseAssetMint().toByteArray();
+    if (!Arrays.equals(
+        expectedBaseAssetMint, 0, PublicKey.PUBLIC_KEY_LENGTH,
+        data, StateAccount.BASE_ASSET_MINT_OFFSET, StateAccount.BASE_ASSET_MINT_OFFSET + PublicKey.PUBLIC_KEY_LENGTH
+    )) {
+      throw new IllegalStateException("Base asset changed for state account " + stateKey);
+    }
+
     final int numAssets = SerDeUtil.val(4, data, StateAccount.ASSETS_OFFSET);
     final int fromAssetsOffset = StateAccount.ASSETS_OFFSET + 4;
 

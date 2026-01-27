@@ -107,9 +107,13 @@ public final class ServiceContextImpl implements ServiceContext {
     final byte[] data = accountInfo.data();
     if (programOwner.equals(tokenProgram())) {
       return data.length == TokenAccount.BYTES;
-    } else if (programOwner.equals(token2022Program()) && data.length > TokenAccount.BYTES) {
-      final int accountType = data[TokenAccount.BYTES] & 0xFF;
-      return accountType == AccountType.Account.ordinal();
+    } else if (programOwner.equals(token2022Program())) {
+      if (data.length > TokenAccount.BYTES) {
+        final int accountType = data[TokenAccount.BYTES] & 0xFF;
+        return accountType == AccountType.Account.ordinal();
+      } else {
+        return data.length == TokenAccount.BYTES;
+      }
     } else {
       return false;
     }

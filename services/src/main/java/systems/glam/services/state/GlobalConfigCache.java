@@ -1,4 +1,4 @@
-package systems.glam.services;
+package systems.glam.services.state;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
@@ -18,7 +18,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
-import static systems.glam.services.GlobalConfigCacheImpl.*;
+import static systems.glam.services.state.GlobalConfigCacheImpl.*;
 
 public interface GlobalConfigCache extends Runnable {
 

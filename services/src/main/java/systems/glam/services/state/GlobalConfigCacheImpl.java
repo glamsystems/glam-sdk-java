@@ -1,4 +1,4 @@
-package systems.glam.services;
+package systems.glam.services.state;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;

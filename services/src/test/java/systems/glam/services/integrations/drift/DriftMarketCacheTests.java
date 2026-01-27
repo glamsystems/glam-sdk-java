@@ -11,6 +11,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -29,7 +30,7 @@ final class DriftMarketCacheTests {
   }
 
   private static DriftMarketContext[] loadMarketsFromResource(final String resourcePath,
-                                                              final java.util.function.Function<byte[], DriftMarketContext> contextFactory) throws IOException, URISyntaxException {
+                                                              final Function<byte[], DriftMarketContext> contextFactory) throws IOException, URISyntaxException {
     final var classLoader = DriftMarketCacheTests.class.getClassLoader();
     final var resourceUrl = classLoader.getResource(resourcePath);
     if (resourceUrl == null) {
@@ -78,23 +79,26 @@ final class DriftMarketCacheTests {
     return marketIndex;
   }
 
+  private static AtomicReferenceArray<DriftMarketContext> createMarketArray(final DriftMarketContext[] markets,
+                                                                            final int size) {
+    final var marketsArray = new AtomicReferenceArray<DriftMarketContext>(size);
+    for (final var market : markets) {
+      marketsArray.set(market.marketIndex(), market);
+    }
+    return marketsArray;
+  }
+
   @Test
   void testMarketCache() {
     final int maxSpotIndex = maxMarketIndex(SPOT_MARKETS);
-    final var spotMarketsArray = new AtomicReferenceArray<DriftMarketContext>(maxSpotIndex + 2);
-    for (final var market : SPOT_MARKETS) {
-      spotMarketsArray.set(market.marketIndex(), market);
-    }
+    final var spotMarketsArray = createMarketArray(SPOT_MARKETS, maxSpotIndex + 2);
     final int maxPerpIndex = maxMarketIndex(PERP_MARKETS);
-    final var perpMarketsArray = new AtomicReferenceArray<DriftMarketContext>(maxPerpIndex + 2);
-    for (final var market : PERP_MARKETS) {
-      perpMarketsArray.set(market.marketIndex(), market);
-    }
-    final var driftAccounts = DriftAccounts.MAIN_NET;
+    final var perpMarketsArray = createMarketArray(PERP_MARKETS, maxPerpIndex + 2);
 
     final var cache = new DriftMarketCacheImpl(
         null, null,
-        spotMarketsArray, perpMarketsArray, driftAccounts,
+        spotMarketsArray, perpMarketsArray,
+        DriftAccounts.MAIN_NET,
         null
     );
 

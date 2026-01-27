@@ -37,4 +37,5 @@ module systems.glam.services {
   exports systems.glam.services.pricing;
   exports systems.glam.services.rpc;
   exports systems.glam.services;
+  exports systems.glam.services.state;
 }

@@ -1,4 +1,4 @@
-package systems.glam.services;
+package systems.glam.services.state;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

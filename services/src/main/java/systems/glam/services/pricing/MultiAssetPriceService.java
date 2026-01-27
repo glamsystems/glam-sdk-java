@@ -25,8 +25,10 @@ import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.integrations.drift.DriftUsersPosition;
 import systems.glam.services.integrations.kamino.KaminoVaultPosition;
 import systems.glam.services.pricing.accounting.Position;
+import systems.glam.services.pricing.accounting.PositionReport;
 import systems.glam.services.pricing.accounting.VaultTokensPosition;
 import systems.glam.services.rpc.AccountConsumer;
+import systems.glam.services.state.MinGlamStateAccount;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -366,7 +368,7 @@ public class MultiAssetPriceService extends BaseDelegateService
       return true;
     }
 
-    for (final var stateAccount = witness.createIfChanged(slot, account.data()); ; ) {
+    for (final var stateAccount = witness.createIfChanged(slot, account.pubKey(), account.data()); ; ) {
       if (stateAccount == null) {
         return true;
       }
