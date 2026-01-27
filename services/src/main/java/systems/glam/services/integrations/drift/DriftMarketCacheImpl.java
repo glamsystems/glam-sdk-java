@@ -116,7 +116,8 @@ final class DriftMarketCacheImpl implements DriftMarketCache, AccountConsumer {
             final var oracle = PublicKey.readPubKey(data, SpotMarket.ORACLE_OFFSET);
             final var currentEntry = spotMarkets.get(marketIndex);
             if (currentEntry == null || !currentEntry.oracle().equals(oracle)) {
-              perpMarkets.set(marketIndex, DriftMarketContext.createContext(marketIndex, pubKey, oracle));
+              final int poolId = data[SpotMarket.POOL_ID_OFFSET] & 0xFF;
+              perpMarkets.set(marketIndex, DriftMarketContext.createContext(poolId, marketIndex, pubKey, oracle));
               final var marketStatus = MarketStatus.read(data, SpotMarket.STATUS_OFFSET);
               writeMarketData(spotMarketsDirectory, marketIndex, data, marketStatus);
             }
@@ -126,7 +127,8 @@ final class DriftMarketCacheImpl implements DriftMarketCache, AccountConsumer {
             final var oracle = PublicKey.readPubKey(accountInfo.data(), PerpMarket.AMM_OFFSET);
             final var currentEntry = perpMarkets.get(marketIndex);
             if (currentEntry == null || !currentEntry.oracle().equals(oracle)) {
-              perpMarkets.set(marketIndex, DriftMarketContext.createContext(marketIndex, pubKey, oracle));
+              final int poolId = data[PerpMarket.POOL_ID_OFFSET] & 0xFF;
+              perpMarkets.set(marketIndex, DriftMarketContext.createContext(poolId, marketIndex, pubKey, oracle));
               final var marketStatus = MarketStatus.read(data, PerpMarket.STATUS_OFFSET);
               writeMarketData(perpMarketsDirectory, marketIndex, data, marketStatus);
             }
@@ -160,14 +162,5 @@ final class DriftMarketCacheImpl implements DriftMarketCache, AccountConsumer {
     } else {
       writeMarketData(directory, marketIndex, data);
     }
-  }
-
-  @Override
-  public String toString() {
-    return "DriftMarketCacheImpl{" +
-        "driftAccounts=" + driftAccounts +
-        ", perpMarketsDirectory=" + perpMarketsDirectory +
-        ", spotMarketsDirectory=" + spotMarketsDirectory +
-        '}';
   }
 }
