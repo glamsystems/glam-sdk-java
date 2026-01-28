@@ -24,6 +24,10 @@ public record MinGlamStateAccount(long slot,
     return assets[baseAssetIndex];
   }
 
+  public boolean containsAsset(final PublicKey mint) {
+    return Arrays.binarySearch(assets, mint) >= 0;
+  }
+
   public byte[] serialize() {
     final int len = Long.BYTES + 1 + 1 + 1 + assetBytes.length + 1 + externalPositionsBytes.length;
     final byte[] data = new byte[len];

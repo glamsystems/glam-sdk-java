@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static java.lang.System.Logger.Level.WARNING;
+import static java.lang.System.Logger.Level.ERROR;
 import static systems.glam.services.io.FileUtils.ACCOUNT_FILE_EXTENSION;
 
 public interface DriftMarketCache {
@@ -44,7 +44,7 @@ public interface DriftMarketCache {
       final var perpMarketsDirectory = driftCacheDirectory.resolve("perp_markets");
       final CompletableFuture<AtomicReferenceArray<DriftMarketContext>> perpMarketsFuture;
       if (Files.exists(perpMarketsDirectory)) {
-        perpMarketsFuture = loadPerpMarkets(spotMarketsDirectory, rpcCaller, driftAccounts);
+        perpMarketsFuture = loadPerpMarkets(perpMarketsDirectory, rpcCaller, driftAccounts);
       } else {
         Files.createDirectories(perpMarketsDirectory);
         perpMarketsFuture = fetchPerpMarkets(perpMarketsDirectory, rpcCaller, driftProgram);
@@ -111,14 +111,18 @@ public interface DriftMarketCache {
 
       final var marketsArray = new AtomicReferenceArray<DriftMarketContext>(datFiles.size() << 1);
       datFiles.parallelStream().forEach(datFile -> {
+        final DriftMarketContext marketContext;
         try {
           final byte[] data = Files.readAllBytes(datFile);
-          final var marketContext = contextFactory.apply(data);
-          if (marketsArray.getAndSet(marketContext.marketIndex(), marketContext) != null) {
-            throw new IllegalStateException("Duplicate market index " + marketContext.marketIndex());
-          }
-        } catch (final Exception ex) {
-          DriftMarketCacheImpl.logger.log(WARNING, "Failed to load Drift Market from " + datFile, ex);
+          marketContext = contextFactory.apply(data);
+        } catch (final RuntimeException ex) {
+          DriftMarketCacheImpl.logger.log(ERROR, "Failed to load Drift Market from " + datFile, ex);
+          throw ex;
+        } catch (final IOException e) {
+          throw new UncheckedIOException(e);
+        }
+        if (marketsArray.getAndSet(marketContext.marketIndex(), marketContext) != null) {
+          throw new IllegalStateException("Duplicate market index " + marketContext.marketIndex());
         }
       });
       return CompletableFuture.completedFuture(marketsArray);
@@ -167,16 +171,18 @@ public interface DriftMarketCache {
     return fetchFuture.thenApplyAsync(accounts -> {
       final var marketsArray = new AtomicReferenceArray<DriftMarketContext>(accounts.size() << 1);
       accounts.parallelStream().forEach(accountInfo -> {
+        final DriftMarketContext marketContext;
         try {
-          final var marketContext = contextFactory.apply(accountInfo);
-          final int marketIndex = marketContext.marketIndex();
-          if (marketsArray.getAndSet(marketIndex, marketContext) != null) {
-            throw new IllegalStateException("Duplicate market index " + marketIndex);
-          }
-          DriftMarketCacheImpl.writeMarketData(marketsDirectory, marketIndex, accountInfo.data());
-        } catch (final Exception ex) {
-          DriftMarketCacheImpl.logger.log(WARNING, "Failed to parse Drift Market account " + accountInfo.pubKey(), ex);
+          marketContext = contextFactory.apply(accountInfo);
+        } catch (final RuntimeException ex) {
+          DriftMarketCacheImpl.logger.log(ERROR, "Failed to parse Drift Market account " + accountInfo.pubKey(), ex);
+          throw ex;
         }
+        final int marketIndex = marketContext.marketIndex();
+        if (marketsArray.getAndSet(marketIndex, marketContext) != null) {
+          throw new IllegalStateException("Duplicate market index " + marketIndex);
+        }
+        DriftMarketCacheImpl.writeMarketData(marketsDirectory, marketIndex, accountInfo.data());
       });
       return marketsArray;
     });

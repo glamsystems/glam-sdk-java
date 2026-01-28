@@ -81,7 +81,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     this.solanaAccounts = solanaAccounts;
     this.mintCache = mintCache;
     this.accountFetcher = accountFetcher;
-    this.fetchDelayNanos = fetchDelay.toMillis();
+    this.fetchDelayNanos = fetchDelay.toNanos();
     final var lock = new ReentrantReadWriteLock();
     this.readLock = lock.readLock();
     this.writeLock = lock.writeLock();
@@ -118,41 +118,52 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     }
   }
 
+  @Override
+  public AssetMeta solAssetMeta() {
+    return topPriorityForMint(solanaAccounts.wrappedSolTokenMint());
+  }
+
   private AssetMeta topPriorityForMintChecked(final PublicKey mint, final int mintDecimals) {
+    final AssetMeta assetMeta;
     readLock.lock();
     try {
       final var assetMetaMap = this.assetMetaMap;
       final var assetMetaEntries = assetMetaMap.get(mint);
       if (assetMetaEntries == null) {
         return null;
-      } else {
-        final var assetMeta = assetMetaEntries[0];
-        if (mintDecimals != assetMeta.decimals()) {
-          return assetMeta;
-        } else {
-          writeLock.lock();
-          try {
-            this.globalConfigUpdate = null;
-            this.assetMetaMap = null;
-            this.invalidGlobalConfig.signal();
-            final var msg = String.format("""
-                    {
-                     "event": "GlobalConfig decimals for Asset does not match Mint",
-                     "mintDecimals": %d,
-                     "entry": %s
-                    """,
-                mintDecimals, toJson(assetMeta)
-            );
-            logger.log(ERROR, msg);
-            // TODO: Trigger alert and exit.
-            throw new IllegalStateException(msg);
-          } finally {
-            writeLock.unlock();
-          }
-        }
+      }
+      assetMeta = assetMetaEntries[0];
+      if (mintDecimals == assetMeta.decimals()) {
+        return assetMeta;
       }
     } finally {
       readLock.unlock();
+    }
+
+    if (this.globalConfigUpdate == null || this.assetMetaMap == null) {
+      return null;
+    }
+    writeLock.lock();
+    try {
+      if (this.globalConfigUpdate == null || this.assetMetaMap == null) {
+        return null;
+      }
+      this.globalConfigUpdate = null;
+      this.assetMetaMap = null;
+      this.invalidGlobalConfig.signalAll();
+      final var msg = String.format("""
+              {
+               "event": "GlobalConfig decimals for Asset does not match Mint",
+               "mintDecimals": %d,
+               "entry": %s
+              """,
+          mintDecimals, toJson(assetMeta)
+      );
+      logger.log(ERROR, msg);
+      // TODO: Trigger alert and exit.
+      throw new IllegalStateException(msg);
+    } finally {
+      writeLock.unlock();
     }
   }
 
@@ -550,16 +561,21 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     }
     final var assetMap = this.assetMetaMap;
     for (final var accountInfo : accounts) {
-      final var key = accountInfo.pubKey();
-      if (assetMap.containsKey(key) && mintCache.get(key) == null) {
-        final var mintContext = mintCache.setGet(MintContext.createContext(solanaAccounts, accountInfo));
-        topPriorityForMintChecked(mintContext);
+      if (accountInfo != null) {
+        final var key = accountInfo.pubKey();
+        if (assetMap.containsKey(key) && mintCache.get(key) == null) {
+          final var mintContext = mintCache.setGet(MintContext.createContext(solanaAccounts, accountInfo));
+          topPriorityForMintChecked(mintContext);
+        }
       }
     }
   }
 
   @Override
   public void accept(final AccountInfo<byte[]> accountInfo) {
+    if (this.assetMetaMap == null || this.globalConfigUpdate == null) {
+      return;
+    }
     writeLock.lock();
     try {
       if (this.assetMetaMap == null || this.globalConfigUpdate == null) {
@@ -581,20 +597,20 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
         if (assetMetaMap == null) {
           this.assetMetaMap = null;
           this.globalConfigUpdate = null;
-          this.invalidGlobalConfig.signal();
-          return;
-        }
-        this.assetMetaMap = assetMetaMap;
-        this.globalConfigUpdate = new GlobalConfigUpdate(slot, globalConfig, data);
-        persistGlobalConfig(globalConfigFilePath, data);
+          this.invalidGlobalConfig.signalAll();
+        } else {
+          this.assetMetaMap = assetMetaMap;
+          this.globalConfigUpdate = new GlobalConfigUpdate(slot, globalConfig, data);
+          persistGlobalConfig(globalConfigFilePath, data);
 
-        final var mintsNeeded = assetMetaMap.keySet().stream().<PublicKey>mapMulti((mint, downstream) -> {
-          if (!previousAssetMetaMap.containsKey(mint) && mintCache.get(mint) == null) {
-            downstream.accept(mint);
+          final var mintsNeeded = assetMetaMap.keySet().stream().<PublicKey>mapMulti((mint, downstream) -> {
+            if (!previousAssetMetaMap.containsKey(mint) && mintCache.get(mint) == null) {
+              downstream.accept(mint);
+            }
+          }).toList();
+          if (!mintsNeeded.isEmpty()) {
+            this.accountFetcher.priorityQueueBatchable(mintsNeeded, this);
           }
-        }).toList();
-        if (!mintsNeeded.isEmpty()) {
-          this.accountFetcher.priorityQueueBatchable(mintsNeeded, this);
         }
       }
     } finally {

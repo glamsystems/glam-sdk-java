@@ -1,16 +1,14 @@
 package systems.glam.services.pricing;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.accounts.lookup.AddressLookupTable;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.GlamAccountClient;
-import systems.glam.services.DelegateService;
 import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.state.MinGlamStateAccount;
 
 import java.util.HashSet;
 
-public interface VaultPriceService extends DelegateService {
+public interface VaultPriceService extends VaultStateContext {
 
   static VaultPriceService createService(final IntegrationServiceContext integContext,
                                          final PublicKey stateAccountKey,
@@ -20,16 +18,8 @@ public interface VaultPriceService extends DelegateService {
     final var mintPDA = glamClient.vaultAccounts().mintPDA().publicKey();
     final var accountsNeeded = HashSet.<PublicKey>newHashSet((3 + (minGlamStateAccount.numAccounts() << 2)));
     accountsNeeded.add(stateAccountKey);
-    accountsNeeded.add(mintPDA);
-    for (final var asset : minGlamStateAccount.assets()) {
-      if (integContext.mintContext(asset) == null) {
-        accountsNeeded.add(asset);
-      }
-    }
-    for (final var externalPosition : minGlamStateAccount.externalPositions()) {
-      accountsNeeded.add(externalPosition);
-    }
-
+    accountsNeeded.add(mintPDA); // Always needed for NAV calculation.
+    // Asset mints/ata's and external positions will be added on init.
     return new MultiAssetPriceService(
         integContext,
         mintPDA,
@@ -52,11 +42,4 @@ public interface VaultPriceService extends DelegateService {
     return createService(integContext, stateAccountKey, minStateAccount);
   }
 
-  void init();
-
-  boolean stateChange(final AccountInfo<byte[]> account);
-
-  void removeTable(final PublicKey tableKey);
-
-  void glamVaultTableUpdate(final AddressLookupTable addressLookupTable);
 }

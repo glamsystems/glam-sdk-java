@@ -66,6 +66,8 @@ public interface IntegrationServiceContext {
 
   MintContext setMintContext(final AccountInfo<byte[]> accountInfo);
 
+  AssetMeta solAssetMeta();
+
   AssetMeta globalConfigAssetMeta(final PublicKey mint);
 
   IntegLookupTableCache integTableCache();

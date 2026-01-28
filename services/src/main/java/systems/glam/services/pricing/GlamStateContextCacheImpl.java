@@ -33,13 +33,13 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
   private final List<Filter> stateFilters;
   private final Path vaultTableDirectory;
   private final List<Filter> tableFilters;
-  private final Map<PublicKey, VaultPriceService> priceServicesByState;
+  private final Map<PublicKey, VaultStateContext> priceServicesByState;
   private final Set<PublicKey> unsupportedVaults;
 
   GlamStateContextCacheImpl(final Duration fetchDelay,
                             final IntegrationServiceContext integContext,
                             final Path vaultTableDirectory,
-                            final Map<PublicKey, VaultPriceService> priceServicesByState) {
+                            final Map<PublicKey, VaultStateContext> priceServicesByState) {
     this.fetchDelayMillis = fetchDelay.toNanos();
     this.integContext = integContext;
     final var serviceContext = integContext.serviceContext();
@@ -64,25 +64,29 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
 
   @Override
   public void run() {
-    final var rpcCaller = integContext.rpcCaller();
-    for (; ; ) { // Defensive discovery of new Glam Vaults & Tables.
-      final var glamStateAccounts = rpcCaller.courteousGet(
-          rpcClient -> rpcClient.getProgramAccounts(protocolProgram, stateFilters),
-          "rpcClient::getGlamStateAccounts"
-      );
-      glamStateAccounts.parallelStream().forEach(this::acceptStateAccount);
+    try {
+      final var rpcCaller = integContext.rpcCaller();
+      for (; ; ) { // Defensive discovery of new Glam Vaults & Tables.
+        final var glamStateAccounts = rpcCaller.courteousGet(
+            rpcClient -> rpcClient.getProgramAccounts(protocolProgram, stateFilters),
+            "rpcClient::getGlamStateAccounts"
+        );
+        glamStateAccounts.parallelStream().forEach(this::acceptStateAccount);
 
-      final var addressLookupTableAccounts = rpcCaller.courteousGet(
-          rpcClient -> rpcClient.getProgramAccounts(addressLookupTableProgram, tableFilters),
-          "rpcClient::getAddressLookupTableAccounts"
-      );
-      addressLookupTableAccounts.parallelStream().forEach(this::acceptTable);
+        final var addressLookupTableAccounts = rpcCaller.courteousGet(
+            rpcClient -> rpcClient.getProgramAccounts(addressLookupTableProgram, tableFilters),
+            "rpcClient::getAddressLookupTableAccounts"
+        );
+        addressLookupTableAccounts.parallelStream().forEach(this::acceptTable);
 
-      try { //noinspection BusyWait
+        //noinspection BusyWait
         Thread.sleep(fetchDelayMillis);
-      } catch (final InterruptedException e) {
-        return;
       }
+
+    } catch (final InterruptedException e) {
+      // exit
+    } catch (final RuntimeException ex) {
+      logger.log(WARNING, "Unexpected error fetching accounts.", ex);
     }
     // TODO:
     // * Establish default schedule and overrides per vault.

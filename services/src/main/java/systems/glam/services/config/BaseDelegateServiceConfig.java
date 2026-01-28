@@ -47,6 +47,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -180,7 +181,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
 
   @Override
   public MintCache createMintCache() {
-    return MintCache.createCache(solanaAccounts, cacheDirectory.resolve("mints"));
+    return MintCache.createCache(solanaAccounts, cacheDirectory.resolve("mints.bin"));
   }
 
   @Override
@@ -291,7 +292,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
     protected final DelegateServiceConfig createBaseConfig() {
       setDefaults();
       return new BaseDelegateServiceConfig(
-          glamStateKey,
+          Objects.requireNonNullElse(glamStateKey, PublicKey.NONE),
           signingServiceConfig,
           SolanaAccounts.MAIN_NET,
           formatter,

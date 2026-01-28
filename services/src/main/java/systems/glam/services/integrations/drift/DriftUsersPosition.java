@@ -128,7 +128,7 @@ public final class DriftUsersPosition implements Position {
   @Override
   public PositionReport positionReport(final PublicKey mintProgram,
                                        final int baseAssetDecimals,
-                                       final Map<PublicKey, AccountInfo<byte[]>> accountMap,
+                                       final Map<PublicKey, AccountInfo<byte[]>> returnedAccountsMap,
                                        final InnerInstructions innerInstructions) {
     final var positionAmount = Position.parseAnchorEvent(innerInstructions, mintProgram, baseAssetDecimals);
     // TODO: Calculate position value independently

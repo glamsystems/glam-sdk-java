@@ -21,7 +21,7 @@ public interface GlamStateContextCache extends Runnable {
   static GlamStateContextCache loadCache(final Duration fetchDelay,
                                          final IntegrationServiceContext integContext,
                                          final Path vaultTableDirectory) {
-    final var cachedState = loadPriceServicesFromDisk(integContext);
+    final var cachedState = loadStateContextFromDisk(integContext);
     return new GlamStateContextCacheImpl(
         fetchDelay,
         integContext,
@@ -30,9 +30,9 @@ public interface GlamStateContextCache extends Runnable {
     );
   }
 
-  private static Map<PublicKey, VaultPriceService> loadPriceServicesFromDisk(final IntegrationServiceContext integContext) {
+  private static Map<PublicKey, VaultStateContext> loadStateContextFromDisk(final IntegrationServiceContext integContext) {
     final var stateAccountDirectory = integContext.serviceContext().glamMinStateAccountCacheDirectory();
-    final var priceServicesByState = new ConcurrentHashMap<PublicKey, VaultPriceService>();
+    final var priceServicesByState = new ConcurrentHashMap<PublicKey, VaultStateContext>();
     if (Files.notExists(stateAccountDirectory)) {
       try {
         Files.createDirectories(stateAccountDirectory);

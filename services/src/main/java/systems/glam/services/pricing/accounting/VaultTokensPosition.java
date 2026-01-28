@@ -16,11 +16,9 @@ import java.util.Set;
 
 public final class VaultTokensPosition implements Position {
 
-  private final PublicKey baseAssetMint;
   private final Map<PublicKey, AccountMeta> vaultATAMap;
 
-  public VaultTokensPosition(final PublicKey baseAssetMint, final int numAssets) {
-    this.baseAssetMint = baseAssetMint;
+  public VaultTokensPosition(final int numAssets) {
     this.vaultATAMap = HashMap.newHashMap(numAssets);
   }
 
@@ -37,12 +35,19 @@ public final class VaultTokensPosition implements Position {
     vaultATAMap.remove(account);
   }
 
-  public PublicKey baseAssetMint() {
-    return baseAssetMint;
+  public void removeOldAccounts(final MinGlamStateAccount stateAccount, final Set<PublicKey> accountsNeededSet) {
+    final var iterator = vaultATAMap.entrySet().iterator();
+    while (iterator.hasNext()) {
+      final var entry = iterator.next();
+      if (!stateAccount.containsAsset(entry.getKey())) {
+        accountsNeededSet.remove(entry.getValue().publicKey());
+        iterator.remove();
+      }
+    }
   }
 
-  public Map<PublicKey, AccountMeta> vaultATAMap() {
-    return vaultATAMap;
+  public void clear() {
+    vaultATAMap.clear();
   }
 
   @Override
@@ -109,7 +114,7 @@ public final class VaultTokensPosition implements Position {
   @Override
   public PositionReport positionReport(final PublicKey mintProgram,
                                        final int baseAssetDecimals,
-                                       final Map<PublicKey, AccountInfo<byte[]>> accountMap,
+                                       final Map<PublicKey, AccountInfo<byte[]>> returnedAccountsMap,
                                        final InnerInstructions innerInstructions) {
     return null;
   }

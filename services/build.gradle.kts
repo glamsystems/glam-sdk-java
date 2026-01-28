@@ -3,6 +3,10 @@ testModuleInfo {
   runtimeOnly("org.junit.jupiter.engine")
 }
 
+dependencies {
+  project(":sdk")
+}
+
 dependencyAnalysis {
   issues {
     onAny {

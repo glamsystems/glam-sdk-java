@@ -49,6 +49,11 @@ public interface GlobalConfigCache extends Runnable {
         throw new UncheckedIOException(e);
       }
     } else {
+      try {
+        Files.createDirectories(globalConfigFilePath.getParent());
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
+      }
       return rpcCaller.courteousCall(
           rpcClient -> rpcClient.getAccountInfo(globalConfigKey),
           "rpcClient::getGlobalConfigAccount"
@@ -94,6 +99,8 @@ public interface GlobalConfigCache extends Runnable {
   AssetMeta getByIndex(final int index);
 
   AssetMeta topPriorityForMint(final PublicKey mint);
+
+  AssetMeta solAssetMeta();
 
   AssetMeta topPriorityForMintChecked(final PublicKey mint);
 

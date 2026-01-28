@@ -5,13 +5,15 @@ import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.core.config.ServiceConfigUtil;
+import software.sava.services.solana.websocket.WebSocketManager;
 import systems.glam.sdk.GlamAccounts;
-import systems.glam.services.state.GlobalConfigCache;
 import systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint;
 import systems.glam.services.integrations.IntegLookupTableCache;
 import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.pricing.config.PriceVaultsServiceConfig;
+import systems.glam.services.rpc.AccountFetcher;
+import systems.glam.services.state.GlobalConfigCache;
 
 import java.net.http.HttpClient;
 import java.util.ArrayList;
@@ -23,16 +25,22 @@ import java.util.function.Consumer;
 
 import static java.lang.System.Logger.Level.ERROR;
 
-final class PriceVaultsServiceEntrypoint {
+public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
+                                           GlobalConfigCache globalConfigCache,
+                                           IntegLookupTableCache integTableCache,
+                                           GlamStateContextCache glamStateContextCache,
+                                           WebSocketManager webSocketManager) implements Runnable {
 
   private static final System.Logger logger = System.getLogger(SingleAssetFulfillmentServiceEntrypoint.class.getName());
 
   static void main() {
-
     try (final var taskExecutor = Executors.newVirtualThreadPerTaskExecutor();
          final var httpClient = HttpClient.newBuilder().executor(taskExecutor).build();
          final var wsHttpClient = HttpClient.newHttpClient()) {
-      createService(taskExecutor, httpClient, wsHttpClient);
+      final var service = createService(taskExecutor, httpClient, wsHttpClient);
+      if (service != null) {
+        service.run();
+      }
     } catch (final InterruptedException e) {
       // exit
     } catch (final Throwable e) {
@@ -40,9 +48,9 @@ final class PriceVaultsServiceEntrypoint {
     }
   }
 
-  private static void createService(final ExecutorService taskExecutor,
-                                    final HttpClient httpClient,
-                                    final HttpClient wsHttpClient) throws InterruptedException {
+  private static PriceVaultsServiceEntrypoint createService(final ExecutorService taskExecutor,
+                                                            final HttpClient httpClient,
+                                                            final HttpClient wsHttpClient) throws InterruptedException {
     final var configPath = ServiceConfigUtil.configFilePath(PriceVaultsServiceEntrypoint.class);
     final var serviceConfig = PriceVaultsServiceConfig.loadConfig(configPath, taskExecutor, httpClient);
     final var delegateServiceConfig = serviceConfig.delegateServiceConfig();
@@ -92,6 +100,7 @@ final class PriceVaultsServiceEntrypoint {
     integrationTableKeys.add(kaminoAccounts.mainMarketLUT());
 
     final var integrationTablesDirectory = serviceContext.accountsCacheDirectory().resolve("integ/lookup_tables");
+    // TODO: configure fetch delay
     final var integTableCacheFuture = IntegLookupTableCache.initCache(
         integrationTablesDirectory,
         integrationTableKeys,
@@ -120,14 +129,42 @@ final class PriceVaultsServiceEntrypoint {
         null // TODO: kVaults
     );
 
-    final var priceVaultsCache = GlamStateContextCache.loadCache(
+    final var glamStateContextCache = GlamStateContextCache.loadCache(
         defensivePollingConfig.glamStateAccounts(),
         integrationServiceContext,
         serviceContext.accountsCacheDirectory().resolve("glam/vault_tables")
     );
-    webSocketConsumers.add(priceVaultsCache::subscribe);
+    webSocketConsumers.add(glamStateContextCache::subscribe);
 
     final var webSocketManager = delegateServiceConfig.createWebSocketManager(wsHttpClient, List.copyOf(webSocketConsumers));
     webSocketManager.checkConnection();
+
+    return new PriceVaultsServiceEntrypoint(
+        accountFetcher,
+        globalConfigCache,
+        integTableCache,
+        glamStateContextCache,
+        webSocketManager
+    );
+  }
+
+  @Override
+  public void run() {
+    try (final var executorService = Executors.newFixedThreadPool(4)) {
+      executorService.execute(accountFetcher);
+      executorService.execute(globalConfigCache);
+      executorService.execute(integTableCache);
+      executorService.execute(glamStateContextCache);
+      for (; ; ) {
+        webSocketManager.checkConnection();
+        //noinspection BusyWait
+        Thread.sleep(3_000);
+        // TODO: Check if all services are healthy, if not exit.
+      }
+    } catch (final InterruptedException e) {
+      // exit.
+    } finally {
+      webSocketManager.close();
+    }
   }
 }

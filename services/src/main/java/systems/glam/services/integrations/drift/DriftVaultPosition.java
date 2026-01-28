@@ -57,7 +57,7 @@ public final class DriftVaultPosition implements Position {
   @Override
   public PositionReport positionReport(final PublicKey mintProgram,
                                        final int baseAssetDecimals,
-                                       final Map<PublicKey, AccountInfo<byte[]>> accountMap,
+                                       final Map<PublicKey, AccountInfo<byte[]>> returnedAccountsMap,
                                        final InnerInstructions innerInstructions) {
     return null;
   }
