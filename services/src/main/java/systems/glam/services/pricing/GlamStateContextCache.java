@@ -1,6 +1,7 @@
 package systems.glam.services.pricing;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import systems.glam.services.integrations.IntegrationServiceContext;
 
@@ -11,6 +12,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import static java.lang.System.Logger.Level.WARNING;
 import static systems.glam.services.io.FileUtils.ACCOUNT_FILE_EXTENSION;
@@ -50,7 +52,9 @@ public interface GlamStateContextCache extends Runnable {
               final var keyString = fileName.substring(0, fileName.length() - ACCOUNT_FILE_EXTENSION.length());
               final var stateAccountKey = PublicKey.fromBase58Encoded(keyString);
               final var priceService = VaultPriceService.createService(integContext, stateAccountKey, data);
-              priceServicesByState.put(stateAccountKey, priceService);
+              if (priceService != null) {
+                priceServicesByState.put(stateAccountKey, priceService);
+              }
             } catch (final Exception ex) {
               logger.log(WARNING, "Failed to load StateAccount from " + stateFile, ex);
             }
@@ -63,5 +67,9 @@ public interface GlamStateContextCache extends Runnable {
     }
   }
 
+  Stream<VaultStateContext> stream();
+
   void subscribe(final SolanaRpcWebsocket websocket);
+
+  void acceptStateAccount(final VaultStateContext stateContext, final AccountInfo<byte[]> accountInfo);
 }

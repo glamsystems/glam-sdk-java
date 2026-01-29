@@ -9,6 +9,7 @@ import systems.glam.sdk.idl.programs.glam.protocol.gen.types.*;
 import java.util.Arrays;
 
 public record MinGlamStateAccount(long slot,
+                                  AccountType accountType,
                                   int baseAssetIndex,
                                   int baseAssetDecimals,
                                   byte[] assetBytes,
@@ -29,10 +30,11 @@ public record MinGlamStateAccount(long slot,
   }
 
   public byte[] serialize() {
-    final int len = Long.BYTES + 1 + 1 + 1 + assetBytes.length + 1 + externalPositionsBytes.length;
+    final int len = Long.BYTES + 1 + 1 + 1 + 1 + assetBytes.length + 1 + externalPositionsBytes.length;
     final byte[] data = new byte[len];
     ByteUtil.putInt64LE(data, 0, slot);
     int i = Long.BYTES;
+    data[i++] = (byte) accountType.ordinal();
     data[i++] = (byte) baseAssetIndex;
     data[i++] = (byte) baseAssetDecimals;
     data[i++] = (byte) assets.length;
@@ -46,6 +48,7 @@ public record MinGlamStateAccount(long slot,
   public static MinGlamStateAccount deserialize(final byte[] data) {
     final long slot = ByteUtil.getInt64LE(data, 0);
     int i = Long.BYTES;
+    final var accountType = AccountType.values()[data[i++] & 0xFF];
     final var baseAssetMintIndex = data[i++] & 0xFF;
     final int baseAssetDecimals = data[i++] & 0xFF;
     final var assets = SerDeUtil.readPublicKeyVector(1, data, i++);
@@ -58,6 +61,7 @@ public record MinGlamStateAccount(long slot,
     final byte[] externalPositionsBytes = Arrays.copyOfRange(data, i, data.length);
     return new MinGlamStateAccount(
         slot,
+        accountType,
         baseAssetMintIndex, baseAssetDecimals,
         assetBytes, assets,
         externalPositionsBytes, externalPositions
@@ -111,12 +115,14 @@ public record MinGlamStateAccount(long slot,
     i += 4; // 1295
     final byte[] externalPositionsBytes = Arrays.copyOfRange(data, i, i + (externalPositions.length * PublicKey.PUBLIC_KEY_LENGTH));
 
+    final var accountType = AccountType.values()[data[StateAccount.ACCOUNT_TYPE_OFFSET] & 0xFF];
     final var baseAssetMint = PublicKey.readPubKey(data, StateAccount.BASE_ASSET_MINT_OFFSET);
     final int baseAssetIndex = Arrays.binarySearch(assets, baseAssetMint);
     final int baseAssetDecimals = data[StateAccount.BASE_ASSET_DECIMALS_OFFSET] & 0xFF;
 
     return new MinGlamStateAccount(
         slot,
+        accountType,
         baseAssetIndex, baseAssetDecimals,
         assetBytes, assets, externalPositionsBytes, externalPositions
     );
@@ -192,7 +198,8 @@ public record MinGlamStateAccount(long slot,
 
     return new MinGlamStateAccount(
         slot,
-        baseAssetIndex, baseAssetDecimals,
+        this.accountType,
+        baseAssetIndex, this.baseAssetDecimals,
         assetBytes, assets,
         externalPositionsBytes, externalPositions
     );
@@ -200,18 +207,26 @@ public record MinGlamStateAccount(long slot,
 
   @Override
   public boolean equals(final Object o) {
-    //noinspection PatternVariableHidesField
-    if (o instanceof MinGlamStateAccount(_, _, _, _, final var assets, _, final var externalPositions)) {
-      return Arrays.equals(this.assets, assets) && Arrays.equals(this.externalPositions, externalPositions);
-    } else {
-      return false;
-    }
+    if (!(o instanceof MinGlamStateAccount(
+        _,
+        AccountType type,
+        int assetIndex, int assetDecimals,
+        byte[] bytes, _,
+        byte[] positionsBytes, _
+    ))) return false;
+    return baseAssetIndex == assetIndex
+        && baseAssetDecimals == assetDecimals && Arrays.equals(assetBytes, bytes)
+        && accountType == type
+        && Arrays.equals(externalPositionsBytes, positionsBytes);
   }
 
   @Override
   public int hashCode() {
-    int result = Arrays.hashCode(assets);
-    result = 31 * result + Arrays.hashCode(externalPositions);
+    int result = accountType.hashCode();
+    result = 31 * result + baseAssetIndex;
+    result = 31 * result + baseAssetDecimals;
+    result = 31 * result + Arrays.hashCode(assetBytes);
+    result = 31 * result + Arrays.hashCode(externalPositionsBytes);
     return result;
   }
 }

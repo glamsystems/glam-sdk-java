@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static java.lang.System.Logger.Level.WARNING;
 import static software.sava.core.accounts.lookup.AddressLookupTable.LOOKUP_TABLE_META_SIZE;
@@ -60,6 +61,11 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
     this.vaultTableDirectory = vaultTableDirectory;
     this.priceServicesByState = priceServicesByState;
     this.unsupportedVaults = new ConcurrentSkipListSet<>();
+  }
+
+  @Override
+  public Stream<VaultStateContext> stream() {
+    return priceServicesByState.values().stream();
   }
 
   @Override
@@ -120,15 +126,25 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
 
   private void acceptStateAccount(final AccountInfo<byte[]> accountInfo) {
     final var accountKey = accountInfo.pubKey();
-    var priceService = priceServicesByState.get(accountKey);
-    if (priceService == null) {
+    var stateContext = priceServicesByState.get(accountKey);
+    if (stateContext == null) {
       if (!unsupportedVaults.contains(accountKey)) {
-        priceService = VaultPriceService.createService(integContext, accountInfo);
-        if (priceServicesByState.putIfAbsent(accountKey, priceService) == null) {
-          priceService.init();
+        stateContext = VaultPriceService.createService(integContext, accountInfo);
+        if (stateContext == null) {
+          unsupportedVaults.add(accountKey);
+        } else if (priceServicesByState.putIfAbsent(accountKey, stateContext) == null) {
+          stateContext.init();
         }
       }
-    } else if (!priceService.stateChange(accountInfo)) {
+    } else {
+      acceptStateAccount(stateContext, accountInfo);
+    }
+  }
+
+  @Override
+  public void acceptStateAccount(final VaultStateContext stateContext, final AccountInfo<byte[]> accountInfo) {
+    if (!stateContext.stateChange(accountInfo)) {
+      final var accountKey = accountInfo.pubKey();
       unsupportedVaults.add(accountKey);
       priceServicesByState.remove(accountKey);
     }

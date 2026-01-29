@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,7 +22,8 @@ import static systems.glam.services.io.FileUtils.ACCOUNT_FILE_EXTENSION;
 
 public interface IntegLookupTableCache extends Runnable {
 
-  static CompletableFuture<IntegLookupTableCache> initCache(final Path integrationTablesDirectory,
+  static CompletableFuture<IntegLookupTableCache> initCache(final Duration fetchDelay,
+                                                            final Path integrationTablesDirectory,
                                                             final Set<PublicKey> integrationTableKeys,
                                                             final RpcCaller rpcCaller,
                                                             final AccountFetcher accountFetcher) {
@@ -52,7 +54,7 @@ public interface IntegLookupTableCache extends Runnable {
 
     if (missingKeys.isEmpty()) {
       return CompletableFuture.completedFuture(
-          new IntegLookupTableCacheImpl(integrationTablesDirectory, integrationTables, accountFetcher)
+          new IntegLookupTableCacheImpl(fetchDelay, integrationTablesDirectory, integrationTables, accountFetcher)
       );
     }
 
@@ -73,7 +75,7 @@ public interface IntegLookupTableCache extends Runnable {
           logger.log(WARNING, "Integration lookup table does not exist: " + expectedKey.toBase58());
         }
       }
-      return new IntegLookupTableCacheImpl(integrationTablesDirectory, integrationTables, accountFetcher);
+      return new IntegLookupTableCacheImpl(fetchDelay, integrationTablesDirectory, integrationTables, accountFetcher);
     });
   }
 

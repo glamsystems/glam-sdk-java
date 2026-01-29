@@ -10,6 +10,7 @@ import systems.glam.services.rpc.AccountFetcher;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,13 +21,16 @@ final class IntegLookupTableCacheImpl implements IntegLookupTableCache, AccountC
 
   static final System.Logger logger = System.getLogger(IntegLookupTableCache.class.getName());
 
+  private final long fetchDelayMillis;
   private final Path integrationTablesDirectory;
   private final ConcurrentHashMap<PublicKey, AddressLookupTable> integrationTables;
   private final AccountFetcher accountFetcher;
 
-  IntegLookupTableCacheImpl(final Path integrationTablesDirectory,
+  IntegLookupTableCacheImpl(final Duration fetchDelay,
+                            final Path integrationTablesDirectory,
                             final ConcurrentHashMap<PublicKey, AddressLookupTable> integrationTables,
                             final AccountFetcher accountFetcher) {
+    this.fetchDelayMillis = fetchDelay.toMillis();
     this.integrationTablesDirectory = integrationTablesDirectory;
     this.integrationTables = integrationTables;
     this.accountFetcher = accountFetcher;
@@ -39,7 +43,16 @@ final class IntegLookupTableCacheImpl implements IntegLookupTableCache, AccountC
 
   @Override
   public void run() {
-    accountFetcher.queue(integrationTables.keySet(), this);
+    try {
+      for (; ; ) { //noinspection BusyWait
+        accountFetcher.queue(integrationTables.keySet(), this);
+        Thread.sleep(fetchDelayMillis);
+      }
+    } catch (final InterruptedException e) {
+      // exit
+    } catch (final RuntimeException ex) {
+      logger.log(WARNING, "Unexpected error fetching accounts.", ex);
+    }
   }
 
   @Override
@@ -52,6 +65,7 @@ final class IntegLookupTableCacheImpl implements IntegLookupTableCache, AccountC
       final byte[] data = accountInfo.data();
       final long deactivationSlot = ByteUtil.getInt64LE(data, AddressLookupTable.DEACTIVATION_SLOT_OFFSET);
       if (deactivationSlot != -1) {
+        // TODO: Invalidate all consumers of this table.
         iterator.remove();
         final var fileName = IntegrationServiceContext.resolveFileName(integrationTablesDirectory, tableKey);
         try {

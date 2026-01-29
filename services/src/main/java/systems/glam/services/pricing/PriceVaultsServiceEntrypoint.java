@@ -29,6 +29,7 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
                                            GlobalConfigCache globalConfigCache,
                                            IntegLookupTableCache integTableCache,
                                            GlamStateContextCache glamStateContextCache,
+                                           GlamVaultExecutor vaultExecutor,
                                            WebSocketManager webSocketManager) implements Runnable {
 
   private static final System.Logger logger = System.getLogger(SingleAssetFulfillmentServiceEntrypoint.class.getName());
@@ -100,8 +101,8 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
     integrationTableKeys.add(kaminoAccounts.mainMarketLUT());
 
     final var integrationTablesDirectory = serviceContext.accountsCacheDirectory().resolve("integ/lookup_tables");
-    // TODO: configure fetch delay
     final var integTableCacheFuture = IntegLookupTableCache.initCache(
+        defensivePollingConfig.integTables(),
         integrationTablesDirectory,
         integrationTableKeys,
         rpcCaller,
@@ -139,22 +140,26 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
     final var webSocketManager = delegateServiceConfig.createWebSocketManager(wsHttpClient, List.copyOf(webSocketConsumers));
     webSocketManager.checkConnection();
 
+    final var vaultExecutor = GlamVaultExecutor.createExecutor(rpcCaller, glamStateContextCache);
+
     return new PriceVaultsServiceEntrypoint(
         accountFetcher,
         globalConfigCache,
         integTableCache,
         glamStateContextCache,
+        vaultExecutor,
         webSocketManager
     );
   }
 
   @Override
   public void run() {
-    try (final var executorService = Executors.newFixedThreadPool(4)) {
+    try (final var executorService = Executors.newFixedThreadPool(5)) {
       executorService.execute(accountFetcher);
       executorService.execute(globalConfigCache);
       executorService.execute(integTableCache);
       executorService.execute(glamStateContextCache);
+      executorService.execute(vaultExecutor);
       for (; ; ) {
         webSocketManager.checkConnection();
         //noinspection BusyWait

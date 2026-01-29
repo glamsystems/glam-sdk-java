@@ -9,7 +9,8 @@ import java.time.Duration;
 import static systems.comodal.jsoniter.JsonIterator.fieldEquals;
 
 public record DefensivePollingConfig(Duration globalConfig,
-                                     Duration glamStateAccounts) {
+                                     Duration glamStateAccounts,
+                                     Duration integTables) {
 
   static DefensivePollingConfig parseConfig(final JsonIterator ji) {
     final var parser = new DefensivePollingConfig.Parser();
@@ -20,7 +21,8 @@ public record DefensivePollingConfig(Duration globalConfig,
   static DefensivePollingConfig createDefaultConfig() {
     return new DefensivePollingConfig(
         Duration.ofMinutes(30),
-        Duration.ofMinutes(30)
+        Duration.ofHours(8),
+        Duration.ofHours(4)
     );
   }
 
@@ -28,6 +30,7 @@ public record DefensivePollingConfig(Duration globalConfig,
 
     private Duration globalConfig;
     private Duration glamStateAccounts;
+    private Duration integTables;
 
     private Parser() {
     }
@@ -39,7 +42,10 @@ public record DefensivePollingConfig(Duration globalConfig,
       if (glamStateAccounts == null) {
         glamStateAccounts = Duration.ofHours(8);
       }
-      return new DefensivePollingConfig(globalConfig, glamStateAccounts);
+      if (integTables == null) {
+        integTables = Duration.ofHours(4);
+      }
+      return new DefensivePollingConfig(globalConfig, glamStateAccounts, integTables);
     }
 
     @Override
@@ -48,6 +54,8 @@ public record DefensivePollingConfig(Duration globalConfig,
         globalConfig = ServiceConfigUtil.parseDuration(ji);
       } else if (fieldEquals("glamStateAccounts", buf, offset, len)) {
         glamStateAccounts = ServiceConfigUtil.parseDuration(ji);
+      } else if (fieldEquals("integTables", buf, offset, len)) {
+        integTables = ServiceConfigUtil.parseDuration(ji);
       } else {
         throw new IllegalStateException("Unknown DefensivePollingConfiguration field " + new String(buf, offset, len));
       }

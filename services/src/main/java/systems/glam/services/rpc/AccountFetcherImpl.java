@@ -239,26 +239,21 @@ final class AccountFetcherImpl implements AccountFetcher {
             "rpcClient#getAccountsBatch"
         );
 
-        final var accountsMap = HashMap.<PublicKey, AccountInfo<byte[]>>newHashMap(accounts.size());
-        for (final var accountInfo : accounts) {
-          if (accountInfo != null) {
-            accountsMap.put(accountInfo.pubKey(), accountInfo);
-          }
-        }
-
-        lock.lock();
-        try {
-          this.currentBatchKeys = this.alwaysFetch;
-        } finally {
-          lock.unlock();
-        }
-
-        for (; ; ) {
+        for (final var accountsMap = toMap(accounts); ; ) {
           final var accountBatch = currentBatch.pollFirst();
           if (accountBatch == null) {
-            break;
+            lock.lock();
+            try {
+              if (currentBatch.isEmpty()) { // Reset Batch
+                this.currentBatchKeys = this.alwaysFetch;
+                break;
+              }
+            } finally {
+              lock.unlock();
+            }
+          } else {
+            accountBatch.accept(accounts, accountsMap);
           }
-          accountBatch.accept(accounts, accountsMap);
         }
 
         clearBatch();
@@ -270,6 +265,16 @@ final class AccountFetcherImpl implements AccountFetcher {
     } catch (final RuntimeException ex) {
       logger.log(ERROR, "Unexpected error fetching accounts.", ex);
     }
+  }
+
+  private static Map<PublicKey, AccountInfo<byte[]>> toMap(final List<AccountInfo<byte[]>> accounts) {
+    final var accountsMap = HashMap.<PublicKey, AccountInfo<byte[]>>newHashMap(accounts.size());
+    for (final var accountInfo : accounts) {
+      if (accountInfo != null) {
+        accountsMap.put(accountInfo.pubKey(), accountInfo);
+      }
+    }
+    return Collections.unmodifiableMap(accountsMap);
   }
 
   record AccountBatch(Collection<PublicKey> keys, AccountConsumer accountConsumer) implements AccountConsumer {

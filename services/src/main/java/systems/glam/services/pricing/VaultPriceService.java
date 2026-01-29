@@ -3,6 +3,7 @@ package systems.glam.services.pricing;
 import software.sava.core.accounts.PublicKey;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.GlamAccountClient;
+import systems.glam.sdk.idl.programs.glam.protocol.gen.types.AccountType;
 import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.state.MinGlamStateAccount;
 
@@ -13,6 +14,9 @@ public interface VaultPriceService extends VaultStateContext {
   static VaultPriceService createService(final IntegrationServiceContext integContext,
                                          final PublicKey stateAccountKey,
                                          final MinGlamStateAccount minGlamStateAccount) {
+    if (minGlamStateAccount.accountType() != AccountType.TokenizedVault) {
+      return null;
+    }
     final var serviceContext = integContext.serviceContext();
     final var glamClient = GlamAccountClient.createClient(serviceContext.serviceKey(), stateAccountKey);
     final var mintPDA = glamClient.vaultAccounts().mintPDA().publicKey();

@@ -2,6 +2,7 @@ package systems.glam.services.state;
 
 import org.junit.jupiter.api.Test;
 import software.sava.core.accounts.PublicKey;
+import systems.glam.sdk.idl.programs.glam.protocol.gen.types.AccountType;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.services.tests.ResourceUtil;
 
@@ -18,12 +19,14 @@ final class MinGlamStateAccountTests {
   void mintStateAccountSerialization() throws IOException {
     final byte[] stateAccountData = ResourceUtil.readResource("accounts/glam/min_state/3H7XbyVaYusyzQCncfRSBx3zgvfmjGG7wrr3ARtXF1o7.dat.zip");
     final var stateAccount = StateAccount.read(STATE_ACCOUNT_KEY, stateAccountData);
+    assertEquals(AccountType.TokenizedVault, stateAccount.accountType());
     assertEquals(4, stateAccount.assets().length);
     assertEquals(5, stateAccount.externalPositions().length);
 
     long slot = System.currentTimeMillis();
     final var minStateAccount = MinGlamStateAccount.createRecord(slot, stateAccountData);
     assertEquals(slot, minStateAccount.slot());
+    assertEquals(stateAccount.accountType(), minStateAccount.accountType());
     assertEquals(stateAccount.baseAssetMint(), minStateAccount.baseAssetMint());
     assertEquals(stateAccount.baseAssetDecimals(), minStateAccount.baseAssetDecimals());
 
@@ -125,6 +128,7 @@ final class MinGlamStateAccountTests {
   }
 
   private void validateBaseNotChanged(final MinGlamStateAccount expected, final MinGlamStateAccount minStateAccount) {
+    assertEquals(expected.accountType(), minStateAccount.accountType());
     assertEquals(expected.baseAssetIndex(), minStateAccount.baseAssetIndex());
     assertEquals(expected.baseAssetMint(), minStateAccount.baseAssetMint());
     assertEquals(expected.baseAssetDecimals(), minStateAccount.baseAssetDecimals());
