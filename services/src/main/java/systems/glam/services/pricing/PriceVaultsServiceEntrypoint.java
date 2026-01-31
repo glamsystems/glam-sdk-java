@@ -6,11 +6,13 @@ import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.core.config.ServiceConfigUtil;
 import software.sava.services.solana.websocket.WebSocketManager;
+import software.sava.solana.programs.stakepool.StakePoolAccounts;
 import systems.glam.sdk.GlamAccounts;
 import systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint;
 import systems.glam.services.integrations.IntegLookupTableCache;
 import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
+import systems.glam.services.mints.StakePoolCache;
 import systems.glam.services.pricing.config.PriceVaultsServiceConfig;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.GlobalConfigCache;
@@ -29,6 +31,7 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
                                            GlobalConfigCache globalConfigCache,
                                            IntegLookupTableCache integTableCache,
                                            GlamStateContextCache glamStateContextCache,
+                                           StakePoolCache stakePoolCache,
                                            GlamVaultExecutor vaultExecutor,
                                            WebSocketManager webSocketManager) implements Runnable {
 
@@ -78,6 +81,14 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
     final var defensivePollingConfig = delegateServiceConfig.defensivePollingConfig();
     final var rpcCaller = delegateServiceConfig.rpcCaller();
 
+    final var stakePoolCacheFuture = StakePoolCache.initCache(
+        taskExecutor,
+        serviceContext.accountsCacheDirectory().resolve("stake_pools"),
+        StakePoolAccounts.MAIN_NET,
+        defensivePollingConfig.stakePools(),
+        rpcCaller
+    );
+
     final var globalConfigKey = glamAccounts.globalConfigPDA().publicKey();
     final var globalConfigCacheFuture = GlobalConfigCache.initCache(
         serviceContext.globalConfigCacheFile(),
@@ -118,9 +129,13 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
 
     final var integTableCache = integTableCacheFuture.join();
 
+    final var stakePoolCache = stakePoolCacheFuture.join();
+    webSocketConsumers.add(stakePoolCache::subscribe);
+
     final var integrationServiceContext = IntegrationServiceContext.createContext(
         serviceContext,
         mintCache,
+        stakePoolCache,
         globalConfigCache,
         integTableCache,
         accountFetcher,
@@ -145,8 +160,7 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
     return new PriceVaultsServiceEntrypoint(
         accountFetcher,
         globalConfigCache,
-        integTableCache,
-        glamStateContextCache,
+        integTableCache, glamStateContextCache, stakePoolCache,
         vaultExecutor,
         webSocketManager
     );
@@ -154,11 +168,12 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
 
   @Override
   public void run() {
-    try (final var executorService = Executors.newFixedThreadPool(5)) {
+    try (final var executorService = Executors.newFixedThreadPool(6)) {
       executorService.execute(accountFetcher);
       executorService.execute(globalConfigCache);
       executorService.execute(integTableCache);
       executorService.execute(glamStateContextCache);
+      executorService.execute(stakePoolCache);
       executorService.execute(vaultExecutor);
       for (; ; ) {
         webSocketManager.checkConnection();

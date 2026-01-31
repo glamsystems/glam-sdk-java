@@ -26,10 +26,11 @@ final class MintCacheImplTest {
     try (final var cache = MintCache.createCache(SOLANA_ACCOUNTS, cacheFile)) {
 
       final var mintKey = PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
-      final var mintContext = new MintContext(
-          AccountMeta.createRead(mintKey),
+      final var mintContext = MintContext.createContext(
+          SOLANA_ACCOUNTS,
+          mintKey,
           6,
-          SOLANA_ACCOUNTS.readTokenProgram()
+          SOLANA_ACCOUNTS.tokenProgram()
       );
 
       final var result = cache.setGet(mintContext);
@@ -46,15 +47,17 @@ final class MintCacheImplTest {
     try (final var cache = MintCache.createCache(SOLANA_ACCOUNTS, cacheFile)) {
 
       final var mintKey = PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
-      final var mintContext1 = new MintContext(
-          AccountMeta.createRead(mintKey),
+      final var mintContext1 = MintContext.createContext(
+          SOLANA_ACCOUNTS,
+          mintKey,
           6,
-          SOLANA_ACCOUNTS.readTokenProgram()
+          SOLANA_ACCOUNTS.tokenProgram()
       );
-      final var mintContext2 = new MintContext(
-          AccountMeta.createRead(mintKey),
+      final var mintContext2 = MintContext.createContext(
+          SOLANA_ACCOUNTS,
+          mintKey,
           9,
-          SOLANA_ACCOUNTS.readTokenProgram()
+          SOLANA_ACCOUNTS.tokenProgram()
       );
 
       final var result1 = cache.setGet(mintContext1);
@@ -73,16 +76,18 @@ final class MintCacheImplTest {
     final var mintKey2 = PublicKey.fromBase58Encoded("So11111111111111111111111111111111111111112");
 
     try (final var cache = MintCache.createCache(SOLANA_ACCOUNTS, cacheFile)) {
-      cache.setGet(new MintContext(
-          AccountMeta.createRead(mintKey1),
+      cache.setGet(MintContext.createContext(
+          SOLANA_ACCOUNTS,
+          mintKey1,
           6,
-          SOLANA_ACCOUNTS.readTokenProgram()
+          SOLANA_ACCOUNTS.tokenProgram()
       ));
 
-      cache.setGet(new MintContext(
-          AccountMeta.createRead(mintKey2),
+      cache.setGet(MintContext.createContext(
+          SOLANA_ACCOUNTS,
+          mintKey2,
           9,
-          SOLANA_ACCOUNTS.readToken2022Program()
+          SOLANA_ACCOUNTS.token2022Program()
       ));
     }
 
@@ -122,10 +127,11 @@ final class MintCacheImplTest {
             ByteUtil.putInt32LE(keyBytes, 0, threadId);
             final var mintKey = PublicKey.createPubKey(keyBytes);
 
-            final var mintContext = new MintContext(
-                AccountMeta.createRead(mintKey),
+            final var mintContext = MintContext.createContext(
+                SOLANA_ACCOUNTS,
+                mintKey,
                 threadId % 256,
-                threadId % 2 == 0 ? SOLANA_ACCOUNTS.readTokenProgram() : SOLANA_ACCOUNTS.readToken2022Program()
+                threadId % 2 == 0 ? SOLANA_ACCOUNTS.tokenProgram() : SOLANA_ACCOUNTS.token2022Program()
             );
 
             final var result = cache.setGet(mintContext);
@@ -170,10 +176,11 @@ final class MintCacheImplTest {
     final var cacheFile = tempDir.resolve("mint_cache.dat");
 
     final var mintKey = PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
-    final var mintContext = new MintContext(
-        AccountMeta.createRead(mintKey),
+    final var mintContext = MintContext.createContext(
+        SOLANA_ACCOUNTS,
+        mintKey,
         6,
-        SOLANA_ACCOUNTS.readTokenProgram()
+        SOLANA_ACCOUNTS.tokenProgram()
     );
 
     try (final var cache1 = MintCache.createCache(SOLANA_ACCOUNTS, cacheFile)) {
@@ -199,9 +206,9 @@ final class MintCacheImplTest {
     final var cacheFile = tempDir.resolve("mint_cache.dat");
     try (final var cache = MintCache.createCache(SOLANA_ACCOUNTS, cacheFile)) {
 
-      cache.setGet(new MintContext(AccountMeta.createRead(mintKey1), 6, SOLANA_ACCOUNTS.readTokenProgram()));
-      cache.setGet(new MintContext(AccountMeta.createRead(mintKey2), 9, SOLANA_ACCOUNTS.readToken2022Program()));
-      cache.setGet(new MintContext(AccountMeta.createRead(mintKey3), 6, SOLANA_ACCOUNTS.readTokenProgram()));
+      cache.setGet(new MintContext(AccountMeta.createRead(mintKey1), 6, 0, SOLANA_ACCOUNTS.readTokenProgram()));
+      cache.setGet(new MintContext(AccountMeta.createRead(mintKey2), 9, 1, SOLANA_ACCOUNTS.readToken2022Program()));
+      cache.setGet(new MintContext(AccountMeta.createRead(mintKey3), 6, 0, SOLANA_ACCOUNTS.readTokenProgram()));
 
       assertEquals(34 * 3, Files.size(cacheFile));
 

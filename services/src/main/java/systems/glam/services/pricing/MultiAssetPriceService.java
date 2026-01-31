@@ -79,9 +79,15 @@ public class MultiAssetPriceService extends BaseDelegateService
   }
 
   enum StateChange {
-    NO_CHANGE,
+
+    UNSUPPORTED,
     ACCOUNTS_NEEDED,
-    UNSUPPORTED
+    NEW_POSITION,
+    NO_CHANGE;
+
+    StateChange escalate(final StateChange stateChange) {
+      return ordinal() <= stateChange.ordinal() ? this : stateChange;
+    }
   }
 
   private boolean isKVaultTokenAccount(final AccountInfo<byte[]> accountInfo) {
@@ -169,11 +175,9 @@ public class MultiAssetPriceService extends BaseDelegateService
         //       They only need to be returned from the tx simulation in order to calculate the AUM.
         //       E.g. KVault ATA.
         final var positionChangeState = createPosition(accountsNeededMap.get(externalAccount));
-        if (positionChangeState == StateChange.UNSUPPORTED) {
+        stateChange = stateChange.escalate(positionChangeState);
+        if (stateChange == StateChange.UNSUPPORTED) {
           return StateChange.UNSUPPORTED;
-        }
-        if (positionChangeState == StateChange.ACCOUNTS_NEEDED) {
-          stateChange = StateChange.ACCOUNTS_NEEDED;
         }
       }
     }
@@ -260,14 +264,14 @@ public class MultiAssetPriceService extends BaseDelegateService
       if (accountsNeededMap == null) {
         return;
       }
-      final var changeState = stateAccountChanged(accountsNeededMap, stateAccount);
-      if (changeState == StateChange.ACCOUNTS_NEEDED) {
+      final var stateChange = stateAccountChanged(accountsNeededMap, stateAccount);
+      if (stateChange == StateChange.ACCOUNTS_NEEDED) {
         this.aumTransaction.set(null);
         serviceContext.queue(accountsNeededSet, this);
         persist(stateAccount);
-      } else if (changeState == StateChange.UNSUPPORTED) {
+      } else if (stateChange == StateChange.UNSUPPORTED) {
         clearState();
-      } else if (this.aumTransaction.get() == null) {
+      } else if (stateChange == StateChange.NEW_POSITION || this.aumTransaction.get() == null) {
         prepareAUMTransaction(stateAccount, accountsNeededMap);
       }
     } catch (final RuntimeException ex) {
@@ -307,9 +311,6 @@ public class MultiAssetPriceService extends BaseDelegateService
                         String base64Encoded,
                         List<PublicKey> returnAccounts) {
 
-    long slot() {
-      return stateAccount.slot();
-    }
   }
 
   private void prepareAUMTransaction(final MinGlamStateAccount stateAccount,
@@ -410,7 +411,6 @@ public class MultiAssetPriceService extends BaseDelegateService
           } else {
             // TODO: trigger alert and remove vault
           }
-
         } else {
           final var innerInstructionsList = simulationResult.innerInstructions();
           final var returnedAccounts = simulationResult.accounts();
@@ -470,7 +470,7 @@ public class MultiAssetPriceService extends BaseDelegateService
       final var driftPosition = driftUserPosition();
       driftPosition.addAccount(userKey);
       positions.put(userKey, driftPosition);
-      return StateChange.NO_CHANGE;
+      return StateChange.NEW_POSITION;
     } else {
       final var msg = String.format("""
               {

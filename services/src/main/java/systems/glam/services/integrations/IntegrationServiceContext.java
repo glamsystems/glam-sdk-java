@@ -5,15 +5,13 @@ import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
-import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
-import systems.glam.services.state.GlobalConfigCache;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoVaultCache;
-import systems.glam.services.mints.MintCache;
-import systems.glam.services.mints.MintContext;
+import systems.glam.services.mints.*;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
+import systems.glam.services.state.GlobalConfigCache;
 
 import java.nio.file.Path;
 import java.util.Collection;
@@ -24,6 +22,7 @@ public interface IntegrationServiceContext {
 
   static IntegrationServiceContext createContext(final ServiceContext serviceContext,
                                                  final MintCache mintCache,
+                                                 final StakePoolCache stakePoolCache,
                                                  final GlobalConfigCache globalConfigCache,
                                                  final IntegLookupTableCache integLookupTableCache,
                                                  final AccountFetcher accountFetcher,
@@ -34,6 +33,7 @@ public interface IntegrationServiceContext {
     return new IntegrationServiceContextImpl(
         serviceContext,
         mintCache,
+        stakePoolCache,
         globalConfigCache,
         integLookupTableCache,
         accountFetcher,
@@ -52,6 +52,8 @@ public interface IntegrationServiceContext {
 
   boolean isTokenAccount(final AccountInfo<byte[]> accountInfo);
 
+  StakePoolContext stakePoolContextForMint(final PublicKey mintKey);
+
   Path resolveGlamStateFilePath(final PublicKey glamStateKey);
 
   void queue(final Collection<PublicKey> accounts, final AccountConsumer callback);
@@ -66,9 +68,9 @@ public interface IntegrationServiceContext {
 
   MintContext setMintContext(final AccountInfo<byte[]> accountInfo);
 
-  AssetMeta solAssetMeta();
+  AssetMetaContext solAssetMeta();
 
-  AssetMeta globalConfigAssetMeta(final PublicKey mint);
+  AssetMetaContext globalConfigAssetMeta(final PublicKey mint);
 
   IntegLookupTableCache integTableCache();
 

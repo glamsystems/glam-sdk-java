@@ -4,22 +4,21 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.rpc.json.http.response.AccountInfo;
-import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
-import systems.glam.services.state.GlobalConfigCache;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.execution.BaseServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoVaultCache;
-import systems.glam.services.mints.MintCache;
-import systems.glam.services.mints.MintContext;
+import systems.glam.services.mints.*;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
+import systems.glam.services.state.GlobalConfigCache;
 
 import java.util.Collection;
 
 final class IntegrationServiceContextImpl extends BaseServiceContext implements IntegrationServiceContext {
 
   private final MintCache mintCache;
+  private final StakePoolCache stakePoolCache;
   private final GlobalConfigCache globalConfigCache;
   private final IntegLookupTableCache integLookupTableCache;
   private final AccountFetcher accountFetcher;
@@ -30,6 +29,7 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
 
   IntegrationServiceContextImpl(final ServiceContext serviceContext,
                                 final MintCache mintCache,
+                                final StakePoolCache stakePoolCache,
                                 final GlobalConfigCache globalConfigCache,
                                 final IntegLookupTableCache integLookupTableCache,
                                 final AccountFetcher accountFetcher,
@@ -39,6 +39,7 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
                                 final KaminoVaultCache kaminoVaultCache) {
     super(serviceContext);
     this.mintCache = mintCache;
+    this.stakePoolCache = stakePoolCache;
     this.globalConfigCache = globalConfigCache;
     this.integLookupTableCache = integLookupTableCache;
     this.accountFetcher = accountFetcher;
@@ -51,6 +52,11 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   @Override
   public ServiceContext serviceContext() {
     return serviceContext;
+  }
+
+  @Override
+  public StakePoolContext stakePoolContextForMint(final PublicKey mintKey) {
+    return stakePoolCache.get(mintKey);
   }
 
   @Override
@@ -69,12 +75,12 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   }
 
   @Override
-  public AssetMeta solAssetMeta() {
+  public AssetMetaContext solAssetMeta() {
     return globalConfigCache.solAssetMeta();
   }
 
   @Override
-  public AssetMeta globalConfigAssetMeta(final PublicKey mint) {
+  public AssetMetaContext globalConfigAssetMeta(final PublicKey mint) {
     return globalConfigCache.topPriorityForMintChecked(mint);
   }
 

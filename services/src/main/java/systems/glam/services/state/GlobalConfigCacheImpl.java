@@ -4,9 +4,9 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
-import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.GlobalConfig;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.OracleSource;
+import systems.glam.services.mints.AssetMetaContext;
 import systems.glam.services.mints.MintCache;
 import systems.glam.services.mints.MintContext;
 import systems.glam.services.rpc.AccountConsumer;
@@ -28,27 +28,10 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
 
   private static final System.Logger logger = System.getLogger(GlobalConfigCache.class.getName());
 
-  private static final Comparator<AssetMeta> BY_PRIORITY = (a, b) -> {
-    final int pA = a.priority();
-    final int pB = b.priority();
-    if (pA < 0) {
-      if (pB < 0) {
-        return Integer.compare(-pA, -pB);
-      } else {
-        return 1;
-      }
-    } else if (pB < 0) {
-      return -1;
-    } else {
-      return Integer.compare(pA, pB);
-    }
-  };
+  record GlobalConfigUpdate(long slot, AssetMetaContext[] assetMetaContexts, byte[] data) {
 
-  record GlobalConfigUpdate(long slot, GlobalConfig config, byte[] data) {
-
-    public AssetMeta get(final int index) {
-      final var assetMetaList = config.assetMetas();
-      return index < assetMetaList.length ? assetMetaList[index] : null;
+    public AssetMetaContext get(final int index) {
+      return index < assetMetaContexts.length ? assetMetaContexts[index] : null;
     }
   }
 
@@ -64,7 +47,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   private final Condition invalidGlobalConfig;
 
   volatile GlobalConfigUpdate globalConfigUpdate;
-  volatile Map<PublicKey, AssetMeta[]> assetMetaMap;
+  volatile Map<PublicKey, AssetMetaContext[]> assetMetaMap;
 
   GlobalConfigCacheImpl(final Path globalConfigFilePath,
                         final PublicKey configProgram,
@@ -74,7 +57,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                         final AccountFetcher accountFetcher,
                         final Duration fetchDelay,
                         final GlobalConfigUpdate globalConfigUpdate,
-                        final Map<PublicKey, AssetMeta[]> assetMetaMap) {
+                        final Map<PublicKey, AssetMetaContext[]> assetMetaMap) {
     this.globalConfigFilePath = globalConfigFilePath;
     this.configProgram = configProgram;
     this.globalConfigKey = globalConfigKey;
@@ -90,13 +73,12 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     this.assetMetaMap = assetMetaMap;
   }
 
-  @Override
-  public GlobalConfig globalConfig() {
-    return this.globalConfigUpdate.config();
+  GlobalConfigUpdate globalConfigUpdate() {
+    return globalConfigUpdate;
   }
 
   @Override
-  public AssetMeta getByIndex(final int index) {
+  public AssetMetaContext getByIndex(final int index) {
     readLock.lock();
     try {
       final var globalConfig = globalConfigUpdate;
@@ -107,7 +89,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   }
 
   @Override
-  public AssetMeta topPriorityForMint(final PublicKey mint) {
+  public AssetMetaContext topPriorityForMint(final PublicKey mint) {
     readLock.lock();
     try {
       final var assetMetaMap = this.assetMetaMap;
@@ -119,12 +101,12 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   }
 
   @Override
-  public AssetMeta solAssetMeta() {
+  public AssetMetaContext solAssetMeta() {
     return topPriorityForMint(solanaAccounts.wrappedSolTokenMint());
   }
 
-  private AssetMeta topPriorityForMintChecked(final PublicKey mint, final int mintDecimals) {
-    final AssetMeta assetMeta;
+  private AssetMetaContext topPriorityForMintChecked(final PublicKey mint, final int mintDecimals) {
+    final AssetMetaContext assetMeta;
     readLock.lock();
     try {
       final var assetMetaMap = this.assetMetaMap;
@@ -157,7 +139,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                "mintDecimals": %d,
                "entry": %s
               """,
-          mintDecimals, toJson(assetMeta)
+          mintDecimals, assetMeta.toJson()
       );
       logger.log(ERROR, msg);
       // TODO: Trigger alert and exit.
@@ -168,7 +150,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   }
 
   @Override
-  public AssetMeta topPriorityForMintChecked(final PublicKey mint) {
+  public AssetMetaContext topPriorityForMintChecked(final PublicKey mint) {
     final var mintContext = mintCache.get(mint);
     if (mintContext == null) {
       return null;
@@ -178,7 +160,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   }
 
   @Override
-  public AssetMeta topPriorityForMintChecked(final MintContext mintContext) {
+  public AssetMetaContext topPriorityForMintChecked(final MintContext mintContext) {
     return topPriorityForMintChecked(mintContext.mint(), mintContext.decimals());
   }
 
@@ -209,56 +191,12 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     }
   }
 
-  private static String toJson(final AssetMeta assetMeta) {
-    return String.format("""
-            {
-             "asset": "%s",
-             "decimals": %d,
-             "oracle": "%s",
-             "oracleSource": "%s",
-             "priority": %d,
-             "maxAgeSeconds": %d
-            }""",
-        assetMeta.asset().toBase58(),
-        assetMeta.decimals(),
-        assetMeta.oracle().toBase58(),
-        assetMeta.oracleSource(),
-        assetMeta.priority(),
-        assetMeta.maxAgeSeconds()
-    );
-  }
-
-  static Map<PublicKey, AssetMeta[]> createMap(final GlobalConfig globalConfig) {
-    final var assetMetaArray = globalConfig.assetMetas();
-    final var assetMetaMap = HashMap.<PublicKey, AssetMeta[]>newHashMap(assetMetaArray.length);
-    for (final var assetMeta : assetMetaArray) {
-      final var mint = assetMeta.asset();
-      final var entries = assetMetaMap.get(mint);
-      if (entries == null) {
-        assetMetaMap.put(mint, new AssetMeta[]{assetMeta});
-      } else {
-        final int len = entries.length;
-        final var newEntries = Arrays.copyOf(entries, len + 1);
-        newEntries[len] = assetMeta;
-        assetMetaMap.put(mint, newEntries);
-      }
-    }
-    for (final var assetMetas : assetMetaMap.values()) {
-      if (assetMetas.length > 1) {
-        Arrays.sort(assetMetas, BY_PRIORITY);
-      }
-    }
-    return assetMetaMap;
-  }
-
-  static Map<PublicKey, AssetMeta[]> createMapChecked(final long slot,
-                                                      final GlobalConfig previousGlobalConfig,
-                                                      final Map<PublicKey, AssetMeta[]> previousMetaMap,
-                                                      final GlobalConfig globalConfig,
-                                                      final MintCache mintCache) {
-    final var previousAssetMetaList = previousGlobalConfig.assetMetas();
-    final var assetMetaList = globalConfig.assetMetas();
-    if (previousAssetMetaList.length > assetMetaList.length) {
+  static Map<PublicKey, AssetMetaContext[]> createMapChecked(final long slot,
+                                                             final AssetMetaContext[] previousAssetMetaContexts,
+                                                             final Map<PublicKey, AssetMetaContext[]> previousMetaMap,
+                                                             final AssetMetaContext[] assetMetaContexts,
+                                                             final MintCache mintCache) {
+    if (previousAssetMetaContexts.length > assetMetaContexts.length) {
       final var msg = String.format("""
               {
                "event": "GlobalConfig Oracle Removed",
@@ -267,17 +205,17 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                "newLen": %d,
               }
               """,
-          Long.toUnsignedString(slot), previousAssetMetaList.length, assetMetaList.length
+          Long.toUnsignedString(slot), previousAssetMetaContexts.length, assetMetaContexts.length
       );
       logger.log(ERROR, msg);
       // TODO: Trigger alert and exit.
       return null;
     }
 
-    final var previousOracleSourceMap = HashMap.<PublicKey, OracleSource>newHashMap(previousAssetMetaList.length);
-    for (int i = 0; i < previousAssetMetaList.length; ++i) {
-      final var previous = previousAssetMetaList[i];
-      final var current = assetMetaList[i];
+    final var previousOracleSourceMap = HashMap.<PublicKey, OracleSource>newHashMap(previousAssetMetaContexts.length);
+    for (int i = 0; i < previousAssetMetaContexts.length; ++i) {
+      final var previous = previousAssetMetaContexts[i];
+      final var current = assetMetaContexts[i];
       if (previous.asset().equals(current.asset()) && previous.oracle().equals(current.oracle())) {
         if (previous.decimals() != current.decimals()) {
           final var msg = String.format("""
@@ -291,7 +229,24 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                   """,
               Long.toUnsignedString(slot),
               i,
-              toJson(previous), toJson(current)
+              previous.toJson(), current.toJson()
+          );
+          logger.log(ERROR, msg);
+          // TODO: Trigger alert and exit.
+          return null;
+        } else if (previous.oracleSource() != current.oracleSource()) {
+          final var msg = String.format("""
+                  {
+                   "event": "Inconsistent Asset OracleSource Across GlobalConfig's",
+                   "slot": %s,
+                   "index": %d,
+                   "previous": %s,
+                   "new": %s
+                  }
+                  """,
+              Long.toUnsignedString(slot),
+              i,
+              previous.toJson(), current.toJson()
           );
           logger.log(ERROR, msg);
           // TODO: Trigger alert and exit.
@@ -308,7 +263,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                        "new": %s
                       """,
                   Long.toUnsignedString(slot), i,
-                  toJson(previous), toJson(current)
+                  previous.toJson(), current.toJson()
               )
           );
         }
@@ -321,7 +276,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                  "previous": %s,
                  "new": %s
                 }""",
-            Long.toUnsignedString(slot), i, toJson(previous), toJson(current)
+            Long.toUnsignedString(slot), i, previous.toJson(), current.toJson()
         );
         logger.log(INFO, msg);
       } else {
@@ -335,7 +290,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                 }
                 """,
             Long.toUnsignedString(slot), i,
-            toJson(previous), toJson(current)
+            previous.toJson(), current.toJson()
         );
         logger.log(ERROR, msg);
         // TODO: Trigger alert and exit.
@@ -345,8 +300,8 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
       previousOracleSourceMap.put(previous.oracle(), previous.oracleSource());
     }
 
-    if (assetMetaList.length > previousAssetMetaList.length) {
-      for (int i = previousAssetMetaList.length; i < assetMetaList.length; ++i) {
+    if (assetMetaContexts.length > previousAssetMetaContexts.length) {
+      for (int i = previousAssetMetaContexts.length; i < assetMetaContexts.length; ++i) {
         logger.log(INFO, String.format("""
                     {
                      "event": "New GlobalConfig Oracle Entry",
@@ -355,13 +310,13 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                      "entry": %s
                     }
                     """,
-                Long.toUnsignedString(slot), i, toJson(assetMetaList[i])
+                Long.toUnsignedString(slot), i, assetMetaContexts[i].toJson()
             )
         );
       }
     }
 
-    final var assetMetaMap = createMapChecked(slot, globalConfig, previousOracleSourceMap, mintCache);
+    final var assetMetaMap = createMapChecked(slot, assetMetaContexts, previousOracleSourceMap, mintCache);
     if (assetMetaMap == null) {
       return null;
     }
@@ -383,7 +338,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                   }
                   """,
               Long.toUnsignedString(slot),
-              toJson(previousMetas[0]), toJson(assetMetas[0])
+              previousMetas[0].toJson(), assetMetas[0].toJson()
           );
           logger.log(ERROR, msg);
           // TODO: Trigger alert and exit.
@@ -394,21 +349,28 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     return assetMetaMap;
   }
 
-  static Map<PublicKey, AssetMeta[]> createMapChecked(final long slot,
-                                                      final GlobalConfig globalConfig,
-                                                      final MintCache mintCache) {
-    return createMapChecked(slot, globalConfig, Map.of(), mintCache);
+  private static boolean validOracleSource(final AssetMetaContext assetMeta) {
+    return switch (assetMeta.oracleSource()) {
+      case NotSet, BaseAsset, QuoteAsset, Prelaunch, Pyth, Pyth1K, Pyth1M, PythStableCoin, Switchboard -> false;
+      case PythPull, Pyth1KPull, Pyth1MPull, PythStableCoinPull, SwitchboardOnDemand, PythLazer, PythLazer1K,
+           PythLazer1M, PythLazerStableCoin, LstPoolState, MarinadeState, ChainlinkRWA -> true;
+    };
   }
 
-  static Map<PublicKey, AssetMeta[]> createMapChecked(final long slot,
-                                                      final GlobalConfig globalConfig,
-                                                      final Map<PublicKey, OracleSource> previousOracleSourceMap,
-                                                      final MintCache mintCache) {
-    final var assetMetaArray = globalConfig.assetMetas();
-    final var distinctOracleSource = HashMap.<PublicKey, AssetMeta>newHashMap(assetMetaArray.length << 2);
-    final var assetMetaMap = HashMap.<PublicKey, AssetMeta[]>newHashMap(assetMetaArray.length);
-    for (int i = 0; i < assetMetaArray.length; ++i) {
-      final var assetMeta = assetMetaArray[i];
+  static Map<PublicKey, AssetMetaContext[]> createMapChecked(final long slot,
+                                                             final AssetMetaContext[] assetMetaContexts,
+                                                             final MintCache mintCache) {
+    return createMapChecked(slot, assetMetaContexts, Map.of(), mintCache);
+  }
+
+  static Map<PublicKey, AssetMetaContext[]> createMapChecked(final long slot,
+                                                             final AssetMetaContext[] assetMetaContexts,
+                                                             final Map<PublicKey, OracleSource> previousOracleSourceMap,
+                                                             final MintCache mintCache) {
+    final var distinctOracleSource = HashMap.<PublicKey, AssetMetaContext>newHashMap(assetMetaContexts.length << 2);
+    final var assetMetaMap = HashMap.<PublicKey, AssetMetaContext[]>newHashMap(assetMetaContexts.length);
+    for (int i = 0; i < assetMetaContexts.length; ++i) {
+      final var assetMeta = assetMetaContexts[i];
       final var mintContext = mintCache.get(assetMeta.asset());
       if (mintContext != null && mintContext.decimals() != assetMeta.decimals()) {
         final var msg = String.format("""
@@ -419,7 +381,22 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                  "index": %d,
                  "entry": %s
                 """,
-            Long.toUnsignedString(slot), mintContext.decimals(), i, toJson(assetMeta)
+            Long.toUnsignedString(slot), mintContext.decimals(), i, assetMeta.toJson()
+        );
+        logger.log(ERROR, msg);
+        // TODO: Trigger alert and exit.
+        return null;
+      }
+
+      if (!validOracleSource(assetMeta)) {
+        final var msg = String.format("""
+                {
+                 "event": "GlobalConfig Invalid OracleSource",
+                 "slot": %s,
+                 "index": %d,
+                 "entry": %s
+                """,
+            Long.toUnsignedString(slot), i, assetMeta.toJson()
         );
         logger.log(ERROR, msg);
         // TODO: Trigger alert and exit.
@@ -442,7 +419,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                 """,
             Long.toUnsignedString(slot),
             previousOracleSource,
-            i, toJson(assetMeta)
+            i, assetMeta.toJson()
         );
         logger.log(ERROR, msg);
         // TODO: Trigger alert and exit.
@@ -460,7 +437,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                 }
                 """,
             Long.toUnsignedString(slot),
-            toJson(otherMeta), toJson(assetMeta)
+            otherMeta.toJson(), assetMeta.toJson()
         );
         logger.log(ERROR, msg);
         // TODO: Trigger alert and exit.
@@ -469,7 +446,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
 
       final var entries = assetMetaMap.get(mint);
       if (entries == null) {
-        assetMetaMap.put(mint, new AssetMeta[]{assetMeta});
+        assetMetaMap.put(mint, new AssetMetaContext[]{assetMeta});
       } else {
         for (final var entry : entries) {
           if (entry.oracle().equals(oracle)) {
@@ -481,7 +458,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                      "b": %s
                      }""",
                 Long.toUnsignedString(slot),
-                toJson(entry), toJson(assetMeta)
+                entry.toJson(), assetMeta.toJson()
             );
             logger.log(ERROR, msg);
             // TODO: Trigger alert and exit.
@@ -498,7 +475,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
 
     for (final var assetMetas : assetMetaMap.values()) {
       if (assetMetas.length > 1) {
-        Arrays.sort(assetMetas, BY_PRIORITY);
+        Arrays.sort(assetMetas);
         final int expectedDecimals = assetMetas[0].decimals();
         for (int i = 1; i < assetMetas.length; ++i) {
           final var assetMeta = assetMetas[i];
@@ -512,7 +489,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                     }
                     """,
                 Long.toUnsignedString(slot),
-                toJson(assetMetas[0]), toJson(assetMeta)
+                assetMetas[0].toJson(), assetMeta.toJson()
             );
             logger.log(ERROR, msg);
             // TODO: Trigger alert and exit.
@@ -591,16 +568,17 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
         }
 
         final var globalConfig = GlobalConfig.read(accountInfo);
+        final var assetMetaContexts = AssetMetaContext.mapAssetMetas(globalConfig);
 
         final var previousAssetMetaMap = this.assetMetaMap;
-        final var assetMetaMap = createMapChecked(slot, previousConfigUpdate.config(), previousAssetMetaMap, globalConfig, this.mintCache);
+        final var assetMetaMap = createMapChecked(slot, previousConfigUpdate.assetMetaContexts(), previousAssetMetaMap, assetMetaContexts, this.mintCache);
         if (assetMetaMap == null) {
           this.assetMetaMap = null;
           this.globalConfigUpdate = null;
           this.invalidGlobalConfig.signalAll();
         } else {
           this.assetMetaMap = assetMetaMap;
-          this.globalConfigUpdate = new GlobalConfigUpdate(slot, globalConfig, data);
+          this.globalConfigUpdate = new GlobalConfigUpdate(slot, assetMetaContexts, data);
           persistGlobalConfig(globalConfigFilePath, data);
 
           final var mintsNeeded = assetMetaMap.keySet().stream().<PublicKey>mapMulti((mint, downstream) -> {

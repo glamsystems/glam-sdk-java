@@ -9,6 +9,7 @@ import systems.glam.sdk.GlamAccounts;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.GlobalConfig;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.OracleSource;
+import systems.glam.services.mints.AssetMetaContext;
 import systems.glam.services.mints.MintCache;
 import systems.glam.services.mints.MintContext;
 import systems.glam.services.tests.ResourceUtil;
@@ -86,7 +87,8 @@ final class GlobalConfigCacheTests {
   void testInitCacheFromDisk(@TempDir final Path tempDir) {
     final var cache = createCache(tempDir);
 
-    final var globalConfig = cache.globalConfig();
+    final var globalConfigUpdate = cache.globalConfigUpdate();
+    final var globalConfig = GlobalConfig.read(globalConfigUpdate.data(), 0);
     assertEquals(
         PublicKey.fromBase58Encoded("9oWi2MjrAujYNTUXXNBLk1ugioaF1mJHc7EoamX4eQLZ"),
         globalConfig.admin()
@@ -220,7 +222,7 @@ final class GlobalConfigCacheTests {
     assertNotNull(secondAsset);
     assertEquals(sol, secondAsset.asset());
 
-    final int lastIndex = globalConfig.assetMetas().length - 1;
+    final int lastIndex = globalConfigUpdate.assetMetaContexts().length - 1;
     final var lastAsset = cache.getByIndex(lastIndex);
     assertNotNull(lastAsset);
     assertEquals(PublicKey.fromBase58Encoded("XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB"), lastAsset.asset());
@@ -230,7 +232,7 @@ final class GlobalConfigCacheTests {
     assertEquals(30, lastAsset.maxAgeSeconds());
     assertEquals(0, lastAsset.priority());
 
-    // Verify out of bounds index returns null
+    // Verify out-of-bounds index returns null
     assertNull(cache.getByIndex(lastIndex + 1));
     assertNull(cache.getByIndex(Integer.MAX_VALUE));
     assertNull(cache.topPriorityForMint(PublicKey.NONE));
@@ -240,9 +242,11 @@ final class GlobalConfigCacheTests {
   void testCreateMapCheckedReturnsNullWhenOracleRemoved(@TempDir final Path tempDir) {
     final var cache = createCache(tempDir);
 
-    final var previousGlobalConfig = cache.globalConfig();
+    final var previousGlobalConfigUpdate = cache.globalConfigUpdate();
+    final var previousGlobalConfig = GlobalConfig.read(previousGlobalConfigUpdate.data(), 0);
     final var previousAssetMetas = previousGlobalConfig.assetMetas();
     assertTrue(previousAssetMetas.length > 1);
+    assertEquals(previousAssetMetas.length, previousGlobalConfigUpdate.assetMetaContexts().length);
 
     // Create an invalid GlobalConfig with fewer asset metas (simulating oracle removal)
     final var reducedAssetMetas = Arrays.copyOf(previousAssetMetas, previousAssetMetas.length - 1);
@@ -260,9 +264,9 @@ final class GlobalConfigCacheTests {
     // Call createMapChecked with the invalid config - should return null
     final var result = GlobalConfigCacheImpl.createMapChecked(
         1L,
-        previousGlobalConfig,
+        previousGlobalConfigUpdate.assetMetaContexts(),
         cache.assetMetaMap,
-        invalidGlobalConfig,
+        AssetMetaContext.mapAssetMetas(invalidGlobalConfig),
         NULL_MINT_CACHE
     );
     assertNull(result);
@@ -272,7 +276,8 @@ final class GlobalConfigCacheTests {
   void testCreateMapCheckedReturnsNullWhenEntryChangedWithoutNegativePriority(@TempDir final Path tempDir) {
     final var cache = createCache(tempDir);
 
-    final var previousGlobalConfig = cache.globalConfig();
+    final var previousGlobalConfigUpdate = cache.globalConfigUpdate();
+    final var previousGlobalConfig = GlobalConfig.read(previousGlobalConfigUpdate.data(), 0);
     final var previousAssetMetas = previousGlobalConfig.assetMetas();
     assertTrue(previousAssetMetas.length > 1);
 
@@ -304,9 +309,9 @@ final class GlobalConfigCacheTests {
 
     assertNull(GlobalConfigCacheImpl.createMapChecked(
         1L,
-        previousGlobalConfig,
+        previousGlobalConfigUpdate.assetMetaContexts(),
         cache.assetMetaMap,
-        oracleChangedConfig,
+        AssetMetaContext.mapAssetMetas(oracleChangedConfig),
         NULL_MINT_CACHE
     ));
 
@@ -335,9 +340,9 @@ final class GlobalConfigCacheTests {
 
     assertNull(GlobalConfigCacheImpl.createMapChecked(
         1L,
-        previousGlobalConfig,
+        previousGlobalConfigUpdate.assetMetaContexts(),
         cache.assetMetaMap,
-        assetChangedConfig,
+        AssetMetaContext.mapAssetMetas(assetChangedConfig),
         NULL_MINT_CACHE
     ));
   }
@@ -346,7 +351,8 @@ final class GlobalConfigCacheTests {
   void testCreateMapCheckedReturnsNullWhenSameOracleDifferentSourceWithinConfig(@TempDir final Path tempDir) {
     final var cache = createCache(tempDir);
 
-    final var previousGlobalConfig = cache.globalConfig();
+    final var previousGlobalConfigUpdate = cache.globalConfigUpdate();
+    final var previousGlobalConfig = GlobalConfig.read(previousGlobalConfigUpdate.data(), 0);
     final var previousAssetMetas = previousGlobalConfig.assetMetas();
     assertTrue(previousAssetMetas.length > 1);
 
@@ -376,7 +382,7 @@ final class GlobalConfigCacheTests {
         modifiedMetas
     );
 
-    final var result = GlobalConfigCacheImpl.createMapChecked(1L, invalidConfig, NULL_MINT_CACHE);
+    final var result = GlobalConfigCacheImpl.createMapChecked(1L, AssetMetaContext.mapAssetMetas(invalidConfig), NULL_MINT_CACHE);
     assertNull(result);
   }
 
@@ -384,7 +390,8 @@ final class GlobalConfigCacheTests {
   void testCreateMapCheckedReturnsNullWhenOracleSourceChangedAcrossConfigs(@TempDir final Path tempDir) {
     final var cache = createCache(tempDir);
 
-    final var previousGlobalConfig = cache.globalConfig();
+    final var previousGlobalConfigUpdate = cache.globalConfigUpdate();
+    final var previousGlobalConfig = GlobalConfig.read(previousGlobalConfigUpdate.data(), 0);
     final var previousAssetMetas = previousGlobalConfig.assetMetas();
     assertTrue(previousAssetMetas.length > 1);
 
@@ -415,9 +422,9 @@ final class GlobalConfigCacheTests {
 
     final var result = GlobalConfigCacheImpl.createMapChecked(
         1L,
-        previousGlobalConfig,
+        previousGlobalConfigUpdate.assetMetaContexts(),
         cache.assetMetaMap,
-        newGlobalConfig,
+        AssetMetaContext.mapAssetMetas(newGlobalConfig),
         NULL_MINT_CACHE
     );
     assertNull(result);
@@ -427,7 +434,8 @@ final class GlobalConfigCacheTests {
   void testCreateMapCheckedReturnsNullWhenDuplicateOracleForAsset(@TempDir final Path tempDir) {
     final var cache = createCache(tempDir);
 
-    final var previousGlobalConfig = cache.globalConfig();
+    final var previousGlobalConfigUpdate = cache.globalConfigUpdate();
+    final var previousGlobalConfig = GlobalConfig.read(previousGlobalConfigUpdate.data(), 0);
     final var previousAssetMetas = previousGlobalConfig.assetMetas();
     assertTrue(previousAssetMetas.length > 0);
 
@@ -446,7 +454,7 @@ final class GlobalConfigCacheTests {
         duplicatedMetas
     );
 
-    final var result = GlobalConfigCacheImpl.createMapChecked(1L, invalidConfig, NULL_MINT_CACHE);
+    final var result = GlobalConfigCacheImpl.createMapChecked(1L, AssetMetaContext.mapAssetMetas(invalidConfig), NULL_MINT_CACHE);
     assertNull(result);
   }
 
@@ -454,7 +462,8 @@ final class GlobalConfigCacheTests {
   void testCreateMapCheckedReturnsNullWhenInconsistentDecimalsForAsset(@TempDir final Path tempDir) {
     final var cache = createCache(tempDir);
 
-    final var previousGlobalConfig = cache.globalConfig();
+    final var previousGlobalConfigUpdate = cache.globalConfigUpdate();
+    final var previousGlobalConfig = GlobalConfig.read(previousGlobalConfigUpdate.data(), 0);
     final var previousAssetMetas = previousGlobalConfig.assetMetas();
     assertTrue(previousAssetMetas.length > 0);
 
@@ -485,7 +494,7 @@ final class GlobalConfigCacheTests {
         modifiedMetas
     );
 
-    final var result = GlobalConfigCacheImpl.createMapChecked(1L, invalidConfig, NULL_MINT_CACHE);
+    final var result = GlobalConfigCacheImpl.createMapChecked(1L, AssetMetaContext.mapAssetMetas(invalidConfig), NULL_MINT_CACHE);
     assertNull(result);
   }
 
@@ -493,7 +502,8 @@ final class GlobalConfigCacheTests {
   void testCreateMapCheckedReturnsNullWhenDecimalsChangedForExistingEntry(@TempDir final Path tempDir) {
     final var cache = createCache(tempDir);
 
-    final var previousGlobalConfig = cache.globalConfig();
+    final var previousGlobalConfigUpdate = cache.globalConfigUpdate();
+    final var previousGlobalConfig = GlobalConfig.read(previousGlobalConfigUpdate.data(), 0);
     final var previousAssetMetas = previousGlobalConfig.assetMetas();
     assertTrue(previousAssetMetas.length > 0);
 
@@ -523,9 +533,9 @@ final class GlobalConfigCacheTests {
 
     final var result = GlobalConfigCacheImpl.createMapChecked(
         1L,
-        previousGlobalConfig,
+        previousGlobalConfigUpdate.assetMetaContexts(),
         cache.assetMetaMap,
-        invalidConfig,
+        AssetMetaContext.mapAssetMetas(invalidConfig),
         NULL_MINT_CACHE
     );
     assertNull(result);

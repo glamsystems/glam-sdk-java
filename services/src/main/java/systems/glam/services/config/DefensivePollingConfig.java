@@ -10,7 +10,8 @@ import static systems.comodal.jsoniter.JsonIterator.fieldEquals;
 
 public record DefensivePollingConfig(Duration globalConfig,
                                      Duration glamStateAccounts,
-                                     Duration integTables) {
+                                     Duration integTables,
+                                     Duration stakePools) {
 
   static DefensivePollingConfig parseConfig(final JsonIterator ji) {
     final var parser = new DefensivePollingConfig.Parser();
@@ -22,7 +23,8 @@ public record DefensivePollingConfig(Duration globalConfig,
     return new DefensivePollingConfig(
         Duration.ofMinutes(30),
         Duration.ofHours(8),
-        Duration.ofHours(4)
+        Duration.ofHours(4),
+        Duration.ofHours(12)
     );
   }
 
@@ -31,6 +33,7 @@ public record DefensivePollingConfig(Duration globalConfig,
     private Duration globalConfig;
     private Duration glamStateAccounts;
     private Duration integTables;
+    private Duration stakePools;
 
     private Parser() {
     }
@@ -45,7 +48,10 @@ public record DefensivePollingConfig(Duration globalConfig,
       if (integTables == null) {
         integTables = Duration.ofHours(4);
       }
-      return new DefensivePollingConfig(globalConfig, glamStateAccounts, integTables);
+      if (stakePools == null) {
+        stakePools = Duration.ofHours(12);
+      }
+      return new DefensivePollingConfig(globalConfig, glamStateAccounts, integTables, stakePools);
     }
 
     @Override
@@ -56,6 +62,8 @@ public record DefensivePollingConfig(Duration globalConfig,
         glamStateAccounts = ServiceConfigUtil.parseDuration(ji);
       } else if (fieldEquals("integTables", buf, offset, len)) {
         integTables = ServiceConfigUtil.parseDuration(ji);
+      } else if (fieldEquals("stakePools", buf, offset, len)) {
+        stakePools = ServiceConfigUtil.parseDuration(ji);
       } else {
         throw new IllegalStateException("Unknown DefensivePollingConfiguration field " + new String(buf, offset, len));
       }

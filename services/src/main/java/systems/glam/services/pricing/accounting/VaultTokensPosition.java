@@ -14,7 +14,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static java.lang.System.Logger.Level.WARNING;
+
 public final class VaultTokensPosition implements Position {
+
+  private static final System.Logger logger = System.getLogger(VaultTokensPosition.class.getName());
 
   private final Map<PublicKey, AccountMeta> vaultATAMap;
 
@@ -67,40 +71,58 @@ public final class VaultTokensPosition implements Position {
                                       final MinGlamStateAccount stateAccount,
                                       final Map<PublicKey, AccountInfo<byte[]>> accountMap,
                                       final Set<PublicKey> returnAccounts) {
-    // Don't cache instruction without re-acting to State Account oracle priority changes and global config changes.
     final var vaultAssets = stateAccount.assets();
     final short[][] aggIndexes = new short[vaultAssets.length][NO_AGGREGATE_INDEXES.length];
     final var extraAccounts = new ArrayList<AccountMeta>((vaultAssets.length * 3));
     for (int i = 0; i < vaultAssets.length; i++) {
       final var vaultAsset = vaultAssets[i];
+
       final var vaultATA = vaultATAMap.get(vaultAsset);
       extraAccounts.add(vaultATA);
-      final var mintContext = serviceContext.mintContext(vaultAsset);
-      extraAccounts.add(mintContext.readMintMeta());
 
-      // TODO: Add Kamino Scope Support
-//        final PublicKey oracle;
-//        final var oracleContext = oracleContextMap.get(vaultAsset);
-//        if (oracleContext != null) {
-//          aggIndexes[i] = new short[]{(short) oracleContext.index(), -1, -1, -1};
-//          oracle = oracleContext.oracleKey();
-//        } else {
-//          aggIndexes[i] = NO_AGGREGATE_INDEXES;
-//          oracle = assetMetaMap.get(mintContext.mint()).oracle();
-//        }
-//        extraAccounts.add(AccountMeta.createRead(oracle));
-
-      aggIndexes[i] = NO_AGGREGATE_INDEXES;
-      // TODO: Check if State overrides default oracle.
-      final var assetMeta = serviceContext.globalConfigAssetMeta(mintContext.mint());
+      final var assetMeta = serviceContext.globalConfigAssetMeta(vaultAsset);
       if (assetMeta == null) {
-        return null;
+        final var stakePoolContext = serviceContext.stakePoolContextForMint(vaultAsset);
+        if (stakePoolContext == null) {
+          logger.log(WARNING, "Missing asset meta for vault asset: {0}", vaultAsset);
+          return null;
+        } else {
+          aggIndexes[i] = NO_AGGREGATE_INDEXES;
+          extraAccounts.add(stakePoolContext.readState());
+          continue;
+        }
       }
-      extraAccounts.add(AccountMeta.createRead(assetMeta.oracle()));
-    }
-    // Add scope aggregate keys
-    //extraAccounts.addAll(this.extraAccounts);
 
+      // TODO: Check if State overrides default oracle.
+
+      extraAccounts.add(assetMeta.readAssetMint());
+      switch (assetMeta.oracleSource()) {
+        case NotSet, BaseAsset, QuoteAsset, Prelaunch, Pyth, Pyth1K, Pyth1M, PythStableCoin, Switchboard -> {
+          final var msg = String.format("""
+                  {
+                   "event": "Invalid GlobalConfig OracleSource",
+                   "mint": "%s",
+                   "oracle": "%s",
+                   "oracleSource": "%s"
+                  }""",
+              assetMeta.asset().toBase58(),
+              assetMeta.oracle().toBase58(),
+              assetMeta.oracleSource()
+          );
+          throw new IllegalStateException(msg);
+        }
+        case PythPull, Pyth1KPull, Pyth1MPull, PythStableCoinPull, SwitchboardOnDemand, PythLazer, PythLazer1K,
+             PythLazer1M, PythLazerStableCoin, LstPoolState, MarinadeState -> {
+          aggIndexes[i] = NO_AGGREGATE_INDEXES;
+          extraAccounts.add(assetMeta.readOracle());
+        }
+        case ChainlinkRWA -> {
+          // TODO: Lookup potential indexes in scope aggregate account.
+          //       Set oracle to corresponding aggregate account.
+//          aggIndexes[i] = new short[]{(short) oracleContext.index(), -1, -1, -1};
+        }
+      }
+    }
 
     final var priceVaultIx = glamAccountClient.priceVaultTokens(
         solUSDOracleKey,
