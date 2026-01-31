@@ -60,7 +60,15 @@ public interface StakePoolCache extends Runnable, AutoCloseable {
               final var stakePoolFileChannel = entry.getValue();
               final byte[] data = Files.readAllBytes(stakePoolFileChannel.filePath());
               if (data.length == 0) {
-                stakePoolCache.fetchStateAccounts(stakePoolProgram);
+                final var stateAccounts = stakePoolCache.fetchStateAccounts(stakePoolProgram);
+                final byte[] flatFileData = new byte[stateAccounts.size() * StakePoolContext.BYTES];
+                int i = 0;
+                for (final var accountInfo : stateAccounts) {
+                  final var stakePoolContext = StakePoolContext.read(accountInfo);
+                  stakePoolContextByMint.put(stakePoolContext.mintKey(), stakePoolContext);
+                  i += stakePoolContext.write(flatFileData, i);
+                }
+                stakePoolFileChannel.overwriteFile(flatFileData);
               } else {
                 for (int i = 0; i < data.length; i += StakePoolContext.BYTES) {
                   final var stakePoolContext = StakePoolContext.read(stakePoolProgram, data, i);

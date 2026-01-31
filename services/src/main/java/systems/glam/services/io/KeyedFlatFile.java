@@ -8,8 +8,9 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Collection;
 
-public interface KeyedFlatFile<E extends SerDe> {
+public interface KeyedFlatFile<E extends SerDe> extends AutoCloseable {
 
   static <E extends SerDe> KeyedFlatFile<E> createFlatFile(final int entrySize, final Path filePath) {
     try {
@@ -31,6 +32,10 @@ public interface KeyedFlatFile<E extends SerDe> {
   void appendEntry(final E entry);
 
   int deleteEntry(final byte[] key, final E removed);
+
+  void writeEntries(final Collection<E> entries);
+
+  void overwriteFile(final byte[] data);
 
   void close();
 }

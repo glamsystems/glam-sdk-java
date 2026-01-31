@@ -55,6 +55,15 @@ final class IntegLookupTableCacheImpl implements IntegLookupTableCache, AccountC
     }
   }
 
+  private void deleteTableFile(final PublicKey tableKey) {
+    final var fileName = IntegrationServiceContext.resolveFileName(integrationTablesDirectory, tableKey);
+    try {
+      Files.deleteIfExists(fileName);
+    } catch (IOException e) {
+      logger.log(WARNING, "Failed to delete integration lookup table data: " + fileName, e);
+    }
+  }
+
   @Override
   public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
     final var iterator = integrationTables.entrySet().iterator();
@@ -62,17 +71,18 @@ final class IntegLookupTableCacheImpl implements IntegLookupTableCache, AccountC
       entry = iterator.next();
       final var tableKey = entry.getKey();
       final var accountInfo = accountMap.get(tableKey);
+      if (AccountFetcher.isNull(accountInfo)) {
+        // TODO: Invalidate all consumers of this table.
+        iterator.remove();
+        deleteTableFile(tableKey);
+        continue;
+      }
       final byte[] data = accountInfo.data();
       final long deactivationSlot = ByteUtil.getInt64LE(data, AddressLookupTable.DEACTIVATION_SLOT_OFFSET);
       if (deactivationSlot != -1) {
         // TODO: Invalidate all consumers of this table.
         iterator.remove();
-        final var fileName = IntegrationServiceContext.resolveFileName(integrationTablesDirectory, tableKey);
-        try {
-          Files.deleteIfExists(fileName);
-        } catch (IOException e) {
-          logger.log(WARNING, "Failed to delete integration lookup table data: " + fileName, e);
-        }
+        deleteTableFile(tableKey);
       } else {
         final var addressLookupTable = AddressLookupTable.read(tableKey, data);
         final var previous = entry.getValue();

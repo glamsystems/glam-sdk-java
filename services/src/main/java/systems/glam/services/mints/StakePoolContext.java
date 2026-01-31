@@ -3,6 +3,8 @@ package systems.glam.services.mints;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.rpc.json.http.response.AccountInfo;
+import software.sava.solana.programs.stakepool.StakePoolState;
 
 public record StakePoolContext(PublicKey program, AccountMeta readState, PublicKey mintKey) implements SerDe {
 
@@ -21,6 +23,15 @@ public record StakePoolContext(PublicKey program, AccountMeta readState, PublicK
         program,
         PublicKey.readPubKey(data, offset),
         PublicKey.readPubKey(data, offset + PublicKey.PUBLIC_KEY_LENGTH)
+    );
+  }
+
+  static StakePoolContext read(final AccountInfo<byte[]> accountInfo) {
+    final byte[] data = accountInfo.data();
+    return createContext(
+        accountInfo.owner(),
+        accountInfo.pubKey(),
+        PublicKey.readPubKey(data, StakePoolState.POOL_MINT_OFFSET)
     );
   }
 

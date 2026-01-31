@@ -17,6 +17,10 @@ public record MinGlamStateAccount(long slot,
                                   byte[] externalPositionsBytes,
                                   PublicKey[] externalPositions) {
 
+  public int numAssets() {
+    return assets.length;
+  }
+
   public int numAccounts() {
     return assets.length + externalPositions.length;
   }
@@ -25,8 +29,8 @@ public record MinGlamStateAccount(long slot,
     return assets[baseAssetIndex];
   }
 
-  public boolean containsAsset(final PublicKey mint) {
-    return Arrays.binarySearch(assets, mint) >= 0;
+  public boolean doesNotContainsAsset(final PublicKey mint) {
+    return Arrays.binarySearch(assets, mint) < 0;
   }
 
   public byte[] serialize() {

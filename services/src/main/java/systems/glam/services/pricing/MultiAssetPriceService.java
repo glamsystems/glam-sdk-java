@@ -139,20 +139,7 @@ public class MultiAssetPriceService extends BaseDelegateService
 
   private StateChange stateAccountChanged(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap,
                                           final MinGlamStateAccount stateAccount) {
-
-    // Remove Old Positions
-    this.vaultTokensPosition.removeOldAccounts(stateAccount, this.accountsNeededSet);
-    final var externalPositions = stateAccount.externalPositions();
-    for (final var positionKey : this.positions.keySet()) {
-      if (Arrays.binarySearch(externalPositions, positionKey) < 0) {
-        this.accountsNeededSet.remove(positionKey);
-        // TODO: Remove upstream accounts.
-        final var position = this.positions.remove(positionKey);
-        position.removeAccount(positionKey);
-      }
-    }
-
-    // Add New Positions
+    // Add New Assets
     var stateChange = StateChange.NO_CHANGE;
     for (final var assetMint : stateAccount.assets()) {
       if (!this.vaultTokensPosition.hasContext(assetMint)) {
@@ -167,6 +154,21 @@ public class MultiAssetPriceService extends BaseDelegateService
       }
     }
 
+    // Remove Old Assets
+    this.vaultTokensPosition.removeOldAccounts(stateAccount, this.accountsNeededSet);
+
+    // Remove Old Positions
+    final var externalPositions = stateAccount.externalPositions();
+    for (final var positionKey : this.positions.keySet()) {
+      if (Arrays.binarySearch(externalPositions, positionKey) < 0) {
+        this.accountsNeededSet.remove(positionKey);
+        // TODO: Remove upstream accounts.
+        final var position = this.positions.remove(positionKey);
+        position.removeAccount(positionKey);
+      }
+    }
+
+    // Add New Positions
     for (final var externalAccount : stateAccount.externalPositions()) {
       if (this.accountsNeededSet.add(externalAccount)) {
         stateChange = StateChange.ACCOUNTS_NEEDED;
@@ -265,14 +267,19 @@ public class MultiAssetPriceService extends BaseDelegateService
         return;
       }
       final var stateChange = stateAccountChanged(accountsNeededMap, stateAccount);
-      if (stateChange == StateChange.ACCOUNTS_NEEDED) {
-        this.aumTransaction.set(null);
-        serviceContext.queue(accountsNeededSet, this);
-        persist(stateAccount);
-      } else if (stateChange == StateChange.UNSUPPORTED) {
-        clearState();
-      } else if (stateChange == StateChange.NEW_POSITION || this.aumTransaction.get() == null) {
-        prepareAUMTransaction(stateAccount, accountsNeededMap);
+      switch (stateChange) {
+        case UNSUPPORTED -> clearState();
+        case ACCOUNTS_NEEDED -> {
+          this.aumTransaction.set(null);
+          serviceContext.queue(accountsNeededSet, this);
+          persist(stateAccount);
+        }
+        case NEW_POSITION -> prepareAUMTransaction(stateAccount, accountsNeededMap);
+        case NO_CHANGE -> {
+          if (this.aumTransaction.get() == null) { // Happens the first time an ATA is retrieved.
+            prepareAUMTransaction(stateAccount, accountsNeededMap);
+          }
+        }
       }
     } catch (final RuntimeException ex) {
       logger.log(WARNING, "Error processing state account update", ex);

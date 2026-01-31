@@ -533,7 +533,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   @Override
   public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
     final var globalConfigAccountInfo = accountMap.get(globalConfigKey);
-    if (globalConfigAccountInfo != null) {
+    if (!AccountFetcher.isNull(globalConfigAccountInfo)) {
       accept(globalConfigAccountInfo);
     }
     final var assetMap = this.assetMetaMap;

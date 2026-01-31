@@ -12,10 +12,11 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.services.integrations.IntegrationServiceContext;
-import systems.glam.services.state.MinGlamStateAccount;
+import systems.glam.services.pricing.accounting.Position;
 import systems.glam.services.pricing.accounting.PositionReport;
 import systems.glam.services.pricing.accounting.PositionReportRecord;
-import systems.glam.services.pricing.accounting.Position;
+import systems.glam.services.rpc.AccountFetcher;
+import systems.glam.services.state.MinGlamStateAccount;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,8 +79,11 @@ public final class DriftUsersPosition implements Position {
 
     for (final var userKey : userAccounts.keySet()) {
       final var userAccount = accountMap.get(userKey);
-      final byte[] data = userAccount.data();
+      if (AccountFetcher.isNull(userAccount)) {
+        return null;
+      }
 
+      final byte[] data = userAccount.data();
       SerDeUtil.readArray(spotPositions, SpotPosition::read, data, User.SPOT_POSITIONS_OFFSET);
       for (final var position : spotPositions) {
         if (position.scaledBalance() != 0) {

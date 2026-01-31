@@ -2,11 +2,14 @@ package systems.glam.services.pricing.accounting;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
+import software.sava.core.accounts.token.TokenAccount;
+import software.sava.core.encoding.ByteUtil;
 import software.sava.core.tx.Instruction;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.services.integrations.IntegrationServiceContext;
+import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.MinGlamStateAccount;
 
 import java.util.ArrayList;
@@ -40,12 +43,16 @@ public final class VaultTokensPosition implements Position {
   }
 
   public void removeOldAccounts(final MinGlamStateAccount stateAccount, final Set<PublicKey> accountsNeededSet) {
-    final var iterator = vaultATAMap.entrySet().iterator();
-    while (iterator.hasNext()) {
-      final var entry = iterator.next();
-      if (!stateAccount.containsAsset(entry.getKey())) {
-        accountsNeededSet.remove(entry.getValue().publicKey());
-        iterator.remove();
+    if (vaultATAMap.size() > stateAccount.numAssets()) {
+      final var iterator = vaultATAMap.entrySet().iterator();
+      while (iterator.hasNext()) {
+        final var entry = iterator.next();
+        final var mint = entry.getKey();
+        if (stateAccount.doesNotContainsAsset(mint)) {
+          accountsNeededSet.remove(mint);
+          accountsNeededSet.remove(entry.getValue().publicKey());
+          iterator.remove();
+        }
       }
     }
   }
@@ -78,6 +85,10 @@ public final class VaultTokensPosition implements Position {
       final var vaultAsset = vaultAssets[i];
 
       final var vaultATA = vaultATAMap.get(vaultAsset);
+      final var vaultTokenAccount = accountMap.get(vaultATA.publicKey());
+      if (AccountFetcher.isNull(vaultTokenAccount) || ByteUtil.getInt64LE(vaultTokenAccount.data(), TokenAccount.AMOUNT_OFFSET) == 0) {
+        continue;
+      }
       extraAccounts.add(vaultATA);
 
       final var assetMeta = serviceContext.globalConfigAssetMeta(vaultAsset);

@@ -37,12 +37,11 @@ final class StakePoolCacheImpl implements StakePoolCache, Consumer<AccountInfo<b
     this.stakePoolContextByMint = stakePoolContextByMint;
   }
 
-  void fetchStateAccounts(final PublicKey stakePoolProgram) {
-    final var stateAccounts = rpcCaller.courteousGet(
+  List<AccountInfo<byte[]>> fetchStateAccounts(final PublicKey stakePoolProgram) {
+    return rpcCaller.courteousGet(
         rpcClient -> rpcClient.getProgramAccounts(stakePoolProgram, stakePoolFilters),
         "rpcClient::getStakePoolStateAccounts"
     );
-    stateAccounts.parallelStream().forEach(this);
   }
 
   @Override
@@ -50,7 +49,8 @@ final class StakePoolCacheImpl implements StakePoolCache, Consumer<AccountInfo<b
     try {
       for (; ; ) {
         for (final var stakePoolProgram : stakePoolFileChannelByProgram.keySet()) {
-          fetchStateAccounts(stakePoolProgram);
+          final var stateAccounts = fetchStateAccounts(stakePoolProgram);
+          stateAccounts.parallelStream().forEach(this);
         }
         //noinspection BusyWait
         Thread.sleep(fetchDelayMillis);
@@ -75,7 +75,7 @@ final class StakePoolCacheImpl implements StakePoolCache, Consumer<AccountInfo<b
 
     final var owner = accountInfo.owner();
     final var stakePoolContext = StakePoolContext.createContext(owner, accountInfo.pubKey(), mintKey);
-    if (this.stakePoolContextByMint.putIfAbsent(mintKey, stakePoolContext) != null) {
+    if (this.stakePoolContextByMint.putIfAbsent(mintKey, stakePoolContext) == null) {
       stakePoolFileChannel.appendEntry(stakePoolContext);
     }
   }

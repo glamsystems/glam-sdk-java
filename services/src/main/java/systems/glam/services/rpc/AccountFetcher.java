@@ -1,6 +1,7 @@
 package systems.glam.services.rpc;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
 
 import java.time.Duration;
@@ -9,6 +10,14 @@ import java.util.List;
 import java.util.Set;
 
 public interface AccountFetcher extends Runnable {
+
+  AccountInfo<byte[]> NULL_ACCOUNT_INFO = new AccountInfo<>(
+      null, null, false, 0, PublicKey.NONE, null, 0, new byte[0]
+  );
+
+  static boolean isNull(final AccountInfo<byte[]> accountInfo) {
+    return accountInfo == null || accountInfo == NULL_ACCOUNT_INFO;
+  }
 
   static AccountFetcher createFetcher(final Duration fetchDelay,
                                       final boolean reactive,

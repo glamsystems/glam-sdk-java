@@ -239,7 +239,7 @@ final class AccountFetcherImpl implements AccountFetcher {
             "rpcClient#getAccountsBatch"
         );
 
-        for (final var accountsMap = toMap(accounts); ; ) {
+        for (final var accountsMap = toMap(keys, accounts); ; ) {
           final var accountBatch = currentBatch.pollFirst();
           if (accountBatch == null) {
             lock.lock();
@@ -267,12 +267,17 @@ final class AccountFetcherImpl implements AccountFetcher {
     }
   }
 
-  private static Map<PublicKey, AccountInfo<byte[]>> toMap(final List<AccountInfo<byte[]>> accounts) {
+  private static Map<PublicKey, AccountInfo<byte[]>> toMap(final List<PublicKey> keys,
+                                                           final List<AccountInfo<byte[]>> accounts) {
     final var accountsMap = HashMap.<PublicKey, AccountInfo<byte[]>>newHashMap(accounts.size());
+    int i = 0;
     for (final var accountInfo : accounts) {
       if (accountInfo != null) {
         accountsMap.put(accountInfo.pubKey(), accountInfo);
+      } else {
+        accountsMap.put(keys.get(i), AccountFetcher.NULL_ACCOUNT_INFO);
       }
+      ++i;
     }
     return Collections.unmodifiableMap(accountsMap);
   }
