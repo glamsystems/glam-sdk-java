@@ -7,6 +7,7 @@ import software.sava.services.solana.remote.call.RpcCaller;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -49,18 +50,10 @@ final class AccountFetcherImpl implements AccountFetcher {
     this.currentBatchKeys = this.alwaysFetch;
   }
 
-  private void queue(final boolean priority, final Collection<PublicKey> accounts, final AccountConsumer callback) {
-    final int numAccounts = accounts.size();
-    if (numAccounts == 0) {
-      return;
-    } else if (numAccounts > SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
-      throw new IllegalStateException("Unable to fetch more than " + SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS + " accounts in a single request.");
-    }
-
-    final var accountBatch = new AccountBatch(accounts, callback);
+  private void queue(final boolean priority, final AccountBatch accountBatch) {
     lock.lock();
     try {
-      if (currentBatchKeys.containsAll(accounts)) {
+      if (currentBatchKeys.containsAll(accountBatch.keys())) {
         currentBatch.addLast(accountBatch);
       } else {
         if (priority) {
@@ -74,6 +67,24 @@ final class AccountFetcherImpl implements AccountFetcher {
       }
     } finally {
       lock.unlock();
+    }
+  }
+
+  private static boolean validBatch(final Collection<PublicKey> accounts) {
+    final int numAccounts = accounts.size();
+    if (numAccounts == 0) {
+      return false;
+    } else if (numAccounts > SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
+      throw new IllegalStateException("Unable to fetch more than " + SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS + " accounts in a single request.");
+    } else {
+      return true;
+    }
+  }
+
+  private void queue(final boolean priority, final Collection<PublicKey> accounts, final AccountConsumer callback) {
+    if (validBatch(accounts)) {
+      final var accountBatch = new AccountBatchRecord(accounts, callback);
+      queue(priority, accountBatch);
     }
   }
 
@@ -107,6 +118,20 @@ final class AccountFetcherImpl implements AccountFetcher {
   @Override
   public void priorityQueue(final Collection<PublicKey> accounts, final AccountConsumer callback) {
     queue(true, accounts, callback);
+  }
+
+  private static final CompletableFuture<AccountResult> EMPTY = CompletableFuture.completedFuture(new AccountResult(List.of(), Map.of()));
+
+  @Override
+  public CompletableFuture<AccountResult> priorityQueue(final Collection<PublicKey> accounts) {
+    if (validBatch(accounts)) {
+      final var future = new CompletableFuture<AccountResult>();
+      final var accountBatch = new CompletableAccountBatch(accounts, future);
+      queue(true, accountBatch);
+      return future;
+    } else {
+      return EMPTY;
+    }
   }
 
   @Override
@@ -282,11 +307,26 @@ final class AccountFetcherImpl implements AccountFetcher {
     return Collections.unmodifiableMap(accountsMap);
   }
 
-  record AccountBatch(Collection<PublicKey> keys, AccountConsumer accountConsumer) implements AccountConsumer {
+  interface AccountBatch extends AccountConsumer {
+
+    Collection<PublicKey> keys();
+  }
+
+  record AccountBatchRecord(Collection<PublicKey> keys, AccountConsumer accountConsumer) implements AccountBatch {
 
     @Override
     public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
       accountConsumer.accept(accounts, accountMap);
+    }
+  }
+
+  record CompletableAccountBatch(Collection<PublicKey> keys, CompletableFuture<AccountResult> future) implements
+      AccountBatch {
+
+    @Override
+    public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
+      final var result = new AccountResult(accounts, accountMap);
+      future.complete(result);
     }
   }
 }

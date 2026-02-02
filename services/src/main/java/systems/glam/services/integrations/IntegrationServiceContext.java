@@ -3,12 +3,14 @@ package systems.glam.services.integrations;
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
+import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoVaultCache;
 import systems.glam.services.mints.*;
+import systems.glam.services.pricing.ScopeAggregateIndexes;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.GlobalConfigCache;
@@ -24,6 +26,7 @@ public interface IntegrationServiceContext {
                                                  final MintCache mintCache,
                                                  final StakePoolCache stakePoolCache,
                                                  final GlobalConfigCache globalConfigCache,
+                                                 final ScopeAggregateIndexes scopeAggregateIndexes,
                                                  final IntegLookupTableCache integLookupTableCache,
                                                  final AccountFetcher accountFetcher,
                                                  final DriftAccounts driftAccounts,
@@ -35,6 +38,7 @@ public interface IntegrationServiceContext {
         mintCache,
         stakePoolCache,
         globalConfigCache,
+        scopeAggregateIndexes,
         integLookupTableCache,
         accountFetcher,
         driftAccounts, driftMarketCache,
@@ -71,6 +75,8 @@ public interface IntegrationServiceContext {
   AssetMetaContext solAssetMeta();
 
   AssetMetaContext globalConfigAssetMeta(final PublicKey mint);
+
+  short[] scopeAggregateIndexes(final PublicKey mint, final OracleType oracleType);
 
   IntegLookupTableCache integTableCache();
 

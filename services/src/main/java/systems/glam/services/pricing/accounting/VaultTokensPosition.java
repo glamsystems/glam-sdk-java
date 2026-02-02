@@ -5,10 +5,12 @@ import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.accounts.token.TokenAccount;
 import software.sava.core.encoding.ByteUtil;
 import software.sava.core.tx.Instruction;
+import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.services.integrations.IntegrationServiceContext;
+import systems.glam.services.pricing.ScopeAggregateIndexes;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.MinGlamStateAccount;
 
@@ -68,8 +70,6 @@ public final class VaultTokensPosition implements Position {
     }
   }
 
-  private static final short[] NO_AGGREGATE_INDEXES = new short[]{-1, -1, -1, -1};
-
   @Override
   public Instruction priceInstruction(final IntegrationServiceContext serviceContext,
                                       final GlamAccountClient glamAccountClient,
@@ -79,16 +79,18 @@ public final class VaultTokensPosition implements Position {
                                       final Map<PublicKey, AccountInfo<byte[]>> accountMap,
                                       final Set<PublicKey> returnAccounts) {
     final var vaultAssets = stateAccount.assets();
-    final short[][] aggIndexes = new short[vaultAssets.length][NO_AGGREGATE_INDEXES.length];
+    final short[][] aggIndexes = ScopeAggregateIndexes.createIndexesArray(vaultAssets.length);
+
     final var extraAccounts = new ArrayList<AccountMeta>((vaultAssets.length * 3));
     for (int i = 0; i < vaultAssets.length; i++) {
       final var vaultAsset = vaultAssets[i];
-
       final var vaultATA = vaultATAMap.get(vaultAsset);
       final var vaultTokenAccount = accountMap.get(vaultATA.publicKey());
-      if (AccountFetcher.isNull(vaultTokenAccount) || ByteUtil.getInt64LE(vaultTokenAccount.data(), TokenAccount.AMOUNT_OFFSET) == 0) {
+      if (AccountFetcher.isNull(vaultTokenAccount)
+          || ByteUtil.getInt64LE(vaultTokenAccount.data(), TokenAccount.AMOUNT_OFFSET) == 0) {
         continue;
       }
+
       extraAccounts.add(vaultATA);
 
       final var assetMeta = serviceContext.globalConfigAssetMeta(vaultAsset);
@@ -98,7 +100,6 @@ public final class VaultTokensPosition implements Position {
           logger.log(WARNING, "Missing asset meta for vault asset: {0}", vaultAsset);
           return null;
         } else {
-          aggIndexes[i] = NO_AGGREGATE_INDEXES;
           extraAccounts.add(stakePoolContext.readState());
           continue;
         }
@@ -123,14 +124,13 @@ public final class VaultTokensPosition implements Position {
           throw new IllegalStateException(msg);
         }
         case PythPull, Pyth1KPull, Pyth1MPull, PythStableCoinPull, SwitchboardOnDemand, PythLazer, PythLazer1K,
-             PythLazer1M, PythLazerStableCoin, LstPoolState, MarinadeState -> {
-          aggIndexes[i] = NO_AGGREGATE_INDEXES;
-          extraAccounts.add(assetMeta.readOracle());
-        }
+             PythLazer1M, PythLazerStableCoin, LstPoolState, MarinadeState -> extraAccounts.add(assetMeta.readOracle());
         case ChainlinkRWA -> {
-          // TODO: Lookup potential indexes in scope aggregate account.
-          //       Set oracle to corresponding aggregate account.
-//          aggIndexes[i] = new short[]{(short) oracleContext.index(), -1, -1, -1};
+          final short[] indexes = serviceContext.scopeAggregateIndexes(vaultAsset, OracleType.ChainlinkRWA);
+          if (indexes == null || indexes.length == 0) {
+            return null;
+          }
+          aggIndexes[i] = indexes;
         }
       }
     }

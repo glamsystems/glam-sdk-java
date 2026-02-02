@@ -1,23 +1,24 @@
 package systems.glam.services.oracles.scope;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.idl.clients.kamino.lend.gen.types.Reserve;
-import software.sava.idl.clients.kamino.lend.gen.types.ScopeConfiguration;
-import software.sava.idl.clients.kamino.lend.gen.types.TokenInfo;
+import software.sava.core.encoding.ByteUtil;
+import software.sava.idl.clients.kamino.lend.gen.types.*;
 import software.sava.idl.clients.kamino.scope.entries.PriceChains;
 import software.sava.idl.clients.kamino.scope.entries.PriceChainsRecord;
 import software.sava.idl.clients.kamino.scope.entries.ScopeEntry;
+import software.sava.rpc.json.http.response.AccountInfo;
 import systems.comodal.jsoniter.FieldBufferPredicate;
 import systems.comodal.jsoniter.JsonIterator;
 import systems.glam.services.oracles.scope.parsers.ScopeEntryParser;
 
 import java.util.*;
 
-public record ReserveContext(PublicKey pubKey,
+public record ReserveContext(long slot,
+                             PublicKey pubKey,
                              PublicKey market,
                              String tokenName,
                              PublicKey mint,
-                             PublicKey priceFeed,
+                             long availableLiquidity, long totalCollateral,
                              PriceChains priceChains,
                              TokenInfo tokenInfo) {
 
@@ -29,9 +30,15 @@ public record ReserveContext(PublicKey pubKey,
     return parser.createContext();
   }
 
-  static ReserveContext createContext(final Reserve reserve, final PriceChains priceChains) {
-    final var mint = reserve.liquidity().mintPubkey();
-    final byte[] name = reserve.config().tokenInfo().name();
+  static ReserveContext createContext(final long slot,
+                                      final PublicKey reserveKey,
+                                      final PublicKey lendingMarketKey,
+                                      final PublicKey mintKey,
+                                      final long availableLiquidity,
+                                      final long totalCollateral,
+                                      final TokenInfo tokenInfo,
+                                      final PriceChains priceChains) {
+    final byte[] name = tokenInfo.name();
     int i = name.length - 1;
     while (Character.isISOControl(name[i])) {
       if (--i < 0) {
@@ -39,21 +46,25 @@ public record ReserveContext(PublicKey pubKey,
       }
     }
     final var tokenName = i == 0 ? null : new String(name, 0, i + 1);
-    final var tokenInfo = reserve.config().tokenInfo();
     return new ReserveContext(
-        reserve._address(),
-        reserve.lendingMarket(),
+        slot,
+        reserveKey,
+        lendingMarketKey,
         tokenName,
-        mint,
-        tokenInfo.scopeConfiguration().priceFeed(),
+        mintKey,
+        availableLiquidity,
+        totalCollateral,
         priceChains,
         tokenInfo
     );
   }
 
-  static ReserveContext createContext(final Reserve reserve,
+  static ReserveContext createContext(final AccountInfo<byte[]> accountInfo,
                                       final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed) {
-    final var tokenInfo = reserve.config().tokenInfo();
+    final byte[] data = accountInfo.data();
+    final var lendingMarketKey = PublicKey.readPubKey(data, Reserve.LENDING_MARKET_OFFSET);
+    final var mintKey = PublicKey.readPubKey(data, Reserve.COLLATERAL_OFFSET + ReserveLiquidity.MINT_PUBKEY_OFFSET);
+    final var tokenInfo = TokenInfo.read(data, Reserve.CONFIG_OFFSET + ReserveConfig.TOKEN_INFO_OFFSET);
     final var scopeConfiguration = tokenInfo.scopeConfiguration();
     final var priceFeed = scopeConfiguration.priceFeed();
     final PriceChains priceChains;
@@ -62,12 +73,26 @@ public record ReserveContext(PublicKey pubKey,
     } else {
       final var scopeEntries = mappingsContextByPriceFeed.get(priceFeed);
       if (scopeEntries == null) {
-        return null;
+        priceChains = null;
       } else {
-        priceChains = scopeEntries.scopeEntries().readPriceChains(reserve);
+        priceChains = scopeEntries.scopeEntries().readPriceChains(null);
       }
     }
-    return createContext(reserve, priceChains);
+    long availableLiquidity = ByteUtil.getInt64LE(data, Reserve.LIQUIDITY_OFFSET + ReserveLiquidity.AVAILABLE_AMOUNT_OFFSET);
+    long totalCollateral = ByteUtil.getInt64LE(data, Reserve.COLLATERAL_OFFSET + ReserveCollateral.SUPPLY_VAULT_OFFSET);
+    return createContext(
+        accountInfo.context().slot(),
+        accountInfo.pubKey(),
+        lendingMarketKey,
+        mintKey,
+        availableLiquidity, totalCollateral,
+        tokenInfo,
+        priceChains
+    );
+  }
+
+  public PublicKey priceFeed() {
+    return this.tokenInfo.scopeConfiguration().priceFeed();
   }
 
   public long maxAgePriceSeconds() {
@@ -121,7 +146,7 @@ public record ReserveContext(PublicKey pubKey,
           pubKey.toBase58(),
           jsonTokenName(),
           mint.toBase58(),
-          priceFeed.toBase58(),
+          priceFeed().toBase58(),
           encodedTokenInfo
       );
     } else {
@@ -140,7 +165,7 @@ public record ReserveContext(PublicKey pubKey,
             pubKey.toBase58(),
             jsonTokenName(),
             mint.toBase58(),
-            priceFeed.toBase58(),
+            priceFeed().toBase58(),
             maxAgePriceSeconds(),
             ScopeMonitorServiceImpl.toJson(priceChains.priceChain()),
             encodedTokenInfo
@@ -162,7 +187,7 @@ public record ReserveContext(PublicKey pubKey,
             pubKey.toBase58(),
             jsonTokenName(),
             mint.toBase58(),
-            priceFeed.toBase58(),
+            priceFeed().toBase58(),
             maxAgePriceSeconds(),
             maxAgeTwapSeconds(),
             maxTwapDivergenceBps(),
@@ -186,7 +211,7 @@ public record ReserveContext(PublicKey pubKey,
           pubKey.toBase58(),
           jsonTokenName(),
           mint.toBase58(),
-          priceFeed.toBase58()
+          priceFeed().toBase58()
       );
     } else {
       final var twapChain = priceChains.twapChain();
@@ -203,7 +228,7 @@ public record ReserveContext(PublicKey pubKey,
             pubKey.toBase58(),
             jsonTokenName(),
             mint.toBase58(),
-            priceFeed.toBase58(),
+            priceFeed().toBase58(),
             maxAgePriceSeconds(),
             ScopeMonitorServiceImpl.toJson(priceChains.priceChain())
         );
@@ -223,7 +248,7 @@ public record ReserveContext(PublicKey pubKey,
             pubKey.toBase58(),
             jsonTokenName(),
             mint.toBase58(),
-            priceFeed.toBase58(),
+            priceFeed().toBase58(),
             maxAgePriceSeconds(),
             maxAgeTwapSeconds(),
             maxTwapDivergenceBps(),
@@ -241,11 +266,12 @@ public record ReserveContext(PublicKey pubKey,
     MAX_AGE_PRICE_SECONDS,
     MAX_AGE_TWAP_SECONDS,
     MAX_TWAP_DIVERGENCE_BPS,
+    PRICE_FEED,
     PRICE_CHAIN,
     TWAP_CHAIN
   }
 
-  private static final Set<ConfigChange> NO_CHANGES = Set.of();
+  static final Set<ConfigChange> NO_CHANGES = Set.of();
 
   private static Set<ConfigChange> addChange(final Set<ConfigChange> changes, final ConfigChange change) {
     if (changes.isEmpty()) {
@@ -254,6 +280,10 @@ public record ReserveContext(PublicKey pubKey,
       changes.add(change);
       return changes;
     }
+  }
+
+  boolean isBefore(final ReserveContext o) {
+    return Long.compareUnsigned(this.slot, o.slot) > 0;
   }
 
   Set<ConfigChange> changed(final ReserveContext o) {
@@ -269,6 +299,9 @@ public record ReserveContext(PublicKey pubKey,
       }
       if (!Objects.equals(tokenName, o.tokenName)) {
         changes = addChange(changes, ConfigChange.TOKEN_NAME);
+      }
+      if (!priceFeed().equals(o.priceFeed())) {
+        changes = addChange(changes, ConfigChange.PRICE_FEED);
       }
       if (maxAgePriceSeconds() != o.maxAgePriceSeconds()) {
         changes = addChange(changes, ConfigChange.MAX_AGE_PRICE_SECONDS);
@@ -299,10 +332,10 @@ public record ReserveContext(PublicKey pubKey,
     private static final ScopeEntry[] EMPTY_CHAIN = new ScopeEntry[0];
 
     private final PublicKey market;
+    private long slot;
     private PublicKey reserve;
     private String tokenName;
     private PublicKey mint;
-    private PublicKey priceFeed;
     private ScopeEntry[] priceChain;
     private ScopeEntry[] twapChain;
     private TokenInfo tokenInfo;
@@ -322,11 +355,12 @@ public record ReserveContext(PublicKey pubKey,
         );
       }
       return new ReserveContext(
+          slot,
           reserve,
           market,
           tokenName,
           mint,
-          priceFeed,
+          0, 0,
           priceChains,
           tokenInfo
       );
@@ -342,14 +376,14 @@ public record ReserveContext(PublicKey pubKey,
 
     @Override
     public boolean test(final char[] buf, final int offset, final int len, final JsonIterator ji) {
-      if (JsonIterator.fieldEquals("reserve", buf, offset, len)) {
+      if (JsonIterator.fieldEquals("slot", buf, offset, len)) {
+        this.slot = ji.readLong();
+      } else if (JsonIterator.fieldEquals("reserve", buf, offset, len)) {
         this.reserve = PublicKey.fromBase58Encoded(ji.readString());
       } else if (JsonIterator.fieldEquals("tokenName", buf, offset, len)) {
         this.tokenName = ji.readString();
       } else if (JsonIterator.fieldEquals("mint", buf, offset, len)) {
         this.mint = PublicKey.fromBase58Encoded(ji.readString());
-      } else if (JsonIterator.fieldEquals("priceFeed", buf, offset, len)) {
-        this.priceFeed = PublicKey.fromBase58Encoded(ji.readString());
       } else if (JsonIterator.fieldEquals("priceChain", buf, offset, len)) {
         this.priceChain = parseChain(ji);
       } else if (JsonIterator.fieldEquals("twapChain", buf, offset, len)) {

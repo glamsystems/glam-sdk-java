@@ -137,6 +137,7 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
         mintCache,
         stakePoolCache,
         globalConfigCache,
+        null, // TODO: scopeAggregateIndexes
         integTableCache,
         accountFetcher,
         driftAccounts,

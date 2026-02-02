@@ -5,7 +5,7 @@ import software.sava.idl.clients.kamino.scope.entries.ScopeEntries;
 import software.sava.idl.clients.kamino.scope.entries.ScopeReader;
 import software.sava.rpc.json.http.response.AccountInfo;
 
-record MappingsContext(byte[] data, ScopeEntries scopeEntries) {
+public record MappingsContext(byte[] data, ScopeEntries scopeEntries) {
 
   static MappingsContext createContext(final AccountInfo<byte[]> accountInfo) {
     return new MappingsContext(accountInfo.data(), ScopeReader.parseEntries(accountInfo));

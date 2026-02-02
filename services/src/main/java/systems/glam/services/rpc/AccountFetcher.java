@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 public interface AccountFetcher extends Runnable {
 
@@ -35,6 +36,8 @@ public interface AccountFetcher extends Runnable {
   default void priorityQueue(final PublicKey account, final AccountConsumer callback) {
     priorityQueue(List.of(account), callback);
   }
+
+  CompletableFuture<AccountResult> priorityQueue(final Collection<PublicKey> accounts);
 
   void queue(final Collection<PublicKey> accounts, final AccountConsumer callback);
 

@@ -16,10 +16,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.WARNING;
@@ -142,7 +139,7 @@ public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
       mappingToFeedMap.put(scopeConfiguration.oracleMappings(), scopeConfiguration.oraclePrices());
     }
     final var mappingsPath = serviceConfig.mappingsPath();
-    final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed;
+    final ConcurrentMap<PublicKey, MappingsContext> mappingsContextByPriceFeed;
     try {
       mappingsContextByPriceFeed = loadMappings(mappingsPath, mappingToFeedMap);
     } catch (final IOException e) {
@@ -180,6 +177,7 @@ public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
     final var monitorService = ScopeMonitorService.createService(
         serviceConfig.notifyClient(),
         rpcCaller,
+        null, // TODO
         kaminoAccounts,
         serviceConfig.pollingDelay(),
         configurationsPath,
@@ -242,8 +240,8 @@ public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
     return configurations;
   }
 
-  private static Map<PublicKey, MappingsContext> loadMappings(final Path mappingsPath,
-                                                              final Map<PublicKey, PublicKey> mappingToFeedMap) throws IOException {
+  private static ConcurrentMap<PublicKey, MappingsContext> loadMappings(final Path mappingsPath,
+                                                                        final Map<PublicKey, PublicKey> mappingToFeedMap) throws IOException {
     final var mappingsContextByPriceFeed = new ConcurrentHashMap<PublicKey, MappingsContext>();
     try (final var paths = Files.list(mappingsPath)) {
       paths.forEach(path -> {

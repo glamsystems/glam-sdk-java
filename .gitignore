@@ -48,3 +48,4 @@ Integ.*
 /idl-clients
 /services/.**
 /.config
+/symlinks/
