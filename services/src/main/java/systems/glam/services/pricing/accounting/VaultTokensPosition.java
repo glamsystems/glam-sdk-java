@@ -126,11 +126,13 @@ public final class VaultTokensPosition implements Position {
         case PythPull, Pyth1KPull, Pyth1MPull, PythStableCoinPull, SwitchboardOnDemand, PythLazer, PythLazer1K,
              PythLazer1M, PythLazerStableCoin, LstPoolState, MarinadeState -> extraAccounts.add(assetMeta.readOracle());
         case ChainlinkRWA -> {
-          final short[] indexes = serviceContext.scopeAggregateIndexes(vaultAsset, OracleType.ChainlinkRWA);
-          if (indexes == null || indexes.length == 0) {
+          final var feedIndexes = serviceContext.scopeAggregateIndexes(vaultAsset, assetMeta.oracle(), OracleType.ChainlinkRWA);
+          if (feedIndexes == null) {
             return null;
+          } else {
+            extraAccounts.add(feedIndexes.readPriceFeed());
+            aggIndexes[i] = feedIndexes.indexes();
           }
-          aggIndexes[i] = indexes;
         }
       }
     }

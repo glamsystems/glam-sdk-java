@@ -5,7 +5,7 @@ import software.sava.idl.clients.kamino.scope.entries.ScopeEntry;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import systems.comodal.jsoniter.JsonIterator;
 
-final class CappedFlooredParser extends ScopeEntryParser {
+final class CappedFlooredParser extends BaseScopeEntryParser {
 
   private ScopeEntry source;
   private ScopeEntry cap;
@@ -19,8 +19,8 @@ final class CappedFlooredParser extends ScopeEntryParser {
   }
 
   @Override
-  ScopeEntry createEntry() {
-    return new CappedFloored(source, cap, floor);
+  public ScopeEntry createEntry() {
+    return new CappedFloored(index, source, cap, floor);
   }
 
   @Override

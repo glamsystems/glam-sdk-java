@@ -11,7 +11,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.EnumSet;
 import java.util.Set;
 
-class OracleEntryParser extends ScopeEntryParser {
+class OracleEntryParser extends BaseScopeEntryParser {
 
   protected PublicKey oracle;
   private Set<EmaType> emaTypes;
@@ -25,7 +25,7 @@ class OracleEntryParser extends ScopeEntryParser {
   }
 
   @Override
-  ScopeEntry createEntry() {
+  public ScopeEntry createEntry() {
     try {
       return switch (oracleType) {
         case AdrenaLp,
@@ -47,8 +47,8 @@ class OracleEntryParser extends ScopeEntryParser {
              SplStake,
              SwitchboardOnDemand -> {
           final var clas = Class.forName("software.sava.idl.clients.kamino.scope.entries." + oracleType);
-          final var constructor = clas.getConstructor(PublicKey.class, Set.class);
-          yield (ScopeEntry) constructor.newInstance(oracle, emaTypes());
+          final var constructor = clas.getConstructor(int.class, PublicKey.class, Set.class);
+          yield (ScopeEntry) constructor.newInstance(index, oracle, emaTypes());
         }
         default -> throw new IllegalStateException("Unexpected oracle type: " + oracleType);
       };

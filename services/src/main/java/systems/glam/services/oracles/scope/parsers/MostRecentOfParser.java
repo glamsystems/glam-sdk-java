@@ -10,7 +10,7 @@ import java.util.ArrayList;
 
 import static systems.comodal.jsoniter.JsonIterator.fieldEquals;
 
-final class MostRecentOfParser extends ScopeEntryParser {
+final class MostRecentOfParser extends BaseScopeEntryParser {
 
   private ScopeEntry[] sources;
   private int maxDivergenceBps;
@@ -22,11 +22,11 @@ final class MostRecentOfParser extends ScopeEntryParser {
   }
 
   @Override
-  ScopeEntry createEntry() {
+  public ScopeEntry createEntry() {
     if (oracleType == OracleType.CappedMostRecentOf) {
-      return new CappedMostRecentOf(sources, maxDivergenceBps, sourcesMaxAgeS, refPrice);
+      return new CappedMostRecentOf(index, sources, maxDivergenceBps, sourcesMaxAgeS, refPrice);
     } else if (oracleType == OracleType.MostRecentOf) {
-      return new MostRecentOfEntry(sources, maxDivergenceBps, sourcesMaxAgeS, refPrice);
+      return new MostRecentOfEntry(index, sources, maxDivergenceBps, sourcesMaxAgeS, refPrice);
     } else {
       throw new IllegalStateException("Unexpected oracle type: " + oracleType);
     }

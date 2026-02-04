@@ -10,6 +10,7 @@ import systems.glam.services.ServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoVaultCache;
 import systems.glam.services.mints.*;
+import systems.glam.services.oracles.scope.FeedIndexes;
 import systems.glam.services.pricing.ScopeAggregateIndexes;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
@@ -76,7 +77,7 @@ public interface IntegrationServiceContext {
 
   AssetMetaContext globalConfigAssetMeta(final PublicKey mint);
 
-  short[] scopeAggregateIndexes(final PublicKey mint, final OracleType oracleType);
+  FeedIndexes scopeAggregateIndexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType);
 
   IntegLookupTableCache integTableCache();
 

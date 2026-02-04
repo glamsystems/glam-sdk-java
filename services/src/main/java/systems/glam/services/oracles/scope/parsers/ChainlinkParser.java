@@ -17,8 +17,8 @@ class ChainlinkParser extends ReferencesEntryParser {
   }
 
   @Override
-  ScopeEntry createEntry() {
-    return new Chainlink(oracle, confidenceFactor, emaTypes(), refPrice);
+  public ScopeEntry createEntry() {
+    return new Chainlink(index, oracle, confidenceFactor, emaTypes(), refPrice);
   }
 
   @Override

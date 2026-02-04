@@ -5,7 +5,7 @@ import software.sava.idl.clients.kamino.scope.entries.ScopeTwap;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import systems.comodal.jsoniter.JsonIterator;
 
-final class ScopeTwapParser extends ScopeEntryParser {
+final class ScopeTwapParser extends BaseScopeEntryParser {
 
   private ScopeEntry source;
 
@@ -19,8 +19,8 @@ final class ScopeTwapParser extends ScopeEntryParser {
   }
 
   @Override
-  ScopeEntry createEntry() {
-    return new ScopeTwap(oracleType, source);
+  public ScopeEntry createEntry() {
+    return new ScopeTwap(index, oracleType, source);
   }
 
   @Override

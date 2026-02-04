@@ -5,7 +5,7 @@ import software.sava.idl.clients.kamino.scope.entries.ScopeEntry;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import systems.comodal.jsoniter.JsonIterator;
 
-final class FixedPriceParser extends ScopeEntryParser {
+final class FixedPriceParser extends BaseScopeEntryParser {
 
   private long value;
   private int exp;
@@ -18,8 +18,8 @@ final class FixedPriceParser extends ScopeEntryParser {
   }
 
   @Override
-  ScopeEntry createEntry() {
-    return FixedPrice.createEntry(value, exp);
+  public ScopeEntry createEntry() {
+    return FixedPrice.createEntry(index, value, exp);
   }
 
   @Override

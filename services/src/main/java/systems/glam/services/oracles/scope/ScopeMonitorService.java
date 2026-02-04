@@ -26,7 +26,7 @@ public interface ScopeMonitorService extends ScopeAggregateIndexes, Runnable, Co
                                            final Path configurationsPath,
                                            final Path mappingsPath,
                                            final Path reserveContextsFilePath,
-                                           final Map<PublicKey, Configuration> scopeConfigurations,
+                                           final Map<PublicKey, FeedContext> feedContextMap,
                                            final ConcurrentMap<PublicKey, MappingsContext> mappingsContextByPriceFeed,
                                            final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap) {
     return new ScopeMonitorServiceImpl(
@@ -39,7 +39,7 @@ public interface ScopeMonitorService extends ScopeAggregateIndexes, Runnable, Co
         configurationsPath,
         mappingsPath,
         reserveContextsFilePath,
-        scopeConfigurations,
+        feedContextMap,
         mappingsContextByPriceFeed,
         reserveContextMap
     );

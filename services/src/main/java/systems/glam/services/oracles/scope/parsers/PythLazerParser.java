@@ -19,8 +19,8 @@ final class PythLazerParser extends ReferencesEntryParser {
   }
 
   @Override
-  ScopeEntry createEntry() {
-    return new PythLazer(oracle, feedId, exponent, confidenceFactor, emaTypes(), refPrice);
+  public ScopeEntry createEntry() {
+    return new PythLazer(index, oracle, feedId, exponent, confidenceFactor, emaTypes(), refPrice);
   }
 
   @Override

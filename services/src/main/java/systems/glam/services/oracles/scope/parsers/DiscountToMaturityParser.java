@@ -5,7 +5,7 @@ import software.sava.idl.clients.kamino.scope.entries.ScopeEntry;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import systems.comodal.jsoniter.JsonIterator;
 
-final class DiscountToMaturityParser extends ScopeEntryParser {
+final class DiscountToMaturityParser extends BaseScopeEntryParser {
 
   private int discountPerYearBps;
   private long maturityTimestamp;
@@ -18,8 +18,8 @@ final class DiscountToMaturityParser extends ScopeEntryParser {
   }
 
   @Override
-  ScopeEntry createEntry() {
-    return new DiscountToMaturity(discountPerYearBps, maturityTimestamp);
+  public ScopeEntry createEntry() {
+    return new DiscountToMaturity(index, discountPerYearBps, maturityTimestamp);
   }
 
   @Override

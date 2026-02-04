@@ -15,10 +15,10 @@ class ReferencesEntryParser extends OracleEntryParser {
   }
 
   @Override
-  ScopeEntry createEntry() {
+  public ScopeEntry createEntry() {
     return switch (oracleType) {
-      case PythPull -> new PythPull(oracle, emaTypes(), refPrice);
-      case Securitize -> new Securitize(oracle, emaTypes(), refPrice);
+      case PythPull -> new PythPull(index, oracle, emaTypes(), refPrice);
+      case Securitize -> new Securitize(index, oracle, emaTypes(), refPrice);
       default -> throw new IllegalStateException("Unexpected references oracle type: " + oracleType);
     };
   }

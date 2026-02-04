@@ -10,6 +10,7 @@ import systems.glam.services.execution.BaseServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoVaultCache;
 import systems.glam.services.mints.*;
+import systems.glam.services.oracles.scope.FeedIndexes;
 import systems.glam.services.pricing.ScopeAggregateIndexes;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
@@ -90,8 +91,8 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   }
 
   @Override
-  public short[] scopeAggregateIndexes(final PublicKey mint, final OracleType oracleType) {
-    return scopeAggregateIndexes.indexes(mint, oracleType);
+  public FeedIndexes scopeAggregateIndexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType) {
+    return scopeAggregateIndexes.indexes(mint, oracle, oracleType);
   }
 
   @Override

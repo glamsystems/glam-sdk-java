@@ -2,6 +2,7 @@ package systems.glam.services.oracles.scope;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.encoding.ByteUtil;
+import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.lend.gen.types.*;
 import software.sava.idl.clients.kamino.scope.entries.PriceChains;
 import software.sava.idl.clients.kamino.scope.entries.PriceChainsRecord;
@@ -21,8 +22,6 @@ public record ReserveContext(long slot,
                              long availableLiquidity, long totalCollateral,
                              PriceChains priceChains,
                              TokenInfo tokenInfo) {
-
-  public static final PublicKey NULL_KEY = PublicKey.fromBase58Encoded("nu11111111111111111111111111111111111111111");
 
   public static ReserveContext parse(final JsonIterator ji, final PublicKey market) {
     final var parser = new Parser(market);
@@ -68,14 +67,14 @@ public record ReserveContext(long slot,
     final var scopeConfiguration = tokenInfo.scopeConfiguration();
     final var priceFeed = scopeConfiguration.priceFeed();
     final PriceChains priceChains;
-    if (priceFeed.equals(PublicKey.NONE) || priceFeed.equals(NULL_KEY)) {
+    if (priceFeed.equals(PublicKey.NONE) || priceFeed.equals(KaminoAccounts.NULL_KEY)) {
       priceChains = null;
     } else {
       final var scopeEntries = mappingsContextByPriceFeed.get(priceFeed);
       if (scopeEntries == null) {
         priceChains = null;
       } else {
-        priceChains = scopeEntries.scopeEntries().readPriceChains(null);
+        priceChains = scopeEntries.readPriceChains(mintKey, scopeConfiguration);
       }
     }
     long availableLiquidity = ByteUtil.getInt64LE(data, Reserve.LIQUIDITY_OFFSET + ReserveLiquidity.AVAILABLE_AMOUNT_OFFSET);
