@@ -107,38 +107,12 @@ public record FeedContext(long slot, byte[] configurationData,
     );
   }
 
-  private static Map<PublicKey, ReserveContext> reservesUsingIndex(final AtomicReferenceArray<Map<PublicKey, ReserveContext>> allReserves,
-                                                                   final short index) {
-    final var reserves = allReserves.get(index);
-    if (reserves == null) {
-      final var newMap = new HashMap<PublicKey, ReserveContext>();
-      allReserves.set(index, newMap);
-      return newMap;
-    } else {
-      return reserves;
-    }
-  }
-
   Map<PublicKey, ReserveContext> reservesForIndex(final int index) {
     return reservesByIndex.get(index);
   }
 
-  void indexReserveContext(final ReserveContext reserveContext) {
+  void resortReserves(final ReserveContext reserveContext) {
     final var key = reserveContext.pubKey();
-    final var scopeConfiguration = reserveContext.tokenInfo().scopeConfiguration();
-    for (final short index : scopeConfiguration.priceChain()) {
-      if (index < 0) {
-        break;
-      }
-      reservesUsingIndex(reservesByIndex, index).put(key, reserveContext);
-    }
-    for (final short index : scopeConfiguration.twapChain()) {
-      if (index < 0) {
-        break;
-      }
-      reservesUsingIndex(reservesByIndex, index).put(key, reserveContext);
-    }
-
     final var mint = reserveContext.mint();
     final var reservesForMint = reservesByMint.get(mint);
     if (reservesForMint == null) {
@@ -160,18 +134,56 @@ public record FeedContext(long slot, byte[] configurationData,
       Arrays.sort(newArray, RESERVE_CONTEXT_BY_LIQUIDITY);
       reservesByMint.put(mint, newArray);
     }
+
+    // Maintain consistent reference to latest ReserveContext
+    indexReserveByIndex(reserveContext);
+  }
+
+  private void indexReserveByIndex(final ReserveContext reserveContext) {
+    final var key = reserveContext.pubKey();
+    for (final short index : reserveContext.priceChainIndexes()) {
+      if (index < 0) {
+        break;
+      }
+      var reservesForIndex = reservesByIndex.get(index);
+      if (reservesForIndex == null) {
+        reservesByIndex.set(index, Map.of(key, reserveContext));
+        return;
+      } else if (reservesForIndex.containsKey(key)) {
+        if (reservesForIndex.size() == 1) {
+          reservesByIndex.set(index, Map.of(key, reserveContext));
+          return;
+        }
+      }
+
+      final var newMap = new HashMap<>(reservesForIndex);
+      newMap.put(key, reserveContext);
+      reservesByIndex.set(index, newMap);
+    }
+  }
+
+  void indexReserveContext(final ReserveContext reserveContext) {
+    indexReserveByIndex(reserveContext);
+    resortReserves(reserveContext);
+  }
+
+  void reIndexReserves(final Map<PublicKey, ReserveContext> reserveContexts, final MappingsContext mappingsContext) {
+    for (final var reserveContext : reserveContexts.values()) {
+      if (reserveContext.priceFeed().equals(priceFeed)) {
+        final var priceChains = mappingsContext.readPriceChains(reserveContext.mint(), reserveContext.scopeConfiguration());
+        if (!reserveContext.priceChains().equals(priceChains)) {
+          final var changed = reserveContext.withPriceChains(priceChains);
+          removePreviousEntry(reserveContext);
+          reserveContexts.put(reserveContext.pubKey(), changed);
+          indexReserveContext(changed);
+        }
+      }
+    }
   }
 
   void removePreviousEntry(final ReserveContext previousContext) {
     final var reservePubKey = previousContext.pubKey();
-    final var scopeConfiguration = previousContext.tokenInfo().scopeConfiguration();
-    for (final short index : scopeConfiguration.priceChain()) {
-      if (index < 0) {
-        break;
-      }
-      reservesForIndex(index).remove(reservePubKey);
-    }
-    for (final short index : scopeConfiguration.twapChain()) {
+    for (final short index : previousContext.priceChainIndexes()) {
       if (index < 0) {
         break;
       }

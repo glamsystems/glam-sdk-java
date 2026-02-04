@@ -106,7 +106,7 @@ public class BaseScopeEntryParser implements ScopeEntryParser {
       }
     } else if (fieldEquals("Unused", buf, offset, len)) {
       return OracleType.Unused;
-    } else if (fieldStartsWith("DeprecatedPlaceholder", buf, offset, len)) {
+    } else if (fieldStartsWith("Deprecated", buf, offset, len)) {
       if (fieldEndsWith("1", buf, offset, len)) {
         return OracleType.DeprecatedPlaceholder1;
       } else if (fieldEndsWith("2", buf, offset, len)) {

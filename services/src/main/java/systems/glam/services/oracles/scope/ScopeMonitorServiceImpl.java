@@ -26,7 +26,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -54,7 +54,8 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
   private final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap;
   private final ConcurrentMap<PublicKey, MappingsContext> mappingsContextMap;
   private final ConcurrentMap<PublicKey, FeedContext> priceFeedContextMap;
-  private final ReentrantLock lock;
+  private final ReentrantReadWriteLock.WriteLock writeLock;
+  private final ReentrantReadWriteLock.ReadLock readLock;
 
   ScopeMonitorServiceImpl(final NotifyClient notifyClient,
                           final RpcCaller rpcCaller,
@@ -92,61 +93,37 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
       accountsNeededSet.add(feedContext.configurationKey());
     }
     for (final var reserveContext : reserveContextMap.values()) {
-      indexReserveContext(reserveContext);
+      final var feedContext = priceFeedContextMap.get(reserveContext.priceFeed());
+      if (feedContext != null) {
+        feedContext.indexReserveContext(reserveContext);
+      }
     }
-    this.lock = new ReentrantLock();
-  }
-
-  private void indexReserveContext(final ReserveContext reserveContext) {
-    final var scopeConfiguration = reserveContext.tokenInfo().scopeConfiguration();
-    final var feedContext = priceFeedContextMap.get(scopeConfiguration.priceFeed());
-    feedContext.indexReserveContext(reserveContext);
+    final var lock = new ReentrantReadWriteLock();
+    this.writeLock = lock.writeLock();
+    this.readLock = lock.readLock();
   }
 
   @Override
   public FeedIndexes indexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType) {
-    return priceFeedContextMap.values().stream().<FeedIndexes>mapMulti((feedContext, downstream) -> {
-      final var feedIndexes = feedContext.indexes(mint, oracle, oracleType);
-      if (feedIndexes != null) {
-        downstream.accept(feedIndexes);
-      }
-    }).sorted().findFirst().orElse(null);
-  }
-
-  private void handleReserveChange(final ReserveContext previous, final ReserveContext reserveContext) {
-    final var changes = previous.changed(reserveContext);
-    final var changesString = changes.stream().map(Enum::name).collect(Collectors.joining("\",\""));
-    var msg = String.format("""
-            {
-              "event": "Kamino Reserve Change",
-              "changes": ["%s"]
-              "previous": %s,
-              "latest": %s,
-            }""",
-        changesString,
-        previous.priceChainsToJson(), reserveContext.priceChainsToJson()
-    );
-    logger.log(INFO, msg);
-    // TODO retry handling.
-    msg = String.format("""
-            {
-              "event": "Kamino Reserve Change",
-              "changes": ["%s"]
-              "previous": %s,
-              "latest": %s,
-            }""",
-        changesString,
-        previous.priceChainsToJsonNoTokenInfo(), reserveContext.priceChainsToJsonNoTokenInfo()
-    );
-    notifyClient.postMsg(msg);
+    readLock.lock();
+    try {
+      return priceFeedContextMap.values().stream().<FeedIndexes>mapMulti((feedContext, downstream) -> {
+        final var feedIndexes = feedContext.indexes(mint, oracle, oracleType);
+        if (feedIndexes != null) {
+          downstream.accept(feedIndexes);
+        }
+      }).sorted().findFirst().orElse(null);
+    } finally {
+      readLock.unlock();
+    }
   }
 
   private void deleteScopeConfiguration(final FeedContext feedContext) {
-    lock.lock();
+    writeLock.lock();
     try {
       removeConfig(feedContext);
     } finally {
-      lock.unlock();
+      writeLock.unlock();
     }
     final var configJson = feedContext.toJson();
     final var msg = String.format("""
@@ -191,7 +168,7 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
           slot, data,
           configurationKey
       );
-      lock.lock();
+      writeLock.lock();
       try {
         witness = priceFeedContextMap.putIfAbsent(feedContext.priceFeed(), feedContext);
         if (witness == null) {
@@ -204,7 +181,7 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
           removeConfig(witness);
         }
       } finally {
-        lock.unlock();
+        writeLock.unlock();
       }
     } else if (witness.isStaleOrUnchanged(slot, data)) {
       return witness;
@@ -213,35 +190,7 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
       feedContext = null;
     }
 
-    final var configJson = FeedContext.configurationToJson(slot, configurationKey, data);
-    final String msg;
-    if (witness == null) {
-      msg = String.format("""
-          {
-            "event": "New Scope Configuration",
-            "config": %s
-          }""", configJson
-      );
-      logger.log(INFO, msg);
-      try {
-        writeConfigurations(configurationsPath, configurationKey, data);
-      } catch (final IOException e) {
-        logger.log(WARNING, "Failed to persist Scope configuration.", e);
-      }
-    } else {
-      msg = String.format("""
-              {
-                "event": "Scope Configuration Change",
-                "previous": %s,
-                "latest": %s
-              }""",
-          witness.toJson(),
-          configJson
-      );
-      logger.log(ERROR, msg);
-      // TODO: Trigger Alert
-    }
-    notifyClient.postMsg(msg);
+    notifyConfigurationChange(slot, configurationKey, data, witness);
 
     return feedContext;
   }
@@ -266,7 +215,7 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
     }
     final MappingsContext mappingContext;
     final FeedContext priceFeedContext;
-    lock.lock();
+    writeLock.lock();
     try {
       priceFeedContext = priceFeedContextMap.get(mappingsKey);
       if (priceFeedContext == null) {
@@ -277,94 +226,44 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
         mappingContext = MappingsContext.createContext(accountInfo);
         mappingsContextMap.put(priceFeedContext.priceFeed(), mappingContext);
         mappingsContextMap.put(mappingsKey, mappingContext);
+        priceFeedContext.reIndexReserves(reserveContextMap, mappingContext);
       } else {
         return;
       }
     } finally {
-      lock.unlock();
+      writeLock.unlock();
     }
 
-    if (witness == null) {
-      persistMappings(mappingContext);
-    } else {
-      final var previousEntries = witness.scopeEntries();
-      final var newEntries = mappingContext.scopeEntries();
-      final int numEntries = newEntries.numEntries();
-      if (previousEntries.numEntries() != numEntries) {
-        throw new IllegalStateException(String.format(
-            "Scope Mappings %s changed in length from %d to %d.",
-            mappingsKey, previousEntries.numEntries(), numEntries
-        ));
-      }
-
-      final var changes = IntStream.range(0, numEntries).mapToObj(i -> {
-        final var prevEntry = previousEntries.scopeEntry(i);
-        final var newEntry = newEntries.scopeEntry(i);
-        if (prevEntry.equals(newEntry)) {
-          return null;
-        } else {
-          final var feedContext = priceFeedContextMap.get(priceFeedContext.priceFeed());
-          final var affectedReserves = feedContext.reservesForIndex(i);
-          if (affectedReserves == null || affectedReserves.isEmpty()) {
-            return null;
-          }
-          return String.format("""
-                  {
-                    "previous": %s,
-                    "latest": %s,
-                    "reserves": [%s]
-                  }""",
-              prevEntry, newEntry,
-              affectedReserves.values().stream()
-                  .map(ReserveContext::keysToJson)
-                  .collect(Collectors.joining(",\n"))
-          );
-        }
-      }).filter(Objects::nonNull).toList();
-
-      final int numChanges = changes.size();
-      if (numChanges > 0) {
-        final var msg = String.format("""
-                {
-                  "event": "Scope Mappings Change",
-                  "priceFeed": "%s",
-                  "numChanges": %d,
-                  "slot": %s,
-                  "changes": [%s]
-                }""",
-            mappingsKey.toBase58(),
-            numChanges,
-            Long.toUnsignedString(mappingContext.slot()),
-            String.join(",\n", changes)
-        );
-        logger.log(INFO, msg);
-        // TODO retry handling.
-        notifyClient.postMsg(msg);
-        persistMappings(mappingContext);
-      }
+    if (witness != null) {
+      notifyMappingsChange(priceFeedContext, witness, mappingContext);
     }
-  }
 
-  private void removePreviousEntry(final ReserveContext previousContext) {
-    final var feedContext = priceFeedContextMap.get(previousContext.priceFeed());
-    feedContext.removePreviousEntry(previousContext);
+    persistMappings(mappingContext);
   }
 
   private boolean updateIfChanged(final ReserveContext reserveContext) {
+    final var priceFeed = reserveContext.priceFeed();
+    if (!priceFeedContextMap.containsKey(priceFeed)) {
+      return false;
+    }
     final var key = reserveContext.pubKey();
 
     var witness = reserveContextMap.putIfAbsent(key, reserveContext);
     if (witness == null) {
-      lock.lock();
+      writeLock.lock();
       try {
-        if (reserveContextMap.get(key) != reserveContext) {
-          indexReserveContext(reserveContext);
-          return true;
-        } else {
-          return false;
+        witness = reserveContextMap.get(key);
+        if (witness == reserveContext) {
+          final var feedContext = priceFeedContextMap.get(priceFeed);
+          if (feedContext == null) {
+            return false;
+          } else {
+            feedContext.indexReserveContext(reserveContext);
+            return true;
+          }
         }
       } finally {
-        lock.unlock();
+        writeLock.unlock();
       }
     }
     for (; ; ) {
@@ -373,7 +272,7 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
         if (changes.isEmpty()) {
           return false;
         } else {
-          lock.lock();
+          writeLock.lock();
           try {
             final var previous = reserveContextMap.get(key);
             if (previous != witness) {
@@ -381,12 +280,19 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
               continue;
             }
             reserveContextMap.put(key, reserveContext);
-            removePreviousEntry(witness);
-            indexReserveContext(reserveContext);
-            handleReserveChange(witness, reserveContext);
+            final var feedContext = priceFeedContextMap.get(priceFeed);
+            if (feedContext == null) {
+              return false;
+            } else if (ReserveContext.onlyLiquidityChanged(changes)) {
+              feedContext.resortReserves(reserveContext);
+            } else {
+              feedContext.removePreviousEntry(witness);
+              feedContext.indexReserveContext(reserveContext);
+              notifyReserveChange(witness, reserveContext);
+            }
             return true;
           } finally {
-            lock.unlock();
+            writeLock.unlock();
           }
         }
       } else {
@@ -419,6 +325,8 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
         handleMappingChange(accountInfo);
       } else if (data.length == Configuration.BYTES && Configuration.DISCRIMINATOR.equals(data, 0)) {
         handleConfigurationChange(accountInfo.context().slot(), accountInfo.pubKey(), data);
+      } else {
+        logger.log(WARNING, "Unhandled Scope account " + accountInfo.pubKey());
       }
     } catch (final RuntimeException ex) {
       logger.log(ERROR, "Failed to handle Scope account " + accountInfo.pubKey(), ex);
@@ -442,6 +350,7 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
     var accountsNeededList = new ArrayList<>(this.accountsNeededSet);
 
     for (; ; ) {
+      // TODO: Only fetch missing reserves needed for pricing.
       final var reserveAccountsFuture = rpcCaller.courteousCall(
           rpcClient -> rpcClient.getProgramAccounts(reserveAccountsRequest),
           "Kamino Reserve's"
@@ -568,7 +477,10 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
         final var reserveContext = entry.getValue();
         if (Long.compareUnsigned(reserveContext.slot(), fetchReservesSlot) < 0 && !presentReserves.contains(entry.getKey())) {
           iterator.remove();
-          removePreviousEntry(reserveContext);
+          final var feedContext = priceFeedContextMap.get(reserveContext.priceFeed());
+          if (feedContext != null) {
+            feedContext.removePreviousEntry(reserveContext);
+          }
           ++numReserveEdits;
         }
       }
@@ -728,7 +640,8 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
           {
             "type": "Deprecated",
             "index": %d
-          }""", e.index());
+          }""", e.index()
+      );
       case DiscountToMaturity discountToMaturity -> String.format("""
               {
                 "type": "%s",
@@ -785,7 +698,8 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
           {
             "type": "Unused",
             "index": %d
-          }""", e.index());
+          }""", e.index()
+      );
     };
   }
 
@@ -798,5 +712,127 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
         }
       }
     }).collect(Collectors.joining(",\n", "[\n", "\n  ]"));
+  }
+
+  private void notifyReserveChange(final ReserveContext previous, final ReserveContext reserveContext) {
+    final var changes = previous.changed(reserveContext);
+    final var changesString = changes.stream().map(Enum::name).collect(Collectors.joining("\",\""));
+    var msg = String.format("""
+            {
+              "event": "Kamino Reserve Change",
+              "changes": ["%s"]
+              "previous": %s,
+              "latest": %s,
+            }""",
+        changesString,
+        previous.priceChainsToJson(), reserveContext.priceChainsToJson()
+    );
+    logger.log(INFO, msg);
+    // TODO retry handling.
+    msg = String.format("""
+            {
+              "event": "Kamino Reserve Change",
+              "changes": ["%s"]
+              "previous": %s,
+              "latest": %s,
+            }""",
+        changesString,
+        previous.priceChainsToJsonNoTokenInfo(), reserveContext.priceChainsToJsonNoTokenInfo()
+    );
+    notifyClient.postMsg(msg);
+  }
+
+  private void notifyConfigurationChange(final long slot,
+                                         final PublicKey configurationKey,
+                                         final byte[] data,
+                                         final FeedContext witness) {
+    final var configJson = FeedContext.configurationToJson(slot, configurationKey, data);
+    final String msg;
+    if (witness == null) {
+      msg = String.format("""
+          {
+            "event": "New Scope Configuration",
+            "config": %s
+          }""", configJson
+      );
+      logger.log(INFO, msg);
+      try {
+        writeConfigurations(configurationsPath, configurationKey, data);
+      } catch (final IOException e) {
+        logger.log(WARNING, "Failed to persist Scope configuration.", e);
+      }
+    } else {
+      msg = String.format("""
+              {
+                "event": "Scope Configuration Change",
+                "previous": %s,
+                "latest": %s
+              }""",
+          witness.toJson(),
+          configJson
+      );
+      logger.log(ERROR, msg);
+      // TODO: Trigger Alert
+    }
+    notifyClient.postMsg(msg);
+  }
+
+  private void notifyMappingsChange(final FeedContext priceFeedContext,
+                                    final MappingsContext witness,
+                                    final MappingsContext mappingContext) {
+    final var mappingsKey = mappingContext.publicKey();
+    final var previousEntries = witness.scopeEntries();
+    final var newEntries = mappingContext.scopeEntries();
+    final int numEntries = newEntries.numEntries();
+    if (previousEntries.numEntries() != numEntries) {
+      throw new IllegalStateException(String.format(
+          "Scope Mappings %s changed in length from %d to %d.",
+          mappingsKey, previousEntries.numEntries(), numEntries
+      ));
+    }
+
+    final var changes = IntStream.range(0, numEntries).mapToObj(i -> {
+      final var prevEntry = previousEntries.scopeEntry(i);
+      final var newEntry = newEntries.scopeEntry(i);
+      if (prevEntry.equals(newEntry)) {
+        return null;
+      } else {
+        final var affectedReserves = priceFeedContext.reservesForIndex(i);
+        if (affectedReserves == null || affectedReserves.isEmpty()) {
+          return null;
+        }
+        return String.format("""
+                {
+                  "previous": %s,
+                  "latest": %s,
+                  "reserves": [%s]
+                }""",
+            prevEntry, newEntry,
+            affectedReserves.values().stream()
+                .map(ReserveContext::keysToJson)
+                .collect(Collectors.joining(",\n"))
+        );
+      }
+    }).filter(Objects::nonNull).toList();
+
+    final int numChanges = changes.size();
+    if (numChanges > 0) {
+      final var msg = String.format("""
+              {
+                "event": "Scope Mappings Change",
+                "priceFeed": "%s",
+                "numChanges": %d,
+                "slot": %s,
+                "changes": [%s]
+              }""",
+          mappingsKey.toBase58(),
+          numChanges,
+          Long.toUnsignedString(mappingContext.slot()),
+          String.join(",\n", changes)
+      );
+      logger.log(INFO, msg);
+      // TODO retry handling.
+      notifyClient.postMsg(msg);
+    }
   }
 }

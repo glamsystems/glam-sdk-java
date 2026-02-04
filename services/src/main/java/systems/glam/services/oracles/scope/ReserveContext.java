@@ -90,8 +90,20 @@ public record ReserveContext(long slot,
     );
   }
 
+  public ReserveContext withPriceChains(final PriceChains priceChains) {
+    return new ReserveContext(slot, pubKey, market, tokenName, mint, availableLiquidity, totalCollateral, priceChains, tokenInfo);
+  }
+
+  public ScopeConfiguration scopeConfiguration() {
+    return tokenInfo.scopeConfiguration();
+  }
+
+  public short[] priceChainIndexes() {
+    return scopeConfiguration().priceChain();
+  }
+
   public PublicKey priceFeed() {
-    return this.tokenInfo.scopeConfiguration().priceFeed();
+    return scopeConfiguration().priceFeed();
   }
 
   public long maxAgePriceSeconds() {
@@ -258,10 +270,12 @@ public record ReserveContext(long slot,
     }
   }
 
-  enum ConfigChange {
+  enum ReserveChange {
     MARKET,
     MINT,
     TOKEN_NAME,
+    AVAILABLE_LIQUIDITY,
+    TOTAL_COLLATERAL,
     MAX_AGE_PRICE_SECONDS,
     MAX_AGE_TWAP_SECONDS,
     MAX_TWAP_DIVERGENCE_BPS,
@@ -270,9 +284,23 @@ public record ReserveContext(long slot,
     TWAP_CHAIN
   }
 
-  static final Set<ConfigChange> NO_CHANGES = Set.of();
+  static boolean onlyLiquidityChanged(final Set<ReserveChange> changes) {
+    final int numChanges = changes.size();
+    if (numChanges == 1
+        && (changes.contains(ReserveChange.AVAILABLE_LIQUIDITY) || changes.contains(ReserveChange.TOTAL_COLLATERAL))) {
+      return true;
+    } else if (numChanges == 2
+        && changes.contains(ReserveChange.AVAILABLE_LIQUIDITY)
+        && changes.contains(ReserveChange.TOTAL_COLLATERAL)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
 
-  private static Set<ConfigChange> addChange(final Set<ConfigChange> changes, final ConfigChange change) {
+  static final Set<ReserveChange> NO_CHANGES = Set.of();
+
+  private static Set<ReserveChange> addChange(final Set<ReserveChange> changes, final ReserveChange change) {
     if (changes.isEmpty()) {
       return EnumSet.of(change);
     } else {
@@ -285,41 +313,47 @@ public record ReserveContext(long slot,
     return Long.compareUnsigned(this.slot, o.slot) > 0;
   }
 
-  Set<ConfigChange> changed(final ReserveContext o) {
+  Set<ReserveChange> changed(final ReserveContext o) {
     if (!pubKey.equals(o.pubKey)) {
       throw new IllegalStateException("Cannot compare different reserves");
     } else {
       var changes = NO_CHANGES;
       if (!market.equals(o.market)) {
-        changes = EnumSet.of(ConfigChange.MARKET);
+        changes = EnumSet.of(ReserveChange.MARKET);
       }
       if (!mint.equals(o.mint)) {
-        changes = addChange(changes, ConfigChange.MINT);
+        changes = addChange(changes, ReserveChange.MINT);
       }
       if (!Objects.equals(tokenName, o.tokenName)) {
-        changes = addChange(changes, ConfigChange.TOKEN_NAME);
+        changes = addChange(changes, ReserveChange.TOKEN_NAME);
+      }
+      if (availableLiquidity != o.availableLiquidity()) {
+        changes = addChange(changes, ReserveChange.AVAILABLE_LIQUIDITY);
+      }
+      if (totalCollateral != o.totalCollateral()) {
+        changes = addChange(changes, ReserveChange.TOTAL_COLLATERAL);
       }
       if (!priceFeed().equals(o.priceFeed())) {
-        changes = addChange(changes, ConfigChange.PRICE_FEED);
+        changes = addChange(changes, ReserveChange.PRICE_FEED);
       }
       if (maxAgePriceSeconds() != o.maxAgePriceSeconds()) {
-        changes = addChange(changes, ConfigChange.MAX_AGE_PRICE_SECONDS);
+        changes = addChange(changes, ReserveChange.MAX_AGE_PRICE_SECONDS);
       }
       if (maxAgeTwapSeconds() != o.maxAgeTwapSeconds()) {
-        changes = addChange(changes, ConfigChange.MAX_AGE_TWAP_SECONDS);
+        changes = addChange(changes, ReserveChange.MAX_AGE_TWAP_SECONDS);
       }
       if (maxTwapDivergenceBps() != o.maxTwapDivergenceBps()) {
-        changes = addChange(changes, ConfigChange.MAX_TWAP_DIVERGENCE_BPS);
+        changes = addChange(changes, ReserveChange.MAX_TWAP_DIVERGENCE_BPS);
       }
       if (priceChains == null ^ o.priceChains == null) {
-        changes = addChange(changes, ConfigChange.PRICE_CHAIN);
-        changes.add(ConfigChange.TWAP_CHAIN);
+        changes = addChange(changes, ReserveChange.PRICE_CHAIN);
+        changes.add(ReserveChange.TWAP_CHAIN);
       } else if (priceChains != null) {
         if (!Arrays.equals(priceChains.priceChain(), o.priceChains.priceChain())) {
-          changes = addChange(changes, ConfigChange.PRICE_CHAIN);
+          changes = addChange(changes, ReserveChange.PRICE_CHAIN);
         }
         if (!Arrays.equals(priceChains.twapChain(), o.priceChains.twapChain())) {
-          changes = addChange(changes, ConfigChange.TWAP_CHAIN);
+          changes = addChange(changes, ReserveChange.TWAP_CHAIN);
         }
       }
       return changes;
