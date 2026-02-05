@@ -3,15 +3,12 @@ package systems.glam.services.oracles.scope;
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.lend.gen.types.Reserve;
-import software.sava.idl.clients.kamino.lend.gen.types.ReserveConfig;
-import software.sava.idl.clients.kamino.lend.gen.types.TokenInfo;
 import software.sava.idl.clients.kamino.scope.entries.*;
 import software.sava.idl.clients.kamino.scope.entries.Deprecated;
 import software.sava.idl.clients.kamino.scope.gen.types.Configuration;
 import software.sava.idl.clients.kamino.scope.gen.types.EmaType;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleMappings;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
-import software.sava.rpc.json.http.client.ProgramAccountsRequest;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.core.net.http.NotifyClient;
@@ -22,19 +19,19 @@ import systems.glam.services.rpc.AccountFetcher;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.lang.System.Logger.Level.*;
 import static java.nio.file.StandardOpenOption.*;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static software.sava.core.accounts.PublicKey.PUBLIC_KEY_LENGTH;
-import static systems.glam.services.oracles.scope.ScopeMonitorServiceEntrypoint.writeConfigurations;
 
 final class ScopeMonitorServiceImpl implements ScopeMonitorService {
 
@@ -53,20 +50,22 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
   private final ConcurrentSkipListSet<PublicKey> ignorePriceFeeds;
   private final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap;
   private final ConcurrentMap<PublicKey, MappingsContext> mappingsContextMap;
-  private final ConcurrentMap<PublicKey, FeedContext> priceFeedContextMap;
+  private final ConcurrentMap<PublicKey, ScopeFeedContext> priceFeedContextMap;
   private final ReentrantReadWriteLock.WriteLock writeLock;
+  private final Condition reserveScopeChangeCondition;
   private final ReentrantReadWriteLock.ReadLock readLock;
+  private final AtomicInteger asyncReserveUpdates;
 
   ScopeMonitorServiceImpl(final NotifyClient notifyClient,
                           final RpcCaller rpcCaller,
                           final AccountFetcher accountFetcher,
                           final PublicKey kLendProgram,
                           final PublicKey scopeProgram,
-                          final long pollingDelayNanos,
+                          final Duration pollingDelay,
                           final Path configurationsPath,
                           final Path mappingsPath,
                           final Path reserveContextsFilePath,
-                          final Map<PublicKey, FeedContext> feedContextMap,
+                          final Map<PublicKey, ScopeFeedContext> feedContextMap,
                           final ConcurrentMap<PublicKey, MappingsContext> mappingsContextMap,
                           final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap) {
     this.notifyClient = notifyClient;
@@ -74,7 +73,7 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
     this.accountFetcher = accountFetcher;
     this.kLendProgram = kLendProgram;
     this.scopeProgram = scopeProgram;
-    this.pollingDelayNanos = pollingDelayNanos;
+    this.pollingDelayNanos = pollingDelay.toNanos();
     this.configurationsPath = configurationsPath;
     this.mappingsPath = mappingsPath;
     this.reserveContextsFilePath = reserveContextsFilePath;
@@ -101,14 +100,31 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
     final var lock = new ReentrantReadWriteLock();
     this.writeLock = lock.writeLock();
     this.readLock = lock.readLock();
+    this.reserveScopeChangeCondition = writeLock.newCondition();
+    this.asyncReserveUpdates = new AtomicInteger();
+  }
+
+  static void writeScopeConfiguration(final Path configurationsPath,
+                                      final ScopeFeedContext scopeFeedContext) throws IOException {
+    final var filePath = FileUtils.resolveAccountPath(configurationsPath, scopeFeedContext.configurationKey());
+    Files.write(
+        filePath,
+        scopeFeedContext.configurationData(),
+        CREATE, TRUNCATE_EXISTING, WRITE
+    );
+  }
+
+  @Override
+  public ReserveContext reserveContext(final PublicKey pubKey) {
+    return reserveContextMap.get(pubKey);
   }
 
   @Override
   public FeedIndexes indexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType) {
     readLock.lock();
     try {
-      return priceFeedContextMap.values().stream().<FeedIndexes>mapMulti((feedContext, downstream) -> {
-        final var feedIndexes = feedContext.indexes(mint, oracle, oracleType);
+      return priceFeedContextMap.values().stream().<FeedIndexes>mapMulti((scopeFeedContext, downstream) -> {
+        final var feedIndexes = scopeFeedContext.indexes(mint, oracle, oracleType);
         if (feedIndexes != null) {
           downstream.accept(feedIndexes);
         }
@@ -118,14 +134,14 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
     }
   }
 
-  private void deleteScopeConfiguration(final FeedContext feedContext) {
+  private void deleteScopeConfiguration(final ScopeFeedContext scopeFeedContext) {
     writeLock.lock();
     try {
-      removeConfig(feedContext);
+      removeConfig(scopeFeedContext);
     } finally {
       writeLock.unlock();
     }
-    final var configJson = feedContext.toJson();
+    final var configJson = scopeFeedContext.toJson();
     final var msg = String.format("""
         {
           "event": "Scope Account Deleted",
@@ -134,23 +150,23 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
     );
     logger.log(INFO, msg);
     try {
-      Files.deleteIfExists(FileUtils.resolveAccountPath(configurationsPath, feedContext.configurationKey()));
+      Files.deleteIfExists(FileUtils.resolveAccountPath(configurationsPath, scopeFeedContext.configurationKey()));
     } catch (final IOException e) {
       logger.log(WARNING, "Failed to delete Scope Configuration.", e);
     }
     logger.log(INFO, msg);
     try {
-      Files.deleteIfExists(FileUtils.resolveAccountPath(mappingsPath, feedContext.oracleMappings()));
+      Files.deleteIfExists(FileUtils.resolveAccountPath(mappingsPath, scopeFeedContext.oracleMappings()));
     } catch (final IOException e) {
       logger.log(WARNING, "Failed to delete Scope Mappings.", e);
     }
   }
 
-  private void removeConfig(final FeedContext feedContext) {
-    final var priceFeed = feedContext.priceFeed();
+  private void removeConfig(final ScopeFeedContext scopeFeedContext) {
+    final var priceFeed = scopeFeedContext.priceFeed();
     this.ignorePriceFeeds.add(priceFeed);
-    final var configKey = feedContext.configurationKey();
-    final var mappingsKey = feedContext.oracleMappings();
+    final var configKey = scopeFeedContext.configurationKey();
+    final var mappingsKey = scopeFeedContext.oracleMappings();
     this.accountsNeededSet.remove(configKey);
     this.accountsNeededSet.remove(mappingsKey);
     this.priceFeedContextMap.remove(mappingsKey);
@@ -160,39 +176,35 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
     this.mappingsContextMap.remove(mappingsKey);
   }
 
-  private FeedContext handleConfigurationChange(final long slot, final PublicKey configurationKey, final byte[] data) {
+  private void handleConfigurationChange(final long slot,
+                                         final PublicKey configurationKey,
+                                         final byte[] data) {
     var witness = priceFeedContextMap.get(configurationKey);
-    final FeedContext feedContext;
     if (witness == null) {
-      feedContext = FeedContext.createContext(
+      final var scopeFeedContext = ScopeFeedContext.createContext(
           slot, data,
           configurationKey
       );
       writeLock.lock();
       try {
-        witness = priceFeedContextMap.putIfAbsent(feedContext.priceFeed(), feedContext);
+        witness = priceFeedContextMap.putIfAbsent(scopeFeedContext.priceFeed(), scopeFeedContext);
         if (witness == null) {
-          this.priceFeedContextMap.put(feedContext.oracleMappings(), feedContext);
-          this.priceFeedContextMap.put(configurationKey, feedContext);
+          this.priceFeedContextMap.put(scopeFeedContext.oracleMappings(), scopeFeedContext);
+          this.priceFeedContextMap.put(configurationKey, scopeFeedContext);
           this.accountsNeededSet.add(configurationKey);
         } else if (witness.isStaleOrUnchanged(slot, data)) {
-          return witness;
+          return;
         } else {
           removeConfig(witness);
         }
       } finally {
         writeLock.unlock();
       }
-    } else if (witness.isStaleOrUnchanged(slot, data)) {
-      return witness;
-    } else {
+      notifyNewConfiguration(scopeFeedContext);
+    } else if (!witness.isStaleOrUnchanged(slot, data)) {
       removeConfig(witness);
-      feedContext = null;
+      notifyConfigurationChange(witness, slot, data);
     }
-
-    notifyConfigurationChange(slot, configurationKey, data, witness);
-
-    return feedContext;
   }
 
   private void persistMappings(final MappingsContext mappingContext) {
@@ -214,19 +226,23 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
       return;
     }
     final MappingsContext mappingContext;
-    final FeedContext priceFeedContext;
+    final ScopeFeedContext scopeFeedContext;
     writeLock.lock();
     try {
-      priceFeedContext = priceFeedContextMap.get(mappingsKey);
-      if (priceFeedContext == null) {
+      scopeFeedContext = priceFeedContextMap.get(mappingsKey);
+      if (scopeFeedContext == null) {
         return;
       }
       witness = mappingsContextMap.get(mappingsKey);
       if (witness == null || witness.changed(accountInfo)) {
         mappingContext = MappingsContext.createContext(accountInfo);
-        mappingsContextMap.put(priceFeedContext.priceFeed(), mappingContext);
+        mappingsContextMap.put(scopeFeedContext.priceFeed(), mappingContext);
         mappingsContextMap.put(mappingsKey, mappingContext);
-        priceFeedContext.reIndexReserves(reserveContextMap, mappingContext);
+        final int numChanges = scopeFeedContext.reIndexReserves(reserveContextMap, mappingContext);
+        if (numChanges > 0) {
+          asyncReserveUpdates.addAndGet(numChanges);
+          reserveScopeChangeCondition.signalAll();
+        }
       } else {
         return;
       }
@@ -235,16 +251,16 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
     }
 
     if (witness != null) {
-      notifyMappingsChange(priceFeedContext, witness, mappingContext);
+      notifyMappingsChange(scopeFeedContext, witness, mappingContext);
     }
 
     persistMappings(mappingContext);
   }
 
-  private boolean updateIfChanged(final ReserveContext reserveContext) {
+  private void updateIfChanged(final ReserveContext reserveContext) {
     final var priceFeed = reserveContext.priceFeed();
     if (!priceFeedContextMap.containsKey(priceFeed)) {
-      return false;
+      return;
     }
     final var key = reserveContext.pubKey();
 
@@ -256,10 +272,11 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
         if (witness == reserveContext) {
           final var feedContext = priceFeedContextMap.get(priceFeed);
           if (feedContext == null) {
-            return false;
+            return;
           } else {
             feedContext.indexReserveContext(reserveContext);
-            return true;
+            this.asyncReserveUpdates.incrementAndGet();
+            this.reserveScopeChangeCondition.signal();
           }
         }
       } finally {
@@ -270,7 +287,7 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
       if (witness.isBefore(reserveContext)) {
         final var changes = witness.changed(reserveContext);
         if (changes.isEmpty()) {
-          return false;
+          return;
         } else {
           writeLock.lock();
           try {
@@ -282,21 +299,23 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
             reserveContextMap.put(key, reserveContext);
             final var feedContext = priceFeedContextMap.get(priceFeed);
             if (feedContext == null) {
-              return false;
+              return;
             } else if (ReserveContext.onlyLiquidityChanged(changes)) {
               feedContext.resortReserves(reserveContext);
+              return;
             } else {
               feedContext.removePreviousEntry(witness);
               feedContext.indexReserveContext(reserveContext);
               notifyReserveChange(witness, reserveContext);
+              this.asyncReserveUpdates.incrementAndGet();
+              this.reserveScopeChangeCondition.signal();
             }
-            return true;
           } finally {
             writeLock.unlock();
           }
         }
       } else {
-        return false;
+        return;
       }
     }
   }
@@ -315,10 +334,22 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
   }
 
   @Override
+  public ReserveContext acceptReserve(final AccountInfo<byte[]> accountInfo) {
+    final byte[] data = accountInfo.data();
+    if (data.length == Reserve.BYTES && Reserve.DISCRIMINATOR.equals(data, 0)) {
+      final var reserveContext = ReserveContext.createContext(accountInfo, mappingsContextMap);
+      updateIfChanged(reserveContext);
+      return reserveContext;
+    } else {
+      return null;
+    }
+  }
+
+  @Override
   public void accept(final AccountInfo<byte[]> accountInfo) {
     try {
       final byte[] data = accountInfo.data();
-      if (data.length == Reserve.CONFIG_PADDING_OFFSET && Reserve.DISCRIMINATOR.equals(data, 0)) {
+      if (data.length == Reserve.BYTES && Reserve.DISCRIMINATOR.equals(data, 0)) {
         final var reserveContext = ReserveContext.createContext(accountInfo, mappingsContextMap);
         updateIfChanged(reserveContext);
       } else if (data.length == OracleMappings.BYTES && OracleMappings.DISCRIMINATOR.equals(data, 0)) {
@@ -335,197 +366,95 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
 
   @Override
   public void run() {
-    final var reserveAccountsRequest = ProgramAccountsRequest.build()
-        .filters(List.of(Reserve.SIZE_FILTER, Reserve.DISCRIMINATOR_FILTER))
-        .programId(kLendProgram)
-        .dataSliceLength(0, Reserve.CONFIG_PADDING_OFFSET)
-        .createRequest();
+    try {
+      var accountsNeededList = new ArrayList<>(this.accountsNeededSet);
+      for (; ; ) {
+        final var accountInfoListFuture = accountFetcher.priorityQueue(accountsNeededList);
 
-    final var priceFeedKeyBytes = new byte[PUBLIC_KEY_LENGTH];
-    final int priceFeedKeyFromOffset = Reserve.CONFIG_OFFSET + ReserveConfig.TOKEN_INFO_OFFSET + TokenInfo.SCOPE_CONFIGURATION_OFFSET;
-    final int priceFeedKeyToOffset = priceFeedKeyFromOffset + PUBLIC_KEY_LENGTH;
-    final byte[] nullKeyBytes = PublicKey.NONE.toByteArray();
-    final byte[] nilKeyBytes = KaminoAccounts.NULL_KEY.toByteArray();
-
-    var accountsNeededList = new ArrayList<>(this.accountsNeededSet);
-
-    for (; ; ) {
-      // TODO: Only fetch missing reserves needed for pricing.
-      final var reserveAccountsFuture = rpcCaller.courteousCall(
-          rpcClient -> rpcClient.getProgramAccounts(reserveAccountsRequest),
-          "Kamino Reserve's"
-      );
-
-      final var reserveAccounts = reserveAccountsFuture.join();
-
-      for (final var reserveAccountInfo : reserveAccounts) {
-        final byte[] data = reserveAccountInfo.data();
-        if (Arrays.equals(
-            data, priceFeedKeyFromOffset, priceFeedKeyToOffset,
-            nullKeyBytes, 0, PUBLIC_KEY_LENGTH
-        )) {
-          continue;
-        } else if (Arrays.equals(
-            data, priceFeedKeyFromOffset, priceFeedKeyToOffset,
-            nilKeyBytes, 0, PUBLIC_KEY_LENGTH
-        )) {
-          continue;
+        int accountsDeleted = 0;
+        int i = 0;
+        final var accountMap = accountInfoListFuture.join().accountMap();
+        for (final var accountNeeded : accountsNeededList) {
+          final var accountInfo = accountMap.get(accountNeeded);
+          if (accountInfo == null) {
+            ++accountsDeleted;
+            final var key = accountsNeededList.get(i);
+            this.accountsNeededSet.remove(key);
+            final var feedContext = priceFeedContextMap.remove(key);
+            if (feedContext != null) {
+              deleteScopeConfiguration(feedContext);
+            } else {
+              this.mappingsContextMap.remove(key);
+              logger.log(WARNING, "Scope OracleMappings account has been deleted " + key);
+            }
+          } else {
+            accept(accountInfo);
+          }
+          ++i;
+        }
+        if (accountsDeleted > 0) {
+          accountsNeededList = new ArrayList<>(this.accountsNeededSet);
         }
 
-        System.arraycopy(reserveAccountInfo.data(), priceFeedKeyFromOffset, priceFeedKeyBytes, 0, PUBLIC_KEY_LENGTH);
-        final var priceFeedKey = PublicKey.createPubKey(priceFeedKeyBytes);
-
-        if (!this.mappingsContextMap.containsKey(priceFeedKey)) {
-          if (ignorePriceFeeds.contains(priceFeedKey)) {
-            continue;
+        readLock.lock();
+        try {
+          if (this.asyncReserveUpdates.getAndSet(0) > 0) {
+            writeReserves(reserveContextsFilePath, reserveContextMap);
+          } else if (accountsDeleted == 0) {
+            logger.log(INFO, "No changes to Scope Reserves.");
           }
-          final PublicKey oracleMappingsKey;
-          var feedContext = this.priceFeedContextMap.get(priceFeedKey);
-          if (feedContext != null) {
-            oracleMappingsKey = feedContext.oracleMappings();
-          } else {
-            logger.log(WARNING, "Fetching missing Scope Configuration for price feed " + priceFeedKey);
-            final var request = ProgramAccountsRequest.build()
-                .programId(scopeProgram)
-                .filters(List.of(
-                    Configuration.SIZE_FILTER,
-                    Configuration.createOracleMappingsFilter(priceFeedKey)
-                ))
-                .dataSliceLength(0, Configuration.PADDING_OFFSET)
-                .createRequest();
-            final var configAccountList = rpcCaller.courteousGet(
-                rpcClient -> rpcClient.getProgramAccounts(request),
-                "Scope Configuration for price feed" + priceFeedKey
-            );
-            final int numConfigAccounts = configAccountList.size();
-            if (numConfigAccounts == 0) {
-              ignorePriceFeeds.add(priceFeedKey);
-              logger.log(WARNING, "Failed to find Scope Configuration for price feed " + priceFeedKey);
-              continue;
-            } else if (numConfigAccounts > 1) {
-              ignorePriceFeeds.add(priceFeedKey);
-              logger.log(WARNING, String.format("""
-                          Found multiple Scope Configurations ["%s"] for price feed %s.""",
-                      configAccountList.stream().map(AccountInfo::pubKey).map(PublicKey::toBase58).collect(Collectors.joining("\", \"")),
-                      priceFeedKey
-                  )
-              );
-              continue;
-            } else {
-              final var accountInfo = configAccountList.getFirst();
-              feedContext = handleConfigurationChange(accountInfo.context().slot(), accountInfo.pubKey(), accountInfo.data());
-              if (feedContext == null) {
-                ignorePriceFeeds.add(priceFeedKey);
-                continue;
-              }
-              oracleMappingsKey = feedContext.oracleMappings();
+        } finally {
+          readLock.unlock();
+        }
+
+        writeLock.lock();
+        try {
+          for (long remaining = pollingDelayNanos; asyncReserveUpdates.get() == 0; ) {
+            remaining = reserveScopeChangeCondition.awaitNanos(remaining);
+            if (remaining <= 0) {
+              break;
             }
           }
-
-          if (this.accountsNeededSet.add(oracleMappingsKey)) {
-            accountsNeededList = new ArrayList<>(this.accountsNeededSet);
-          }
+        } finally {
+          writeLock.unlock();
         }
       }
 
-      final var accountInfoListFuture = accountFetcher.priorityQueue(accountsNeededList);
+    } catch (final InterruptedException e) {
+      // exit
+    } catch (final RuntimeException e) {
+      logger.log(ERROR, "Failed to poll Scope accounts.", e);
+    }
+  }
 
-      final var fetchReservesSlot = reserveAccounts.isEmpty()
-          ? 0
-          : reserveAccounts.getFirst().context().slot();
-
-
-      int accountsDeleted = 0;
-      int i = 0;
-      final var accountInfoList = accountInfoListFuture.join().accounts();
-      // Handle all new OracleMappings first to ensure reserves have full context.
-      for (final var accountInfo : accountInfoList) {
-        if (accountInfo == null || accountInfo.data() == null || accountInfo.data().length == 0) {
-          ++accountsDeleted;
-          final var key = accountsNeededList.get(i);
-          this.accountsNeededSet.remove(key);
-          final var feedContext = priceFeedContextMap.remove(key);
-          if (feedContext != null) {
-            deleteScopeConfiguration(feedContext);
-          } else {
-            this.mappingsContextMap.remove(key);
-          }
-        } else {
-          accept(accountInfo);
-        }
-        ++i;
-      }
-
-      int numReserveEdits = 0;
-      final var presentReserves = HashSet.<PublicKey>newHashSet(reserveAccounts.size());
-      for (final var reserveAccountInfo : reserveAccounts) {
-        final var reservePubKey = reserveAccountInfo.pubKey();
-        presentReserves.add(reservePubKey);
-        final var reserveContext = ReserveContext.createContext(reserveAccountInfo, this.mappingsContextMap);
-        if (updateIfChanged(reserveContext)) {
-          ++numReserveEdits;
-        }
-      }
-
-      if (accountsDeleted > 0) {
-        accountsNeededList = new ArrayList<>(this.accountsNeededSet);
-      }
-
-      final var iterator = reserveContextMap.entrySet().iterator();
-      while (iterator.hasNext()) {
-        final var entry = iterator.next();
-        final var reserveContext = entry.getValue();
-        if (Long.compareUnsigned(reserveContext.slot(), fetchReservesSlot) < 0 && !presentReserves.contains(entry.getKey())) {
-          iterator.remove();
-          final var feedContext = priceFeedContextMap.get(reserveContext.priceFeed());
-          if (feedContext != null) {
-            feedContext.removePreviousEntry(reserveContext);
-          }
-          ++numReserveEdits;
-        }
-      }
-
-      if (numReserveEdits > 0) {
-        final var marketsJson = reserveContextMap.values().stream()
-            .collect(Collectors.groupingBy(ReserveContext::market))
-            .entrySet().stream()
-            .map(entry -> {
-              final var market = entry.getKey();
-              final var reserveJSON = entry.getValue().stream()
-                  .map(ReserveContext::priceChainsToJson)
-                  .collect(Collectors.joining(",\n"))
-                  .indent(2);
-              return String.format("""
-                  {
-                    "market": "%s",
-                    "reserves": [
-                    %s]
-                  }""", market, reserveJSON
-              );
-            }).collect(Collectors.joining(",\n"));
-
-        try {
-          Files.writeString(
-              reserveContextsFilePath,
-              String.format("""
-                  [
-                  %s]
-                  """, marketsJson
-              ),
-              CREATE, TRUNCATE_EXISTING, WRITE
+  static void writeReserves(final Path reserveContextsFilePath,
+                            final Map<PublicKey, ReserveContext> reserveContextMap) {
+    final var marketsJson = reserveContextMap.values().stream()
+        .collect(Collectors.groupingBy(ReserveContext::market))
+        .entrySet().stream()
+        .map(entry -> {
+          final var market = entry.getKey();
+          final var reserveJSON = entry.getValue().stream()
+              .map(ReserveContext::priceChainsToJson)
+              .collect(Collectors.joining(",\n"))
+              .indent(2);
+          return String.format("""
+              {
+                "market": "%s",
+                "reserves": [
+                %s]
+              }""", market, reserveJSON
           );
-        } catch (final IOException e) {
-          logger.log(ERROR, "Failed to write Kamino Markets Reserve Scope Price Chains.", e);
-        }
-      } else if (accountsDeleted == 0) {
-        logger.log(INFO, "No changes to Scope Reserves.");
-      }
+        }).collect(Collectors.joining(",\n", "[", "]"));
 
-      try {
-        NANOSECONDS.sleep(pollingDelayNanos);
-      } catch (final InterruptedException e) {
-        return;
-      }
+    try {
+      Files.writeString(
+          reserveContextsFilePath,
+          marketsJson,
+          CREATE, TRUNCATE_EXISTING, WRITE
+      );
+    } catch (final IOException e) {
+      logger.log(ERROR, "Failed to write Kamino Markets Reserve Scope Price Chains.", e);
     }
   }
 
@@ -742,42 +671,38 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
     notifyClient.postMsg(msg);
   }
 
-  private void notifyConfigurationChange(final long slot,
-                                         final PublicKey configurationKey,
-                                         final byte[] data,
-                                         final FeedContext witness) {
-    final var configJson = FeedContext.configurationToJson(slot, configurationKey, data);
-    final String msg;
-    if (witness == null) {
-      msg = String.format("""
-          {
-            "event": "New Scope Configuration",
-            "config": %s
-          }""", configJson
-      );
-      logger.log(INFO, msg);
-      try {
-        writeConfigurations(configurationsPath, configurationKey, data);
-      } catch (final IOException e) {
-        logger.log(WARNING, "Failed to persist Scope configuration.", e);
-      }
-    } else {
-      msg = String.format("""
-              {
-                "event": "Scope Configuration Change",
-                "previous": %s,
-                "latest": %s
-              }""",
-          witness.toJson(),
-          configJson
-      );
-      logger.log(ERROR, msg);
-      // TODO: Trigger Alert
+  private void notifyNewConfiguration(final ScopeFeedContext scopeFeedContext) {
+    final var configJson = scopeFeedContext.toJson();
+    final var msg = String.format("""
+        {
+          "event": "New Scope Configuration",
+          "config": %s
+        }""", configJson
+    );
+    logger.log(INFO, msg);
+    try {
+      writeScopeConfiguration(configurationsPath, scopeFeedContext);
+    } catch (final IOException e) {
+      logger.log(WARNING, "Failed to persist Scope configuration.", e);
     }
     notifyClient.postMsg(msg);
   }
 
-  private void notifyMappingsChange(final FeedContext priceFeedContext,
+  private void notifyConfigurationChange(final ScopeFeedContext witness, final long slot, final byte[] data) {
+    final var msg = String.format("""
+            {
+              "event": "Scope Configuration Change",
+              "previous": %s,
+              "latest": %s
+            }""",
+        witness.toJson(),
+        ScopeFeedContext.configurationToJson(slot, witness.configurationKey(), data)
+    );
+    logger.log(ERROR, msg);
+    // TODO: Trigger Alert
+  }
+
+  private void notifyMappingsChange(final ScopeFeedContext scopeFeedContext,
                                     final MappingsContext witness,
                                     final MappingsContext mappingContext) {
     final var mappingsKey = mappingContext.publicKey();
@@ -797,7 +722,7 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
       if (prevEntry.equals(newEntry)) {
         return null;
       } else {
-        final var affectedReserves = priceFeedContext.reservesForIndex(i);
+        final var affectedReserves = scopeFeedContext.reservesForIndex(i);
         if (affectedReserves == null || affectedReserves.isEmpty()) {
           return null;
         }

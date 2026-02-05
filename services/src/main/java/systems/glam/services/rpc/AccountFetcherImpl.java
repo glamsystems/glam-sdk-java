@@ -120,14 +120,18 @@ final class AccountFetcherImpl implements AccountFetcher {
     queue(true, accounts, callback);
   }
 
+  @Override
+  public void queue(final Collection<PublicKey> accounts, final AccountConsumer callback) {
+    queue(false, accounts, callback);
+  }
+
   private static final CompletableFuture<AccountResult> EMPTY = CompletableFuture.completedFuture(new AccountResult(List.of(), Map.of()));
 
-  @Override
-  public CompletableFuture<AccountResult> priorityQueue(final Collection<PublicKey> accounts) {
+  private CompletableFuture<AccountResult> queue(final boolean priority, final Collection<PublicKey> accounts) {
     if (validBatch(accounts)) {
       final var future = new CompletableFuture<AccountResult>();
       final var accountBatch = new CompletableAccountBatch(accounts, future);
-      queue(true, accountBatch);
+      queue(priority, accountBatch);
       return future;
     } else {
       return EMPTY;
@@ -135,8 +139,13 @@ final class AccountFetcherImpl implements AccountFetcher {
   }
 
   @Override
-  public void queue(final Collection<PublicKey> accounts, final AccountConsumer callback) {
-    queue(false, accounts, callback);
+  public CompletableFuture<AccountResult> priorityQueue(final Collection<PublicKey> accounts) {
+    return queue(true, accounts);
+  }
+
+  @Override
+  public CompletableFuture<AccountResult> queue(final Collection<PublicKey> accounts) {
+    return queue(false, accounts);
   }
 
   private List<PublicKey> createBatchKeys(final int size) {

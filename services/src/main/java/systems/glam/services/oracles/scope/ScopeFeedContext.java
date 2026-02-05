@@ -17,23 +17,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-public record FeedContext(long slot, byte[] configurationData,
-                          PublicKey configurationKey,
-                          PublicKey oracleMappings,
-                          PublicKey priceFeed, AccountMeta readPriceFeed,
-                          AtomicReferenceArray<Map<PublicKey, ReserveContext>> reservesByIndex,
-                          ConcurrentMap<PublicKey, ReserveContext[]> reservesByMint) {
+public record ScopeFeedContext(long slot, byte[] configurationData,
+                               PublicKey configurationKey,
+                               PublicKey oracleMappings,
+                               PublicKey priceFeed, AccountMeta readPriceFeed,
+                               AtomicReferenceArray<Map<PublicKey, ReserveContext>> reservesByIndex,
+                               ConcurrentMap<PublicKey, ReserveContext[]> reservesByMint) {
 
   private static final Comparator<ReserveContext> RESERVE_CONTEXT_BY_LIQUIDITY = (a, b) -> Long.compareUnsigned(b.totalCollateral(), a.totalCollateral());
 
-  static FeedContext createContext(final long slot,
-                                   final byte[] configurationData,
-                                   final PublicKey configurationKey,
-                                   final PublicKey oracleMappings,
-                                   final PublicKey priceFeed) {
+  static ScopeFeedContext createContext(final long slot,
+                                        final byte[] configurationData,
+                                        final PublicKey configurationKey,
+                                        final PublicKey oracleMappings,
+                                        final PublicKey priceFeed) {
     final var reservesByIndex = new AtomicReferenceArray<Map<PublicKey, ReserveContext>>(OracleMappings.PRICE_INFO_ACCOUNTS_LEN);
     final var reservesByMint = new ConcurrentHashMap<PublicKey, ReserveContext[]>();
-    return new FeedContext(
+    return new ScopeFeedContext(
         slot,
         configurationData.length > Configuration.PADDING_OFFSET ? Arrays.copyOfRange(configurationData, 0, Configuration.PADDING_OFFSET) : configurationData,
         configurationKey, oracleMappings, priceFeed, AccountMeta.createRead(priceFeed),
@@ -41,19 +41,19 @@ public record FeedContext(long slot, byte[] configurationData,
     );
   }
 
-  static FeedContext createContext(final long slot,
-                                   final byte[] configurationData,
-                                   final PublicKey configurationKey) {
+  static ScopeFeedContext createContext(final long slot,
+                                        final byte[] configurationData,
+                                        final PublicKey configurationKey) {
     final var oracleMappings = PublicKey.readPubKey(configurationData, Configuration.ORACLE_MAPPINGS_OFFSET);
     final var priceFeed = PublicKey.readPubKey(configurationData, Configuration.ORACLE_PRICES_OFFSET);
     return createContext(slot, configurationData, configurationKey, oracleMappings, priceFeed);
   }
 
-  static FeedContext createContext(final PublicKey configurationKey, final byte[] configurationData) {
+  static ScopeFeedContext createContext(final PublicKey configurationKey, final byte[] configurationData) {
     return createContext(0, configurationData, configurationKey);
   }
 
-  static FeedContext createContext(final AccountInfo<byte[]> accountInfo) {
+  static ScopeFeedContext createContext(final AccountInfo<byte[]> accountInfo) {
     final long slot = accountInfo.context().slot();
     return createContext(slot, accountInfo.data(), accountInfo.pubKey());
   }
@@ -167,7 +167,8 @@ public record FeedContext(long slot, byte[] configurationData,
     resortReserves(reserveContext);
   }
 
-  void reIndexReserves(final Map<PublicKey, ReserveContext> reserveContexts, final MappingsContext mappingsContext) {
+  int reIndexReserves(final Map<PublicKey, ReserveContext> reserveContexts, final MappingsContext mappingsContext) {
+    int numChanged = 0;
     for (final var reserveContext : reserveContexts.values()) {
       if (reserveContext.priceFeed().equals(priceFeed)) {
         final var priceChains = mappingsContext.readPriceChains(reserveContext.mint(), reserveContext.scopeConfiguration());
@@ -176,9 +177,11 @@ public record FeedContext(long slot, byte[] configurationData,
           removePreviousEntry(reserveContext);
           reserveContexts.put(reserveContext.pubKey(), changed);
           indexReserveContext(changed);
+          ++numChanged;
         }
       }
     }
+    return numChanged;
   }
 
   void removePreviousEntry(final ReserveContext previousContext) {

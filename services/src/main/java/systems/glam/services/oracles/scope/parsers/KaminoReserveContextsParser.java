@@ -3,25 +3,31 @@ package systems.glam.services.oracles.scope.parsers;
 import software.sava.core.accounts.PublicKey;
 import systems.comodal.jsoniter.FieldBufferPredicate;
 import systems.comodal.jsoniter.JsonIterator;
+import systems.glam.services.oracles.scope.MappingsContext;
 import systems.glam.services.oracles.scope.ReserveContext;
 
 import java.util.Map;
 import java.util.Objects;
 
-public final class MarketParser implements FieldBufferPredicate {
+public final class KaminoReserveContextsParser implements FieldBufferPredicate {
 
+  private final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed;
   private final Map<PublicKey, ReserveContext> reserveContexts;
   private PublicKey market;
 
-  public static void parseReserves(final byte[] data, final Map<PublicKey, ReserveContext> reserveContexts) {
+  public static void parseReserves(final byte[] data,
+                                   final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed,
+                                   final Map<PublicKey, ReserveContext> reserveContexts) {
     final var ji = JsonIterator.parse(data);
     while (ji.readArray()) {
-      final var parser = new MarketParser(reserveContexts);
+      final var parser = new KaminoReserveContextsParser(mappingsContextByPriceFeed, reserveContexts);
       ji.testObject(parser);
     }
   }
 
-  private MarketParser(final Map<PublicKey, ReserveContext> reserveContexts) {
+  private KaminoReserveContextsParser(final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed,
+                                      final Map<PublicKey, ReserveContext> reserveContexts) {
+    this.mappingsContextByPriceFeed = mappingsContextByPriceFeed;
     this.reserveContexts = reserveContexts;
   }
 
@@ -32,7 +38,7 @@ public final class MarketParser implements FieldBufferPredicate {
     } else if (JsonIterator.fieldEquals("reserves", buf, offset, len)) {
       Objects.requireNonNull(market);
       while (ji.readArray()) {
-        final var reserveContext = ReserveContext.parse(ji, market);
+        final var reserveContext = ReserveContext.parseContext(ji, market, mappingsContextByPriceFeed);
         reserveContexts.put(reserveContext.pubKey(), reserveContext);
       }
       this.market = null;
