@@ -13,7 +13,7 @@ import systems.glam.services.integrations.IntegLookupTableCache;
 import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.mints.StakePoolCache;
-import systems.glam.services.oracles.scope.ScopeMonitorService;
+import systems.glam.services.oracles.scope.KaminoCache;
 import systems.glam.services.pricing.config.PriceVaultsServiceConfig;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.GlobalConfigCache;
@@ -30,7 +30,7 @@ import static java.lang.System.Logger.Level.ERROR;
 
 public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
                                            GlobalConfigCache globalConfigCache,
-                                           ScopeMonitorService kaminoCache,
+                                           KaminoCache kaminoCache,
                                            IntegLookupTableCache integTableCache,
                                            GlamStateContextCache glamStateContextCache,
                                            StakePoolCache stakePoolCache,
@@ -105,7 +105,7 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
     );
 
     final var kaminoCacheDirectory = accountCacheDirectory.resolve("kamino/");
-    final var kaminoCacheFuture = ScopeMonitorService.initService(
+    final var kaminoCacheFuture = KaminoCache.initService(
         kaminoCacheDirectory,
         rpcCaller,
         accountFetcher,

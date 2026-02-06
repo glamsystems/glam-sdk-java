@@ -46,12 +46,12 @@ public record ReserveContext(long slot,
         break;
       }
     }
-    final var tokenName = i == 0 ? null : new String(name, 0, i + 1);
+    final var tokenName = i < 0 ? null : new String(name, 0, i + 1);
     return new ReserveContext(
         slot,
         reserveKey,
         lendingMarketKey,
-        tokenName,
+        tokenName != null && tokenName.isBlank() ? null : tokenName,
         mintKey,
         totalCollateral,
         priceChains,
@@ -185,7 +185,7 @@ public record ReserveContext(long slot,
             totalCollateral,
             priceFeed().toBase58(),
             maxAgePriceSeconds(),
-            ScopeMonitorServiceImpl.toJson(priceChains.priceChain()),
+            KaminoCacheImpl.toJson(priceChains.priceChain()),
             encodedTokenInfo
         );
       } else {
@@ -211,8 +211,8 @@ public record ReserveContext(long slot,
             maxAgePriceSeconds(),
             maxAgeTwapSeconds(),
             maxTwapDivergenceBps(),
-            ScopeMonitorServiceImpl.toJson(priceChains.priceChain()),
-            ScopeMonitorServiceImpl.toJson(twapChain),
+            KaminoCacheImpl.toJson(priceChains.priceChain()),
+            KaminoCacheImpl.toJson(twapChain),
             encodedTokenInfo
         );
       }
@@ -254,7 +254,7 @@ public record ReserveContext(long slot,
             totalCollateral,
             priceFeed().toBase58(),
             maxAgePriceSeconds(),
-            ScopeMonitorServiceImpl.toJson(priceChains.priceChain())
+            KaminoCacheImpl.toJson(priceChains.priceChain())
         );
       } else {
         return String.format("""
@@ -278,8 +278,8 @@ public record ReserveContext(long slot,
             maxAgePriceSeconds(),
             maxAgeTwapSeconds(),
             maxTwapDivergenceBps(),
-            ScopeMonitorServiceImpl.toJson(priceChains.priceChain()),
-            ScopeMonitorServiceImpl.toJson(twapChain)
+            KaminoCacheImpl.toJson(priceChains.priceChain()),
+            KaminoCacheImpl.toJson(twapChain)
         );
       }
     }

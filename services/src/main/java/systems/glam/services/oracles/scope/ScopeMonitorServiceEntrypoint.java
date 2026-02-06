@@ -10,7 +10,7 @@ import static java.lang.System.Logger.Level.ERROR;
 
 public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
                                             WebSocketManager webSocketManager,
-                                            ScopeMonitorService monitorService) implements Runnable {
+                                            KaminoCache monitorService) implements Runnable {
 
   private static final System.Logger logger = System.getLogger(ScopeMonitorServiceEntrypoint.class.getName());
 
@@ -41,7 +41,7 @@ public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
                                                              final HttpClient wsHttpClient) {
     final var serviceConfig = ScopeMonitorConfig.loadConfig(taskExecutor, httpClient);
 
-    final var monitorServiceFuture = ScopeMonitorService.initService(
+    final var monitorServiceFuture = KaminoCache.initService(
         serviceConfig.configurationsPath(),
         serviceConfig.rpcCaller(),
         null, //  TODO

@@ -81,10 +81,6 @@ public interface IntegrationServiceContext {
 
   IntegLookupTableCache integTableCache();
 
-  default Path driftCacheDirectory() {
-    return serviceContext().accountsCacheDirectory().resolve("drift");
-  }
-
   DriftMarketCache driftMarketCache();
 
   DriftAccounts driftAccounts();

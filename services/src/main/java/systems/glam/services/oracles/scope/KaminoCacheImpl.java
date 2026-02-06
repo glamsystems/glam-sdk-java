@@ -30,9 +30,9 @@ import java.util.stream.IntStream;
 import static java.lang.System.Logger.Level.*;
 import static java.nio.file.StandardOpenOption.*;
 
-final class ScopeMonitorServiceImpl implements ScopeMonitorService {
+final class KaminoCacheImpl implements KaminoCache {
 
-  static final System.Logger logger = System.getLogger(ScopeMonitorService.class.getName());
+  static final System.Logger logger = System.getLogger(KaminoCache.class.getName());
 
   private final NotifyClient notifyClient;
   private final AccountFetcher accountFetcher;
@@ -51,17 +51,17 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
   private final ReentrantReadWriteLock.ReadLock readLock;
   private final AtomicInteger asyncReserveUpdates;
 
-  ScopeMonitorServiceImpl(final NotifyClient notifyClient,
-                          final AccountFetcher accountFetcher,
-                          final PublicKey kLendProgram,
-                          final PublicKey scopeProgram,
-                          final Duration pollingDelay,
-                          final Path configurationsPath,
-                          final Path mappingsPath,
-                          final Path reserveContextsFilePath,
-                          final Map<PublicKey, ScopeFeedContext> feedContextMap,
-                          final ConcurrentMap<PublicKey, MappingsContext> mappingsContextMap,
-                          final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap) {
+  KaminoCacheImpl(final NotifyClient notifyClient,
+                  final AccountFetcher accountFetcher,
+                  final PublicKey kLendProgram,
+                  final PublicKey scopeProgram,
+                  final Duration pollingDelay,
+                  final Path configurationsPath,
+                  final Path mappingsPath,
+                  final Path reserveContextsFilePath,
+                  final Map<PublicKey, ScopeFeedContext> feedContextMap,
+                  final ConcurrentMap<PublicKey, MappingsContext> mappingsContextMap,
+                  final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap) {
     this.notifyClient = notifyClient;
     this.accountFetcher = accountFetcher;
     this.kLendProgram = kLendProgram;

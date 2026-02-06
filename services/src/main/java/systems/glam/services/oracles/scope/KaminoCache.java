@@ -31,23 +31,23 @@ import java.util.function.Consumer;
 
 import static java.nio.file.StandardOpenOption.*;
 import static software.sava.core.accounts.PublicKey.PUBLIC_KEY_LENGTH;
-import static systems.glam.services.oracles.scope.ScopeMonitorServiceImpl.writeReserves;
-import static systems.glam.services.oracles.scope.ScopeMonitorServiceImpl.writeScopeConfiguration;
+import static systems.glam.services.oracles.scope.KaminoCacheImpl.writeReserves;
+import static systems.glam.services.oracles.scope.KaminoCacheImpl.writeScopeConfiguration;
 
-public interface ScopeMonitorService extends ScopeAggregateIndexes, Runnable, Consumer<AccountInfo<byte[]>> {
+public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<AccountInfo<byte[]>> {
 
-  static CompletableFuture<ScopeMonitorService> initService(final Path kaminoAccountsPath,
-                                                            final RpcCaller rpcCaller,
-                                                            final AccountFetcher accountFetcher,
-                                                            final NotifyClient notifyClient,
-                                                            final KaminoAccounts kaminoAccounts,
-                                                            final Duration pollingDelay) {
+  static CompletableFuture<KaminoCache> initService(final Path kaminoAccountsPath,
+                                                    final RpcCaller rpcCaller,
+                                                    final AccountFetcher accountFetcher,
+                                                    final NotifyClient notifyClient,
+                                                    final KaminoAccounts kaminoAccounts,
+                                                    final Duration pollingDelay) {
     return CompletableFuture.supplyAsync(() -> {
-      final var reservesJsonFilePath = kaminoAccountsPath.resolve("reserves.json");
-      final var scopeAccountsPath = kaminoAccountsPath.resolve("scope");
-      final var configurationsPath = scopeAccountsPath.resolve("configurations");
-      final var mappingsPath = scopeAccountsPath.resolve("mappings");
       try {
+        final var reservesJsonFilePath = kaminoAccountsPath.resolve("reserves.json");
+        final var scopeAccountsPath = kaminoAccountsPath.resolve("scope");
+        final var configurationsPath = scopeAccountsPath.resolve("configurations");
+        final var mappingsPath = scopeAccountsPath.resolve("mappings");
         final var kLendProgram = kaminoAccounts.kLendProgram();
         final var scopeProgram = kaminoAccounts.scopePricesProgram();
 
@@ -95,7 +95,7 @@ public interface ScopeMonitorService extends ScopeAggregateIndexes, Runnable, Co
           }
         }
 
-        final var feedContextMap = ScopeMonitorService.loadFeedContexts(configurationsPath);
+        final var feedContextMap = KaminoCache.loadFeedContexts(configurationsPath);
         // Note: New Configurations will be discovered indirectly via Kamino Lending Reserves.
         final CompletableFuture<List<AccountInfo<byte[]>>> scopeConfigurationsFuture;
         if (feedContextMap.keySet().containsAll(priceFeedsNeeded)) {
@@ -119,7 +119,7 @@ public interface ScopeMonitorService extends ScopeAggregateIndexes, Runnable, Co
           for (final var accountInfo : accounts) {
             if (accountInfo != null) {
               final byte[] data = accountInfo.data();
-              if (data.length != Configuration.BYTES || !Configuration.DISCRIMINATOR.equals(data, 0)) {
+              if (data.length != Configuration.PADDING_OFFSET || !Configuration.DISCRIMINATOR.equals(data, 0)) {
                 throw new IllegalStateException(String.format(
                     "%s is not a valid Scope Configuration account.", accountInfo.pubKey()
                 ));
@@ -137,7 +137,7 @@ public interface ScopeMonitorService extends ScopeAggregateIndexes, Runnable, Co
           if (!mappingsContextMap.containsKey(configuration.priceFeed())) {
             downstream.accept(configuration.oracleMappings());
           }
-        }).toList();
+        }).distinct().toList();
 
         if (!missingMappings.isEmpty()) {
           final var mappingsFuture = rpcCaller.courteousCall(
@@ -177,7 +177,7 @@ public interface ScopeMonitorService extends ScopeAggregateIndexes, Runnable, Co
           writeReserves(reservesJsonFilePath, reserveContextMap);
         }
 
-        return new ScopeMonitorServiceImpl(
+        return new KaminoCacheImpl(
             notifyClient,
             accountFetcher,
             kLendProgram,
@@ -205,11 +205,13 @@ public interface ScopeMonitorService extends ScopeAggregateIndexes, Runnable, Co
 
   private static Map<PublicKey, ScopeFeedContext> loadFeedContexts(final Path configurationsPath) throws IOException {
     final var feedContextMap = new HashMap<PublicKey, ScopeFeedContext>();
-    if (Files.exists(configurationsPath)) {
+    if (Files.notExists(configurationsPath)) {
+      Files.createDirectories(configurationsPath);
+    } else {
       try (final var paths = Files.list(configurationsPath)) {
         paths.forEach(path -> {
           final var accountData = FileUtils.readAccountData(path);
-          if (accountData.isAccount(Configuration.DISCRIMINATOR, Configuration.BYTES)) {
+          if (accountData.isAccount(Configuration.DISCRIMINATOR, Configuration.PADDING_OFFSET)) {
             final var feedContext = accountData.read(ScopeFeedContext::createContext);
             feedContextMap.put(feedContext.configurationKey(), feedContext);
             feedContextMap.put(feedContext.oracleMappings(), feedContext);
@@ -217,28 +219,30 @@ public interface ScopeMonitorService extends ScopeAggregateIndexes, Runnable, Co
           }
         });
       }
-    } else {
-      Files.createDirectories(configurationsPath);
     }
     return feedContextMap;
   }
 
   private static ConcurrentMap<PublicKey, MappingsContext> loadMappings(final Path mappingsPath,
                                                                         final Map<PublicKey, ScopeFeedContext> feedContextMap) throws IOException {
-
     final var mappingsContextByPriceFeed = new ConcurrentHashMap<PublicKey, MappingsContext>();
-    try (final var paths = Files.list(mappingsPath)) {
-      paths.forEach(path -> {
-        final var accountData = FileUtils.readAccountData(path);
-        if (accountData.isAccount(OracleMappings.DISCRIMINATOR, OracleMappings.BYTES)) {
-          final var mappings = accountData.read(OracleMappings::read);
-          final var scopeEntries = ScopeReader.parseEntries(0, mappings);
-          final var feedContext = feedContextMap.get(mappings._address());
-          final var mappingsContext = new MappingsContext(accountData.data(), scopeEntries);
-          mappingsContextByPriceFeed.put(accountData.pubKey(), mappingsContext);
-          mappingsContextByPriceFeed.put(feedContext.priceFeed(), mappingsContext);
-        }
-      });
+    if (Files.notExists(mappingsPath)) {
+      Files.createDirectories(mappingsPath);
+    } else {
+      try (final var paths = Files.list(mappingsPath)) {
+        paths.forEach(path -> {
+          final var accountData = FileUtils.readAccountData(path);
+          if (accountData.isAccount(OracleMappings.DISCRIMINATOR, OracleMappings.BYTES)) {
+            final var mappings = accountData.read(OracleMappings::read);
+            final var scopeEntries = ScopeReader.parseEntries(0, mappings);
+            final var feedContext = feedContextMap.get(mappings._address());
+            final var mappingsKey = mappings._address();
+            final var mappingsContext = new MappingsContext(mappingsKey, accountData.data(), scopeEntries);
+            mappingsContextByPriceFeed.put(mappingsKey, mappingsContext);
+            mappingsContextByPriceFeed.put(feedContext.priceFeed(), mappingsContext);
+          }
+        });
+      }
     }
     return mappingsContextByPriceFeed;
   }

@@ -129,7 +129,7 @@ public class BaseScopeEntryParser implements ScopeEntryParser {
 
   @Override
   public boolean test(final char[] buf, final int offset, final int len, final JsonIterator ji) {
-    if (fieldEquals("twapEnabled", buf, offset, len)) {
+    if (fieldEquals("index", buf, offset, len)) {
       this.index = ji.readInt();
     } else {
       throw new IllegalStateException("Unsupported scope entry field: " + new String(buf, offset, len));
@@ -142,7 +142,7 @@ public class BaseScopeEntryParser implements ScopeEntryParser {
     return switch (oracleType) {
       case DeprecatedPlaceholder1, DeprecatedPlaceholder2, DeprecatedPlaceholder3,
            DeprecatedPlaceholder4, DeprecatedPlaceholder5, DeprecatedPlaceholder6,
-           DeprecatedPlaceholder7 -> new Deprecated(index);
+           DeprecatedPlaceholder7 -> new Deprecated(index, oracleType);
       case Unused -> new Unused(index);
       default -> throw new IllegalStateException("Unexpected oracle type: " + oracleType);
     };

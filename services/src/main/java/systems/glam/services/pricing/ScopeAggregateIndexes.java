@@ -3,7 +3,7 @@ package systems.glam.services.pricing;
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import systems.glam.services.oracles.scope.FeedIndexes;
-import systems.glam.services.oracles.scope.ScopeMonitorService;
+import systems.glam.services.oracles.scope.KaminoCache;
 
 import java.util.Arrays;
 
@@ -18,7 +18,7 @@ public interface ScopeAggregateIndexes {
   }
 
   static short[] none() {
-    return ScopeMonitorService.NO_AGGREGATE_INDEXES;
+    return KaminoCache.NO_AGGREGATE_INDEXES;
   }
 
   FeedIndexes indexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType);

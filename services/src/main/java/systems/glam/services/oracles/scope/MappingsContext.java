@@ -9,10 +9,11 @@ import software.sava.rpc.json.http.response.AccountInfo;
 
 import java.util.Arrays;
 
-public record MappingsContext(byte[] data, ScopeEntries scopeEntries) {
+public record MappingsContext(PublicKey pubKey, byte[] data, ScopeEntries scopeEntries) {
 
   static MappingsContext createContext(final AccountInfo<byte[]> accountInfo) {
     return new MappingsContext(
+        accountInfo.pubKey(),
         accountInfo.data(),
         ScopeReader.parseEntries(accountInfo)
     );
@@ -36,9 +37,5 @@ public record MappingsContext(byte[] data, ScopeEntries scopeEntries) {
 
   long slot() {
     return scopeEntries.slot();
-  }
-
-  boolean isAfter(final MappingsContext other) {
-    return Long.compareUnsigned(this.slot(), other.slot()) > 0;
   }
 }
