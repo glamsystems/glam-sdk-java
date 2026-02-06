@@ -11,20 +11,24 @@ import static systems.comodal.jsoniter.JsonIterator.fieldEquals;
 public record DefensivePollingConfig(Duration globalConfig,
                                      Duration glamStateAccounts,
                                      Duration integTables,
-                                     Duration stakePools) {
+                                     Duration stakePools,
+                                     Duration kaminoScope) {
 
-  static DefensivePollingConfig parseConfig(final JsonIterator ji) {
+  private static final Duration EIGHT_HOURS = Duration.ofHours(8);
+
+  public static DefensivePollingConfig parseConfig(final JsonIterator ji) {
     final var parser = new DefensivePollingConfig.Parser();
     ji.testObject(parser);
     return parser.createConfig();
   }
 
-  static DefensivePollingConfig createDefaultConfig() {
+  public static DefensivePollingConfig createDefaultConfig() {
     return new DefensivePollingConfig(
         Duration.ofMinutes(30),
-        Duration.ofHours(8),
+        EIGHT_HOURS,
         Duration.ofHours(4),
-        Duration.ofHours(12)
+        Duration.ofHours(12),
+        EIGHT_HOURS
     );
   }
 
@@ -34,6 +38,7 @@ public record DefensivePollingConfig(Duration globalConfig,
     private Duration glamStateAccounts;
     private Duration integTables;
     private Duration stakePools;
+    private Duration kaminoScope;
 
     private Parser() {
     }
@@ -43,7 +48,7 @@ public record DefensivePollingConfig(Duration globalConfig,
         globalConfig = Duration.ofMinutes(30);
       }
       if (glamStateAccounts == null) {
-        glamStateAccounts = Duration.ofHours(8);
+        glamStateAccounts = EIGHT_HOURS;
       }
       if (integTables == null) {
         integTables = Duration.ofHours(4);
@@ -51,7 +56,10 @@ public record DefensivePollingConfig(Duration globalConfig,
       if (stakePools == null) {
         stakePools = Duration.ofHours(12);
       }
-      return new DefensivePollingConfig(globalConfig, glamStateAccounts, integTables, stakePools);
+      if (kaminoScope == null) {
+        kaminoScope = EIGHT_HOURS;
+      }
+      return new DefensivePollingConfig(globalConfig, glamStateAccounts, integTables, stakePools, kaminoScope);
     }
 
     @Override
@@ -64,6 +72,8 @@ public record DefensivePollingConfig(Duration globalConfig,
         integTables = ServiceConfigUtil.parseDuration(ji);
       } else if (fieldEquals("stakePools", buf, offset, len)) {
         stakePools = ServiceConfigUtil.parseDuration(ji);
+      } else if (fieldEquals("kaminoScope", buf, offset, len)) {
+        kaminoScope = ServiceConfigUtil.parseDuration(ji);
       } else {
         throw new IllegalStateException("Unknown DefensivePollingConfiguration field " + new String(buf, offset, len));
       }

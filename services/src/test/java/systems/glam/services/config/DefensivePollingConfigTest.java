@@ -16,6 +16,7 @@ class DefensivePollingConfigTest {
     assertEquals(Duration.ofHours(8), config.glamStateAccounts());
     assertEquals(Duration.ofHours(4), config.integTables());
     assertEquals(Duration.ofHours(12), config.stakePools());
+    assertEquals(Duration.ofHours(8), config.kaminoScope());
   }
 
   @Test
@@ -25,7 +26,8 @@ class DefensivePollingConfigTest {
           "globalConfig": "PT1H",
           "glamStateAccounts": "PT2H",
           "integTables": "PT3H",
-          "stakePools": "PT4H"
+          "stakePools": "PT4H",
+          "kaminoScope": "PT5M"
         }
         """;
     final var config = DefensivePollingConfig.parseConfig(JsonIterator.parse(json));
@@ -33,6 +35,7 @@ class DefensivePollingConfigTest {
     assertEquals(Duration.ofHours(2), config.glamStateAccounts());
     assertEquals(Duration.ofHours(3), config.integTables());
     assertEquals(Duration.ofHours(4), config.stakePools());
+    assertEquals(Duration.ofMinutes(5), config.kaminoScope());
   }
 
   @Test
@@ -47,5 +50,6 @@ class DefensivePollingConfigTest {
     assertEquals(Duration.ofHours(8), config.glamStateAccounts());
     assertEquals(Duration.ofHours(4), config.integTables());
     assertEquals(Duration.ofHours(5), config.stakePools());
+    assertEquals(Duration.ofHours(8), config.kaminoScope());
   }
 }

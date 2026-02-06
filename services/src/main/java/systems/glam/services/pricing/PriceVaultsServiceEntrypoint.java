@@ -13,6 +13,7 @@ import systems.glam.services.integrations.IntegLookupTableCache;
 import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.mints.StakePoolCache;
+import systems.glam.services.oracles.scope.ScopeMonitorService;
 import systems.glam.services.pricing.config.PriceVaultsServiceConfig;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.GlobalConfigCache;
@@ -29,6 +30,7 @@ import static java.lang.System.Logger.Level.ERROR;
 
 public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
                                            GlobalConfigCache globalConfigCache,
+                                           ScopeMonitorService kaminoCache,
                                            IntegLookupTableCache integTableCache,
                                            GlamStateContextCache glamStateContextCache,
                                            StakePoolCache stakePoolCache,
@@ -81,9 +83,10 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
     final var defensivePollingConfig = delegateServiceConfig.defensivePollingConfig();
     final var rpcCaller = delegateServiceConfig.rpcCaller();
 
+    final var accountCacheDirectory = serviceContext.accountsCacheDirectory();
     final var stakePoolCacheFuture = StakePoolCache.initCache(
         taskExecutor,
-        serviceContext.accountsCacheDirectory().resolve("stake_pools"),
+        accountCacheDirectory.resolve("stake_pools"),
         StakePoolAccounts.MAIN_NET,
         defensivePollingConfig.stakePools(),
         rpcCaller
@@ -101,7 +104,17 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
         defensivePollingConfig.globalConfig()
     );
 
-    final var driftCacheDirectory = serviceContext.accountsCacheDirectory().resolve("drift/");
+    final var kaminoCacheDirectory = accountCacheDirectory.resolve("kamino/");
+    final var kaminoCacheFuture = ScopeMonitorService.initService(
+        kaminoCacheDirectory,
+        rpcCaller,
+        accountFetcher,
+        delegateServiceConfig.notifyClient(),
+        kaminoAccounts,
+        defensivePollingConfig.glamStateAccounts()
+    );
+
+    final var driftCacheDirectory = accountCacheDirectory.resolve("drift/");
     final var driftMarketCacheFuture = DriftMarketCache.initCache(
         driftCacheDirectory,
         driftAccounts, rpcCaller,
@@ -111,7 +124,7 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
     final var integrationTableKeys = new HashSet<>(driftAccounts.marketLookupTables());
     integrationTableKeys.add(kaminoAccounts.mainMarketLUT());
 
-    final var integrationTablesDirectory = serviceContext.accountsCacheDirectory().resolve("integ/lookup_tables");
+    final var integrationTablesDirectory = accountCacheDirectory.resolve("integ/lookup_tables");
     final var integTableCacheFuture = IntegLookupTableCache.initCache(
         defensivePollingConfig.integTables(),
         integrationTablesDirectory,
@@ -132,12 +145,15 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
     final var stakePoolCache = stakePoolCacheFuture.join();
     webSocketConsumers.add(stakePoolCache::subscribe);
 
+    final var kaminoCache = kaminoCacheFuture.join();
+    webSocketConsumers.add(kaminoCache::subscribe);
+
     final var integrationServiceContext = IntegrationServiceContext.createContext(
         serviceContext,
         mintCache,
         stakePoolCache,
         globalConfigCache,
-        null, // TODO: scopeAggregateIndexes
+        kaminoCache,
         integTableCache,
         accountFetcher,
         driftAccounts,
@@ -149,7 +165,7 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
     final var glamStateContextCache = GlamStateContextCache.loadCache(
         defensivePollingConfig.glamStateAccounts(),
         integrationServiceContext,
-        serviceContext.accountsCacheDirectory().resolve("glam/vault_tables")
+        accountCacheDirectory.resolve("glam/vault_tables")
     );
     webSocketConsumers.add(glamStateContextCache::subscribe);
 
@@ -161,6 +177,7 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
     return new PriceVaultsServiceEntrypoint(
         accountFetcher,
         globalConfigCache,
+        kaminoCache,
         integTableCache, glamStateContextCache, stakePoolCache,
         vaultExecutor,
         webSocketManager
@@ -169,9 +186,10 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
 
   @Override
   public void run() {
-    try (final var executorService = Executors.newFixedThreadPool(6)) {
+    try (final var executorService = Executors.newFixedThreadPool(7)) {
       executorService.execute(accountFetcher);
       executorService.execute(globalConfigCache);
+      executorService.execute(kaminoCache);
       executorService.execute(integTableCache);
       executorService.execute(glamStateContextCache);
       executorService.execute(stakePoolCache);

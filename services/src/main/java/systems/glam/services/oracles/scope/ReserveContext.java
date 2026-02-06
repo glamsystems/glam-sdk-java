@@ -7,6 +7,7 @@ import software.sava.idl.clients.kamino.lend.gen.types.*;
 import software.sava.idl.clients.kamino.scope.entries.PriceChains;
 import software.sava.idl.clients.kamino.scope.entries.PriceChainsRecord;
 import software.sava.idl.clients.kamino.scope.entries.ScopeEntry;
+import software.sava.rpc.json.PublicKeyEncoding;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.comodal.jsoniter.FieldBufferPredicate;
 import systems.comodal.jsoniter.JsonIterator;
@@ -18,7 +19,7 @@ public record ReserveContext(long slot,
                              PublicKey pubKey,
                              PublicKey market,
                              String tokenName,
-                             PublicKey mint, long availableLiquidity,
+                             PublicKey mint,
                              long totalCollateral,
                              PriceChains priceChains,
                              TokenInfo tokenInfo) {
@@ -35,7 +36,6 @@ public record ReserveContext(long slot,
                                               final PublicKey reserveKey,
                                               final PublicKey lendingMarketKey,
                                               final PublicKey mintKey,
-                                              final long availableLiquidity,
                                               final long totalCollateral,
                                               final TokenInfo tokenInfo,
                                               final PriceChains priceChains) {
@@ -53,7 +53,6 @@ public record ReserveContext(long slot,
         lendingMarketKey,
         tokenName,
         mintKey,
-        availableLiquidity,
         totalCollateral,
         priceChains,
         tokenInfo
@@ -80,21 +79,20 @@ public record ReserveContext(long slot,
     final var tokenInfo = TokenInfo.read(data, Reserve.CONFIG_OFFSET + ReserveConfig.TOKEN_INFO_OFFSET);
     final var scopeConfiguration = tokenInfo.scopeConfiguration();
     final var priceChains = readPriceChains(mintKey, scopeConfiguration, mappingsContextByPriceFeed);
-    long availableLiquidity = ByteUtil.getInt64LE(data, Reserve.LIQUIDITY_OFFSET + ReserveLiquidity.AVAILABLE_AMOUNT_OFFSET);
     long totalCollateral = ByteUtil.getInt64LE(data, Reserve.COLLATERAL_OFFSET + ReserveCollateral.MINT_TOTAL_SUPPLY_OFFSET);
     return createContext(
         accountInfo.context().slot(),
         accountInfo.pubKey(),
         lendingMarketKey,
         mintKey,
-        availableLiquidity, totalCollateral,
+        totalCollateral,
         tokenInfo,
         priceChains
     );
   }
 
   public ReserveContext withPriceChains(final PriceChains priceChains) {
-    return new ReserveContext(slot, pubKey, market, tokenName, mint, availableLiquidity, totalCollateral, priceChains, tokenInfo);
+    return new ReserveContext(slot, pubKey, market, tokenName, mint, totalCollateral, priceChains, tokenInfo);
   }
 
   public ScopeConfiguration scopeConfiguration() {
@@ -136,14 +134,12 @@ public record ReserveContext(long slot,
               "reserve": "%s",
               "tokenName": %s,
               "mint": "%s",
-              "availableLiquidity": %d,
               "totalCollateral": %d
             }""",
         market.toBase58(),
         pubKey.toBase58(),
         jsonTokenName(),
         mint,
-        availableLiquidity,
         totalCollateral
     );
   }
@@ -158,7 +154,6 @@ public record ReserveContext(long slot,
                 "reserve": "%s",
                 "tokenName": %s,
                 "mint": "%s",
-                "availableLiquidity": %d,
                 "totalCollateral": %d,
                 "priceFeed": "%s",
                 "tokenInfo": "%s"
@@ -166,7 +161,6 @@ public record ReserveContext(long slot,
           pubKey.toBase58(),
           jsonTokenName(),
           mint.toBase58(),
-          availableLiquidity,
           totalCollateral,
           priceFeed().toBase58(),
           encodedTokenInfo
@@ -179,7 +173,6 @@ public record ReserveContext(long slot,
                   "reserve": "%s",
                   "tokenName": %s,
                   "mint": "%s",
-                  "availableLiquidity": %d,
                   "totalCollateral": %d,
                   "priceFeed": "%s",
                   "maxAgePriceSeconds": %d,
@@ -189,7 +182,6 @@ public record ReserveContext(long slot,
             pubKey.toBase58(),
             jsonTokenName(),
             mint.toBase58(),
-            availableLiquidity,
             totalCollateral,
             priceFeed().toBase58(),
             maxAgePriceSeconds(),
@@ -202,7 +194,6 @@ public record ReserveContext(long slot,
                   "reserve": "%s",
                   "tokenName": %s,
                   "mint": "%s",
-                  "availableLiquidity": %d,
                   "totalCollateral": %d,
                   "priceFeed": "%s",
                   "maxAgePriceSeconds": %d,
@@ -215,7 +206,6 @@ public record ReserveContext(long slot,
             pubKey.toBase58(),
             jsonTokenName(),
             mint.toBase58(),
-            availableLiquidity,
             totalCollateral,
             priceFeed().toBase58(),
             maxAgePriceSeconds(),
@@ -236,14 +226,12 @@ public record ReserveContext(long slot,
                 "reserve": "%s",
                 "tokenName": %s,
                 "mint": "%s",
-                "availableLiquidity": %d,
                 "totalCollateral": %d,
                 "priceFeed": "%s"
               }""",
           pubKey.toBase58(),
           jsonTokenName(),
           mint.toBase58(),
-          availableLiquidity,
           totalCollateral,
           priceFeed().toBase58()
       );
@@ -255,7 +243,6 @@ public record ReserveContext(long slot,
                   "reserve": "%s",
                   "tokenName": %s,
                   "mint": "%s",
-                  "availableLiquidity": %d,
                   "totalCollateral": %d,
                   "priceFeed": "%s",
                   "maxAgePriceSeconds": %d,
@@ -264,7 +251,6 @@ public record ReserveContext(long slot,
             pubKey.toBase58(),
             jsonTokenName(),
             mint.toBase58(),
-            availableLiquidity,
             totalCollateral,
             priceFeed().toBase58(),
             maxAgePriceSeconds(),
@@ -276,7 +262,6 @@ public record ReserveContext(long slot,
                   "reserve": "%s",
                   "tokenName": %s,
                   "mint": "%s",
-                  "availableLiquidity": %d,
                   "totalCollateral": %d,
                   "priceFeed": "%s",
                   "maxAgePriceSeconds": %d,
@@ -288,7 +273,6 @@ public record ReserveContext(long slot,
             pubKey.toBase58(),
             jsonTokenName(),
             mint.toBase58(),
-            availableLiquidity,
             totalCollateral,
             priceFeed().toBase58(),
             maxAgePriceSeconds(),
@@ -305,7 +289,6 @@ public record ReserveContext(long slot,
     MARKET,
     MINT,
     TOKEN_NAME,
-    AVAILABLE_LIQUIDITY,
     TOTAL_COLLATERAL,
     MAX_AGE_PRICE_SECONDS,
     MAX_AGE_TWAP_SECONDS,
@@ -315,18 +298,8 @@ public record ReserveContext(long slot,
     TWAP_CHAIN
   }
 
-  static boolean onlyLiquidityChanged(final Set<ReserveChange> changes) {
-    final int numChanges = changes.size();
-    if (numChanges == 1
-        && (changes.contains(ReserveChange.AVAILABLE_LIQUIDITY) || changes.contains(ReserveChange.TOTAL_COLLATERAL))) {
-      return true;
-    } else if (numChanges == 2
-        && changes.contains(ReserveChange.AVAILABLE_LIQUIDITY)
-        && changes.contains(ReserveChange.TOTAL_COLLATERAL)) {
-      return true;
-    } else {
-      return false;
-    }
+  static boolean onlyCollateralChanged(final Set<ReserveChange> changes) {
+    return changes.size() == 1 && changes.contains(ReserveChange.TOTAL_COLLATERAL);
   }
 
   static final Set<ReserveChange> NO_CHANGES = Set.of();
@@ -357,9 +330,6 @@ public record ReserveContext(long slot,
       }
       if (!Objects.equals(tokenName, o.tokenName)) {
         changes = addChange(changes, ReserveChange.TOKEN_NAME);
-      }
-      if (availableLiquidity != o.availableLiquidity()) {
-        changes = addChange(changes, ReserveChange.AVAILABLE_LIQUIDITY);
       }
       if (totalCollateral != o.totalCollateral()) {
         changes = addChange(changes, ReserveChange.TOTAL_COLLATERAL);
@@ -399,7 +369,6 @@ public record ReserveContext(long slot,
     private PublicKey reserve;
     private String tokenName;
     private PublicKey mint;
-    private long availableLiquidity;
     private long totalCollateral;
     private ScopeEntry[] priceChain;
     private ScopeEntry[] twapChain;
@@ -429,7 +398,6 @@ public record ReserveContext(long slot,
           market,
           tokenName,
           mint,
-          availableLiquidity,
           totalCollateral,
           priceChains,
           tokenInfo
@@ -449,13 +417,11 @@ public record ReserveContext(long slot,
       if (JsonIterator.fieldEquals("slot", buf, offset, len)) {
         this.slot = ji.readLong();
       } else if (JsonIterator.fieldEquals("reserve", buf, offset, len)) {
-        this.reserve = PublicKey.fromBase58Encoded(ji.readString());
+        this.reserve = PublicKeyEncoding.parseBase58Encoded(ji);
       } else if (JsonIterator.fieldEquals("tokenName", buf, offset, len)) {
         this.tokenName = ji.readString();
       } else if (JsonIterator.fieldEquals("mint", buf, offset, len)) {
-        this.mint = PublicKey.fromBase58Encoded(ji.readString());
-      } else if (JsonIterator.fieldEquals("availableLiquidity", buf, offset, len)) {
-        this.availableLiquidity = ji.readLong();
+        this.mint = PublicKeyEncoding.parseBase58Encoded(ji);
       } else if (JsonIterator.fieldEquals("totalCollateral", buf, offset, len)) {
         this.totalCollateral = ji.readLong();
       } else if (JsonIterator.fieldEquals("priceChain", buf, offset, len)) {

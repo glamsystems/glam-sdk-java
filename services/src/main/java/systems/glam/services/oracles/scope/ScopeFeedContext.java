@@ -214,39 +214,46 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
     }
   }
 
+  private record FilteredReserve(int index, long collateral) implements Comparable<FilteredReserve> {
+
+    @Override
+    public int compareTo(final FilteredReserve o) {
+      return Long.compareUnsigned(o.collateral, collateral);
+    }
+  }
+
   FeedIndexes indexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType) {
     final var reservesForMint = this.reservesByMint.get(mint);
     if (reservesForMint == null || reservesForMint.length == 0) {
       return null;
     }
 
-    final short[] indexes = new short[]{-1, -1, -1, -1};
-    BigInteger liquidity = null;
-    int i = 0;
-    DONE:
-    for (final var reserveContext : reservesForMint) {
+    final var topReserves = Arrays.stream(reservesForMint).<FilteredReserve>mapMulti((reserveContext, consumer) -> {
       final var priceChains = reserveContext.priceChains();
       if (priceChains != null) {
         final var priceChain = priceChains.priceChain();
         for (final var scopeEntry : priceChain) {
           if (scopeEntry instanceof OracleEntry oracleEntry) {
             if (oracleEntry.oracleType() == oracleType && oracleEntry.oracle().equals(oracle)) {
-              indexes[i] = (short) scopeEntry.index();
-              final var reserveLiquidity = BigInteger.valueOf(reserveContext.availableLiquidity());
-              liquidity = liquidity == null ? reserveLiquidity : liquidity.add(reserveLiquidity);
-              if (++i == 4) {
-                break DONE;
-              }
-            }
-          } // else Handle nested OracleTypes, e.g., a MostRecentOf holding the desired type.
+              consumer.accept(new FilteredReserve(oracleEntry.index(), reserveContext.totalCollateral()));
+            } // else Handle nested OracleTypes, e.g., a MostRecentOf holding the desired type.
+          }
         }
       }
+    }).sorted().limit(4).toArray(FilteredReserve[]::new);
+
+    if (topReserves.length == 0) {
+      return null;
     }
 
-    if (i == 0) {
-      return null;
-    } else {
-      return new FeedIndexes(readPriceFeed, indexes, liquidity);
+    var reserve = topReserves[0];
+    var collateral = BigInteger.valueOf(reserve.collateral());
+    final short[] indexes = new short[]{(short) reserve.index(), -1, -1, -1};
+    for (int i = 1; i < topReserves.length; i++) {
+      reserve = topReserves[i];
+      collateral = collateral.add(BigInteger.valueOf(reserve.collateral()));
+      indexes[i++] = (short) reserve.index();
     }
+    return new FeedIndexes(readPriceFeed, indexes, collateral);
   }
 }

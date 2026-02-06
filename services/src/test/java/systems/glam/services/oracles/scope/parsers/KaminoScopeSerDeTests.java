@@ -206,12 +206,11 @@ final class KaminoScopeSerDeTests {
   @Test
   void testReserveContextDeserialization() {
     final var market = PublicKey.fromBase58Encoded("DB4MaCd6VFX9dgHSHituww8PPHbEUpMAb4LotDpy9iB");
-    final String json = """
+    final var json = """
         {
           "reserve": "AEyCizr8c4SoStoueMJXZx55Hr1ftQ1R8ZH1sS8L9dXv",
           "tokenName": "USDC",
           "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-          "availableLiquidity": 123456789,
           "totalCollateral": 987654321
         }""";
     final var ji = systems.comodal.jsoniter.JsonIterator.parse(json);
@@ -220,7 +219,6 @@ final class KaminoScopeSerDeTests {
     assertEquals(PublicKey.fromBase58Encoded("AEyCizr8c4SoStoueMJXZx55Hr1ftQ1R8ZH1sS8L9dXv"), reserveContext.pubKey());
     assertEquals("USDC", reserveContext.tokenName());
     assertEquals(PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"), reserveContext.mint());
-    assertEquals(123456789L, reserveContext.availableLiquidity());
     assertEquals(987654321L, reserveContext.totalCollateral());
     assertEquals(market, reserveContext.market());
   }

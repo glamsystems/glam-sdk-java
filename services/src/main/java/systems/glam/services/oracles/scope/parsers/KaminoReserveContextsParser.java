@@ -1,6 +1,7 @@
 package systems.glam.services.oracles.scope.parsers;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.rpc.json.PublicKeyEncoding;
 import systems.comodal.jsoniter.FieldBufferPredicate;
 import systems.comodal.jsoniter.JsonIterator;
 import systems.glam.services.oracles.scope.MappingsContext;
@@ -34,7 +35,7 @@ public final class KaminoReserveContextsParser implements FieldBufferPredicate {
   @Override
   public boolean test(final char[] buf, final int offset, final int len, final JsonIterator ji) {
     if (JsonIterator.fieldEquals("market", buf, offset, len)) {
-      this.market = PublicKey.fromBase58Encoded(ji.readString());
+      this.market = PublicKeyEncoding.parseBase58Encoded(ji);
     } else if (JsonIterator.fieldEquals("reserves", buf, offset, len)) {
       Objects.requireNonNull(market);
       while (ji.readArray()) {

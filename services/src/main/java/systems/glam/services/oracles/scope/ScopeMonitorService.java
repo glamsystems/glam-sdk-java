@@ -81,10 +81,10 @@ public interface ScopeMonitorService extends ScopeAggregateIndexes, Runnable, Co
             final byte[] data = reserveAccountInfo.data();
             if (Arrays.equals(
                 data, priceFeedKeyFromOffset, priceFeedKeyToOffset,
-                nullKeyBytes, 0, PUBLIC_KEY_LENGTH
+                nullKeyBytes, 0, nullKeyBytes.length
             ) || Arrays.equals(
                 data, priceFeedKeyFromOffset, priceFeedKeyToOffset,
-                nilKeyBytes, 0, PUBLIC_KEY_LENGTH
+                nilKeyBytes, 0, nilKeyBytes.length
             )) {
               final var reserveContext = ReserveContext.createContext(reserveAccountInfo, noMappings);
               reserveContextMap.put(reserveContext.pubKey(), reserveContext);
@@ -179,7 +179,6 @@ public interface ScopeMonitorService extends ScopeAggregateIndexes, Runnable, Co
 
         return new ScopeMonitorServiceImpl(
             notifyClient,
-            rpcCaller,
             accountFetcher,
             kLendProgram,
             scopeProgram,

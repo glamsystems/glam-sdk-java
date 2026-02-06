@@ -1,7 +1,6 @@
 package systems.glam.services.oracles.scope;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.lend.gen.types.Reserve;
 import software.sava.idl.clients.kamino.scope.entries.*;
 import software.sava.idl.clients.kamino.scope.entries.Deprecated;
@@ -12,7 +11,6 @@ import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.core.net.http.NotifyClient;
-import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.services.io.FileUtils;
 import systems.glam.services.rpc.AccountFetcher;
 
@@ -23,7 +21,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -38,7 +35,6 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
   static final System.Logger logger = System.getLogger(ScopeMonitorService.class.getName());
 
   private final NotifyClient notifyClient;
-  private final RpcCaller rpcCaller;
   private final AccountFetcher accountFetcher;
   private final PublicKey kLendProgram;
   private final PublicKey scopeProgram;
@@ -47,7 +43,6 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
   private final Path configurationsPath;
   private final Path mappingsPath;
   private final Path reserveContextsFilePath;
-  private final ConcurrentSkipListSet<PublicKey> ignorePriceFeeds;
   private final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap;
   private final ConcurrentMap<PublicKey, MappingsContext> mappingsContextMap;
   private final ConcurrentMap<PublicKey, ScopeFeedContext> priceFeedContextMap;
@@ -57,7 +52,6 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
   private final AtomicInteger asyncReserveUpdates;
 
   ScopeMonitorServiceImpl(final NotifyClient notifyClient,
-                          final RpcCaller rpcCaller,
                           final AccountFetcher accountFetcher,
                           final PublicKey kLendProgram,
                           final PublicKey scopeProgram,
@@ -69,7 +63,6 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
                           final ConcurrentMap<PublicKey, MappingsContext> mappingsContextMap,
                           final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap) {
     this.notifyClient = notifyClient;
-    this.rpcCaller = rpcCaller;
     this.accountFetcher = accountFetcher;
     this.kLendProgram = kLendProgram;
     this.scopeProgram = scopeProgram;
@@ -77,9 +70,6 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
     this.configurationsPath = configurationsPath;
     this.mappingsPath = mappingsPath;
     this.reserveContextsFilePath = reserveContextsFilePath;
-    this.ignorePriceFeeds = new ConcurrentSkipListSet<>();
-    ignorePriceFeeds.add(KaminoAccounts.NULL_KEY);
-    ignorePriceFeeds.add(PublicKey.NONE);
     this.reserveContextMap = reserveContextMap;
     this.mappingsContextMap = mappingsContextMap;
     this.priceFeedContextMap = new ConcurrentHashMap<>();
@@ -163,16 +153,18 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
   }
 
   private void removeConfig(final ScopeFeedContext scopeFeedContext) {
-    final var priceFeed = scopeFeedContext.priceFeed();
-    this.ignorePriceFeeds.add(priceFeed);
     final var configKey = scopeFeedContext.configurationKey();
     final var mappingsKey = scopeFeedContext.oracleMappings();
+
     this.accountsNeededSet.remove(configKey);
     this.accountsNeededSet.remove(mappingsKey);
+
+    final var priceFeedKey = scopeFeedContext.priceFeed();
+    this.priceFeedContextMap.remove(priceFeedKey);
     this.priceFeedContextMap.remove(mappingsKey);
-    this.priceFeedContextMap.remove(priceFeed);
     this.priceFeedContextMap.remove(configKey);
-    this.mappingsContextMap.remove(priceFeed);
+
+    this.mappingsContextMap.remove(priceFeedKey);
     this.mappingsContextMap.remove(mappingsKey);
   }
 
@@ -300,7 +292,7 @@ final class ScopeMonitorServiceImpl implements ScopeMonitorService {
             final var feedContext = priceFeedContextMap.get(priceFeed);
             if (feedContext == null) {
               return;
-            } else if (ReserveContext.onlyLiquidityChanged(changes)) {
+            } else if (ReserveContext.onlyCollateralChanged(changes)) {
               feedContext.resortReserves(reserveContext);
               return;
             } else {
