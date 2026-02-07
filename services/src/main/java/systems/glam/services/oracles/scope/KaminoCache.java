@@ -28,6 +28,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static java.nio.file.StandardOpenOption.*;
 import static software.sava.core.accounts.PublicKey.PUBLIC_KEY_LENGTH;
@@ -177,6 +178,8 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
           writeReserves(reservesJsonFilePath, reserveContextMap);
         }
 
+//        analyzeMarkets(reserveContextMap);
+
         return new KaminoCacheImpl(
             notifyClient,
             accountFetcher,
@@ -194,6 +197,106 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
         throw new UncheckedIOException(e);
       }
     });
+  }
+
+  private static void analyzeMarkets(final Map<PublicKey, ReserveContext> reserveContextMap) {
+    final var byMarket = reserveContextMap.values().stream()
+        .collect(Collectors.groupingBy(ReserveContext::market));
+
+    record MarketOracles(PublicKey market, Set<PublicKey> switchboard, Set<PublicKey> pyth, Set<PublicKey> scope) {
+
+      String toJson() {
+        return String.format("""
+                {
+                 "market": "%s",
+                 "switchboard": [%s],
+                 "pyth": [%s],
+                 "scope": [%s]
+                }""",
+            market.toBase58(),
+            switchboard.isEmpty() ? "" : switchboard.stream().map(PublicKey::toBase58).collect(Collectors.joining("\",\"", "\"", "\"")),
+            pyth.isEmpty() ? "" : pyth.stream().map(PublicKey::toBase58).collect(Collectors.joining("\",\"", "\"", "\"")),
+            scope.isEmpty() ? "" : scope.stream().map(PublicKey::toBase58).collect(Collectors.joining("\",\"", "\"", "\""))
+        );
+      }
+    }
+
+    final class MarketOraclesBuilder {
+
+      Set<PublicKey> switchboard;
+      Set<PublicKey> pyth;
+      Set<PublicKey> scope;
+
+      int addAccounts(final TokenInfo tokenInfo) {
+        int numOracleSources = 0;
+        final var priceFeed = tokenInfo.scopeConfiguration().priceFeed();
+        if (!priceFeed.equals(PublicKey.NONE) && !priceFeed.equals(KaminoAccounts.NULL_KEY)) {
+          if (scope == null) {
+            scope = new HashSet<>();
+          }
+          scope.add(priceFeed);
+          ++numOracleSources;
+        }
+        final var switchboard = tokenInfo.switchboardConfiguration().priceAggregator();
+        if (!switchboard.equals(PublicKey.NONE) && !switchboard.equals(KaminoAccounts.NULL_KEY)) {
+          if (this.switchboard == null) {
+            this.switchboard = new HashSet<>();
+          }
+          this.switchboard.add(switchboard);
+          ++numOracleSources;
+        }
+        final var pyth = tokenInfo.pythConfiguration().price();
+        if (!pyth.equals(PublicKey.NONE) && !pyth.equals(KaminoAccounts.NULL_KEY)) {
+          if (this.pyth == null) {
+            this.pyth = new HashSet<>();
+          }
+          this.pyth.add(pyth);
+          ++numOracleSources;
+        }
+        return numOracleSources;
+      }
+
+      int numAccounts() {
+        int numAccounts = 0;
+        if (switchboard != null) {
+          numAccounts += switchboard.size();
+        }
+        if (pyth != null) {
+          numAccounts += pyth.size();
+        }
+        if (scope != null) {
+          numAccounts += scope.size();
+        }
+        return numAccounts;
+      }
+
+      MarketOracles build(final PublicKey market) {
+        return new MarketOracles(
+            market,
+            switchboard == null ? Set.of() : Set.copyOf(switchboard),
+            pyth == null ? Set.of() : Set.copyOf(pyth),
+            scope == null ? Set.of() : Set.copyOf(scope)
+        );
+      }
+    }
+
+    final var marketOracles = HashMap.<PublicKey, MarketOracles>newHashMap(byMarket.size());
+
+    for (final var entry : byMarket.entrySet()) {
+      final var market = entry.getKey();
+      final var builder = new MarketOraclesBuilder();
+      for (final var reserveContext : entry.getValue()) {
+        final var tokenInfo = reserveContext.tokenInfo();
+        builder.addAccounts(tokenInfo);
+      }
+      marketOracles.put(market, builder.build(market));
+    }
+
+    final var json = marketOracles.values().stream()
+        .map(MarketOracles::toJson)
+        .map(indented -> indented.indent(2).stripTrailing())
+        .collect(Collectors.joining(",\n", "[\n", "\n]"));
+    System.out.println(json);
   }
 
   private static void loadReserves(final Path reservesJsonFilePath,

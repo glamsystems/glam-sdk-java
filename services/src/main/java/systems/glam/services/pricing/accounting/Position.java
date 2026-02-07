@@ -13,6 +13,7 @@ import systems.glam.services.state.MinGlamStateAccount;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Map;
+import java.util.SequencedCollection;
 import java.util.Set;
 
 public interface Position {
@@ -21,13 +22,14 @@ public interface Position {
 
   void accountsForPriceInstruction(final Set<PublicKey> keys);
 
-  Instruction priceInstruction(final IntegrationServiceContext serviceContext,
-                               final GlamAccountClient glamAccountClient,
-                               final PublicKey solUSDOracleKey,
-                               final PublicKey baseAssetUSDOracleKey,
-                               final MinGlamStateAccount stateAccount,
-                               final Map<PublicKey, AccountInfo<byte[]>> accountMap,
-                               final Set<PublicKey> returnAccounts);
+  boolean priceInstruction(final IntegrationServiceContext serviceContext,
+                           final GlamAccountClient glamAccountClient,
+                           final PublicKey solUSDOracleKey,
+                           final PublicKey baseAssetUSDOracleKey,
+                           final MinGlamStateAccount stateAccount,
+                           final Map<PublicKey, AccountInfo<byte[]>> accountMap,
+                           final SequencedCollection<Instruction> priceInstructions,
+                           final Set<PublicKey> returnAccounts);
 
   static BigDecimal parseAnchorEvent(final InnerInstructions priceInstruction,
                                      final PublicKey mintProgram,

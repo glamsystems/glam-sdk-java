@@ -359,13 +359,6 @@ class GlamAccountClientImpl implements GlamAccountClient {
   public Instruction priceKaminoObligations(final PublicKey kaminoLendingProgramKey,
                                             final PublicKey solUSDOracleKey,
                                             final PublicKey baseAssetUsdOracleKey,
-                                            final PublicKey pythOracleKey,
-                                            final PublicKey switchboardPriceOracleKey,
-                                            final PublicKey switchboardTwapOracleKey,
-                                            final PublicKey scopePricesKey,
-                                            final int numObligations,
-                                            final int numMarkets,
-                                            final int numReserves,
                                             final boolean cpiEmitEvents) {
     final var invoked = glamAccounts.invokedMintIntegrationProgram();
     final var mintProgram = invoked.publicKey();
@@ -374,21 +367,13 @@ class GlamAccountClientImpl implements GlamAccountClient {
         glamVaultAccounts.glamStateKey(),
         glamVaultAccounts.vaultPublicKey(),
         feePayer.publicKey(),
-        kaminoLendingProgramKey,
         solUSDOracleKey,
         baseAssetUsdOracleKey,
         glamAccounts.readMintIntegrationAuthority().publicKey(),
         globalConfigKey,
         invokedProtocolProgram.publicKey(),
         cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
-        mintProgram,
-        pythOracleKey,
-        switchboardPriceOracleKey,
-        switchboardTwapOracleKey,
-        scopePricesKey,
-        numObligations,
-        numMarkets,
-        numReserves
+        mintProgram
     );
   }
 

@@ -7,11 +7,12 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.services.integrations.IntegrationServiceContext;
-import systems.glam.services.state.MinGlamStateAccount;
-import systems.glam.services.pricing.accounting.PositionReport;
 import systems.glam.services.pricing.accounting.Position;
+import systems.glam.services.pricing.accounting.PositionReport;
+import systems.glam.services.state.MinGlamStateAccount;
 
 import java.util.Map;
+import java.util.SequencedCollection;
 import java.util.Set;
 
 public final class DriftVaultPosition implements Position {
@@ -44,14 +45,15 @@ public final class DriftVaultPosition implements Position {
   }
 
   @Override
-  public Instruction priceInstruction(final IntegrationServiceContext serviceContext,
-                                      final GlamAccountClient glamAccountClient,
-                                      final PublicKey solUSDOracleKey,
-                                      final PublicKey baseAssetUSDOracleKey,
-                                      final MinGlamStateAccount stateAccount,
-                                      final Map<PublicKey, AccountInfo<byte[]>> accountMap,
-                                      final Set<PublicKey> returnAccounts) {
-    return null;
+  public boolean priceInstruction(final IntegrationServiceContext serviceContext,
+                                  final GlamAccountClient glamAccountClient,
+                                  final PublicKey solUSDOracleKey,
+                                  final PublicKey baseAssetUSDOracleKey,
+                                  final MinGlamStateAccount stateAccount,
+                                  final Map<PublicKey, AccountInfo<byte[]>> accountMap,
+                                  final SequencedCollection<Instruction> priceInstructions,
+                                  final Set<PublicKey> returnAccounts) {
+    return false;
   }
 
   @Override

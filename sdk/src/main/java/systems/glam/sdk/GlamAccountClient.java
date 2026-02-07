@@ -116,36 +116,15 @@ public interface GlamAccountClient extends SPLAccountClient {
   Instruction priceKaminoObligations(final PublicKey kaminoLendingProgramKey,
                                      final PublicKey solUSDOracleKey,
                                      final PublicKey baseAssetUsdOracleKey,
-                                     final PublicKey pythOracleKey,
-                                     final PublicKey switchboardPriceOracleKey,
-                                     final PublicKey switchboardTwapOracleKey,
-                                     final PublicKey scopePricesKey,
-                                     final int numObligations,
-                                     final int numMarkets,
-                                     final int numReserves,
                                      final boolean cpiEmitEvents);
 
   default Instruction priceKaminoObligations(final PublicKey kaminoLendingProgramKey,
                                              final PublicKey solUSDOracleKey,
-                                             final PublicKey baseAssetUsdOracleKey,
-                                             final PublicKey pythOracleKey,
-                                             final PublicKey switchboardPriceOracleKey,
-                                             final PublicKey switchboardTwapOracleKey,
-                                             final PublicKey scopePricesKey,
-                                             final int numObligations,
-                                             final int numMarkets,
-                                             final int numReserves) {
+                                             final PublicKey baseAssetUsdOracleKey) {
     return priceKaminoObligations(
         kaminoLendingProgramKey,
         solUSDOracleKey,
         baseAssetUsdOracleKey,
-        pythOracleKey,
-        switchboardPriceOracleKey,
-        switchboardTwapOracleKey,
-        scopePricesKey,
-        numObligations,
-        numMarkets,
-        numReserves,
         false
     );
   }

@@ -18,10 +18,7 @@ import systems.glam.services.pricing.accounting.PositionReportRecord;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.MinGlamStateAccount;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public final class DriftUsersPosition implements Position {
 
@@ -63,13 +60,14 @@ public final class DriftUsersPosition implements Position {
   }
 
   @Override
-  public Instruction priceInstruction(final IntegrationServiceContext serviceContext,
-                                      final GlamAccountClient glamAccountClient,
-                                      final PublicKey solUSDOracleKey,
-                                      final PublicKey baseAssetUSDOracleKey,
-                                      final MinGlamStateAccount stateAccount,
-                                      final Map<PublicKey, AccountInfo<byte[]>> accountMap,
-                                      final Set<PublicKey> returnAccounts) {
+  public boolean priceInstruction(final IntegrationServiceContext serviceContext,
+                                  final GlamAccountClient glamAccountClient,
+                                  final PublicKey solUSDOracleKey,
+                                  final PublicKey baseAssetUSDOracleKey,
+                                  final MinGlamStateAccount stateAccount,
+                                  final Map<PublicKey, AccountInfo<byte[]>> accountMap,
+                                  final SequencedCollection<Instruction> priceInstructions,
+                                  final Set<PublicKey> returnAccounts) {
     int missingMarkets = 0;
 
     final int numUsers = userAccounts.size();
@@ -80,7 +78,7 @@ public final class DriftUsersPosition implements Position {
     for (final var userKey : userAccounts.keySet()) {
       final var userAccount = accountMap.get(userKey);
       if (AccountFetcher.isNull(userAccount)) {
-        return null;
+        continue;
       }
 
       final byte[] data = userAccount.data();
@@ -119,12 +117,14 @@ public final class DriftUsersPosition implements Position {
       extraAccounts.addAll(userAccounts.values());
       extraAccounts.addAll(extraAccountsMap.values());
 
-      return glamAccountClient.priceDriftUsers(
+      final var priceIx = glamAccountClient.priceDriftUsers(
           solUSDOracleKey, baseAssetUSDOracleKey,
           numUsers, true
       ).extraAccounts(extraAccounts);
+      priceInstructions.add(priceIx);
+      return true;
     } else {
-      return null;
+      return false;
     }
   }
 

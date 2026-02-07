@@ -11,7 +11,7 @@ import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoVaultCache;
 import systems.glam.services.mints.*;
 import systems.glam.services.oracles.scope.FeedIndexes;
-import systems.glam.services.pricing.ScopeAggregateIndexes;
+import systems.glam.services.oracles.scope.KaminoCache;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.GlobalConfigCache;
@@ -23,35 +23,35 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   private final MintCache mintCache;
   private final StakePoolCache stakePoolCache;
   private final GlobalConfigCache globalConfigCache;
-  private final ScopeAggregateIndexes scopeAggregateIndexes;
   private final IntegLookupTableCache integLookupTableCache;
   private final AccountFetcher accountFetcher;
   private final DriftAccounts driftAccounts;
   private final DriftMarketCache driftMarketCache;
   private final KaminoAccounts kaminoAccounts;
+  private final KaminoCache kaminoCache;
   private final KaminoVaultCache kaminoVaultCache;
 
   IntegrationServiceContextImpl(final ServiceContext serviceContext,
                                 final MintCache mintCache,
                                 final StakePoolCache stakePoolCache,
                                 final GlobalConfigCache globalConfigCache,
-                                final ScopeAggregateIndexes scopeAggregateIndexes,
                                 final IntegLookupTableCache integLookupTableCache,
                                 final AccountFetcher accountFetcher,
                                 final DriftAccounts driftAccounts,
                                 final DriftMarketCache driftMarketCache,
                                 final KaminoAccounts kaminoAccounts,
+                                final KaminoCache kaminoCache,
                                 final KaminoVaultCache kaminoVaultCache) {
     super(serviceContext);
     this.mintCache = mintCache;
     this.stakePoolCache = stakePoolCache;
     this.globalConfigCache = globalConfigCache;
-    this.scopeAggregateIndexes = scopeAggregateIndexes;
     this.integLookupTableCache = integLookupTableCache;
     this.accountFetcher = accountFetcher;
     this.driftAccounts = driftAccounts;
     this.driftMarketCache = driftMarketCache;
     this.kaminoAccounts = kaminoAccounts;
+    this.kaminoCache = kaminoCache;
     this.kaminoVaultCache = kaminoVaultCache;
   }
 
@@ -91,11 +91,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   }
 
   @Override
-  public FeedIndexes scopeAggregateIndexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType) {
-    return scopeAggregateIndexes.indexes(mint, oracle, oracleType);
-  }
-
-  @Override
   public void queue(final Collection<PublicKey> accounts, final AccountConsumer callback) {
     accountFetcher.queue(accounts, callback);
   }
@@ -121,13 +116,23 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   }
 
   @Override
-  public KaminoVaultCache kaminoVaultCache() {
-    return kaminoVaultCache;
+  public KaminoAccounts kaminoAccounts() {
+    return kaminoAccounts;
   }
 
   @Override
-  public KaminoAccounts kaminoAccounts() {
-    return kaminoAccounts;
+  public KaminoCache kaminoCache() {
+    return kaminoCache;
+  }
+
+  @Override
+  public FeedIndexes scopeAggregateIndexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType) {
+    return kaminoCache.indexes(mint, oracle, oracleType);
+  }
+
+  @Override
+  public KaminoVaultCache kaminoVaultCache() {
+    return kaminoVaultCache;
   }
 
   @Override

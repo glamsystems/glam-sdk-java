@@ -153,12 +153,12 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
         mintCache,
         stakePoolCache,
         globalConfigCache,
-        kaminoCache,
         integTableCache,
         accountFetcher,
         driftAccounts,
         driftMarketCache,
         kaminoAccounts,
+        kaminoCache,
         null // TODO: kVaults
     );
 

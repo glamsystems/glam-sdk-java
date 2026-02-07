@@ -2,8 +2,6 @@ package systems.glam.services.pricing.accounting;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
-import software.sava.core.accounts.token.TokenAccount;
-import software.sava.core.encoding.ByteUtil;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.rpc.json.http.response.AccountInfo;
@@ -11,13 +9,9 @@ import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.pricing.ScopeAggregateIndexes;
-import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.MinGlamStateAccount;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static java.lang.System.Logger.Level.WARNING;
 
@@ -71,13 +65,14 @@ public final class VaultTokensPosition implements Position {
   }
 
   @Override
-  public Instruction priceInstruction(final IntegrationServiceContext serviceContext,
-                                      final GlamAccountClient glamAccountClient,
-                                      final PublicKey solUSDOracleKey,
-                                      final PublicKey baseAssetUSDOracleKey,
-                                      final MinGlamStateAccount stateAccount,
-                                      final Map<PublicKey, AccountInfo<byte[]>> accountMap,
-                                      final Set<PublicKey> returnAccounts) {
+  public boolean priceInstruction(final IntegrationServiceContext serviceContext,
+                                  final GlamAccountClient glamAccountClient,
+                                  final PublicKey solUSDOracleKey,
+                                  final PublicKey baseAssetUSDOracleKey,
+                                  final MinGlamStateAccount stateAccount,
+                                  final Map<PublicKey, AccountInfo<byte[]>> accountMap,
+                                  final SequencedCollection<Instruction> priceInstructions,
+                                  final Set<PublicKey> returnAccounts) {
     final var vaultAssets = stateAccount.assets();
     final short[][] aggIndexes = ScopeAggregateIndexes.createIndexesArray(vaultAssets.length);
 
@@ -85,11 +80,11 @@ public final class VaultTokensPosition implements Position {
     for (int i = 0; i < vaultAssets.length; i++) {
       final var vaultAsset = vaultAssets[i];
       final var vaultATA = vaultATAMap.get(vaultAsset);
-      final var vaultTokenAccount = accountMap.get(vaultATA.publicKey());
-      if (AccountFetcher.isNull(vaultTokenAccount)
-          || ByteUtil.getInt64LE(vaultTokenAccount.data(), TokenAccount.AMOUNT_OFFSET) == 0) {
-        continue;
-      }
+//      final var vaultTokenAccount = accountMap.get(vaultATA.publicKey());
+//      if (AccountFetcher.isNull(vaultTokenAccount)) {
+////          || ByteUtil.getInt64LE(vaultTokenAccount.data(), TokenAccount.AMOUNT_OFFSET) == 0) {
+//        continue;
+//      }
 
       extraAccounts.add(vaultATA);
 
@@ -98,7 +93,7 @@ public final class VaultTokensPosition implements Position {
         final var stakePoolContext = serviceContext.stakePoolContextForMint(vaultAsset);
         if (stakePoolContext == null) {
           logger.log(WARNING, "Missing asset meta for vault asset: {0}", vaultAsset);
-          return null;
+          return false;
         } else {
           extraAccounts.add(stakePoolContext.readState());
           continue;
@@ -128,7 +123,8 @@ public final class VaultTokensPosition implements Position {
         case ChainlinkRWA -> {
           final var feedIndexes = serviceContext.scopeAggregateIndexes(vaultAsset, assetMeta.oracle(), OracleType.ChainlinkRWA);
           if (feedIndexes == null) {
-            return null;
+            logger.log(WARNING, "Missing feed indexes for vault asset: {0}", vaultAsset);
+            return false;
           } else {
             extraAccounts.add(feedIndexes.readPriceFeed());
             aggIndexes[i] = feedIndexes.indexes();
@@ -142,8 +138,9 @@ public final class VaultTokensPosition implements Position {
         baseAssetUSDOracleKey,
         aggIndexes,
         true
-    );
-    return priceVaultIx.extraAccounts(extraAccounts);
+    ).extraAccounts(extraAccounts);
+    priceInstructions.add(priceVaultIx);
+    return true;
   }
 
   @Override

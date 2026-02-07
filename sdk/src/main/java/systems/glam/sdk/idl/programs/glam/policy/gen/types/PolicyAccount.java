@@ -8,6 +8,8 @@ import software.sava.core.rpc.Filter;
 import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.rpc.json.http.response.AccountInfo;
 
+import systems.glam.sdk.idl.programs.glam.protocol.gen.types.TimeUnit;
+
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
@@ -20,9 +22,10 @@ public record PolicyAccount(PublicKey _address,
                             PublicKey subject,
                             PublicKey mint,
                             PublicKey tokenAccount,
-                            long lockedUntilTs) implements SerDe {
+                            long lockedUntil,
+                            TimeUnit timeUnit) implements SerDe {
 
-  public static final int BYTES = 144;
+  public static final int BYTES = 145;
   public static final Filter SIZE_FILTER = Filter.createDataSizeFilter(BYTES);
 
   public static final Discriminator DISCRIMINATOR = toDiscriminator(218, 201, 183, 164, 156, 127, 81, 175);
@@ -32,7 +35,8 @@ public record PolicyAccount(PublicKey _address,
   public static final int SUBJECT_OFFSET = 40;
   public static final int MINT_OFFSET = 72;
   public static final int TOKEN_ACCOUNT_OFFSET = 104;
-  public static final int LOCKED_UNTIL_TS_OFFSET = 136;
+  public static final int LOCKED_UNTIL_OFFSET = 136;
+  public static final int TIME_UNIT_OFFSET = 144;
 
   public static Filter createAuthorityFilter(final PublicKey authority) {
     return Filter.createMemCompFilter(AUTHORITY_OFFSET, authority);
@@ -50,10 +54,14 @@ public record PolicyAccount(PublicKey _address,
     return Filter.createMemCompFilter(TOKEN_ACCOUNT_OFFSET, tokenAccount);
   }
 
-  public static Filter createLockedUntilTsFilter(final long lockedUntilTs) {
+  public static Filter createLockedUntilFilter(final long lockedUntil) {
     final byte[] _data = new byte[8];
-    putInt64LE(_data, 0, lockedUntilTs);
-    return Filter.createMemCompFilter(LOCKED_UNTIL_TS_OFFSET, _data);
+    putInt64LE(_data, 0, lockedUntil);
+    return Filter.createMemCompFilter(LOCKED_UNTIL_OFFSET, _data);
+  }
+
+  public static Filter createTimeUnitFilter(final TimeUnit timeUnit) {
+    return Filter.createMemCompFilter(TIME_UNIT_OFFSET, timeUnit.write());
   }
 
   public static PolicyAccount read(final byte[] _data, final int _offset) {
@@ -84,14 +92,17 @@ public record PolicyAccount(PublicKey _address,
     i += 32;
     final var tokenAccount = readPubKey(_data, i);
     i += 32;
-    final var lockedUntilTs = getInt64LE(_data, i);
+    final var lockedUntil = getInt64LE(_data, i);
+    i += 8;
+    final var timeUnit = TimeUnit.read(_data, i);
     return new PolicyAccount(_address,
                              discriminator,
                              authority,
                              subject,
                              mint,
                              tokenAccount,
-                             lockedUntilTs);
+                             lockedUntil,
+                             timeUnit);
   }
 
   @Override
@@ -105,8 +116,9 @@ public record PolicyAccount(PublicKey _address,
     i += 32;
     tokenAccount.write(_data, i);
     i += 32;
-    putInt64LE(_data, i, lockedUntilTs);
+    putInt64LE(_data, i, lockedUntil);
     i += 8;
+    i += timeUnit.write(_data, i);
     return i - _offset;
   }
 

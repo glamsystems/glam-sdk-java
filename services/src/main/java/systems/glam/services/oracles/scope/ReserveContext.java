@@ -1,6 +1,7 @@
 package systems.glam.services.oracles.scope;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.encoding.ByteUtil;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.lend.gen.types.*;
@@ -15,14 +16,37 @@ import systems.glam.services.oracles.scope.parsers.ScopeEntryParser;
 
 import java.util.*;
 
+import static software.sava.idl.clients.kamino.KaminoAccounts.NULL_KEY;
+
 public record ReserveContext(long slot,
-                             PublicKey pubKey,
+                             PublicKey pubKey, AccountMeta writeReserve,
                              PublicKey market,
                              String tokenName,
                              PublicKey mint,
                              long totalCollateral,
                              PriceChains priceChains,
                              TokenInfo tokenInfo) {
+
+  private static final Map<PublicKey, AccountMeta> READ_PRICE_FEED_METAS = new HashMap<>();
+  private static final Map<PublicKey, AccountMeta> WRITE_MARKET_METAS = new HashMap<>(128);
+
+  static AccountMeta readPriceFeedMeta(final PublicKey priceFeed) {
+    var readPriceFeedMeta = READ_PRICE_FEED_METAS.get(priceFeed);
+    if (readPriceFeedMeta == null) {
+      readPriceFeedMeta = AccountMeta.createRead(priceFeed);
+      READ_PRICE_FEED_METAS.putIfAbsent(priceFeed, readPriceFeedMeta);
+    }
+    return readPriceFeedMeta;
+  }
+
+  static AccountMeta writeMarketMeta(final PublicKey market) {
+    var writeMarketMeta = WRITE_MARKET_METAS.get(market);
+    if (writeMarketMeta == null) {
+      writeMarketMeta = AccountMeta.createWrite(market);
+      WRITE_MARKET_METAS.putIfAbsent(market, writeMarketMeta);
+    }
+    return writeMarketMeta;
+  }
 
   public static ReserveContext parseContext(final JsonIterator ji,
                                             final PublicKey market,
@@ -49,7 +73,7 @@ public record ReserveContext(long slot,
     final var tokenName = i < 0 ? null : new String(name, 0, i + 1);
     return new ReserveContext(
         slot,
-        reserveKey,
+        reserveKey, AccountMeta.createWrite(reserveKey),
         lendingMarketKey,
         tokenName != null && tokenName.isBlank() ? null : tokenName,
         mintKey,
@@ -63,7 +87,7 @@ public record ReserveContext(long slot,
                                              final ScopeConfiguration scopeConfiguration,
                                              final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed) {
     final var priceFeed = scopeConfiguration.priceFeed();
-    if (priceFeed.equals(PublicKey.NONE) || priceFeed.equals(KaminoAccounts.NULL_KEY)) {
+    if (priceFeed.equals(PublicKey.NONE) || priceFeed.equals(NULL_KEY)) {
       return null;
     } else {
       final var scopeEntries = mappingsContextByPriceFeed.get(priceFeed);
@@ -92,7 +116,16 @@ public record ReserveContext(long slot,
   }
 
   public ReserveContext withPriceChains(final PriceChains priceChains) {
-    return new ReserveContext(slot, pubKey, market, tokenName, mint, totalCollateral, priceChains, tokenInfo);
+    return new ReserveContext(
+        slot,
+        pubKey, writeReserve,
+        market,
+        tokenName,
+        mint,
+        totalCollateral,
+        priceChains,
+        tokenInfo
+    );
   }
 
   public ScopeConfiguration scopeConfiguration() {
@@ -117,6 +150,44 @@ public record ReserveContext(long slot,
 
   public long maxTwapDivergenceBps() {
     return tokenInfo.maxTwapDivergenceBps();
+  }
+
+  static boolean isNullKey(final PublicKey key) {
+    return key.equals(PublicKey.NONE) || key.equals(NULL_KEY);
+  }
+
+  private static final AccountMeta NULL_ACCOUNT_META = AccountMeta.createInvoked(KaminoAccounts.MAIN_NET.kLendProgram());
+
+  public void refreshReserveAccounts(final SequencedCollection<AccountMeta> accounts) {
+    accounts.add(writeReserve);
+    accounts.add(writeMarketMeta(market));
+
+    final var priceFeed = priceFeed();
+    if (isNullKey(priceFeed)) {
+      final var pythOracle = tokenInfo.pythConfiguration().price();
+      if (isNullKey(pythOracle)) {
+        final var switchboardConfig = tokenInfo.switchboardConfiguration();
+        final var switchboardOracle = switchboardConfig.priceAggregator();
+        if (isNullKey(switchboardOracle)) {
+          throw new IllegalStateException("No oracle configuration for Kamino Reserve " + pubKey);
+        } else {
+          accounts.add(NULL_ACCOUNT_META);
+          accounts.add(readPriceFeedMeta(switchboardOracle));
+          accounts.add(readPriceFeedMeta(switchboardConfig.twapAggregator()));
+          accounts.add(NULL_ACCOUNT_META);
+        }
+      } else {
+        accounts.add(readPriceFeedMeta(pythOracle));
+        accounts.add(NULL_ACCOUNT_META);
+        accounts.add(NULL_ACCOUNT_META);
+        accounts.add(NULL_ACCOUNT_META);
+      }
+    } else {
+      accounts.add(NULL_ACCOUNT_META);
+      accounts.add(NULL_ACCOUNT_META);
+      accounts.add(NULL_ACCOUNT_META);
+      accounts.add(readPriceFeedMeta(priceFeed));
+    }
   }
 
   private String jsonTokenName() {
@@ -394,7 +465,7 @@ public record ReserveContext(long slot,
       }
       return new ReserveContext(
           slot,
-          reserve,
+          reserve, AccountMeta.createWrite(reserve),
           market,
           tokenName,
           mint,

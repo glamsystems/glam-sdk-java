@@ -1230,178 +1230,76 @@ public final class GlamMintProgram {
 
   public static final Discriminator PRICE_KAMINO_OBLIGATIONS_DISCRIMINATOR = toDiscriminator(166, 110, 234, 179, 240, 179, 69, 246);
 
-  /// Prices Kamino obligations.
-  /// - `num_obligations` Number of kamino obligations to price.
-  /// - `num_markets` Number of unique markets used by obligations.
-  /// - `num_reserves` Number of unique reserves used by obligations.
+  /// Prices Kamino obligations. Reserves and obligations must be refreshed in the same slot before calling this ix.
   /// 
   /// Extra accounts for pricing N kamino obligations:
-  /// - obligation x num_obligations
-  /// - reserve x num_reserves: no specific order
-  /// - market x num_markets: no specific order
+  /// - obligations x N
   ///
   public static List<AccountMeta> priceKaminoObligationsKeys(final AccountMeta invokedGlamMintProgramMeta,
                                                              final PublicKey glamStateKey,
                                                              final PublicKey glamVaultKey,
                                                              final PublicKey signerKey,
-                                                             final PublicKey kaminoLendingProgramKey,
                                                              final PublicKey solUsdOracleKey,
                                                              final PublicKey baseAssetOracleKey,
                                                              final PublicKey integrationAuthorityKey,
                                                              final PublicKey glamConfigKey,
                                                              final PublicKey glamProtocolKey,
                                                              final PublicKey eventAuthorityKey,
-                                                             final PublicKey eventProgramKey,
-                                                             final PublicKey pythOracleKey,
-                                                             final PublicKey switchboardPriceOracleKey,
-                                                             final PublicKey switchboardTwapOracleKey,
-                                                             final PublicKey scopePricesKey) {
+                                                             final PublicKey eventProgramKey) {
     return List.of(
       createWrite(glamStateKey),
       createRead(glamVaultKey),
       createWritableSigner(signerKey),
-      createRead(kaminoLendingProgramKey),
       createRead(solUsdOracleKey),
       createRead(baseAssetOracleKey),
       createRead(integrationAuthorityKey),
       createRead(glamConfigKey),
       createRead(glamProtocolKey),
       createRead(requireNonNullElse(eventAuthorityKey, invokedGlamMintProgramMeta.publicKey())),
-      createRead(requireNonNullElse(eventProgramKey, invokedGlamMintProgramMeta.publicKey())),
-      createRead(requireNonNullElse(pythOracleKey, invokedGlamMintProgramMeta.publicKey())),
-      createRead(requireNonNullElse(switchboardPriceOracleKey, invokedGlamMintProgramMeta.publicKey())),
-      createRead(requireNonNullElse(switchboardTwapOracleKey, invokedGlamMintProgramMeta.publicKey())),
-      createRead(requireNonNullElse(scopePricesKey, invokedGlamMintProgramMeta.publicKey()))
+      createRead(requireNonNullElse(eventProgramKey, invokedGlamMintProgramMeta.publicKey()))
     );
   }
 
-  /// Prices Kamino obligations.
-  /// - `num_obligations` Number of kamino obligations to price.
-  /// - `num_markets` Number of unique markets used by obligations.
-  /// - `num_reserves` Number of unique reserves used by obligations.
+  /// Prices Kamino obligations. Reserves and obligations must be refreshed in the same slot before calling this ix.
   /// 
   /// Extra accounts for pricing N kamino obligations:
-  /// - obligation x num_obligations
-  /// - reserve x num_reserves: no specific order
-  /// - market x num_markets: no specific order
+  /// - obligations x N
   ///
   public static Instruction priceKaminoObligations(final AccountMeta invokedGlamMintProgramMeta,
                                                    final PublicKey glamStateKey,
                                                    final PublicKey glamVaultKey,
                                                    final PublicKey signerKey,
-                                                   final PublicKey kaminoLendingProgramKey,
                                                    final PublicKey solUsdOracleKey,
                                                    final PublicKey baseAssetOracleKey,
                                                    final PublicKey integrationAuthorityKey,
                                                    final PublicKey glamConfigKey,
                                                    final PublicKey glamProtocolKey,
                                                    final PublicKey eventAuthorityKey,
-                                                   final PublicKey eventProgramKey,
-                                                   final PublicKey pythOracleKey,
-                                                   final PublicKey switchboardPriceOracleKey,
-                                                   final PublicKey switchboardTwapOracleKey,
-                                                   final PublicKey scopePricesKey,
-                                                   final int numObligations,
-                                                   final int numMarkets,
-                                                   final int numReserves) {
+                                                   final PublicKey eventProgramKey) {
     final var keys = priceKaminoObligationsKeys(
       invokedGlamMintProgramMeta,
       glamStateKey,
       glamVaultKey,
       signerKey,
-      kaminoLendingProgramKey,
       solUsdOracleKey,
       baseAssetOracleKey,
       integrationAuthorityKey,
       glamConfigKey,
       glamProtocolKey,
       eventAuthorityKey,
-      eventProgramKey,
-      pythOracleKey,
-      switchboardPriceOracleKey,
-      switchboardTwapOracleKey,
-      scopePricesKey
+      eventProgramKey
     );
-    return priceKaminoObligations(
-      invokedGlamMintProgramMeta,
-      keys,
-      numObligations,
-      numMarkets,
-      numReserves
-    );
+    return priceKaminoObligations(invokedGlamMintProgramMeta, keys);
   }
 
-  /// Prices Kamino obligations.
-  /// - `num_obligations` Number of kamino obligations to price.
-  /// - `num_markets` Number of unique markets used by obligations.
-  /// - `num_reserves` Number of unique reserves used by obligations.
+  /// Prices Kamino obligations. Reserves and obligations must be refreshed in the same slot before calling this ix.
   /// 
   /// Extra accounts for pricing N kamino obligations:
-  /// - obligation x num_obligations
-  /// - reserve x num_reserves: no specific order
-  /// - market x num_markets: no specific order
+  /// - obligations x N
   ///
   public static Instruction priceKaminoObligations(final AccountMeta invokedGlamMintProgramMeta,
-                                                   final List<AccountMeta> keys,
-                                                   final int numObligations,
-                                                   final int numMarkets,
-                                                   final int numReserves) {
-    final byte[] _data = new byte[11];
-    int i = PRICE_KAMINO_OBLIGATIONS_DISCRIMINATOR.write(_data, 0);
-    _data[i] = (byte) numObligations;
-    ++i;
-    _data[i] = (byte) numMarkets;
-    ++i;
-    _data[i] = (byte) numReserves;
-
-    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
-  }
-
-  public record PriceKaminoObligationsIxData(Discriminator discriminator,
-                                             int numObligations,
-                                             int numMarkets,
-                                             int numReserves) implements SerDe {  
-
-    public static PriceKaminoObligationsIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
-    }
-
-    public static final int BYTES = 11;
-
-    public static final int NUM_OBLIGATIONS_OFFSET = 8;
-    public static final int NUM_MARKETS_OFFSET = 9;
-    public static final int NUM_RESERVES_OFFSET = 10;
-
-    public static PriceKaminoObligationsIxData read(final byte[] _data, final int _offset) {
-      if (_data == null || _data.length == 0) {
-        return null;
-      }
-      final var discriminator = createAnchorDiscriminator(_data, _offset);
-      int i = _offset + discriminator.length();
-      final var numObligations = _data[i] & 0xFF;
-      ++i;
-      final var numMarkets = _data[i] & 0xFF;
-      ++i;
-      final var numReserves = _data[i] & 0xFF;
-      return new PriceKaminoObligationsIxData(discriminator, numObligations, numMarkets, numReserves);
-    }
-
-    @Override
-    public int write(final byte[] _data, final int _offset) {
-      int i = _offset + discriminator.write(_data, _offset);
-      _data[i] = (byte) numObligations;
-      ++i;
-      _data[i] = (byte) numMarkets;
-      ++i;
-      _data[i] = (byte) numReserves;
-      ++i;
-      return i - _offset;
-    }
-
-    @Override
-    public int l() {
-      return BYTES;
-    }
+                                                   final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_KAMINO_OBLIGATIONS_DISCRIMINATOR);
   }
 
   public static final Discriminator PRICE_KAMINO_VAULT_SHARES_DISCRIMINATOR = toDiscriminator(112, 92, 238, 224, 145, 105, 38, 249);

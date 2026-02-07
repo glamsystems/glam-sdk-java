@@ -23,6 +23,7 @@ import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.services.BaseDelegateService;
 import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.integrations.drift.DriftUsersPosition;
+import systems.glam.services.integrations.kamino.KaminoLendingPositions;
 import systems.glam.services.pricing.accounting.Position;
 import systems.glam.services.pricing.accounting.PositionReport;
 import systems.glam.services.pricing.accounting.VaultTokensPosition;
@@ -38,6 +39,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static java.lang.System.Logger.Level.INFO;
 import static java.lang.System.Logger.Level.WARNING;
 import static systems.glam.services.pricing.accounting.TxSimulationPriceGroup.MAIN_NET_CU_LIMIT_SIMULATION;
 
@@ -323,7 +325,7 @@ public class MultiAssetPriceService extends BaseDelegateService
   private void prepareAUMTransaction(final MinGlamStateAccount stateAccount,
                                      final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap) {
     final var positions = List.copyOf(this.positions.values());
-    final var instructions = new ArrayList<Instruction>(2 + positions.size());
+    final var instructions = new ArrayList<Instruction>(2 + (positions.size() << 2));
     instructions.add(MAIN_NET_CU_LIMIT_SIMULATION);
     final var returnAccountsSet = HashSet.<PublicKey>newHashSet(Transaction.MAX_ACCOUNTS);
 
@@ -336,35 +338,31 @@ public class MultiAssetPriceService extends BaseDelegateService
     if (baseAssetMeta == null) {
       return;
     }
-    final var priceVaultTokensIx = this.vaultTokensPosition.priceInstruction(
+    if (!this.vaultTokensPosition.priceInstruction(
         serviceContext,
         glamAccountClient,
         solAssetMeta.oracle(),
         baseAssetMeta.oracle(),
         stateAccount,
         accountsNeededMap,
+        instructions,
         returnAccountsSet
-    );
-    if (priceVaultTokensIx == null) {
+    )) {
       return;
-    } else {
-      instructions.add(priceVaultTokensIx);
     }
     // TODO: If Vault only contains base asset skip tx simulation.
     for (final var position : positions) {
-      final var priceInstruction = position.priceInstruction(
+      if (!position.priceInstruction(
           serviceContext,
           glamAccountClient,
           solAssetMeta.oracle(),
           baseAssetMeta.oracle(),
           stateAccount,
           accountsNeededMap,
+          instructions,
           returnAccountsSet
-      );
-      if (priceInstruction == null) {
+      )) {
         return;
-      } else {
-        instructions.add(priceInstruction);
       }
     }
     instructions.add(validateAUMInstruction);
@@ -445,7 +443,19 @@ public class MultiAssetPriceService extends BaseDelegateService
               final var event = GlamMintEvent.readCPI(innerIx.data());
               if (event instanceof AumRecord(_, final BigInteger vaultAum)) {
                 if (vaultAum.equals(eventSum)) {
+                  final var mintContext = serviceContext.mintContext(stateAccount.baseAssetMint());
                   // Persist to DB
+                  logger.log(INFO, String.format("""
+                              {
+                               "vault": "%s",
+                               "baseAsset": "%s",
+                               "aum": "%s"
+                              }""",
+                          glamAccountClient.vaultAccounts().vaultPublicKey(),
+                          mintContext.mint(),
+                          mintContext.toDecimal(vaultAum).toPlainString()
+                      )
+                  );
                 } else {
                   // TODO trigger alert and remove from pricing.
                 }
@@ -510,14 +520,26 @@ public class MultiAssetPriceService extends BaseDelegateService
     return StateChange.UNSUPPORTED;
   }
 
-  private StateChange createKaminoVaultPosition(final AccountInfo<byte[]> accountInfo) {
+  private KaminoLendingPositions kLendPositions() {
+    for (final var position : positions.values()) {
+      if (position instanceof KaminoLendingPositions kLendPositions) {
+        return kLendPositions;
+      }
+    }
+    return new KaminoLendingPositions(serviceContext.kaminoAccounts());
+  }
+
+  private StateChange createKaminoLendPosition(final AccountInfo<byte[]> accountInfo) {
     final byte[] data = accountInfo.data();
-    if (VaultState.BYTES == data.length && VaultState.DISCRIMINATOR.equals(data, 0)) {
-      final var vaultState = VaultState.read(accountInfo.pubKey(), data);
+    if (Obligation.BYTES == data.length && Obligation.DISCRIMINATOR.equals(data, 0)) {
+      final var kLendPosition = kLendPositions();
+      kLendPosition.addAccount(accountInfo.pubKey());
+      positions.put(accountInfo.pubKey(), kLendPosition);
+      return StateChange.NEW_POSITION;
     } else {
       final var msg = String.format("""
               {
-               "event": "Unsupported Kamino Vault Position",
+               "event": "Unsupported Kamino Lend Position",
                "account": "%s"
               }""",
           accountInfo.pubKey()
@@ -528,14 +550,14 @@ public class MultiAssetPriceService extends BaseDelegateService
     return StateChange.UNSUPPORTED;
   }
 
-  private StateChange createKaminoLendPosition(final AccountInfo<byte[]> accountInfo) {
+  private StateChange createKaminoVaultPosition(final AccountInfo<byte[]> accountInfo) {
     final byte[] data = accountInfo.data();
-    if (Obligation.BYTES == data.length && Obligation.DISCRIMINATOR.equals(data, 0)) {
-      final var obligation = Obligation.read(accountInfo.pubKey(), data);
+    if (VaultState.BYTES == data.length && VaultState.DISCRIMINATOR.equals(data, 0)) {
+      final var vaultState = VaultState.read(accountInfo.pubKey(), data);
     } else {
       final var msg = String.format("""
               {
-               "event": "Unsupported Kamino Lend Position",
+               "event": "Unsupported Kamino Vault Position",
                "account": "%s"
               }""",
           accountInfo.pubKey()

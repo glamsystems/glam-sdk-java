@@ -11,6 +11,7 @@ import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import systems.glam.sdk.idl.programs.glam.policy.gen.types.AnchorExtraAccountMeta;
+import systems.glam.sdk.idl.programs.glam.protocol.gen.types.TimeUnit;
 
 import static software.sava.core.accounts.meta.AccountMeta.createRead;
 import static software.sava.core.accounts.meta.AccountMeta.createWritableSigner;
@@ -124,7 +125,8 @@ public final class GlamPoliciesProgram {
                                          final PublicKey payerKey,
                                          final PublicKey mintKey,
                                          final PublicKey subjectTokenAccountKey,
-                                         final long lockedUntilTs) {
+                                         final long lockedUntil,
+                                         final TimeUnit timeUnit) {
     final var keys = createPolicyKeys(
       solanaAccounts,
       policyAccountKey,
@@ -134,28 +136,32 @@ public final class GlamPoliciesProgram {
       mintKey,
       subjectTokenAccountKey
     );
-    return createPolicy(invokedGlamPoliciesProgramMeta, keys, lockedUntilTs);
+    return createPolicy(invokedGlamPoliciesProgramMeta, keys, lockedUntil, timeUnit);
   }
 
   public static Instruction createPolicy(final AccountMeta invokedGlamPoliciesProgramMeta,
                                          final List<AccountMeta> keys,
-                                         final long lockedUntilTs) {
-    final byte[] _data = new byte[16];
+                                         final long lockedUntil,
+                                         final TimeUnit timeUnit) {
+    final byte[] _data = new byte[16 + timeUnit.l()];
     int i = CREATE_POLICY_DISCRIMINATOR.write(_data, 0);
-    putInt64LE(_data, i, lockedUntilTs);
+    putInt64LE(_data, i, lockedUntil);
+    i += 8;
+    timeUnit.write(_data, i);
 
     return Instruction.createInstruction(invokedGlamPoliciesProgramMeta, keys, _data);
   }
 
-  public record CreatePolicyIxData(Discriminator discriminator, long lockedUntilTs) implements SerDe {  
+  public record CreatePolicyIxData(Discriminator discriminator, long lockedUntil, TimeUnit timeUnit) implements SerDe {  
 
     public static CreatePolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
 
-    public static final int BYTES = 16;
+    public static final int BYTES = 17;
 
-    public static final int LOCKED_UNTIL_TS_OFFSET = 8;
+    public static final int LOCKED_UNTIL_OFFSET = 8;
+    public static final int TIME_UNIT_OFFSET = 16;
 
     public static CreatePolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -163,15 +169,18 @@ public final class GlamPoliciesProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var lockedUntilTs = getInt64LE(_data, i);
-      return new CreatePolicyIxData(discriminator, lockedUntilTs);
+      final var lockedUntil = getInt64LE(_data, i);
+      i += 8;
+      final var timeUnit = TimeUnit.read(_data, i);
+      return new CreatePolicyIxData(discriminator, lockedUntil, timeUnit);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      putInt64LE(_data, i, lockedUntilTs);
+      putInt64LE(_data, i, lockedUntil);
       i += 8;
+      i += timeUnit.write(_data, i);
       return i - _offset;
     }
 

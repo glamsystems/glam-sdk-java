@@ -11,6 +11,7 @@ import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoVaultCache;
 import systems.glam.services.mints.*;
 import systems.glam.services.oracles.scope.FeedIndexes;
+import systems.glam.services.oracles.scope.KaminoCache;
 import systems.glam.services.pricing.ScopeAggregateIndexes;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
@@ -27,23 +28,22 @@ public interface IntegrationServiceContext {
                                                  final MintCache mintCache,
                                                  final StakePoolCache stakePoolCache,
                                                  final GlobalConfigCache globalConfigCache,
-                                                 final ScopeAggregateIndexes scopeAggregateIndexes,
                                                  final IntegLookupTableCache integLookupTableCache,
                                                  final AccountFetcher accountFetcher,
                                                  final DriftAccounts driftAccounts,
                                                  final DriftMarketCache driftMarketCache,
                                                  final KaminoAccounts kaminoAccounts,
+                                                 final KaminoCache kaminoCache,
                                                  final KaminoVaultCache kaminoVaultCache) {
     return new IntegrationServiceContextImpl(
         serviceContext,
         mintCache,
         stakePoolCache,
         globalConfigCache,
-        scopeAggregateIndexes,
         integLookupTableCache,
         accountFetcher,
         driftAccounts, driftMarketCache,
-        kaminoAccounts, kaminoVaultCache
+        kaminoAccounts, kaminoCache, kaminoVaultCache
     );
   }
 
@@ -88,6 +88,8 @@ public interface IntegrationServiceContext {
   PublicKey driftProgram();
 
   PublicKey driftVaultsProgram();
+
+  KaminoCache kaminoCache();
 
   KaminoVaultCache kaminoVaultCache();
 
