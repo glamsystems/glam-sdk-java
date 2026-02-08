@@ -442,20 +442,22 @@ public class MultiAssetPriceService extends BaseDelegateService
             if (innerIx.programId().equals(mintProgram)) {
               final var event = GlamMintEvent.readCPI(innerIx.data());
               if (event instanceof AumRecord(_, final BigInteger vaultAum)) {
-                if (vaultAum.equals(eventSum)) {
-                  final var mintContext = serviceContext.mintContext(stateAccount.baseAssetMint());
+                final var mintContext = serviceContext.mintContext(stateAccount.baseAssetMint());
+                logger.log(INFO, String.format("""
+                            {
+                             "vault": "%s",
+                             "baseAsset": "%s",
+                             "aum": "%s",
+                             "sum": "%s"
+                            }""",
+                        glamAccountClient.vaultAccounts().vaultPublicKey(),
+                        mintContext.mint(),
+                        mintContext.toDecimal(vaultAum).toPlainString(),
+                        mintContext.toDecimal(eventSum).toPlainString()
+                    )
+                );
+                if (vaultAum.compareTo(eventSum) == 0) {
                   // Persist to DB
-                  logger.log(INFO, String.format("""
-                              {
-                               "vault": "%s",
-                               "baseAsset": "%s",
-                               "aum": "%s"
-                              }""",
-                          glamAccountClient.vaultAccounts().vaultPublicKey(),
-                          mintContext.mint(),
-                          mintContext.toDecimal(vaultAum).toPlainString()
-                      )
-                  );
                 } else {
                   // TODO trigger alert and remove from pricing.
                 }

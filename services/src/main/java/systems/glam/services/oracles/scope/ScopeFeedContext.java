@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 
 public record ScopeFeedContext(long slot, byte[] configurationData,
                                PublicKey configurationKey,
-                               PublicKey oracleMappings,
+                               PublicKey oracleMappings, AccountMeta readOracleMappings,
                                PublicKey priceFeed, AccountMeta readPriceFeed,
                                AtomicReferenceArray<Map<PublicKey, ReserveContext>> reservesByIndex,
                                ConcurrentMap<PublicKey, ReserveContext[]> reservesByMint) {
@@ -36,7 +36,9 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
     return new ScopeFeedContext(
         slot,
         configurationData.length > Configuration.PADDING_OFFSET ? Arrays.copyOfRange(configurationData, 0, Configuration.PADDING_OFFSET) : configurationData,
-        configurationKey, oracleMappings, priceFeed, AccountMeta.createRead(priceFeed),
+        configurationKey,
+        oracleMappings, AccountMeta.createRead(oracleMappings),
+        priceFeed, AccountMeta.createRead(priceFeed),
         reservesByIndex, reservesByMint
     );
   }
@@ -254,6 +256,6 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
       collateral = collateral.add(BigInteger.valueOf(reserve.collateral()));
       indexes[i++] = (short) reserve.index();
     }
-    return new FeedIndexes(readPriceFeed, indexes, collateral);
+    return new FeedIndexes(readPriceFeed, readOracleMappings, indexes, collateral);
   }
 }

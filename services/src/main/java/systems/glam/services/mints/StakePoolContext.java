@@ -6,16 +6,22 @@ import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.solana.programs.stakepool.StakePoolState;
 
-public record StakePoolContext(PublicKey program, AccountMeta readState, PublicKey mintKey) implements SerDe {
+public record StakePoolContext(PublicKey program,
+                               AccountMeta readState,
+                               AccountMeta readMint) implements SerDe {
 
   public PublicKey stateKey() {
     return readState.publicKey();
   }
 
+  public PublicKey mintKey() {
+    return readMint.publicKey();
+  }
+
   public static final int BYTES = PublicKey.PUBLIC_KEY_LENGTH << 1;
 
   static StakePoolContext createContext(final PublicKey program, final PublicKey stateKey, final PublicKey mintKey) {
-    return new StakePoolContext(program, AccountMeta.createRead(stateKey), mintKey);
+    return new StakePoolContext(program, AccountMeta.createRead(stateKey), AccountMeta.createRead(mintKey));
   }
 
   static StakePoolContext read(final PublicKey program, final byte[] data, final int offset) {
@@ -43,7 +49,7 @@ public record StakePoolContext(PublicKey program, AccountMeta readState, PublicK
   @Override
   public int write(final byte[] bytes, final int i) {
     stateKey().write(bytes, i);
-    mintKey.write(bytes, i + PublicKey.PUBLIC_KEY_LENGTH);
+    mintKey().write(bytes, i + PublicKey.PUBLIC_KEY_LENGTH);
     return BYTES;
   }
 }

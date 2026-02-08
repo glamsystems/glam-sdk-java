@@ -5,6 +5,7 @@ import software.sava.core.accounts.meta.AccountMeta;
 import java.math.BigInteger;
 
 public record FeedIndexes(AccountMeta readPriceFeed,
+                          AccountMeta readOracleMappings,
                           short[] indexes,
                           BigInteger liquidity) implements Comparable<FeedIndexes> {
 

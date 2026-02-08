@@ -77,32 +77,38 @@ public final class VaultTokensPosition implements Position {
     final short[][] aggIndexes = ScopeAggregateIndexes.createIndexesArray(vaultAssets.length);
 
     final var extraAccounts = new ArrayList<AccountMeta>((vaultAssets.length * 3));
+    Set<AccountMeta> scopeOracleMappingAccounts = null;
     for (int i = 0; i < vaultAssets.length; i++) {
       final var vaultAsset = vaultAssets[i];
       final var vaultATA = vaultATAMap.get(vaultAsset);
 //      final var vaultTokenAccount = accountMap.get(vaultATA.publicKey());
-//      if (AccountFetcher.isNull(vaultTokenAccount)) {
-////          || ByteUtil.getInt64LE(vaultTokenAccount.data(), TokenAccount.AMOUNT_OFFSET) == 0) {
+//      if (AccountFetcher.isNull(vaultTokenAccount)
+//          || ByteUtil.getInt64LE(vaultTokenAccount.data(), TokenAccount.AMOUNT_OFFSET) == 0) {
 //        continue;
 //      }
 
       extraAccounts.add(vaultATA);
+      returnAccounts.add(vaultATA.publicKey());
+
+      final var stakePoolContext = serviceContext.stakePoolContextForMint(vaultAsset);
+      if (stakePoolContext != null) {
+        extraAccounts.add(stakePoolContext.readMint());
+        final var stakePoolState = stakePoolContext.readState();
+        extraAccounts.add(stakePoolState);
+        returnAccounts.add(stakePoolState.publicKey());
+        continue;
+      }
 
       final var assetMeta = serviceContext.globalConfigAssetMeta(vaultAsset);
       if (assetMeta == null) {
-        final var stakePoolContext = serviceContext.stakePoolContextForMint(vaultAsset);
-        if (stakePoolContext == null) {
-          logger.log(WARNING, "Missing asset meta for vault asset: {0}", vaultAsset);
-          return false;
-        } else {
-          extraAccounts.add(stakePoolContext.readState());
-          continue;
-        }
+        logger.log(WARNING, "Missing asset meta for vault asset: {0}", vaultAsset);
+        return false;
       }
+
+      extraAccounts.add(assetMeta.readAssetMint());
 
       // TODO: Check if State overrides default oracle.
 
-      extraAccounts.add(assetMeta.readAssetMint());
       switch (assetMeta.oracleSource()) {
         case NotSet, BaseAsset, QuoteAsset, Prelaunch, Pyth, Pyth1K, Pyth1M, PythStableCoin, Switchboard -> {
           final var msg = String.format("""
@@ -119,18 +125,39 @@ public final class VaultTokensPosition implements Position {
           throw new IllegalStateException(msg);
         }
         case PythPull, Pyth1KPull, Pyth1MPull, PythStableCoinPull, SwitchboardOnDemand, PythLazer, PythLazer1K,
-             PythLazer1M, PythLazerStableCoin, LstPoolState, MarinadeState -> extraAccounts.add(assetMeta.readOracle());
+             PythLazer1M, PythLazerStableCoin, LstPoolState, MarinadeState -> {
+          final var oracle = assetMeta.readOracle();
+          extraAccounts.add(oracle);
+          returnAccounts.add(oracle.publicKey());
+        }
         case ChainlinkRWA -> {
           final var feedIndexes = serviceContext.scopeAggregateIndexes(vaultAsset, assetMeta.oracle(), OracleType.ChainlinkRWA);
           if (feedIndexes == null) {
             logger.log(WARNING, "Missing feed indexes for vault asset: {0}", vaultAsset);
             return false;
           } else {
-            extraAccounts.add(feedIndexes.readPriceFeed());
             aggIndexes[i] = feedIndexes.indexes();
+            final var priceFeed = feedIndexes.readPriceFeed();
+            extraAccounts.add(priceFeed);
+            returnAccounts.add(priceFeed.publicKey());
+            final var oracleMappings = feedIndexes.readOracleMappings();
+            if (scopeOracleMappingAccounts == null) {
+              scopeOracleMappingAccounts = Set.of(oracleMappings);
+            } else if (!scopeOracleMappingAccounts.contains(oracleMappings)) {
+              final int numMappings = scopeOracleMappingAccounts.size();
+              if (numMappings == 1) {
+                scopeOracleMappingAccounts = Set.of(scopeOracleMappingAccounts.iterator().next(), oracleMappings);
+              } else {
+                scopeOracleMappingAccounts = new HashSet<>(scopeOracleMappingAccounts);
+                scopeOracleMappingAccounts.add(oracleMappings);
+              }
+            }
           }
         }
       }
+    }
+    if (scopeOracleMappingAccounts != null) {
+      extraAccounts.addAll(scopeOracleMappingAccounts);
     }
 
     final var priceVaultIx = glamAccountClient.priceVaultTokens(
