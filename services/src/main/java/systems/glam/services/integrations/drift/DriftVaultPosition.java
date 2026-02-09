@@ -65,7 +65,7 @@ public final class DriftVaultPosition implements Position {
                             final Map<PublicKey, AccountInfo<byte[]>> returnedAccountsMap,
                             final int ixIndex,
                             final List<Instruction> priceInstructions,
-                            final List<InnerInstructions> innerInstructionsList,
+                            final InnerInstructions[] innerInstructionsArray,
                             final Map<PublicKey, BigDecimal> assetPrices,
                             final List<AggregatePositionReport> positionReportsList) {
     return -1;

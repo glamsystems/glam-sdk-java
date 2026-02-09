@@ -134,13 +134,11 @@ public final class KaminoLendingPositions implements Position {
                             final Map<PublicKey, AccountInfo<byte[]>> returnedAccountsMap,
                             final int ixIndex,
                             final List<Instruction> priceInstructions,
-                            final List<InnerInstructions> innerInstructionsList,
+                            final InnerInstructions[] innerInstructionsArray,
                             final Map<PublicKey, BigDecimal> assetPrices,
                             final List<AggregatePositionReport> positionReportsList) {
     final int priceIxIndex = ixIndex + 1 + obligationAccounts.size();
-    final var innerInstructions = innerInstructionsList.stream()
-        .filter(i -> i.index() == priceIxIndex)
-        .findFirst().orElseThrow();
+    final var innerInstructions = innerInstructionsArray[priceIxIndex];
     final var positionAmount = Position.parseAnchorEvent(innerInstructions, mintProgram, stateAccount.baseAssetDecimals());
     final var reportNode = new PositionReportNode(positionAmount, List.of());
     positionReportsList.add(reportNode);

@@ -1,7 +1,9 @@
 package systems.glam.services.mints;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.rpc.Filter;
+import software.sava.idl.clients.marinade.stake_pool.MarinadeAccounts;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.solana.remote.call.RpcCaller;
 import software.sava.solana.programs.stakepool.AccountType;
@@ -30,6 +32,7 @@ public interface StakePoolCache extends Runnable, AutoCloseable {
   static CompletableFuture<StakePoolCache> initCache(final ExecutorService taskExecutor,
                                                      final Path stakePoolStateCacheDirectory,
                                                      final StakePoolAccounts stakePoolAccounts,
+                                                     final MarinadeAccounts marinadeAccounts,
                                                      final Duration fetchDelay,
                                                      final RpcCaller rpcCaller) {
     final var multiValidatorStakePoolProgram = stakePoolAccounts.stakePoolProgram();
@@ -47,6 +50,12 @@ public interface StakePoolCache extends Runnable, AutoCloseable {
                 sanctumSingleValidatorStakePoolProgram, createFlatFile(stakePoolStateCacheDirectory, sanctumSingleValidatorStakePoolProgram)
             );
             final var stakePoolContextByMint = new ConcurrentHashMap<PublicKey, StakePoolContext>();
+            final var marinadeContext = new StakePoolContext(
+                marinadeAccounts.marinadeProgram(),
+                AccountMeta.createRead(marinadeAccounts.stateProgram()),
+                AccountMeta.createRead(marinadeAccounts.mSolTokenMint())
+            );
+            stakePoolContextByMint.put(marinadeContext.mintKey(), marinadeContext);
             final var stakePoolCache = new StakePoolCacheImpl(
                 fetchDelay,
                 rpcCaller,

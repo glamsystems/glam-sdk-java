@@ -3,6 +3,7 @@ package systems.glam.services.pricing;
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
+import software.sava.idl.clients.marinade.stake_pool.MarinadeAccounts;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.core.config.ServiceConfigUtil;
 import software.sava.services.solana.websocket.WebSocketManager;
@@ -90,6 +91,7 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
         taskExecutor,
         accountCacheDirectory.resolve("stake_pools"),
         StakePoolAccounts.MAIN_NET,
+        MarinadeAccounts.MAIN_NET,
         defensivePollingConfig.stakePools(),
         rpcCaller
     );

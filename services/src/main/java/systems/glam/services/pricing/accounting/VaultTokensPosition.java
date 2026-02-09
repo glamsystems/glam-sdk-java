@@ -8,9 +8,9 @@ import software.sava.core.tx.Instruction;
 import software.sava.core.util.LamportDecimal;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 import software.sava.idl.clients.drift.gen.types.PythLazerOracle;
-import software.sava.idl.clients.kamino.scope.gen.types.DatedPrice;
-import software.sava.idl.clients.kamino.scope.gen.types.OraclePrices;
-import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
+import software.sava.idl.clients.kamino.scope.gen.types.*;
+import software.sava.idl.clients.marinade.stake_pool.MarinadeAccounts;
+import software.sava.idl.clients.marinade.stake_pool.gen.types.State;
 import software.sava.idl.clients.oracles.OracleUtil;
 import software.sava.idl.clients.oracles.pyth.receiver.gen.types.PriceUpdateV2;
 import software.sava.rpc.json.http.response.AccountInfo;
@@ -24,8 +24,10 @@ import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.MinGlamStateAccount;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.*;
+import java.util.List;
 
 import static java.lang.System.Logger.Level.WARNING;
 
@@ -102,7 +104,6 @@ public final class VaultTokensPosition implements Position {
 //          || ByteUtil.getInt64LE(vaultTokenAccount.data(), TokenAccount.AMOUNT_OFFSET) == 0) {
 //        continue;
 //      }
-
 
       final var stakePoolContext = serviceContext.stakePoolContextForMint(vaultAsset);
       if (stakePoolContext != null) {
@@ -207,7 +208,7 @@ public final class VaultTokensPosition implements Position {
                             final Map<PublicKey, AccountInfo<byte[]>> returnedAccountsMap,
                             final int ixIndex,
                             final List<Instruction> priceInstructions,
-                            final List<InnerInstructions> innerInstructionsList,
+                            final InnerInstructions[] innerInstructionsArray,
                             final Map<PublicKey, BigDecimal> assetPrices,
                             final List<AggregatePositionReport> positionReportsList) {
     final var priceIx = priceInstructions.get(ixIndex);
@@ -244,14 +245,29 @@ public final class VaultTokensPosition implements Position {
             final var stakePoolStateKey = stakePoolContext.stateKey();
             final var accountInfo = returnedAccountsMap.get(stakePoolStateKey);
             final byte[] data = accountInfo.data();
-            final long totalLamports = ByteUtil.getInt64LE(data, StakePoolState.TOTAL_LAMPORTS_OFFSET);
-            final long poolTokenSupply = ByteUtil.getInt64LE(data, StakePoolState.POOL_TOKEN_SUPPLY_OFFSET);
             final BigDecimal solPrice;
-            if (totalLamports == 0 || poolTokenSupply == 0) {
-              solPrice = BigDecimal.ZERO;
+            if (accountInfo.pubKey().equals(MarinadeAccounts.MAIN_NET.stateProgram())) {
+              final long delayedUnstakeCoolingDown = ByteUtil.getInt64LE(data, State.STAKE_SYSTEM_OFFSET + StakeSystem.DELAYED_UNSTAKE_COOLING_DOWN_OFFSET);
+              final long totalActiveBalance = ByteUtil.getInt64LE(data, State.VALIDATOR_SYSTEM_OFFSET + ValidatorSystem.TOTAL_ACTIVE_BALANCE_OFFSET);
+              final long availableReserveBalance = ByteUtil.getInt64LE(data, State.AVAILABLE_RESERVE_BALANCE_OFFSET);
+              final long circulatingTicketBalance = ByteUtil.getInt64LE(data, State.CIRCULATING_TICKET_BALANCE_OFFSET);
+              final long emergencyCoolingDown = ByteUtil.getInt64LE(data, State.EMERGENCY_COOLING_DOWN_OFFSET);
+              final var totalVirtualStakedLamports = new BigDecimal(BigInteger.valueOf(delayedUnstakeCoolingDown)
+                  .add(BigInteger.valueOf(totalActiveBalance))
+                  .add(BigInteger.valueOf(availableReserveBalance))
+                  .add(BigInteger.valueOf(emergencyCoolingDown))
+                  .subtract(BigInteger.valueOf(circulatingTicketBalance)));
+              final long msolSupply = ByteUtil.getInt64LE(data, State.MSOL_SUPPLY_OFFSET);
+              solPrice = totalVirtualStakedLamports.divide(BigDecimal.valueOf(msolSupply), MathContext.DECIMAL64);
             } else {
-              solPrice = BigDecimal.valueOf(totalLamports)
-                  .divide(BigDecimal.valueOf(poolTokenSupply), MathContext.DECIMAL64);
+              final long totalLamports = ByteUtil.getInt64LE(data, StakePoolState.TOTAL_LAMPORTS_OFFSET);
+              final long poolTokenSupply = ByteUtil.getInt64LE(data, StakePoolState.POOL_TOKEN_SUPPLY_OFFSET);
+              if (totalLamports == 0 || poolTokenSupply == 0) {
+                solPrice = BigDecimal.ZERO;
+              } else {
+                solPrice = BigDecimal.valueOf(totalLamports)
+                    .divide(BigDecimal.valueOf(poolTokenSupply), MathContext.DECIMAL64);
+              }
             }
 
             final var price = solPrice.multiply(solUSDPrice);
@@ -311,9 +327,7 @@ public final class VaultTokensPosition implements Position {
       tokenReports.add(positionReport);
     }
 
-    final var innerInstructions = innerInstructionsList.stream()
-        .filter(i -> i.index() == ixIndex)
-        .findFirst().orElseThrow();
+    final var innerInstructions = innerInstructionsArray[ixIndex];
     final var positionAmount = Position.parseAnchorEvent(innerInstructions, mintProgram, stateAccount.baseAssetDecimals());
     final var reportNode = new PositionReportNode(positionAmount, tokenReports);
     positionReportsList.add(reportNode);

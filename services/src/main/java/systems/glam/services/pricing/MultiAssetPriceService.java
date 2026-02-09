@@ -13,6 +13,7 @@ import software.sava.idl.clients.kamino.lend.gen.types.Obligation;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
 import software.sava.rpc.json.http.request.Commitment;
 import software.sava.rpc.json.http.response.AccountInfo;
+import software.sava.rpc.json.http.response.InnerInstructions;
 import software.sava.rpc.json.http.response.IxError;
 import software.sava.rpc.json.http.response.TransactionError;
 import systems.glam.sdk.GlamAccountClient;
@@ -444,7 +445,12 @@ public class MultiAssetPriceService extends BaseDelegateService
             // TODO: trigger alert and remove vault
           }
         } else {
-          final var innerInstructionsList = simulationResult.innerInstructions();
+          simulationResult.innerInstructions().stream().mapToInt(InnerInstructions::index).max().orElseThrow();
+          final var instructions = aumTransaction.transaction().instructions();
+          final var innerInstructionsArray = new InnerInstructions[instructions.size()];
+          for (final var innerInstructions : simulationResult.innerInstructions()) {
+            innerInstructionsArray[innerInstructions.index()] = innerInstructions;
+          }
           final var returnedAccounts = simulationResult.accounts();
           final var returnedAccountsMap = HashMap.<PublicKey, AccountInfo<byte[]>>newHashMap(returnedAccounts.size());
           for (final var returnedAccount : returnedAccounts) {
@@ -454,7 +460,6 @@ public class MultiAssetPriceService extends BaseDelegateService
           final var positionReports = new ArrayList<AggregatePositionReport>(1 + positions.size());
           final var stateAccount = aumTransaction.stateAccount();
           final var assetPrices = HashMap.<PublicKey, BigDecimal>newHashMap(stateAccount.numAssets() + 1);
-          final var instructions = aumTransaction.transaction().instructions();
 
           int ixIndex = vaultTokensPosition.positionReport(
               serviceContext,
@@ -463,7 +468,7 @@ public class MultiAssetPriceService extends BaseDelegateService
               returnedAccountsMap,
               1,
               instructions,
-              innerInstructionsList,
+              innerInstructionsArray,
               assetPrices,
               positionReports
           );
@@ -475,16 +480,13 @@ public class MultiAssetPriceService extends BaseDelegateService
                 returnedAccountsMap,
                 ixIndex,
                 instructions,
-                innerInstructionsList,
+                innerInstructionsArray,
                 assetPrices,
                 positionReports
             );
           }
 
-          final int _ixIndex = ixIndex;
-          final var aumInstruction = innerInstructionsList.stream()
-              .filter(i -> i.index() == _ixIndex)
-              .findFirst().orElseThrow();
+          final var aumInstruction = innerInstructionsArray[ixIndex];
           for (final var innerIx : aumInstruction.instructions()) {
             if (innerIx.programId().equals(mintProgram)) {
               final var event = GlamMintEvent.readCPI(innerIx.data());

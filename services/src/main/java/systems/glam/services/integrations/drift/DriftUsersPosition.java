@@ -137,14 +137,12 @@ public final class DriftUsersPosition implements Position {
                             final Map<PublicKey, AccountInfo<byte[]>> returnedAccountsMap,
                             final int ixIndex,
                             final List<Instruction> priceInstructions,
-                            final List<InnerInstructions> innerInstructionsList,
+                            final InnerInstructions[] innerInstructionsArray,
                             final Map<PublicKey, BigDecimal> assetPrices,
                             final List<AggregatePositionReport> positionReportsList) {
     // TODO: Calculate position value independently
     // TODO: Report all sub-positions, e.g. each spot and perp position.
-    final var innerInstructions = innerInstructionsList.stream()
-        .filter(i -> i.index() == ixIndex)
-        .findFirst().orElseThrow();
+    final var innerInstructions = innerInstructionsArray[ixIndex];
     final var positionAmount = Position.parseAnchorEvent(innerInstructions, mintProgram, stateAccount.baseAssetDecimals());
     final var reportNode = new PositionReportNode(positionAmount, List.of());
     positionReportsList.add(reportNode);
