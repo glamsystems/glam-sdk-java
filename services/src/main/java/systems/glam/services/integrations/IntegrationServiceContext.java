@@ -1,6 +1,7 @@
 package systems.glam.services.integrations;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
@@ -12,7 +13,6 @@ import systems.glam.services.integrations.kamino.KaminoVaultCache;
 import systems.glam.services.mints.*;
 import systems.glam.services.oracles.scope.FeedIndexes;
 import systems.glam.services.oracles.scope.KaminoCache;
-import systems.glam.services.pricing.ScopeAggregateIndexes;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.GlobalConfigCache;
@@ -52,6 +52,10 @@ public interface IntegrationServiceContext {
   }
 
   ServiceContext serviceContext();
+
+  default AccountMeta readClockSysVar() {
+    return serviceContext().readClockSysVar();
+  }
 
   boolean isTokenMint(final AccountInfo<byte[]> accountInfo);
 

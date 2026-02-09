@@ -17,7 +17,7 @@ public interface AccountFetcher extends Runnable {
   );
 
   static boolean isNull(final AccountInfo<byte[]> accountInfo) {
-    return accountInfo == null || accountInfo == NULL_ACCOUNT_INFO;
+    return accountInfo == null || accountInfo == NULL_ACCOUNT_INFO || accountInfo.data().length == 0;
   }
 
   static AccountFetcher createFetcher(final Duration fetchDelay,

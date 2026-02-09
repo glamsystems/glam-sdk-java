@@ -2,15 +2,29 @@ package systems.glam.services.pricing.accounting;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
+import software.sava.core.accounts.token.TokenAccount;
+import software.sava.core.encoding.ByteUtil;
 import software.sava.core.tx.Instruction;
+import software.sava.core.util.LamportDecimal;
+import software.sava.idl.clients.core.gen.SerDeUtil;
+import software.sava.idl.clients.drift.gen.types.PythLazerOracle;
+import software.sava.idl.clients.kamino.scope.gen.types.DatedPrice;
+import software.sava.idl.clients.kamino.scope.gen.types.OraclePrices;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
+import software.sava.idl.clients.oracles.OracleUtil;
+import software.sava.idl.clients.oracles.pyth.receiver.gen.types.PriceUpdateV2;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
+import software.sava.solana.programs.stakepool.StakePoolState;
 import systems.glam.sdk.GlamAccountClient;
+import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintProgram;
 import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.pricing.ScopeAggregateIndexes;
+import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.MinGlamStateAccount;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.*;
 
 import static java.lang.System.Logger.Level.WARNING;
@@ -81,14 +95,14 @@ public final class VaultTokensPosition implements Position {
     for (int i = 0; i < vaultAssets.length; i++) {
       final var vaultAsset = vaultAssets[i];
       final var vaultATA = vaultATAMap.get(vaultAsset);
+      extraAccounts.add(vaultATA);
+      returnAccounts.add(vaultATA.publicKey());
 //      final var vaultTokenAccount = accountMap.get(vaultATA.publicKey());
 //      if (AccountFetcher.isNull(vaultTokenAccount)
 //          || ByteUtil.getInt64LE(vaultTokenAccount.data(), TokenAccount.AMOUNT_OFFSET) == 0) {
 //        continue;
 //      }
 
-      extraAccounts.add(vaultATA);
-      returnAccounts.add(vaultATA.publicKey());
 
       final var stakePoolContext = serviceContext.stakePoolContextForMint(vaultAsset);
       if (stakePoolContext != null) {
@@ -96,6 +110,7 @@ public final class VaultTokensPosition implements Position {
         final var stakePoolState = stakePoolContext.readState();
         extraAccounts.add(stakePoolState);
         returnAccounts.add(stakePoolState.publicKey());
+        returnAccounts.add(solUSDOracleKey);
         continue;
       }
 
@@ -110,7 +125,8 @@ public final class VaultTokensPosition implements Position {
       // TODO: Check if State overrides default oracle.
 
       switch (assetMeta.oracleSource()) {
-        case NotSet, BaseAsset, QuoteAsset, Prelaunch, Pyth, Pyth1K, Pyth1M, PythStableCoin, Switchboard -> {
+        case NotSet, BaseAsset, QuoteAsset, Prelaunch, Pyth, Pyth1K, Pyth1M, PythStableCoin, Switchboard, LstPoolState,
+             MarinadeState -> {
           final var msg = String.format("""
                   {
                    "event": "Invalid GlobalConfig OracleSource",
@@ -124,8 +140,9 @@ public final class VaultTokensPosition implements Position {
           );
           throw new IllegalStateException(msg);
         }
-        case PythPull, Pyth1KPull, Pyth1MPull, PythStableCoinPull, SwitchboardOnDemand, PythLazer, PythLazer1K,
-             PythLazer1M, PythLazerStableCoin, LstPoolState, MarinadeState -> {
+        case PythPull, Pyth1KPull, Pyth1MPull, PythStableCoinPull,
+             PythLazer, PythLazer1K, PythLazer1M, PythLazerStableCoin,
+             SwitchboardOnDemand -> {
           final var oracle = assetMeta.readOracle();
           extraAccounts.add(oracle);
           returnAccounts.add(oracle.publicKey());
@@ -144,8 +161,7 @@ public final class VaultTokensPosition implements Position {
             if (scopeOracleMappingAccounts == null) {
               scopeOracleMappingAccounts = Set.of(oracleMappings);
             } else if (!scopeOracleMappingAccounts.contains(oracleMappings)) {
-              final int numMappings = scopeOracleMappingAccounts.size();
-              if (numMappings == 1) {
+              if (scopeOracleMappingAccounts.size() == 1) {
                 scopeOracleMappingAccounts = Set.of(scopeOracleMappingAccounts.iterator().next(), oracleMappings);
               } else {
                 scopeOracleMappingAccounts = new HashSet<>(scopeOracleMappingAccounts);
@@ -170,11 +186,151 @@ public final class VaultTokensPosition implements Position {
     return true;
   }
 
+  static BigDecimal parsePrice(final AccountInfo<byte[]> oracleAccountInfo) {
+    final byte[] oracleData = oracleAccountInfo.data();
+    if (PythLazerOracle.BYTES == oracleData.length && PythLazerOracle.DISCRIMINATOR.equals(oracleData, 0)) {
+      final long price = ByteUtil.getInt64LE(oracleData, PythLazerOracle.PRICE_OFFSET);
+      final int exponent = ByteUtil.getInt32LE(oracleData, PythLazerOracle.EXPONENT_OFFSET);
+      return OracleUtil.scalePrice(price, exponent);
+    } else if (PriceUpdateV2.DISCRIMINATOR.equals(oracleData, 0)) {
+      final var priceUpdateV2 = PriceUpdateV2.read(oracleAccountInfo);
+      return OracleUtil.scalePythPullPrice(priceUpdateV2);
+    } else {
+      throw new IllegalStateException("Unsupported oracle account: " + oracleAccountInfo.pubKey());
+    }
+  }
+
   @Override
-  public PositionReport positionReport(final PublicKey mintProgram,
-                                       final int baseAssetDecimals,
-                                       final Map<PublicKey, AccountInfo<byte[]>> returnedAccountsMap,
-                                       final InnerInstructions innerInstructions) {
-    return null;
+  public int positionReport(final IntegrationServiceContext serviceContext,
+                            final PublicKey mintProgram,
+                            final MinGlamStateAccount stateAccount,
+                            final Map<PublicKey, AccountInfo<byte[]>> returnedAccountsMap,
+                            final int ixIndex,
+                            final List<Instruction> priceInstructions,
+                            final List<InnerInstructions> innerInstructionsList,
+                            final Map<PublicKey, BigDecimal> assetPrices,
+                            final List<AggregatePositionReport> positionReportsList) {
+    final var priceIx = priceInstructions.get(ixIndex);
+    final var solAssetMeta = serviceContext.solAssetMeta();
+    final var solOracle = solAssetMeta.oracle();
+    final var solOracleAccount = returnedAccountsMap.get(solOracle);
+    final BigDecimal solUSDPrice;
+    if (solOracleAccount == null) {
+      solUSDPrice = null;
+    } else {
+      solUSDPrice = parsePrice(solOracleAccount);
+      assetPrices.put(PublicKey.NONE, solUSDPrice);
+    }
+
+    final var vaultAssets = stateAccount.assets();
+    final var tokenReports = new ArrayList<PositionReport>(vaultAssets.length);
+    for (int i = 0; i < vaultAssets.length; i++) {
+      final var vaultAsset = vaultAssets[i];
+      final var vaultATA = vaultATAMap.get(vaultAsset);
+
+      final var vaultTokenAccount = returnedAccountsMap.get(vaultATA.publicKey());
+      final PositionReport positionReport;
+      if (AccountFetcher.isNull(vaultTokenAccount)) {
+        positionReport = PositionReport.zero(vaultAsset);
+      } else {
+        final long amount = ByteUtil.getInt64LE(vaultTokenAccount.data(), TokenAccount.AMOUNT_OFFSET);
+        if (amount == 0) {
+          positionReport = PositionReport.zero(vaultAsset);
+        } else {
+          final var stakePoolContext = serviceContext.stakePoolContextForMint(vaultAsset);
+          if (stakePoolContext != null) {
+            final var decimalAmount = LamportDecimal.toBigDecimal(amount);
+
+            final var stakePoolStateKey = stakePoolContext.stateKey();
+            final var accountInfo = returnedAccountsMap.get(stakePoolStateKey);
+            final byte[] data = accountInfo.data();
+            final long totalLamports = ByteUtil.getInt64LE(data, StakePoolState.TOTAL_LAMPORTS_OFFSET);
+            final long poolTokenSupply = ByteUtil.getInt64LE(data, StakePoolState.POOL_TOKEN_SUPPLY_OFFSET);
+            final BigDecimal solPrice;
+            if (totalLamports == 0 || poolTokenSupply == 0) {
+              solPrice = BigDecimal.ZERO;
+            } else {
+              solPrice = BigDecimal.valueOf(totalLamports)
+                  .divide(BigDecimal.valueOf(poolTokenSupply), MathContext.DECIMAL64);
+            }
+
+            final var price = solPrice.multiply(solUSDPrice);
+            assetPrices.put(vaultAsset, price);
+            final var solAmount = decimalAmount.multiply(solPrice);
+            final var value = decimalAmount.multiply(price);
+            positionReport = PositionReport.create(vaultAsset, decimalAmount, value);
+          } else {
+            final var assetMeta = serviceContext.globalConfigAssetMeta(vaultAsset);
+            final var decimalAmount = assetMeta.toDecimal(amount);
+            positionReport = switch (assetMeta.oracleSource()) {
+              case NotSet, BaseAsset, QuoteAsset, Prelaunch, Pyth, Pyth1K, Pyth1M, PythStableCoin, Switchboard,
+                   LstPoolState, MarinadeState -> {
+                final var msg = String.format("""
+                        {
+                         "event": "Invalid GlobalConfig OracleSource",
+                         "mint": "%s",
+                         "oracle": "%s",
+                         "oracleSource": "%s"
+                        }""",
+                    assetMeta.asset().toBase58(),
+                    assetMeta.oracle().toBase58(),
+                    assetMeta.oracleSource()
+                );
+                throw new IllegalStateException(msg);
+              }
+              case PythPull, Pyth1KPull, Pyth1MPull, PythStableCoinPull,
+                   PythLazer, PythLazer1K, PythLazer1M, PythLazerStableCoin,
+                   SwitchboardOnDemand -> {
+                final var oracle = assetMeta.oracle();
+                final var oracleAccount = returnedAccountsMap.get(oracle);
+                final var price = parsePrice(oracleAccount);
+                assetPrices.put(vaultAsset, price);
+                final var value = decimalAmount.multiply(price);
+                yield PositionReport.create(vaultAsset, decimalAmount, value);
+              }
+              case ChainlinkRWA -> {
+                final var feedIndexes = serviceContext.scopeAggregateIndexes(vaultAsset, assetMeta.oracle(), OracleType.ChainlinkRWA);
+                final var priceFeedAccount = returnedAccountsMap.get(feedIndexes.priceFeed());
+                final short[] indexes = new short[4];
+                SerDeUtil.readArray(
+                    indexes,
+                    priceIx.data(),
+                    GlamMintProgram.PriceVaultTokensIxData.AGG_INDEXES_OFFSET + Integer.BYTES + (i * (Short.BYTES * indexes.length))
+                );
+                // TODO: Support complex scope entries.
+                final var price = scaleScopePrice(priceFeedAccount.data(), indexes[0]);
+                assetPrices.put(vaultAsset, price);
+                final var value = decimalAmount.multiply(price);
+                yield PositionReport.create(vaultAsset, decimalAmount, value);
+              }
+            };
+          }
+        }
+      }
+
+      tokenReports.add(positionReport);
+    }
+
+    final var innerInstructions = innerInstructionsList.stream()
+        .filter(i -> i.index() == ixIndex)
+        .findFirst().orElseThrow();
+    final var positionAmount = Position.parseAnchorEvent(innerInstructions, mintProgram, stateAccount.baseAssetDecimals());
+    final var reportNode = new PositionReportNode(positionAmount, tokenReports);
+    positionReportsList.add(reportNode);
+    return ixIndex + 1;
+  }
+
+  static BigDecimal scaleScopePrice(final byte[] oraclePricesData, final int index) {
+    int offset = OraclePrices.PRICES_OFFSET + (DatedPrice.BYTES * index);
+    final long val = ByteUtil.getInt64LE(oraclePricesData, offset);
+    if (val == 0) {
+      return BigDecimal.ZERO;
+    } else {
+      final var price = val < 0
+          ? new BigDecimal(Long.toUnsignedString(val))
+          : new BigDecimal(val);
+      final long exp = ByteUtil.getInt64LE(oraclePricesData, offset + Long.BYTES);
+      return price.movePointLeft(Math.toIntExact(exp));
+    }
   }
 }

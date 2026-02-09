@@ -12,12 +12,13 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.services.integrations.IntegrationServiceContext;
+import systems.glam.services.pricing.accounting.AggregatePositionReport;
 import systems.glam.services.pricing.accounting.Position;
-import systems.glam.services.pricing.accounting.PositionReport;
-import systems.glam.services.pricing.accounting.PositionReportRecord;
+import systems.glam.services.pricing.accounting.PositionReportNode;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.MinGlamStateAccount;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 public final class DriftUsersPosition implements Position {
@@ -130,13 +131,23 @@ public final class DriftUsersPosition implements Position {
 
 
   @Override
-  public PositionReport positionReport(final PublicKey mintProgram,
-                                       final int baseAssetDecimals,
-                                       final Map<PublicKey, AccountInfo<byte[]>> returnedAccountsMap,
-                                       final InnerInstructions innerInstructions) {
-    final var positionAmount = Position.parseAnchorEvent(innerInstructions, mintProgram, baseAssetDecimals);
+  public int positionReport(final IntegrationServiceContext serviceContext,
+                            final PublicKey mintProgram,
+                            final MinGlamStateAccount stateAccount,
+                            final Map<PublicKey, AccountInfo<byte[]>> returnedAccountsMap,
+                            final int ixIndex,
+                            final List<Instruction> priceInstructions,
+                            final List<InnerInstructions> innerInstructionsList,
+                            final Map<PublicKey, BigDecimal> assetPrices,
+                            final List<AggregatePositionReport> positionReportsList) {
     // TODO: Calculate position value independently
     // TODO: Report all sub-positions, e.g. each spot and perp position.
-    return new PositionReportRecord(positionAmount);
+    final var innerInstructions = innerInstructionsList.stream()
+        .filter(i -> i.index() == ixIndex)
+        .findFirst().orElseThrow();
+    final var positionAmount = Position.parseAnchorEvent(innerInstructions, mintProgram, stateAccount.baseAssetDecimals());
+    final var reportNode = new PositionReportNode(positionAmount, List.of());
+    positionReportsList.add(reportNode);
+    return ixIndex + 1;
   }
 }

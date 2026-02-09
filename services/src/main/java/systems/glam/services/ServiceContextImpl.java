@@ -2,6 +2,7 @@ package systems.glam.services;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
+import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.accounts.sysvar.Clock;
 import software.sava.core.accounts.token.Mint;
 import software.sava.core.accounts.token.TokenAccount;
@@ -71,6 +72,11 @@ public final class ServiceContextImpl implements ServiceContext {
   @Override
   public PublicKey clockSysVar() {
     return solanaAccounts.clockSysVar();
+  }
+
+  @Override
+  public AccountMeta readClockSysVar() {
+    return solanaAccounts.readClockSysVar();
   }
 
   @Override

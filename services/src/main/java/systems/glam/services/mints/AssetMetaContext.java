@@ -2,13 +2,14 @@ package systems.glam.services.mints;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
+import software.sava.core.util.DecimalInteger;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.GlobalConfig;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.OracleSource;
 
 import java.util.Arrays;
 
-public interface AssetMetaContext extends Comparable<AssetMetaContext> {
+public interface AssetMetaContext extends Comparable<AssetMetaContext>, DecimalInteger {
 
   static AssetMetaContext create(final AssetMeta assetMeta) {
     final var asset = assetMeta.asset();

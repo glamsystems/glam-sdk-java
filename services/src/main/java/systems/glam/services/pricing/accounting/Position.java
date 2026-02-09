@@ -12,6 +12,7 @@ import systems.glam.services.state.MinGlamStateAccount;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 import java.util.SequencedCollection;
 import java.util.Set;
@@ -40,15 +41,20 @@ public interface Position {
         if (event instanceof PricedProtocolRecord(_, final BigInteger baseAssetAmount)) {
           return baseAssetAmount.signum() == 0
               ? BigDecimal.ZERO
-              : new BigDecimal(baseAssetAmount).movePointRight(decimals);
+              : new BigDecimal(baseAssetAmount).movePointLeft(decimals);
         }
       }
     }
     return null;
   }
 
-  PositionReport positionReport(final PublicKey mintProgram,
-                                final int baseAssetDecimals,
-                                final Map<PublicKey, AccountInfo<byte[]>> returnedAccountsMap,
-                                final InnerInstructions innerInstructions);
+  int positionReport(final IntegrationServiceContext serviceContext,
+                     final PublicKey mintProgram,
+                     final MinGlamStateAccount stateAccount,
+                     final Map<PublicKey, AccountInfo<byte[]>> returnedAccountsMap,
+                     final int ixIndex,
+                     final List<Instruction> priceInstructions,
+                     final List<InnerInstructions> innerInstructionsList,
+                     final Map<PublicKey, BigDecimal> assetPrices,
+                     final List<AggregatePositionReport> positionReportsList);
 }

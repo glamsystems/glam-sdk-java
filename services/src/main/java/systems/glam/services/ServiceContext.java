@@ -2,6 +2,7 @@ package systems.glam.services;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
+import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.accounts.sysvar.Clock;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.core.net.http.NotifyClient;
@@ -28,6 +29,8 @@ public interface ServiceContext {
   }
 
   PublicKey clockSysVar();
+
+  AccountMeta readClockSysVar();
 
   PublicKey tokenProgram();
 

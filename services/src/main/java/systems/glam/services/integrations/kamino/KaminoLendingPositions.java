@@ -10,11 +10,13 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.services.integrations.IntegrationServiceContext;
+import systems.glam.services.pricing.accounting.AggregatePositionReport;
 import systems.glam.services.pricing.accounting.Position;
-import systems.glam.services.pricing.accounting.PositionReport;
+import systems.glam.services.pricing.accounting.PositionReportNode;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.MinGlamStateAccount;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 public final class KaminoLendingPositions implements Position {
@@ -103,7 +105,6 @@ public final class KaminoLendingPositions implements Position {
         }
       }
 
-
       final var refreshObligationIx = KaminoLendingProgram.refreshObligation(
           kLendProgram,
           lendingMarket,
@@ -111,7 +112,6 @@ public final class KaminoLendingPositions implements Position {
       ).extraAccounts(reserveAccounts);
       refreshObligationInstructions.add(refreshObligationIx);
     }
-
 
     final var refreshReserveBatchIx = this.refreshReserveBatchIx.extraAccounts(refreshReservesAccounts);
     priceInstructions.add(refreshReserveBatchIx);
@@ -128,10 +128,22 @@ public final class KaminoLendingPositions implements Position {
   }
 
   @Override
-  public PositionReport positionReport(final PublicKey mintProgram,
-                                       final int baseAssetDecimals,
-                                       final Map<PublicKey, AccountInfo<byte[]>> returnedAccountsMap,
-                                       final InnerInstructions innerInstructions) {
-    return null;
+  public int positionReport(final IntegrationServiceContext serviceContext,
+                            final PublicKey mintProgram,
+                            final MinGlamStateAccount stateAccount,
+                            final Map<PublicKey, AccountInfo<byte[]>> returnedAccountsMap,
+                            final int ixIndex,
+                            final List<Instruction> priceInstructions,
+                            final List<InnerInstructions> innerInstructionsList,
+                            final Map<PublicKey, BigDecimal> assetPrices,
+                            final List<AggregatePositionReport> positionReportsList) {
+    final int priceIxIndex = ixIndex + 1 + obligationAccounts.size();
+    final var innerInstructions = innerInstructionsList.stream()
+        .filter(i -> i.index() == priceIxIndex)
+        .findFirst().orElseThrow();
+    final var positionAmount = Position.parseAnchorEvent(innerInstructions, mintProgram, stateAccount.baseAssetDecimals());
+    final var reportNode = new PositionReportNode(positionAmount, List.of());
+    positionReportsList.add(reportNode);
+    return priceIxIndex + 1;
   }
 }

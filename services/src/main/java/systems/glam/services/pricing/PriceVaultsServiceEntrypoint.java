@@ -63,12 +63,14 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
 
     final var serviceKeyFuture = delegateServiceConfig.signingServiceConfig().signingService().publicKeyWithRetries();
 
-    final var alwaysFetch = new HashSet<PublicKey>();
 
     final var solanaAccounts = delegateServiceConfig.solanaAccounts();
     final var glamAccounts = GlamAccounts.MAIN_NET;
     final var driftAccounts = DriftAccounts.MAIN_NET;
     final var kaminoAccounts = KaminoAccounts.MAIN_NET;
+
+    final var alwaysFetch = new HashSet<PublicKey>();
+
     final var accountFetcher = delegateServiceConfig.createAccountFetcher(alwaysFetch);
 
     final var serviceKey = serviceKeyFuture.join();

@@ -1,6 +1,7 @@
 package systems.glam.services.pricing;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.lookup.AddressLookupTable;
 import software.sava.core.accounts.meta.LookupTableAccountMeta;
 import software.sava.core.accounts.token.TokenAccount;
@@ -24,6 +25,7 @@ import systems.glam.services.BaseDelegateService;
 import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.integrations.drift.DriftUsersPosition;
 import systems.glam.services.integrations.kamino.KaminoLendingPositions;
+import systems.glam.services.pricing.accounting.AggregatePositionReport;
 import systems.glam.services.pricing.accounting.Position;
 import systems.glam.services.pricing.accounting.PositionReport;
 import systems.glam.services.pricing.accounting.VaultTokensPosition;
@@ -31,6 +33,7 @@ import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.state.MinGlamStateAccount;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -322,11 +325,14 @@ public class MultiAssetPriceService extends BaseDelegateService
 
   }
 
+  private static final Instruction MAIN_NET_CU_LIMIT_WITH_CLOCK = MAIN_NET_CU_LIMIT_SIMULATION.extraAccount(SolanaAccounts.MAIN_NET.readClockSysVar());
+
   private void prepareAUMTransaction(final MinGlamStateAccount stateAccount,
                                      final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap) {
     final var positions = List.copyOf(this.positions.values());
     final var instructions = new ArrayList<Instruction>(2 + (positions.size() << 2));
     instructions.add(MAIN_NET_CU_LIMIT_SIMULATION);
+
     final var returnAccountsSet = HashSet.<PublicKey>newHashSet(Transaction.MAX_ACCOUNTS);
 
     // TODO: Check if State overrides default oracle.
@@ -334,15 +340,17 @@ public class MultiAssetPriceService extends BaseDelegateService
     if (solAssetMeta == null) {
       return;
     }
+    final var solOracle = solAssetMeta.oracle();
     final var baseAssetMeta = serviceContext.globalConfigAssetMeta(stateAccount.baseAssetMint());
     if (baseAssetMeta == null) {
       return;
     }
+    final var baseAssetOracle = baseAssetMeta.oracle();
     if (!this.vaultTokensPosition.priceInstruction(
         serviceContext,
         glamAccountClient,
-        solAssetMeta.oracle(),
-        baseAssetMeta.oracle(),
+        solOracle,
+        baseAssetOracle,
         stateAccount,
         accountsNeededMap,
         instructions,
@@ -355,8 +363,8 @@ public class MultiAssetPriceService extends BaseDelegateService
       if (!position.priceInstruction(
           serviceContext,
           glamAccountClient,
-          solAssetMeta.oracle(),
-          baseAssetMeta.oracle(),
+          solOracle,
+          baseAssetOracle,
           stateAccount,
           accountsNeededMap,
           instructions,
@@ -366,6 +374,25 @@ public class MultiAssetPriceService extends BaseDelegateService
       }
     }
     instructions.add(validateAUMInstruction);
+
+
+    final var accounts = HashSet.newHashSet(Transaction.MAX_ACCOUNTS);
+    for (final var ix : instructions) {
+      accounts.add(ix.programId());
+      accounts.addAll(ix.accounts());
+    }
+    final int numAccounts = accounts.size();
+    final var clockSysVar = SolanaAccounts.MAIN_NET.clockSysVar();
+    if (numAccounts < Transaction.MAX_ACCOUNTS) {
+      if (!accounts.contains(clockSysVar)) {
+        instructions.set(0, MAIN_NET_CU_LIMIT_WITH_CLOCK);
+      }
+      returnAccountsSet.add(clockSysVar);
+    } else if (numAccounts > Transaction.MAX_ACCOUNTS) {
+      logger.log(WARNING, "Vault state {0} needs {1} accounts for pricing.", stateKey(), numAccounts);
+      clearState();
+      return;
+    }
 
     final var tableAccounts = createTableMetaArray(stateAccount, accountsNeededMap);
     final var transaction = Transaction.createTx(glamAccountClient.feePayer(), instructions, tableAccounts);
@@ -424,20 +451,40 @@ public class MultiAssetPriceService extends BaseDelegateService
             returnedAccountsMap.put(returnedAccount.pubKey(), returnedAccount);
           }
           final var mintProgram = glamAccountClient.glamAccounts().mintProgram();
-          final var positionReports = new ArrayList<PositionReport>(1 + positions.size());
-          var eventSum = BigInteger.ZERO;
+          final var positionReports = new ArrayList<AggregatePositionReport>(1 + positions.size());
           final var stateAccount = aumTransaction.stateAccount();
-          int ixIndex = 0;
-          var priceInstruction = innerInstructionsList.get(ixIndex++);
-          var positionReport = vaultTokensPosition.positionReport(mintProgram, stateAccount.baseAssetDecimals(), returnedAccountsMap, priceInstruction);
-          positionReports.add(positionReport);
-          for (final var position : aumTransaction.positions()) { // TODO copy positions to aumTransaction record
-            priceInstruction = innerInstructionsList.get(ixIndex++);
-            positionReport = position.positionReport(mintProgram, stateAccount.baseAssetDecimals(), returnedAccountsMap, priceInstruction);
-            positionReports.add(positionReport);
+          final var assetPrices = HashMap.<PublicKey, BigDecimal>newHashMap(stateAccount.numAssets() + 1);
+          final var instructions = aumTransaction.transaction().instructions();
+
+          int ixIndex = vaultTokensPosition.positionReport(
+              serviceContext,
+              mintProgram,
+              stateAccount,
+              returnedAccountsMap,
+              1,
+              instructions,
+              innerInstructionsList,
+              assetPrices,
+              positionReports
+          );
+          for (final var position : aumTransaction.positions()) {
+            ixIndex = position.positionReport(
+                serviceContext,
+                mintProgram,
+                stateAccount,
+                returnedAccountsMap,
+                ixIndex,
+                instructions,
+                innerInstructionsList,
+                assetPrices,
+                positionReports
+            );
           }
 
-          final var aumInstruction = innerInstructionsList.get(ixIndex);
+          final int _ixIndex = ixIndex;
+          final var aumInstruction = innerInstructionsList.stream()
+              .filter(i -> i.index() == _ixIndex)
+              .findFirst().orElseThrow();
           for (final var innerIx : aumInstruction.instructions()) {
             if (innerIx.programId().equals(mintProgram)) {
               final var event = GlamMintEvent.readCPI(innerIx.data());
@@ -453,14 +500,9 @@ public class MultiAssetPriceService extends BaseDelegateService
                         glamAccountClient.vaultAccounts().vaultPublicKey(),
                         mintContext.mint(),
                         mintContext.toDecimal(vaultAum).toPlainString(),
-                        mintContext.toDecimal(eventSum).toPlainString()
+                        positionReports
                     )
                 );
-                if (vaultAum.compareTo(eventSum) == 0) {
-                  // Persist to DB
-                } else {
-                  // TODO trigger alert and remove from pricing.
-                }
               }
             }
           }
