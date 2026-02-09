@@ -13,6 +13,7 @@ import software.sava.idl.clients.marinade.stake_pool.MarinadeAccounts;
 import software.sava.idl.clients.marinade.stake_pool.gen.types.State;
 import software.sava.idl.clients.oracles.OracleUtil;
 import software.sava.idl.clients.oracles.pyth.receiver.gen.types.PriceUpdateV2;
+import software.sava.idl.clients.oracles.switchboard.on_demand.gen.types.PullFeedAccountData;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
 import software.sava.solana.programs.stakepool.StakePoolState;
@@ -196,6 +197,9 @@ public final class VaultTokensPosition implements Position {
     } else if (PriceUpdateV2.DISCRIMINATOR.equals(oracleData, 0)) {
       final var priceUpdateV2 = PriceUpdateV2.read(oracleAccountInfo);
       return OracleUtil.scalePythPullPrice(priceUpdateV2);
+    } else if (PullFeedAccountData.BYTES == oracleData.length && PullFeedAccountData.DISCRIMINATOR.equals(oracleData, 0)) {
+      final var median = ByteUtil.getInt128LE(oracleData, PullFeedAccountData.RESULT_OFFSET);
+      return OracleUtil.scalePrice(median, 18);
     } else {
       throw new IllegalStateException("Unsupported oracle account: " + oracleAccountInfo.pubKey());
     }
@@ -278,7 +282,8 @@ public final class VaultTokensPosition implements Position {
           } else {
             final var assetMeta = serviceContext.globalConfigAssetMeta(vaultAsset);
             final var decimalAmount = assetMeta.toDecimal(amount);
-            positionReport = switch (assetMeta.oracleSource()) {
+            final var oracleSource = assetMeta.oracleSource();
+            positionReport = switch (oracleSource) {
               case NotSet, BaseAsset, QuoteAsset, Prelaunch, Pyth, Pyth1K, Pyth1M, PythStableCoin, Switchboard,
                    LstPoolState, MarinadeState -> {
                 final var msg = String.format("""
@@ -300,8 +305,13 @@ public final class VaultTokensPosition implements Position {
                 final var oracle = assetMeta.oracle();
                 final var oracleAccount = returnedAccountsMap.get(oracle);
                 final var price = parsePrice(oracleAccount);
-                assetPrices.put(vaultAsset, price);
-                final var value = decimalAmount.multiply(price);
+                final var scaledPrice = switch (oracleSource) {
+                  case Pyth1KPull, PythLazer1K -> price.movePointRight(3);
+                  case Pyth1MPull, PythLazer1M -> price.movePointRight(6);
+                  default -> price;
+                };
+                assetPrices.put(vaultAsset, scaledPrice);
+                final var value = decimalAmount.multiply(scaledPrice);
                 yield PositionReport.create(vaultAsset, decimalAmount, value);
               }
               case ChainlinkRWA -> {
