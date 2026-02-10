@@ -8,7 +8,10 @@ import software.sava.core.tx.Instruction;
 import software.sava.core.util.LamportDecimal;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 import software.sava.idl.clients.drift.gen.types.PythLazerOracle;
-import software.sava.idl.clients.kamino.scope.gen.types.*;
+import software.sava.idl.clients.kamino.scope.entries.ScopeReader;
+import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
+import software.sava.idl.clients.kamino.scope.gen.types.StakeSystem;
+import software.sava.idl.clients.kamino.scope.gen.types.ValidatorSystem;
 import software.sava.idl.clients.marinade.stake_pool.MarinadeAccounts;
 import software.sava.idl.clients.marinade.stake_pool.gen.types.State;
 import software.sava.idl.clients.oracles.OracleUtil;
@@ -28,7 +31,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.*;
-import java.util.List;
 
 import static java.lang.System.Logger.Level.WARNING;
 
@@ -250,7 +252,7 @@ public final class VaultTokensPosition implements Position {
             final var accountInfo = returnedAccountsMap.get(stakePoolStateKey);
             final byte[] data = accountInfo.data();
             final BigDecimal solPrice;
-            if (accountInfo.pubKey().equals(MarinadeAccounts.MAIN_NET.stateProgram())) {
+            if (accountInfo.pubKey().equals(MarinadeAccounts.MAIN_NET.stateAccount())) {
               final long delayedUnstakeCoolingDown = ByteUtil.getInt64LE(data, State.STAKE_SYSTEM_OFFSET + StakeSystem.DELAYED_UNSTAKE_COOLING_DOWN_OFFSET);
               final long totalActiveBalance = ByteUtil.getInt64LE(data, State.VALIDATOR_SYSTEM_OFFSET + ValidatorSystem.TOTAL_ACTIVE_BALANCE_OFFSET);
               final long availableReserveBalance = ByteUtil.getInt64LE(data, State.AVAILABLE_RESERVE_BALANCE_OFFSET);
@@ -276,7 +278,7 @@ public final class VaultTokensPosition implements Position {
 
             final var price = solPrice.multiply(solUSDPrice);
             assetPrices.put(vaultAsset, price);
-            final var solAmount = decimalAmount.multiply(solPrice);
+            // final var solAmount = decimalAmount.multiply(solPrice);
             final var value = decimalAmount.multiply(price);
             positionReport = PositionReport.create(vaultAsset, decimalAmount, value);
           } else {
@@ -324,7 +326,7 @@ public final class VaultTokensPosition implements Position {
                     GlamMintProgram.PriceVaultTokensIxData.AGG_INDEXES_OFFSET + Integer.BYTES + (i * (Short.BYTES * indexes.length))
                 );
                 // TODO: Support complex scope entries.
-                final var price = scaleScopePrice(priceFeedAccount.data(), indexes[0]);
+                final var price = ScopeReader.scaleScopePrice(priceFeedAccount.data(), indexes[0]);
                 assetPrices.put(vaultAsset, price);
                 final var value = decimalAmount.multiply(price);
                 yield PositionReport.create(vaultAsset, decimalAmount, value);
@@ -342,19 +344,5 @@ public final class VaultTokensPosition implements Position {
     final var reportNode = new PositionReportNode(positionAmount, tokenReports);
     positionReportsList.add(reportNode);
     return ixIndex + 1;
-  }
-
-  static BigDecimal scaleScopePrice(final byte[] oraclePricesData, final int index) {
-    int offset = OraclePrices.PRICES_OFFSET + (DatedPrice.BYTES * index);
-    final long val = ByteUtil.getInt64LE(oraclePricesData, offset);
-    if (val == 0) {
-      return BigDecimal.ZERO;
-    } else {
-      final var price = val < 0
-          ? new BigDecimal(Long.toUnsignedString(val))
-          : new BigDecimal(val);
-      final long exp = ByteUtil.getInt64LE(oraclePricesData, offset + Long.BYTES);
-      return price.movePointLeft(Math.toIntExact(exp));
-    }
   }
 }

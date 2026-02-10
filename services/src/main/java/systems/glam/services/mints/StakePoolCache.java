@@ -52,7 +52,7 @@ public interface StakePoolCache extends Runnable, AutoCloseable {
             final var stakePoolContextByMint = new ConcurrentHashMap<PublicKey, StakePoolContext>();
             final var marinadeContext = new StakePoolContext(
                 marinadeAccounts.marinadeProgram(),
-                AccountMeta.createRead(marinadeAccounts.stateProgram()),
+                AccountMeta.createRead(marinadeAccounts.stateAccount()),
                 AccountMeta.createRead(marinadeAccounts.mSolTokenMint())
             );
             stakePoolContextByMint.put(marinadeContext.mintKey(), marinadeContext);

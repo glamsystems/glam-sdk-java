@@ -79,7 +79,11 @@ public interface IntegrationServiceContext {
 
   AssetMetaContext solAssetMeta();
 
+  GlobalConfigCache globalConfigCache();
+
   AssetMetaContext globalConfigAssetMeta(final PublicKey mint);
+
+  AssetMetaContext watchForMint(final PublicKey mint, final PublicKey stateAccount);
 
   FeedIndexes scopeAggregateIndexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType);
 

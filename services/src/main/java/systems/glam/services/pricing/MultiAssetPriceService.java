@@ -149,14 +149,15 @@ public class MultiAssetPriceService extends BaseDelegateService
     var stateChange = StateChange.NO_CHANGE;
     for (final var assetMint : stateAccount.assets()) {
       if (!this.vaultTokensPosition.hasContext(assetMint)) {
-        final var assetMeta = serviceContext.globalConfigAssetMeta(assetMint);
+        var assetMeta = serviceContext.globalConfigAssetMeta(assetMint);
         if (assetMeta == null) {
-          logger.log(WARNING, "Missing asset meta for mint: {0}", assetMint);
-          return StateChange.UNSUPPORTED;
-        } else {
-          putTokenPosition(accountsNeededMap, assetMint);
-          stateChange = StateChange.ACCOUNTS_NEEDED; // Either a new Mint or ATA needs to be fetched.
+          assetMeta = serviceContext.watchForMint(assetMint, this.stateAccountKey());
+          if (assetMeta == null) {
+            return StateChange.UNSUPPORTED;
+          }
         }
+        putTokenPosition(accountsNeededMap, assetMint);
+        stateChange = StateChange.ACCOUNTS_NEEDED; // Either a new Mint or ATA needs to be fetched.
       }
     }
 

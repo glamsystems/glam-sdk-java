@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static systems.glam.services.state.GlobalConfigCacheImpl.*;
@@ -120,6 +121,12 @@ public interface GlobalConfigCache extends Runnable {
     return assetMetaMap;
   }
 
+  AssetMetaContext watchForMint(final PublicKey mint, final PublicKey stateAccount);
+
+  Set<PublicKey> retryStateAccounts();
+
+  void awaitNewAssetMeta(final long awaitNanos) throws InterruptedException;
+
   AssetMetaContext getByIndex(final int index);
 
   AssetMetaContext topPriorityForMint(final PublicKey mint);
@@ -129,6 +136,8 @@ public interface GlobalConfigCache extends Runnable {
   AssetMetaContext topPriorityForMintChecked(final PublicKey mint);
 
   AssetMetaContext topPriorityForMintChecked(final MintContext mintContext);
+
+  CompletableFuture<Void> initCache();
 
   void subscribe(final SolanaRpcWebsocket websocket);
 }

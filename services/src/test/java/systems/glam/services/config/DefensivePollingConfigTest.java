@@ -12,7 +12,7 @@ class DefensivePollingConfigTest {
   @Test
   void testDefaultConfig() {
     final var config = DefensivePollingConfig.createDefaultConfig();
-    assertEquals(Duration.ofMinutes(30), config.globalConfig());
+    assertEquals(Duration.ofMinutes(1), config.globalConfig());
     assertEquals(Duration.ofHours(8), config.glamStateAccounts());
     assertEquals(Duration.ofHours(4), config.integTables());
     assertEquals(Duration.ofHours(12), config.stakePools());
@@ -46,7 +46,7 @@ class DefensivePollingConfigTest {
         }
         """;
     final var config = DefensivePollingConfig.parseConfig(JsonIterator.parse(json));
-    assertEquals(Duration.ofMinutes(30), config.globalConfig());
+    assertEquals(Duration.ofMinutes(1), config.globalConfig());
     assertEquals(Duration.ofHours(8), config.glamStateAccounts());
     assertEquals(Duration.ofHours(4), config.integTables());
     assertEquals(Duration.ofHours(5), config.stakePools());

@@ -2,8 +2,8 @@ package systems.glam.services.integrations.drift;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
+import software.sava.core.encoding.ByteUtil;
 import software.sava.core.tx.Instruction;
-import software.sava.idl.clients.core.gen.SerDeUtil;
 import software.sava.idl.clients.drift.DriftPDAs;
 import software.sava.idl.clients.drift.gen.types.PerpPosition;
 import software.sava.idl.clients.drift.gen.types.SpotPosition;
@@ -73,8 +73,6 @@ public final class DriftUsersPosition implements Position {
 
     final int numUsers = userAccounts.size();
     final var extraAccountsMap = HashMap.<PublicKey, AccountMeta>newHashMap(numUsers * (User.SPOT_POSITIONS_LEN << 1) + (User.PERP_POSITIONS_LEN << 1));
-    final var spotPositions = new SpotPosition[User.SPOT_POSITIONS_LEN];
-    final var perpPositions = new PerpPosition[User.PERP_POSITIONS_LEN];
 
     for (final var userKey : userAccounts.keySet()) {
       final var userAccount = accountMap.get(userKey);
@@ -83,10 +81,11 @@ public final class DriftUsersPosition implements Position {
       }
 
       final byte[] data = userAccount.data();
-      SerDeUtil.readArray(spotPositions, SpotPosition::read, data, User.SPOT_POSITIONS_OFFSET);
-      for (final var position : spotPositions) {
-        if (position.scaledBalance() != 0) {
-          final var marketContext = driftMarketCache.spotMarket(position.marketIndex());
+      for (int i = 0, offset = User.SPOT_POSITIONS_OFFSET; i < User.SPOT_POSITIONS_LEN; ++i, offset += SpotPosition.BYTES) {
+        final long scaledBalance = ByteUtil.getInt64LE(data, offset);
+        if (scaledBalance != 0) {
+          final var marketIndex = ByteUtil.getInt16LE(data, offset + SpotPosition.MARKET_INDEX_OFFSET);
+          final var marketContext = driftMarketCache.spotMarket(marketIndex);
           if (marketContext == null) {
             ++missingMarkets;
           } else {
@@ -95,10 +94,11 @@ public final class DriftUsersPosition implements Position {
         }
       }
 
-      SerDeUtil.readArray(perpPositions, PerpPosition::read, data, User.PERP_POSITIONS_OFFSET);
-      for (final var position : perpPositions) {
-        if (position.baseAssetAmount() != 0) {
-          final var marketContext = driftMarketCache.perpMarket(position.marketIndex());
+      for (int i = 0, offset = User.PERP_POSITIONS_OFFSET; i < User.PERP_POSITIONS_LEN; ++i, offset += PerpPosition.BYTES) {
+        final long baseAssetAmount = ByteUtil.getInt64LE(data, offset + PerpPosition.BASE_ASSET_AMOUNT_OFFSET);
+        if (baseAssetAmount != 0) {
+          final var marketIndex = ByteUtil.getInt16LE(data, offset + PerpPosition.MARKET_INDEX_OFFSET);
+          final var marketContext = driftMarketCache.perpMarket(marketIndex);
           if (marketContext == null) {
             ++missingMarkets;
           } else {

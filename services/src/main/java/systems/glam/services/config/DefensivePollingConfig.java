@@ -24,7 +24,7 @@ public record DefensivePollingConfig(Duration globalConfig,
 
   public static DefensivePollingConfig createDefaultConfig() {
     return new DefensivePollingConfig(
-        Duration.ofMinutes(30),
+        Duration.ofMinutes(1),
         EIGHT_HOURS,
         Duration.ofHours(4),
         Duration.ofHours(12),
@@ -45,7 +45,7 @@ public record DefensivePollingConfig(Duration globalConfig,
 
     private DefensivePollingConfig createConfig() {
       if (globalConfig == null) {
-        globalConfig = Duration.ofMinutes(30);
+        globalConfig = Duration.ofMinutes(1);
       }
       if (glamStateAccounts == null) {
         glamStateAccounts = EIGHT_HOURS;

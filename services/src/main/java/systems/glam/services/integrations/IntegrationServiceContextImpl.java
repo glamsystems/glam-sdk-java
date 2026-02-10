@@ -86,8 +86,18 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   }
 
   @Override
+  public GlobalConfigCache globalConfigCache() {
+    return globalConfigCache;
+  }
+
+  @Override
   public AssetMetaContext globalConfigAssetMeta(final PublicKey mint) {
     return globalConfigCache.topPriorityForMintChecked(mint);
+  }
+
+  @Override
+  public AssetMetaContext watchForMint(final PublicKey mint, final PublicKey stateAccount) {
+    return globalConfigCache.watchForMint(mint, stateAccount);
   }
 
   @Override

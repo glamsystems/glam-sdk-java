@@ -18,6 +18,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
@@ -42,9 +45,11 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   private final MintCache mintCache;
   private final AccountFetcher accountFetcher;
   private final long fetchDelayNanos;
+  private final Map<PublicKey, Set<PublicKey>> stateAccountsThatNeedAssetMeta;
   private final ReentrantReadWriteLock.ReadLock readLock;
   private final ReentrantReadWriteLock.WriteLock writeLock;
   private final Condition invalidGlobalConfig;
+  private final Condition newAssetMeta;
 
   volatile GlobalConfigUpdate globalConfigUpdate;
   volatile Map<PublicKey, AssetMetaContext[]> assetMetaMap;
@@ -65,12 +70,50 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     this.mintCache = mintCache;
     this.accountFetcher = accountFetcher;
     this.fetchDelayNanos = fetchDelay.toNanos();
+    this.stateAccountsThatNeedAssetMeta = new ConcurrentHashMap<>();
     final var lock = new ReentrantReadWriteLock();
     this.readLock = lock.readLock();
     this.writeLock = lock.writeLock();
     this.invalidGlobalConfig = writeLock.newCondition();
+    this.newAssetMeta = writeLock.newCondition();
     this.globalConfigUpdate = globalConfigUpdate;
     this.assetMetaMap = assetMetaMap;
+  }
+
+  @Override
+  public AssetMetaContext watchForMint(final PublicKey mint, final PublicKey stateAccount) {
+    readLock.lock();
+    try {
+      final var assetMetaMap = this.assetMetaMap;
+      final var assetMetaEntries = assetMetaMap.get(mint);
+      if (assetMetaEntries == null) {
+        stateAccountsThatNeedAssetMeta.computeIfAbsent(mint, _ -> new ConcurrentSkipListSet<>()).add(stateAccount);
+        return null;
+      } else {
+        return assetMetaEntries[0];
+      }
+    } finally {
+      readLock.unlock();
+    }
+  }
+
+  @Override
+  public Set<PublicKey> retryStateAccounts() {
+    final var assetMetaMap = this.assetMetaMap;
+    Set<PublicKey> stateAccounts = null;
+    final var iterator = stateAccountsThatNeedAssetMeta.entrySet().iterator();
+    while (iterator.hasNext()) {
+      final var entry = iterator.next();
+      if (assetMetaMap.containsKey(entry.getKey())) {
+        if (stateAccounts == null) {
+          stateAccounts = entry.getValue();
+        } else {
+          stateAccounts.addAll(entry.getValue());
+        }
+        iterator.remove();
+      }
+    }
+    return stateAccounts == null ? Set.of() : stateAccounts;
   }
 
   GlobalConfigUpdate globalConfigUpdate() {
@@ -165,11 +208,16 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   }
 
   @Override
+  public CompletableFuture<Void> initCache() {
+    return accountFetcher.priorityQueue(List.of(globalConfigKey))
+        .thenAcceptAsync(result -> this.accept(result.accounts(), result.accountMap()));
+  }
+
+  @Override
   public void run() {
     try {
       for (long remainingNanos; ; ) {
-        accountFetcher.priorityQueue(configProgram, this);
-
+        accountFetcher.priorityQueue(globalConfigKey, this);
         writeLock.lock();
         try {
           for (remainingNanos = fetchDelayNanos; ; ) {
@@ -456,7 +504,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                      "slot": %s,
                      "a": %s,
                      "b": %s
-                     }""",
+                    }""",
                 Long.toUnsignedString(slot),
                 entry.toJson(), assetMeta.toJson()
             );
@@ -588,6 +636,36 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
           }).toList();
           if (!mintsNeeded.isEmpty()) {
             this.accountFetcher.priorityQueueBatchable(mintsNeeded, this);
+          }
+
+          for (final var mint : assetMetaMap.keySet()) {
+            if (!previousAssetMetaMap.containsKey(mint) && this.stateAccountsThatNeedAssetMeta.containsKey(mint)) {
+              this.newAssetMeta.signalAll();
+            }
+          }
+        }
+      }
+    } finally {
+      writeLock.unlock();
+    }
+  }
+
+  @Override
+  public void awaitNewAssetMeta(final long awaitNanos) throws InterruptedException {
+    writeLock.lock();
+    try {
+      for (long remainingNanos = awaitNanos; ; ) {
+        remainingNanos = newAssetMeta.awaitNanos(remainingNanos);
+        if (remainingNanos <= 0) {
+          return;
+        } else {
+          final var assetMetaMap = this.assetMetaMap;
+          if (assetMetaMap != null) {
+            for (final var mint : assetMetaMap.keySet()) {
+              if (assetMetaMap.containsKey(mint)) {
+                return;
+              }
+            }
           }
         }
       }

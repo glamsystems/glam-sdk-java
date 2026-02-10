@@ -6,6 +6,8 @@ import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.lend.gen.KaminoLendingProgram;
 import software.sava.idl.clients.kamino.lend.gen.types.Obligation;
+import software.sava.idl.clients.kamino.lend.gen.types.ObligationCollateral;
+import software.sava.idl.clients.kamino.lend.gen.types.ObligationLiquidity;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
 import systems.glam.sdk.GlamAccountClient;
@@ -67,14 +69,15 @@ public final class KaminoLendingPositions implements Position {
       }
       priceObligationAccounts.add(entry.getValue());
 
-      final var obligation = Obligation.read(obligationAccount);
       returnAccounts.add(obligationKey);
-      final var lendingMarket = obligation.lendingMarket();
+      final byte[] data = obligationAccount.data();
+      final var lendingMarket = PublicKey.readPubKey(data, Obligation.LENDING_MARKET_OFFSET);
       returnAccounts.add(lendingMarket);
 
       final var reserveAccounts = new ArrayList<AccountMeta>(Obligation.DEPOSITS_LEN + Obligation.BORROWS_LEN);
-      for (final var deposit : obligation.deposits()) {
-        final var reserve = deposit.depositReserve();
+
+      for (int i = 0, offset = Obligation.DEPOSITS_OFFSET; i < Obligation.DEPOSITS_LEN; ++i, offset += ObligationCollateral.BYTES) {
+        final var reserve = PublicKey.readPubKey(data, offset);
         if (reserve.equals(PublicKey.NONE)) {
           break;
         }
@@ -89,8 +92,8 @@ public final class KaminoLendingPositions implements Position {
         }
       }
 
-      for (final var borrow : obligation.borrows()) {
-        final var reserve = borrow.borrowReserve();
+      for (int i = 0, offset = Obligation.BORROWS_OFFSET; i < Obligation.BORROWS_LEN; ++i, offset += ObligationLiquidity.BYTES) {
+        final var reserve = PublicKey.readPubKey(data, offset);
         if (reserve.equals(PublicKey.NONE)) {
           break;
         }
@@ -118,7 +121,7 @@ public final class KaminoLendingPositions implements Position {
     priceInstructions.addAll(refreshObligationInstructions);
 
     final var priceIx = glamAccountClient.priceKaminoObligations(
-        serviceContext.kLendProgram(),
+        kLendProgram.publicKey(),
         solUSDOracleKey, baseAssetUSDOracleKey,
         true
     ).extraAccounts(priceObligationAccounts);

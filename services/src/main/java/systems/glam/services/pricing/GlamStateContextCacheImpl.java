@@ -27,10 +27,10 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
 
   static final System.Logger logger = System.getLogger(GlamStateContextCache.class.getName());
 
-  private final long fetchDelayMillis;
+  private final long fetchDelayNanos;
   private final PublicKey protocolProgram;
   private final PublicKey addressLookupTableProgram;
-  private final IntegrationServiceContext integContext;
+  private final IntegrationServiceContext serviceContext;
   private final List<Filter> stateFilters;
   private final Path vaultTableDirectory;
   private final List<Filter> tableFilters;
@@ -41,8 +41,8 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
                             final IntegrationServiceContext integContext,
                             final Path vaultTableDirectory,
                             final Map<PublicKey, VaultStateContext> priceServicesByState) {
-    this.fetchDelayMillis = fetchDelay.toNanos();
-    this.integContext = integContext;
+    this.fetchDelayNanos = fetchDelay.toNanos();
+    this.serviceContext = integContext;
     final var serviceContext = integContext.serviceContext();
     final var glamAccounts = serviceContext.glamAccounts();
     this.protocolProgram = glamAccounts.protocolProgram();
@@ -71,24 +71,23 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
   @Override
   public void run() {
     try {
-      final var rpcCaller = integContext.rpcCaller();
+      final var globalConfigCache = serviceContext.globalConfigCache();
+      final var rpcCaller = serviceContext.rpcCaller();
       for (; ; ) { // Defensive discovery of new Glam Vaults & Tables.
-        final var glamStateAccounts = rpcCaller.courteousGet(
-            rpcClient -> rpcClient.getProgramAccounts(protocolProgram, stateFilters),
-            "rpcClient::getGlamStateAccounts"
-        );
-        glamStateAccounts.parallelStream().forEach(this::acceptStateAccount);
-
-        final var addressLookupTableAccounts = rpcCaller.courteousGet(
+        final var addressLookupTableAccountsFuture = rpcCaller.courteousCall(
             rpcClient -> rpcClient.getProgramAccounts(addressLookupTableProgram, tableFilters),
             "rpcClient::getAddressLookupTableAccounts"
         );
-        addressLookupTableAccounts.parallelStream().forEach(this::acceptTable);
+        final var glamStateAccountsFuture = rpcCaller.courteousCall(
+            rpcClient -> rpcClient.getProgramAccounts(protocolProgram, stateFilters),
+            "rpcClient::getGlamStateAccounts"
+        );
+        unsupportedVaults.removeAll(globalConfigCache.retryStateAccounts());
+        glamStateAccountsFuture.join().parallelStream().forEach(this::acceptStateAccount);
+        addressLookupTableAccountsFuture.join().parallelStream().forEach(this::acceptTable);
 
-        //noinspection BusyWait
-        Thread.sleep(fetchDelayMillis);
+        globalConfigCache.awaitNewAssetMeta(fetchDelayNanos);
       }
-
     } catch (final InterruptedException e) {
       // exit
     } catch (final RuntimeException ex) {
@@ -129,7 +128,7 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
     var stateContext = priceServicesByState.get(accountKey);
     if (stateContext == null) {
       if (!unsupportedVaults.contains(accountKey)) {
-        stateContext = VaultPriceService.createService(integContext, accountInfo);
+        stateContext = VaultPriceService.createService(serviceContext, accountInfo);
         if (stateContext == null) {
           unsupportedVaults.add(accountKey);
         } else if (priceServicesByState.putIfAbsent(accountKey, stateContext) == null) {
