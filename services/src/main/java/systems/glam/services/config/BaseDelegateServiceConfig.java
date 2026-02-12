@@ -35,6 +35,8 @@ import systems.comodal.jsoniter.JsonIterator;
 import systems.glam.sdk.GlamAccounts;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.ServiceContextImpl;
+import systems.glam.services.db.DatasourceConfig;
+import systems.glam.services.db.sql.SqlDataSource;
 import systems.glam.services.execution.ExecutionServiceContext;
 import systems.glam.services.execution.InstructionProcessor;
 import systems.glam.services.mints.MintCache;
@@ -78,7 +80,8 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
                                         Duration minCheckStateDelay, Duration maxCheckStateDelay,
                                         Backoff serviceBackoff,
                                         double defaultCuBudgetMultiplier,
-                                        int maxTransactionRetries) implements DelegateServiceConfig {
+                                        int maxTransactionRetries,
+                                        DatasourceConfig datasourceConfig) implements DelegateServiceConfig {
 
   private static final Backoff DEFAULT_NETWORK_BACKOFF = Backoff.fibonacci(1, 21);
 
@@ -166,6 +169,10 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
   public ServiceContext createServiceContext(final ExecutorService taskExecutor,
                                              final PublicKey serviceKey,
                                              final GlamAccounts glamAccounts) {
+    final var primaryDatasource = datasourceConfig == null
+        ? null
+        : SqlDataSource.createDataSource("price_vault_service", datasourceConfig);
+
     return new ServiceContextImpl(
         serviceKey,
         warnFeePayerBalance, minFeePayerBalance,
@@ -175,7 +182,8 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
         serviceBackoff,
         solanaAccounts, glamAccounts,
         notifyClient,
-        rpcCaller
+        rpcCaller,
+        primaryDatasource
     );
   }
 
@@ -235,6 +243,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
     private Backoff serviceBackoff;
     private double defaultCuBudgetMultiplier = 1.13;
     private int maxTransactionRetries = 3;
+    private DatasourceConfig datasourceConfig;
 
     protected ConfigParser(final ExecutorService taskExecutor, final HttpClient httpClient) {
       this.taskExecutor = taskExecutor;
@@ -313,7 +322,8 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
           minCheckStateDelay, maxCheckStateDelay,
           serviceBackoff,
           defaultCuBudgetMultiplier,
-          maxTransactionRetries
+          maxTransactionRetries,
+          datasourceConfig
       );
     }
 
@@ -409,6 +419,8 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
         defaultCuBudgetMultiplier = ji.readDouble();
       } else if (fieldEquals("maxTransactionRetries", buf, offset, len)) {
         maxTransactionRetries = ji.readInt();
+      } else if (fieldEquals("datasource", buf, offset, len)) {
+        datasourceConfig = DatasourceConfig.parseConfig(ji);
       } else {
         throw new IllegalStateException("Unknown service config field " + new String(buf, offset, len));
       }

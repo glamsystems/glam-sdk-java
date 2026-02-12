@@ -12,6 +12,7 @@ import systems.glam.services.integrations.kamino.KaminoVaultCache;
 import systems.glam.services.mints.*;
 import systems.glam.services.oracles.scope.FeedIndexes;
 import systems.glam.services.oracles.scope.KaminoCache;
+import systems.glam.services.pricing.accounting.VaultAumRecord;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.GlobalConfigCache;
@@ -138,6 +139,13 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   @Override
   public FeedIndexes scopeAggregateIndexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType) {
     return kaminoCache.indexes(mint, oracle, oracleType);
+  }
+
+  @Override
+  public void persistAumRecord(final VaultAumRecord aumRecord) throws InterruptedException {
+    final var datasource = serviceContext.primaryDatasource();
+    final int numInserted = aumRecord.insertRecord(datasource);
+    System.out.println(numInserted);
   }
 
   @Override

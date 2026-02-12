@@ -13,6 +13,7 @@ import systems.glam.services.integrations.kamino.KaminoVaultCache;
 import systems.glam.services.mints.*;
 import systems.glam.services.oracles.scope.FeedIndexes;
 import systems.glam.services.oracles.scope.KaminoCache;
+import systems.glam.services.pricing.accounting.VaultAumRecord;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.GlobalConfigCache;
@@ -86,6 +87,8 @@ public interface IntegrationServiceContext {
   AssetMetaContext watchForMint(final PublicKey mint, final PublicKey stateAccount);
 
   FeedIndexes scopeAggregateIndexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType);
+
+  void persistAumRecord(final VaultAumRecord aumRecord) throws InterruptedException;
 
   IntegLookupTableCache integTableCache();
 

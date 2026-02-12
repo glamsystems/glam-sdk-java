@@ -3,14 +3,17 @@ package systems.glam.services.pricing;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.lookup.AddressLookupTable;
+import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.accounts.meta.LookupTableAccountMeta;
 import software.sava.core.accounts.token.TokenAccount;
+import software.sava.core.encoding.ByteUtil;
 import software.sava.core.tx.Instruction;
 import software.sava.core.tx.Transaction;
 import software.sava.idl.clients.drift.gen.types.User;
 import software.sava.idl.clients.drift.vaults.gen.types.VaultDepositor;
 import software.sava.idl.clients.kamino.lend.gen.types.Obligation;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
+import software.sava.idl.clients.spl.token.gen.types.Mint;
 import software.sava.rpc.json.http.request.Commitment;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
@@ -26,19 +29,18 @@ import systems.glam.services.BaseDelegateService;
 import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.integrations.drift.DriftUsersPosition;
 import systems.glam.services.integrations.kamino.KaminoLendingPositions;
-import systems.glam.services.pricing.accounting.AggregatePositionReport;
-import systems.glam.services.pricing.accounting.Position;
-import systems.glam.services.pricing.accounting.PositionReport;
-import systems.glam.services.pricing.accounting.VaultTokensPosition;
+import systems.glam.services.pricing.accounting.*;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.state.MinGlamStateAccount;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
@@ -79,7 +81,7 @@ public class MultiAssetPriceService extends BaseDelegateService
     this.protocolPositions = new EnumMap<>(Protocol.class);
     this.stateAccount = new AtomicReference<>(stateAccount);
     this.aumTransaction = new AtomicReference<>(null);
-    this.validateAUMInstruction = glamAccountClient.validateAum(true);
+    this.validateAUMInstruction = glamAccountClient.validateAum(true).extraAccount(AccountMeta.createRead(mintPDA));
     this.glamVaultTables = new AtomicReference<>(null);
     this.accountsNeededMap = Map.of();
   }
@@ -340,12 +342,12 @@ public class MultiAssetPriceService extends BaseDelegateService
     // TODO: Check if State overrides default oracle.
     final var solAssetMeta = serviceContext.solAssetMeta();
     if (solAssetMeta == null) {
-      return;
+      throw new IllegalStateException("Missing SOL AssetMeta");
     }
     final var solOracle = solAssetMeta.oracle();
     final var baseAssetMeta = serviceContext.globalConfigAssetMeta(stateAccount.baseAssetMint());
     if (baseAssetMeta == null) {
-      return;
+      throw new IllegalStateException(String.format("Missing base AssetMeta for %s", stateAccount.baseAssetMint()));
     }
     final var baseAssetOracle = baseAssetMeta.oracle();
     if (!this.vaultTokensPosition.priceInstruction(
@@ -376,7 +378,7 @@ public class MultiAssetPriceService extends BaseDelegateService
       }
     }
     instructions.add(validateAUMInstruction);
-
+    returnAccountsSet.add(mintPDA);
 
     final var accounts = HashSet.newHashSet(Transaction.MAX_ACCOUNTS);
     for (final var ix : instructions) {
@@ -435,6 +437,8 @@ public class MultiAssetPriceService extends BaseDelegateService
                 // TODO: retry in N seconds up to X times.
               } else if (error instanceof GlamProtocolError.InvalidPricingOracle) {
                 // TODO: refresh oracle caches, trigger alert.
+              } else if (error instanceof GlamProtocolError.PriceDivergenceTooLarge) {
+
               } else {
                 // 51108 GlamProtocolError.TypeCastingError
                 // TODO: trigger alert and remove vault
@@ -446,16 +450,26 @@ public class MultiAssetPriceService extends BaseDelegateService
             // TODO: trigger alert and remove vault
           }
         } else {
-          simulationResult.innerInstructions().stream().mapToInt(InnerInstructions::index).max().orElseThrow();
-          final var instructions = aumTransaction.transaction().instructions();
-          final var innerInstructionsArray = new InnerInstructions[instructions.size()];
-          for (final var innerInstructions : simulationResult.innerInstructions()) {
-            innerInstructionsArray[innerInstructions.index()] = innerInstructions;
-          }
           final var returnedAccounts = simulationResult.accounts();
           final var returnedAccountsMap = HashMap.<PublicKey, AccountInfo<byte[]>>newHashMap(returnedAccounts.size());
           for (final var returnedAccount : returnedAccounts) {
             returnedAccountsMap.put(returnedAccount.pubKey(), returnedAccount);
+          }
+
+          final long slot = simulationResult.context().slot();
+          final var clockSysVarAccount = returnedAccountsMap.get(SolanaAccounts.MAIN_NET.clockSysVar());
+          final Instant timestamp;
+          if (clockSysVarAccount == null) {
+            timestamp = Instant.now();
+          } else {
+            final long epochSeconds = ByteUtil.getInt64LE(clockSysVarAccount.data(), 32);
+            timestamp = Instant.ofEpochSecond(epochSeconds);
+          }
+
+          final var instructions = aumTransaction.transaction().instructions();
+          final var innerInstructionsArray = new InnerInstructions[instructions.size()];
+          for (final var innerInstructions : simulationResult.innerInstructions()) {
+            innerInstructionsArray[innerInstructions.index()] = innerInstructions;
           }
           final var mintProgram = glamAccountClient.glamAccounts().mintProgram();
           final var positionReports = new ArrayList<AggregatePositionReport>(1 + positions.size());
@@ -487,32 +501,58 @@ public class MultiAssetPriceService extends BaseDelegateService
             );
           }
 
-          final var aumInstruction = innerInstructionsArray[ixIndex];
-          for (final var innerIx : aumInstruction.instructions()) {
+          final var mintAccount = returnedAccountsMap.get(mintPDA);
+          final long supply = ByteUtil.getInt64LE(mintAccount.data(), Mint.SUPPLY_OFFSET);
+
+          final var baseAssetAUM = innerInstructionsArray[ixIndex].instructions().stream().<BigInteger>mapMulti((innerIx, downstream) -> {
             if (innerIx.programId().equals(mintProgram)) {
               final var event = GlamMintEvent.readCPI(innerIx.data());
-              if (event instanceof AumRecord(_, final BigInteger vaultAum)) {
-                final var mintContext = serviceContext.mintContext(stateAccount.baseAssetMint());
-                logger.log(INFO, String.format("""
-                            {
-                             "vault": "%s",
-                             "baseAsset": "%s",
-                             "aum": "%s",
-                             "sum": "%s"
-                            }""",
-                        glamAccountClient.vaultAccounts().vaultPublicKey(),
-                        mintContext.mint(),
-                        mintContext.toDecimal(vaultAum).toPlainString(),
-                        positionReports
-                    )
-                );
+              if (event instanceof AumRecord(_, final BigInteger baseAssetAmount)) {
+                downstream.accept(baseAssetAmount);
               }
             }
+          }).findFirst().orElseThrow();
+          final var baseAssetMintContext = serviceContext.mintContext(stateAccount.baseAssetMint());
+          final var baseAssetPrice = assetPrices.get(baseAssetMintContext.mint());
+          if (baseAssetPrice == null) {
+            logger.log(WARNING, "No price found for base asset mint: {0}", baseAssetMintContext.mint());
+            return null;
           }
+          final var decimalBaseAssetAUM = baseAssetMintContext.toDecimal(baseAssetAUM);
+          final var decimalBaseAssetUSD = decimalBaseAssetAUM.multiply(baseAssetPrice).setScale(2, RoundingMode.HALF_EVEN);
+          final var stateKey = stateKey();
+          logger.log(INFO, String.format("""
+                      {
+                       "state": "%s",
+                       "vault": "%s",
+                       "slot": %d,
+                       "timestamp": "%s",
+                       "baseAsset": "%s",
+                       "supply": %s,
+                       "baseAUM": "%s",
+                       "usdAUM": "%s",
+                       "sum": "%s"
+                      }""",
+                  stateKey,
+                  glamAccountClient.vaultAccounts().vaultPublicKey(),
+                  slot, timestamp,
+                  baseAssetMintContext.mint(),
+                  Long.toUnsignedString(supply),
+                  decimalBaseAssetAUM.toPlainString(),
+                  decimalBaseAssetUSD.toPlainString(),
+                  positionReports
+              )
+          );
 
+          final var aumRecord = new VaultAumRecord(
+              stateKey, timestamp, slot, supply, baseAssetAUM, decimalBaseAssetUSD
+          );
+          serviceContext.persistAumRecord(aumRecord);
         }
       } catch (final RuntimeException e) {
         logger.log(WARNING, "Error processing price vault simulation", e);
+      } catch (final InterruptedException e) {
+        // exit
       }
       return null;
     });

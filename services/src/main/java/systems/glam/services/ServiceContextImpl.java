@@ -12,6 +12,7 @@ import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.core.remote.call.Backoff;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamAccounts;
+import systems.glam.services.db.sql.SqlDataSource;
 
 import java.math.BigInteger;
 import java.nio.file.Path;
@@ -37,6 +38,7 @@ public final class ServiceContextImpl implements ServiceContext {
   private final GlamAccounts glamAccounts;
   private final NotifyClient notifyClient;
   private final RpcCaller rpcCaller;
+  private final SqlDataSource primaryDatasource;
 
   public ServiceContextImpl(final PublicKey serviceKey,
                             final BigInteger warnFeePayerBalance, final BigInteger minFeePayerBalance,
@@ -47,12 +49,14 @@ public final class ServiceContextImpl implements ServiceContext {
                             final SolanaAccounts solanaAccounts,
                             final GlamAccounts glamAccounts,
                             final NotifyClient notifyClient,
-                            final RpcCaller rpcCaller) {
+                            final RpcCaller rpcCaller,
+                            final SqlDataSource primaryDatasource) {
     this.serviceKey = serviceKey;
     this.warnFeePayerBalance = warnFeePayerBalance;
     this.minFeePayerBalance = minFeePayerBalance;
     this.cacheDirectory = cacheDirectory;
     this.accountsCacheDirectory = cacheDirectory.resolve("accounts");
+    this.primaryDatasource = primaryDatasource;
     this.glamMinStateAccountCacheDirectory = accountsCacheDirectory.resolve("glam/min_state");
     this.minCheckStateDelayNanos = minCheckStateDelay.toNanos();
     this.maxCheckStateDelayNanos = maxCheckStateDelay.toNanos();
@@ -219,6 +223,11 @@ public final class ServiceContextImpl implements ServiceContext {
   @Override
   public RpcCaller rpcCaller() {
     return rpcCaller;
+  }
+
+  @Override
+  public SqlDataSource primaryDatasource() {
+    return primaryDatasource;
   }
 
   @Override

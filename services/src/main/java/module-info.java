@@ -1,3 +1,6 @@
+import systems.glam.services.db.sql.SqlDataSource;
+import systems.glam.services.db.sql.postgres.PostgresDataSourceFactory;
+
 module systems.glam.services {
   requires java.logging;
   requires java.net.http;
@@ -21,6 +24,14 @@ module systems.glam.services {
 
   requires transitive systems.glam.sdk;
 
+  // Database
+  requires java.sql;
+  requires com.zaxxer.hikari;
+  requires org.postgresql.jdbc;
+
+  uses SqlDataSource.Factory;
+  provides SqlDataSource.Factory with PostgresDataSourceFactory;
+
   exports systems.glam.services.config;
   exports systems.glam.services.execution;
   exports systems.glam.services.fulfillment.config;
@@ -35,6 +46,7 @@ module systems.glam.services {
   exports systems.glam.services.oracles.scope.parsers;
   exports systems.glam.services.pricing.accounting;
   exports systems.glam.services.pricing;
+  exports systems.glam.services.db.sql;
   exports systems.glam.services.rpc;
   exports systems.glam.services;
   exports systems.glam.services.state;

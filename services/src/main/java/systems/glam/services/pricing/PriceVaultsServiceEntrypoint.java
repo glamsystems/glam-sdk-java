@@ -9,6 +9,7 @@ import software.sava.services.core.config.ServiceConfigUtil;
 import software.sava.services.solana.websocket.WebSocketManager;
 import software.sava.solana.programs.stakepool.StakePoolAccounts;
 import systems.glam.sdk.GlamAccounts;
+import systems.glam.services.db.sql.SqlDataSource;
 import systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint;
 import systems.glam.services.integrations.IntegLookupTableCache;
 import systems.glam.services.integrations.IntegrationServiceContext;
@@ -63,7 +64,6 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
     final var delegateServiceConfig = serviceConfig.delegateServiceConfig();
 
     final var serviceKeyFuture = delegateServiceConfig.signingServiceConfig().signingService().publicKeyWithRetries();
-
 
     final var solanaAccounts = delegateServiceConfig.solanaAccounts();
     final var glamAccounts = GlamAccounts.MAIN_NET;
