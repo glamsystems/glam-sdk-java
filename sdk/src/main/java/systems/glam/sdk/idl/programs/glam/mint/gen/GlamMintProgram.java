@@ -1428,6 +1428,63 @@ public final class GlamMintProgram {
     }
   }
 
+  public static final Discriminator PRICE_SINGLE_ASSET_VAULT_DISCRIMINATOR = toDiscriminator(93, 213, 219, 25, 38, 74, 9, 167);
+
+  /// Prices a single asset vault.
+  ///
+  public static List<AccountMeta> priceSingleAssetVaultKeys(final AccountMeta invokedGlamMintProgramMeta,
+                                                            final PublicKey glamStateKey,
+                                                            final PublicKey glamVaultKey,
+                                                            final PublicKey signerKey,
+                                                            final PublicKey baseAssetAtaKey,
+                                                            final PublicKey integrationAuthorityKey,
+                                                            final PublicKey glamProtocolKey,
+                                                            final PublicKey eventAuthorityKey,
+                                                            final PublicKey eventProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createWritableSigner(signerKey),
+      createRead(baseAssetAtaKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamProtocolKey),
+      createRead(requireNonNullElse(eventAuthorityKey, invokedGlamMintProgramMeta.publicKey())),
+      createRead(requireNonNullElse(eventProgramKey, invokedGlamMintProgramMeta.publicKey()))
+    );
+  }
+
+  /// Prices a single asset vault.
+  ///
+  public static Instruction priceSingleAssetVault(final AccountMeta invokedGlamMintProgramMeta,
+                                                  final PublicKey glamStateKey,
+                                                  final PublicKey glamVaultKey,
+                                                  final PublicKey signerKey,
+                                                  final PublicKey baseAssetAtaKey,
+                                                  final PublicKey integrationAuthorityKey,
+                                                  final PublicKey glamProtocolKey,
+                                                  final PublicKey eventAuthorityKey,
+                                                  final PublicKey eventProgramKey) {
+    final var keys = priceSingleAssetVaultKeys(
+      invokedGlamMintProgramMeta,
+      glamStateKey,
+      glamVaultKey,
+      signerKey,
+      baseAssetAtaKey,
+      integrationAuthorityKey,
+      glamProtocolKey,
+      eventAuthorityKey,
+      eventProgramKey
+    );
+    return priceSingleAssetVault(invokedGlamMintProgramMeta, keys);
+  }
+
+  /// Prices a single asset vault.
+  ///
+  public static Instruction priceSingleAssetVault(final AccountMeta invokedGlamMintProgramMeta,
+                                                  final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_SINGLE_ASSET_VAULT_DISCRIMINATOR);
+  }
+
   public static final Discriminator PRICE_VAULT_TOKENS_DISCRIMINATOR = toDiscriminator(54, 42, 16, 199, 20, 183, 50, 137);
 
   /// Prices vault SOL balance and tokens it holds.

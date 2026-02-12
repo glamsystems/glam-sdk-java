@@ -114,7 +114,13 @@
           "srcMismatch": "ERROR",
           "matchOnTypeName": true,
           "excludeTypes": [],
-          "explicitRules": []
+          "explicitRules": [
+            {
+              "refType": "AccountType",
+              "localType": "AccountType",
+              "srcMismatch": "KEEP_REF"
+            }
+          ]
         }
       ]
     },
@@ -160,7 +166,13 @@
           "srcMismatch": "ERROR",
           "matchOnTypeName": true,
           "excludeTypes": [],
-          "explicitRules": []
+          "explicitRules": [
+            {
+              "refType": "AccountType",
+              "localType": "AccountType",
+              "srcMismatch": "KEEP_REF"
+            }
+          ]
         }
       ]
     },
@@ -252,7 +264,13 @@
           "srcMismatch": "WARN_KEEP_LOCAL",
           "matchOnTypeName": true,
           "excludeTypes": [],
-          "explicitRules": []
+          "explicitRules": [
+            {
+              "refType": "AccountType",
+              "localType": "AccountType",
+              "srcMismatch": "KEEP_REF"
+            }
+          ]
         }
       ]
     }
