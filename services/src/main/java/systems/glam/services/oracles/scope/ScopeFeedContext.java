@@ -7,6 +7,7 @@ import software.sava.idl.clients.kamino.scope.gen.types.Configuration;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleMappings;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.rpc.json.http.response.AccountInfo;
+import systems.glam.services.integrations.kamino.ReserveContext;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -43,26 +44,26 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
     );
   }
 
-  static ScopeFeedContext createContext(final long slot,
-                                        final byte[] configurationData,
-                                        final PublicKey configurationKey) {
+  public static ScopeFeedContext createContext(final long slot,
+                                               final byte[] configurationData,
+                                               final PublicKey configurationKey) {
     final var oracleMappings = PublicKey.readPubKey(configurationData, Configuration.ORACLE_MAPPINGS_OFFSET);
     final var priceFeed = PublicKey.readPubKey(configurationData, Configuration.ORACLE_PRICES_OFFSET);
     return createContext(slot, configurationData, configurationKey, oracleMappings, priceFeed);
   }
 
-  static ScopeFeedContext createContext(final PublicKey configurationKey, final byte[] configurationData) {
+  public static ScopeFeedContext createContext(final PublicKey configurationKey, final byte[] configurationData) {
     return createContext(0, configurationData, configurationKey);
   }
 
-  static ScopeFeedContext createContext(final AccountInfo<byte[]> accountInfo) {
+  public static ScopeFeedContext createContext(final AccountInfo<byte[]> accountInfo) {
     final long slot = accountInfo.context().slot();
     return createContext(slot, accountInfo.data(), accountInfo.pubKey());
   }
 
-  static String configurationToJson(final long slot,
-                                    final PublicKey configurationKey,
-                                    final byte[] data) {
+  public static String configurationToJson(final long slot,
+                                           final PublicKey configurationKey,
+                                           final byte[] data) {
     return configurationToJson(
         slot,
         configurationKey,
@@ -109,11 +110,11 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
     );
   }
 
-  Map<PublicKey, ReserveContext> reservesForIndex(final int index) {
+  public Map<PublicKey, ReserveContext> reservesForIndex(final int index) {
     return reservesByIndex.get(index);
   }
 
-  void resortReserves(final ReserveContext reserveContext) {
+  public void resortReserves(final ReserveContext reserveContext) {
     final var key = reserveContext.pubKey();
     final var mint = reserveContext.mint();
     final var reservesForMint = reservesByMint.get(mint);
@@ -164,12 +165,13 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
     }
   }
 
-  void indexReserveContext(final ReserveContext reserveContext) {
+  public void indexReserveContext(final ReserveContext reserveContext) {
     indexReserveByIndex(reserveContext);
     resortReserves(reserveContext);
   }
 
-  int reIndexReserves(final Map<PublicKey, ReserveContext> reserveContexts, final MappingsContext mappingsContext) {
+  public int reIndexReserves(final Map<PublicKey, ReserveContext> reserveContexts,
+                             final MappingsContext mappingsContext) {
     int numChanged = 0;
     for (final var reserveContext : reserveContexts.values()) {
       if (reserveContext.priceFeed().equals(priceFeed)) {
@@ -186,7 +188,7 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
     return numChanged;
   }
 
-  void removePreviousEntry(final ReserveContext previousContext) {
+  public void removePreviousEntry(final ReserveContext previousContext) {
     final var reservePubKey = previousContext.pubKey();
     for (final short index : previousContext.priceChainIndexes()) {
       if (index < 0) {
@@ -224,7 +226,7 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
     }
   }
 
-  FeedIndexes indexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType) {
+  public FeedIndexes indexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType) {
     final var reservesForMint = this.reservesByMint.get(mint);
     if (reservesForMint == null || reservesForMint.length == 0) {
       return null;

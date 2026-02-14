@@ -11,7 +11,7 @@ import java.util.Arrays;
 
 public record MappingsContext(PublicKey pubKey, byte[] data, ScopeEntries scopeEntries) {
 
-  static MappingsContext createContext(final AccountInfo<byte[]> accountInfo) {
+  public static MappingsContext createContext(final AccountInfo<byte[]> accountInfo) {
     return new MappingsContext(
         accountInfo.pubKey(),
         accountInfo.data(),
@@ -31,11 +31,11 @@ public record MappingsContext(PublicKey pubKey, byte[] data, ScopeEntries scopeE
     return scopeEntries.readPriceChains(mintKey, scopeConfiguration);
   }
 
-  PublicKey publicKey() {
+  public PublicKey publicKey() {
     return scopeEntries.pubKey();
   }
 
-  long slot() {
+  public long slot() {
     return scopeEntries.slot();
   }
 }

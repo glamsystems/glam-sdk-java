@@ -24,7 +24,6 @@ import systems.glam.sdk.Protocol;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.AumRecord;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.GlamMintEvent;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolError;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.services.BaseDelegateService;
 import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.integrations.drift.DriftUsersPosition;
@@ -100,15 +99,23 @@ public class MultiAssetPriceService extends BaseDelegateService
 
   private boolean isKVaultTokenAccount(final AccountInfo<byte[]> accountInfo) {
     if (serviceContext.isTokenAccount(accountInfo)) {
-      return true; // TODO: Add more validation.
+      final var kVaultCache = serviceContext.kaminoCache();
+      final var mint = PublicKey.readPubKey(accountInfo.data());
+      return kVaultCache.vaultForShareMint(mint) != null;
     } else {
       return false;
     }
   }
 
   private StateChange createPosition(final AccountInfo<byte[]> accountInfo) {
-    if (isKVaultTokenAccount(accountInfo)) {
-      return createKVaultPosition(accountInfo);
+    if (serviceContext.isTokenAccount(accountInfo)) {
+      final var mint = PublicKey.readPubKey(accountInfo.data());
+      return StateChange.UNSUPPORTED;
+//      final var kVaultCache = serviceContext.kaminoVaultCache();
+//      final var kVaultContext = kVaultCache.vaultForShareMint(mint);
+//      if (kVaultContext != null) {
+//        return createKVaultPosition(accountInfo);
+//      }
     } else {
       final var programOwner = accountInfo.owner();
       if (programOwner.equals(serviceContext.driftProgram())) {
@@ -117,11 +124,10 @@ public class MultiAssetPriceService extends BaseDelegateService
         return createDriftVaultPosition(accountInfo);
       } else if (programOwner.equals(serviceContext.kLendProgram())) {
         return createKaminoLendPosition(accountInfo);
-      } else {
-        logger.log(WARNING, "Unsupported integration program: {0}", programOwner);
-        return StateChange.UNSUPPORTED;
       }
     }
+    logger.log(WARNING, "Unsupported integration program: {0}", accountInfo.owner());
+    return StateChange.UNSUPPORTED;
   }
 
   /**
@@ -655,17 +661,6 @@ public class MultiAssetPriceService extends BaseDelegateService
     return StateChange.UNSUPPORTED;
   }
 
-  static boolean protocolEnabled(final StateAccount stateAccount,
-                                 final PublicKey integrationProgram,
-                                 final int protocolBitFlag) {
-    for (final var integrationAcl : stateAccount.integrationAcls()) {
-      if (integrationAcl.integrationProgram().equals(integrationProgram) && (integrationAcl.protocolsBitmask() & protocolBitFlag) == protocolBitFlag) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   private StateChange createKVaultPosition(final AccountInfo<byte[]> accountInfo) {
     return StateChange.UNSUPPORTED;
 //    final var tokenAccount = TokenAccount.read(accountInfo.pubKey(), accountInfo.data());
@@ -717,20 +712,23 @@ public class MultiAssetPriceService extends BaseDelegateService
     // Always include drift and kamino main tables as they are typically useful regardless.
     // Tables will be scored on Transaction creation for optimal usage.
     for (final var driftTableKey : driftTableKeys) {
-      final var table = tableCache.getTable(driftTableKey);
+      final var table = tableCache.table(driftTableKey);
       tableMetas[i++] = LookupTableAccountMeta.createMeta(table, Transaction.MAX_ACCOUNTS);
     }
-    final var table = tableCache.getTable(serviceContext.kaminoAccounts().mainMarketLUT());
+    final var table = tableCache.table(serviceContext.kaminoAccounts().mainMarketLUT());
     tableMetas[i++] = LookupTableAccountMeta.createMeta(table, Transaction.MAX_ACCOUNTS);
 
     for (final var externalAccount : stateAccount.externalPositions()) {
       final var accountInfo = accountsNeededMap.get(externalAccount);
       if (isKVaultTokenAccount(accountInfo)) {
         final var mint = PublicKey.readPubKey(accountInfo.data(), TokenAccount.MINT_OFFSET);
-        final var vaultContext = serviceContext.kaminoVaultCache().vaultForShareMint(mint);
-        final var vaultTable = vaultContext.table();
-        if (vaultTable != null) {
-          tableMetas[i++] = LookupTableAccountMeta.createMeta(vaultTable, Transaction.MAX_ACCOUNTS);
+        final var vaultContext = serviceContext.kaminoCache().vaultForShareMint(mint);
+        final var vaultTableKey = vaultContext.vaultLookupTable();
+        if (vaultTableKey != null) {
+          final var vaultTable = tableCache.table(vaultTableKey);
+          if (vaultTable != null) {
+            tableMetas[i++] = LookupTableAccountMeta.createMeta(vaultTable, Transaction.MAX_ACCOUNTS);
+          }
         }
       }
     }

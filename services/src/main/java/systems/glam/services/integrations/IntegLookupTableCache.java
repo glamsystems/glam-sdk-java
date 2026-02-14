@@ -79,5 +79,5 @@ public interface IntegLookupTableCache extends Runnable {
     });
   }
 
-  AddressLookupTable getTable(final PublicKey tableKey);
+  AddressLookupTable table(final PublicKey tableKey);
 }

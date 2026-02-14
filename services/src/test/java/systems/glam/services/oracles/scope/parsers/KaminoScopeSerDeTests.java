@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.kamino.scope.entries.*;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
-import systems.glam.services.oracles.scope.ReserveContext;
+import systems.glam.services.integrations.kamino.ReserveContext;
 import systems.glam.services.tests.ResourceUtil;
 
 import java.util.HashMap;

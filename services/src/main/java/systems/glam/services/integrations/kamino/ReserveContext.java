@@ -1,4 +1,4 @@
-package systems.glam.services.oracles.scope;
+package systems.glam.services.integrations.kamino;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
@@ -12,6 +12,7 @@ import software.sava.rpc.json.PublicKeyEncoding;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.comodal.jsoniter.FieldBufferPredicate;
 import systems.comodal.jsoniter.JsonIterator;
+import systems.glam.services.oracles.scope.MappingsContext;
 import systems.glam.services.oracles.scope.parsers.ScopeEntryParser;
 
 import java.util.*;
@@ -56,6 +57,23 @@ public record ReserveContext(long slot,
     return parser.createContext(market, mappingsContextByPriceFeed);
   }
 
+  public static String fixedLengthString(final byte[] data) {
+    return fixedLengthString(data, 0, data.length);
+  }
+
+  public static String fixedLengthString(final byte[] data, final int from, final int to) {
+    int i = to - 1;
+    while (i >= from && (Character.isISOControl(data[i]) || Character.isWhitespace(data[i]))) {
+      --i;
+    }
+    if (i < from) {
+      return null;
+    } else {
+      final var str = new String(data, from, (i - from) + 1);
+      return str.isBlank() ? null : str;
+    }
+  }
+
   private static ReserveContext createContext(final long slot,
                                               final PublicKey reserveKey,
                                               final PublicKey lendingMarketKey,
@@ -64,18 +82,12 @@ public record ReserveContext(long slot,
                                               final TokenInfo tokenInfo,
                                               final PriceChains priceChains) {
     final byte[] name = tokenInfo.name();
-    int i = name.length - 1;
-    while (Character.isISOControl(name[i])) {
-      if (--i < 0) {
-        break;
-      }
-    }
-    final var tokenName = i < 0 ? null : new String(name, 0, i + 1);
+    final var tokenName = fixedLengthString(name);
     return new ReserveContext(
         slot,
         reserveKey, AccountMeta.createWrite(reserveKey),
         lendingMarketKey,
-        tokenName != null && tokenName.isBlank() ? null : tokenName,
+        tokenName,
         mintKey,
         totalCollateral,
         priceChains,

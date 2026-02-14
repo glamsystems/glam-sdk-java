@@ -9,13 +9,12 @@ import software.sava.services.core.config.ServiceConfigUtil;
 import software.sava.services.solana.websocket.WebSocketManager;
 import software.sava.solana.programs.stakepool.StakePoolAccounts;
 import systems.glam.sdk.GlamAccounts;
-import systems.glam.services.db.sql.SqlDataSource;
 import systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint;
 import systems.glam.services.integrations.IntegLookupTableCache;
 import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
+import systems.glam.services.integrations.kamino.KaminoCache;
 import systems.glam.services.mints.StakePoolCache;
-import systems.glam.services.oracles.scope.KaminoCache;
 import systems.glam.services.pricing.config.PriceVaultsServiceConfig;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.GlobalConfigCache;
@@ -162,8 +161,7 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
         driftAccounts,
         driftMarketCache,
         kaminoAccounts,
-        kaminoCache,
-        null // TODO: kVaults
+        kaminoCache
     );
 
     final var glamStateContextCache = GlamStateContextCache.loadCache(

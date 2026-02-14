@@ -3,7 +3,7 @@ package systems.glam.services.pricing;
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import systems.glam.services.oracles.scope.FeedIndexes;
-import systems.glam.services.oracles.scope.KaminoCache;
+import systems.glam.services.integrations.kamino.KaminoCache;
 
 import java.util.Arrays;
 

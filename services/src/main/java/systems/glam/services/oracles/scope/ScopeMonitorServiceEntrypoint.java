@@ -1,6 +1,7 @@
 package systems.glam.services.oracles.scope;
 
 import software.sava.services.solana.websocket.WebSocketManager;
+import systems.glam.services.integrations.kamino.KaminoCache;
 
 import java.net.http.HttpClient;
 import java.util.concurrent.ExecutorService;

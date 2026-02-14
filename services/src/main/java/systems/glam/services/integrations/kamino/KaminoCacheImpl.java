@@ -1,6 +1,7 @@
-package systems.glam.services.oracles.scope;
+package systems.glam.services.integrations.kamino;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.encoding.ByteUtil;
 import software.sava.idl.clients.kamino.lend.gen.types.Reserve;
 import software.sava.idl.clients.kamino.scope.entries.*;
 import software.sava.idl.clients.kamino.scope.entries.Deprecated;
@@ -8,10 +9,16 @@ import software.sava.idl.clients.kamino.scope.gen.types.Configuration;
 import software.sava.idl.clients.kamino.scope.gen.types.EmaType;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleMappings;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
+import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
+import software.sava.rpc.json.http.client.ProgramAccountsRequest;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.core.net.http.NotifyClient;
+import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.services.io.FileUtils;
+import systems.glam.services.oracles.scope.FeedIndexes;
+import systems.glam.services.oracles.scope.MappingsContext;
+import systems.glam.services.oracles.scope.ScopeFeedContext;
 import systems.glam.services.rpc.AccountFetcher;
 
 import java.io.IOException;
@@ -29,15 +36,19 @@ import java.util.stream.IntStream;
 
 import static java.lang.System.Logger.Level.*;
 import static java.nio.file.StandardOpenOption.*;
+import static systems.glam.services.integrations.kamino.ReserveContext.fixedLengthString;
 
 final class KaminoCacheImpl implements KaminoCache {
 
   static final System.Logger logger = System.getLogger(KaminoCache.class.getName());
 
   private final NotifyClient notifyClient;
+  private final RpcCaller rpcCaller;
   private final AccountFetcher accountFetcher;
   private final PublicKey kLendProgram;
   private final PublicKey scopeProgram;
+  private final PublicKey kVaultsProgram;
+  private final ProgramAccountsRequest<byte[]> kVaultsRequest;
   private final Set<PublicKey> accountsNeededSet;
   private final long pollingDelayNanos;
   private final Path configurationsPath;
@@ -46,32 +57,41 @@ final class KaminoCacheImpl implements KaminoCache {
   private final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap;
   private final ConcurrentMap<PublicKey, MappingsContext> mappingsContextMap;
   private final ConcurrentMap<PublicKey, ScopeFeedContext> priceFeedContextMap;
+  private final ConcurrentMap<PublicKey, KaminoVaultContext> vaultStateContextMap;
   private final ReentrantReadWriteLock.WriteLock writeLock;
   private final Condition reserveScopeChangeCondition;
   private final ReentrantReadWriteLock.ReadLock readLock;
   private final AtomicInteger asyncReserveUpdates;
 
   KaminoCacheImpl(final NotifyClient notifyClient,
+                  final RpcCaller rpcCaller,
                   final AccountFetcher accountFetcher,
                   final PublicKey kLendProgram,
                   final PublicKey scopeProgram,
+                  final PublicKey kVaultsProgram,
+                  final ProgramAccountsRequest<byte[]> kVaultsRequest,
                   final Duration pollingDelay,
                   final Path configurationsPath,
                   final Path mappingsPath,
                   final Path reserveContextsFilePath,
                   final Map<PublicKey, ScopeFeedContext> feedContextMap,
                   final ConcurrentMap<PublicKey, MappingsContext> mappingsContextMap,
-                  final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap) {
+                  final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap,
+                  final ConcurrentMap<PublicKey, KaminoVaultContext> vaultStateContextMap) {
     this.notifyClient = notifyClient;
+    this.rpcCaller = rpcCaller;
     this.accountFetcher = accountFetcher;
     this.kLendProgram = kLendProgram;
     this.scopeProgram = scopeProgram;
+    this.kVaultsProgram = kVaultsProgram;
+    this.kVaultsRequest = kVaultsRequest;
     this.pollingDelayNanos = pollingDelay.toNanos();
     this.configurationsPath = configurationsPath;
     this.mappingsPath = mappingsPath;
     this.reserveContextsFilePath = reserveContextsFilePath;
     this.reserveContextMap = reserveContextMap;
     this.mappingsContextMap = mappingsContextMap;
+    this.vaultStateContextMap = vaultStateContextMap;
     this.priceFeedContextMap = new ConcurrentHashMap<>();
     this.accountsNeededSet = ConcurrentHashMap.newKeySet(feedContextMap.size() << 1);
     for (final var feedContext : feedContextMap.values()) {
@@ -107,6 +127,11 @@ final class KaminoCacheImpl implements KaminoCache {
   @Override
   public ReserveContext reserveContext(final PublicKey pubKey) {
     return reserveContextMap.get(pubKey);
+  }
+
+  @Override
+  public KaminoVaultContext vaultForShareMint(final PublicKey sharesMint) {
+    return vaultStateContextMap.get(sharesMint);
   }
 
   @Override
@@ -312,6 +337,47 @@ final class KaminoCacheImpl implements KaminoCache {
     }
   }
 
+  private void handleVaultStateChange(final AccountInfo<byte[]> accountInfo) {
+
+    final byte[] data = accountInfo.data();
+    final var sharesMint = PublicKey.readPubKey(accountInfo.data(), VaultState.SHARES_MINT_OFFSET);
+    final long slot = accountInfo.context().slot();
+    var previous = vaultStateContextMap.get(sharesMint);
+    if (previous != null && Long.compareUnsigned(previous.slot(), slot) >= 0) {
+      return;
+    }
+
+    final var reserveKeys = KaminoVaultContext.parseReserveKeys(data);
+    final var vaultLookupTable = PublicKey.readPubKey(data, VaultState.VAULT_LOOKUP_TABLE_OFFSET);
+
+    final KaminoVaultContext kaminoVaultContext;
+    if (previous == null) {
+      final var name = fixedLengthString(data, VaultState.NAME_OFFSET, VaultState.NAME_OFFSET + VaultState.NAME_LEN);
+      kaminoVaultContext = new KaminoVaultContext(
+          slot, accountInfo.pubKey(),
+          PublicKey.readPubKey(data, VaultState.TOKEN_MINT_OFFSET),
+          ByteUtil.getInt64LE(data, VaultState.TOKEN_MINT_DECIMALS_OFFSET),
+          PublicKey.readPubKey(data, VaultState.TOKEN_PROGRAM_OFFSET),
+          sharesMint,
+          ByteUtil.getInt64LE(data, VaultState.SHARES_MINT_DECIMALS_OFFSET),
+          reserveKeys,
+          name,
+          vaultLookupTable
+      );
+    } else {
+      kaminoVaultContext = previous.withReserves(slot, reserveKeys, vaultLookupTable);
+      if (kaminoVaultContext == previous) {
+        return;
+      }
+    }
+
+    vaultStateContextMap.merge(
+        sharesMint,
+        kaminoVaultContext,
+        (a, b) -> Long.compareUnsigned(a.slot(), b.slot()) >= 0 ? a : b
+    );
+  }
+
   @Override
   public void subscribe(final SolanaRpcWebsocket websocket) {
     websocket.programSubscribe(
@@ -322,6 +388,9 @@ final class KaminoCacheImpl implements KaminoCache {
     );
     websocket.programSubscribe(
         kLendProgram, List.of(Reserve.SIZE_FILTER, Reserve.DISCRIMINATOR_FILTER), this
+    );
+    websocket.programSubscribe(
+        kVaultsProgram, List.of(VaultState.SIZE_FILTER, VaultState.DISCRIMINATOR_FILTER), this
     );
   }
 
@@ -344,6 +413,8 @@ final class KaminoCacheImpl implements KaminoCache {
       if (data.length == Reserve.BYTES && Reserve.DISCRIMINATOR.equals(data, 0)) {
         final var reserveContext = ReserveContext.createContext(accountInfo, mappingsContextMap);
         updateIfChanged(reserveContext);
+      } else if (data.length == VaultState.BYTES && VaultState.DISCRIMINATOR.equals(data, 0)) {
+        handleVaultStateChange(accountInfo);
       } else if (data.length == OracleMappings.BYTES && OracleMappings.DISCRIMINATOR.equals(data, 0)) {
         handleMappingChange(accountInfo);
       } else if (data.length == Configuration.BYTES && Configuration.DISCRIMINATOR.equals(data, 0)) {
@@ -361,6 +432,11 @@ final class KaminoCacheImpl implements KaminoCache {
     try {
       var accountsNeededList = new ArrayList<>(this.accountsNeededSet);
       for (; ; ) {
+        final var kVaultsFuture = rpcCaller.courteousCall(
+            rpcClient -> rpcClient.getProgramAccounts(kVaultsRequest),
+            "rpcClient#getKaminoVaultAccounts"
+        );
+
         final var accountInfoListFuture = accountFetcher.priorityQueue(accountsNeededList);
 
         int accountsDeleted = 0;
@@ -386,6 +462,10 @@ final class KaminoCacheImpl implements KaminoCache {
         }
         if (accountsDeleted > 0) {
           accountsNeededList = new ArrayList<>(this.accountsNeededSet);
+        }
+
+        for (final var accountInfo : kVaultsFuture.join()) {
+          handleVaultStateChange(accountInfo);
         }
 
         readLock.lock();

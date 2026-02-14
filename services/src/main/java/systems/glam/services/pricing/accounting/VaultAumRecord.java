@@ -26,7 +26,6 @@ public record VaultAumRecord(PublicKey stateKey,
           stmt.setLong(4, supply);
           stmt.setLong(5, baseAUM.longValue());
           stmt.setBigDecimal(6, quoteAUM);
-
           return stmt.executeUpdate();
         }
     );

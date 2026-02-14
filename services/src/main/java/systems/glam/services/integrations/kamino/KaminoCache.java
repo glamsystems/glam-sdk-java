@@ -1,4 +1,4 @@
-package systems.glam.services.oracles.scope;
+package systems.glam.services.integrations.kamino;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.kamino.KaminoAccounts;
@@ -8,12 +8,15 @@ import software.sava.idl.clients.kamino.lend.gen.types.TokenInfo;
 import software.sava.idl.clients.kamino.scope.entries.ScopeReader;
 import software.sava.idl.clients.kamino.scope.gen.types.Configuration;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleMappings;
+import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
 import software.sava.rpc.json.http.client.ProgramAccountsRequest;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.services.io.FileUtils;
+import systems.glam.services.oracles.scope.MappingsContext;
+import systems.glam.services.oracles.scope.ScopeFeedContext;
 import systems.glam.services.oracles.scope.parsers.KaminoReserveContextsParser;
 import systems.glam.services.pricing.ScopeAggregateIndexes;
 import systems.glam.services.rpc.AccountFetcher;
@@ -32,8 +35,8 @@ import java.util.stream.Collectors;
 
 import static java.nio.file.StandardOpenOption.*;
 import static software.sava.core.accounts.PublicKey.PUBLIC_KEY_LENGTH;
-import static systems.glam.services.oracles.scope.KaminoCacheImpl.writeReserves;
-import static systems.glam.services.oracles.scope.KaminoCacheImpl.writeScopeConfiguration;
+import static systems.glam.services.integrations.kamino.KaminoCacheImpl.writeReserves;
+import static systems.glam.services.integrations.kamino.KaminoCacheImpl.writeScopeConfiguration;
 
 public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<AccountInfo<byte[]>> {
 
@@ -51,6 +54,17 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
         final var mappingsPath = scopeAccountsPath.resolve("mappings");
         final var kLendProgram = kaminoAccounts.kLendProgram();
         final var scopeProgram = kaminoAccounts.scopePricesProgram();
+        final var kVaultsProgram = kaminoAccounts.kVaultsProgram();
+
+        final var KVaultsRequest = ProgramAccountsRequest.build()
+            .filters(List.of(VaultState.SIZE_FILTER, VaultState.DISCRIMINATOR_FILTER))
+            .programId(kVaultsProgram)
+            .dataSliceLength(0, VaultState.VAULT_FARM_OFFSET)
+            .createRequest();
+        final var vaultStateAccountsFuture = rpcCaller.courteousCall(
+            rpcClient -> rpcClient.getProgramAccounts(KVaultsRequest),
+            "rpcClient#getKaminoVaultAccounts"
+        );
 
         final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap;
         final List<AccountInfo<byte[]>> reserveAccounts;
@@ -178,20 +192,30 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
           writeReserves(reservesJsonFilePath, reserveContextMap);
         }
 
+        final var vaultStateAccounts = vaultStateAccountsFuture.join();
+        final var vaultStateMap = new ConcurrentHashMap<PublicKey, KaminoVaultContext>(Integer.highestOneBit(vaultStateAccounts.size()) << 1);
+        for (final var accountInfo : vaultStateAccounts) {
+          final var vaultStateContext = KaminoVaultContext.createContext(accountInfo);
+          vaultStateMap.put(vaultStateContext.sharesMint(), vaultStateContext);
+        }
+
 //        analyzeMarkets(reserveContextMap);
 
         return new KaminoCacheImpl(
             notifyClient,
+            rpcCaller,
             accountFetcher,
             kLendProgram,
             scopeProgram,
+            kVaultsProgram, KVaultsRequest,
             pollingDelay,
             configurationsPath,
             mappingsPath,
             reservesJsonFilePath,
             feedContextMap,
             mappingsContextMap,
-            reserveContextMap
+            reserveContextMap,
+            vaultStateMap
         );
       } catch (final IOException e) {
         throw new UncheckedIOException(e);
@@ -353,6 +377,8 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
   ReserveContext reserveContext(final PublicKey pubKey);
 
   ReserveContext acceptReserve(final AccountInfo<byte[]> accountInfo);
+
+  KaminoVaultContext vaultForShareMint(final PublicKey sharesMint);
 
   void subscribe(final SolanaRpcWebsocket websocket);
 }

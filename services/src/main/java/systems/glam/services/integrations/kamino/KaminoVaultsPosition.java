@@ -1,6 +1,7 @@
 package systems.glam.services.integrations.kamino;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.tx.Instruction;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
@@ -11,34 +12,30 @@ import systems.glam.services.pricing.accounting.Position;
 import systems.glam.services.state.MinGlamStateAccount;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.SequencedCollection;
-import java.util.Set;
+import java.util.*;
 
-public final class KaminoVaultPosition implements Position {
+public final class KaminoVaultsPosition implements Position {
 
-  private final PublicKey glamVaultSharesTokenAccount;
-  private final KaminoVaultCache kaminoVaultCache;
-  private final PublicKey kVaultKey;
+  private record ExtraAccounts(AccountMeta vaultTokenAccount,
+                               AccountMeta kVaultSharesMint,
+                               AccountMeta kVaultState,
+                               AccountMeta kVaultBaseMint) {
 
-  public KaminoVaultPosition(final PublicKey glamVaultSharesTokenAccount,
-                             final KaminoVaultCache kaminoVaultCache,
-                             final PublicKey kVaultKey) {
-    this.glamVaultSharesTokenAccount = glamVaultSharesTokenAccount;
-    this.kaminoVaultCache = kaminoVaultCache;
-    this.kVaultKey = kVaultKey;
+  }
+
+  private final Map<PublicKey, ExtraAccounts> extraAccounts;
+
+  public KaminoVaultsPosition() {
+    this.extraAccounts = new HashMap<>();
   }
 
   @Override
   public void removeAccount(final PublicKey account) {
-
+    extraAccounts.remove(account);
   }
 
   @Override
   public void accountsForPriceInstruction(final Set<PublicKey> keys) {
-    keys.add(kVaultKey);
-    keys.add(glamVaultSharesTokenAccount);
   }
 
   @Override
@@ -50,6 +47,13 @@ public final class KaminoVaultPosition implements Position {
                                   final Map<PublicKey, AccountInfo<byte[]>> accountMap,
                                   final SequencedCollection<Instruction> priceInstructions,
                                   final Set<PublicKey> returnAccounts) {
+
+    final var priceIx = glamAccountClient.priceKaminoVaultShares(
+        solUSDOracleKey,
+        baseAssetUSDOracleKey,
+        0,
+        true
+    );
     return false;
   }
 

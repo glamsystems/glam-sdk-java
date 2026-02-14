@@ -9,10 +9,9 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
-import systems.glam.services.integrations.kamino.KaminoVaultCache;
+import systems.glam.services.integrations.kamino.KaminoCache;
 import systems.glam.services.mints.*;
 import systems.glam.services.oracles.scope.FeedIndexes;
-import systems.glam.services.oracles.scope.KaminoCache;
 import systems.glam.services.pricing.accounting.VaultAumRecord;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
@@ -34,8 +33,7 @@ public interface IntegrationServiceContext {
                                                  final DriftAccounts driftAccounts,
                                                  final DriftMarketCache driftMarketCache,
                                                  final KaminoAccounts kaminoAccounts,
-                                                 final KaminoCache kaminoCache,
-                                                 final KaminoVaultCache kaminoVaultCache) {
+                                                 final KaminoCache kaminoCache) {
     return new IntegrationServiceContextImpl(
         serviceContext,
         mintCache,
@@ -44,7 +42,7 @@ public interface IntegrationServiceContext {
         integLookupTableCache,
         accountFetcher,
         driftAccounts, driftMarketCache,
-        kaminoAccounts, kaminoCache, kaminoVaultCache
+        kaminoAccounts, kaminoCache
     );
   }
 
@@ -101,8 +99,6 @@ public interface IntegrationServiceContext {
   PublicKey driftVaultsProgram();
 
   KaminoCache kaminoCache();
-
-  KaminoVaultCache kaminoVaultCache();
 
   KaminoAccounts kaminoAccounts();
 

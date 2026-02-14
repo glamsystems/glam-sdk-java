@@ -5,7 +5,7 @@ import software.sava.rpc.json.PublicKeyEncoding;
 import systems.comodal.jsoniter.FieldBufferPredicate;
 import systems.comodal.jsoniter.JsonIterator;
 import systems.glam.services.oracles.scope.MappingsContext;
-import systems.glam.services.oracles.scope.ReserveContext;
+import systems.glam.services.integrations.kamino.ReserveContext;
 
 import java.util.Map;
 import java.util.Objects;

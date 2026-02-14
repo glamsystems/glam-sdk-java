@@ -37,15 +37,16 @@ final class IntegLookupTableCacheImpl implements IntegLookupTableCache, AccountC
   }
 
   @Override
-  public AddressLookupTable getTable(final PublicKey tableKey) {
+  public AddressLookupTable table(final PublicKey tableKey) {
     return integrationTables.get(tableKey);
   }
 
   @Override
   public void run() {
     try {
-      for (; ; ) { //noinspection BusyWait
-        accountFetcher.queue(integrationTables.keySet(), this);
+      for (; ; ) {
+        accountFetcher.queueBatchable(List.copyOf(integrationTables.keySet()), this);
+        //noinspection BusyWait
         Thread.sleep(fetchDelayMillis);
       }
     } catch (final InterruptedException e) {

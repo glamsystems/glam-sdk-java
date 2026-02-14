@@ -9,12 +9,13 @@ module systems.glam.services {
 
   requires transitive software.sava.core;
   requires transitive software.sava.rpc;
-  requires software.sava.solana_programs;
+  requires transitive software.sava.solana_programs;
   requires software.sava.solana_web2;
 
-  requires software.sava.idl.clients.core;
+  requires transitive software.sava.idl.clients.core;
   requires transitive software.sava.idl.clients.drift;
   requires transitive software.sava.idl.clients.kamino;
+  requires transitive software.sava.idl.clients.marinade;
   requires software.sava.idl.clients.oracles;
   requires transitive software.sava.idl.clients.spl;
 

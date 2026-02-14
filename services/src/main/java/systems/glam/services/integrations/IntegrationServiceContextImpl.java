@@ -8,10 +8,9 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.execution.BaseServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
-import systems.glam.services.integrations.kamino.KaminoVaultCache;
 import systems.glam.services.mints.*;
 import systems.glam.services.oracles.scope.FeedIndexes;
-import systems.glam.services.oracles.scope.KaminoCache;
+import systems.glam.services.integrations.kamino.KaminoCache;
 import systems.glam.services.pricing.accounting.VaultAumRecord;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
@@ -30,7 +29,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   private final DriftMarketCache driftMarketCache;
   private final KaminoAccounts kaminoAccounts;
   private final KaminoCache kaminoCache;
-  private final KaminoVaultCache kaminoVaultCache;
 
   IntegrationServiceContextImpl(final ServiceContext serviceContext,
                                 final MintCache mintCache,
@@ -41,8 +39,7 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
                                 final DriftAccounts driftAccounts,
                                 final DriftMarketCache driftMarketCache,
                                 final KaminoAccounts kaminoAccounts,
-                                final KaminoCache kaminoCache,
-                                final KaminoVaultCache kaminoVaultCache) {
+                                final KaminoCache kaminoCache) {
     super(serviceContext);
     this.mintCache = mintCache;
     this.stakePoolCache = stakePoolCache;
@@ -53,7 +50,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
     this.driftMarketCache = driftMarketCache;
     this.kaminoAccounts = kaminoAccounts;
     this.kaminoCache = kaminoCache;
-    this.kaminoVaultCache = kaminoVaultCache;
   }
 
   @Override
@@ -146,11 +142,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
     final var datasource = serviceContext.primaryDatasource();
     final int numInserted = aumRecord.insertRecord(datasource);
     System.out.println(numInserted);
-  }
-
-  @Override
-  public KaminoVaultCache kaminoVaultCache() {
-    return kaminoVaultCache;
   }
 
   @Override
