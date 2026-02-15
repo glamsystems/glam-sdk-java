@@ -47,11 +47,6 @@ public final class DriftUsersPosition implements Position {
     userAccounts.remove(account);
   }
 
-  @Override
-  public void accountsForPriceInstruction(final Set<PublicKey> keys) {
-    keys.addAll(userAccounts.keySet());
-  }
-
   private static void addExtraAccounts(final Map<PublicKey, AccountMeta> extraAccounts,
                                        final DriftMarketContext marketContext) {
     final var readOracle = marketContext.readOracle();

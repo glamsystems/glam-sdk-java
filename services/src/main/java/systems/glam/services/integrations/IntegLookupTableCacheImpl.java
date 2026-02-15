@@ -13,7 +13,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static java.lang.System.Logger.Level.WARNING;
 
@@ -23,12 +23,12 @@ final class IntegLookupTableCacheImpl implements IntegLookupTableCache, AccountC
 
   private final long fetchDelayMillis;
   private final Path integrationTablesDirectory;
-  private final ConcurrentHashMap<PublicKey, AddressLookupTable> integrationTables;
+  private final ConcurrentMap<PublicKey, AddressLookupTable> integrationTables;
   private final AccountFetcher accountFetcher;
 
   IntegLookupTableCacheImpl(final Duration fetchDelay,
                             final Path integrationTablesDirectory,
-                            final ConcurrentHashMap<PublicKey, AddressLookupTable> integrationTables,
+                            final ConcurrentMap<PublicKey, AddressLookupTable> integrationTables,
                             final AccountFetcher accountFetcher) {
     this.fetchDelayMillis = fetchDelay.toMillis();
     this.integrationTablesDirectory = integrationTablesDirectory;
@@ -66,6 +66,23 @@ final class IntegLookupTableCacheImpl implements IntegLookupTableCache, AccountC
   }
 
   @Override
+  public AddressLookupTable acceptTableAccount(final AccountInfo<byte[]> accountInfo) {
+    final var tableKey = accountInfo.pubKey();
+    final byte[] data = accountInfo.data();
+    final long deactivationSlot = ByteUtil.getInt64LE(data, AddressLookupTable.DEACTIVATION_SLOT_OFFSET);
+    if (deactivationSlot != -1) {
+      integrationTables.remove(tableKey);
+      return null;
+    } else {
+      final var addressLookupTable = AddressLookupTable.read(accountInfo.pubKey(), data);
+      return integrationTables.merge(
+          tableKey, addressLookupTable,
+          (a, b) -> a.numUniqueAccounts() >= b.numUniqueAccounts() ? a : b
+      );
+    }
+  }
+
+  @Override
   public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
     final var iterator = integrationTables.entrySet().iterator();
     for (Map.Entry<PublicKey, AddressLookupTable> entry; iterator.hasNext(); ) {
@@ -88,8 +105,13 @@ final class IntegLookupTableCacheImpl implements IntegLookupTableCache, AccountC
         final var addressLookupTable = AddressLookupTable.read(tableKey, data);
         final var previous = entry.getValue();
         if (addressLookupTable.numUniqueAccounts() > previous.numUniqueAccounts()) {
-          integrationTables.put(tableKey, addressLookupTable);
-          writeTableData(integrationTablesDirectory, accountInfo);
+          final var result = integrationTables.merge(
+              tableKey, addressLookupTable,
+              (a, b) -> a.numUniqueAccounts() >= b.numUniqueAccounts() ? a : b
+          );
+          if (result == addressLookupTable) {
+            writeTableData(integrationTablesDirectory, accountInfo);
+          }
         }
       }
     }

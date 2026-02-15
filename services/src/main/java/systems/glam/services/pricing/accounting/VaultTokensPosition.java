@@ -77,13 +77,6 @@ public final class VaultTokensPosition implements Position {
   }
 
   @Override
-  public void accountsForPriceInstruction(final Set<PublicKey> keys) {
-    for (final var meta : vaultATAMap.values()) {
-      keys.add(meta.publicKey());
-    }
-  }
-
-  @Override
   public boolean priceInstruction(final IntegrationServiceContext serviceContext,
                                   final GlamAccountClient glamAccountClient,
                                   final PublicKey solUSDOracleKey,

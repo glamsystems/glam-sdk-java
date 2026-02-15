@@ -2,6 +2,7 @@ package systems.glam.services.integrations;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.lookup.AddressLookupTable;
+import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.services.rpc.AccountFetcher;
 
@@ -80,4 +81,6 @@ public interface IntegLookupTableCache extends Runnable {
   }
 
   AddressLookupTable table(final PublicKey tableKey);
+
+  AddressLookupTable acceptTableAccount(final AccountInfo<byte[]> accountInfo);
 }

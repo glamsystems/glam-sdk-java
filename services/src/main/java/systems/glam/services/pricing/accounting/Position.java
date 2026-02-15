@@ -21,8 +21,6 @@ public interface Position {
 
   void removeAccount(final PublicKey account);
 
-  void accountsForPriceInstruction(final Set<PublicKey> keys);
-
   boolean priceInstruction(final IntegrationServiceContext serviceContext,
                            final GlamAccountClient glamAccountClient,
                            final PublicKey solUSDOracleKey,

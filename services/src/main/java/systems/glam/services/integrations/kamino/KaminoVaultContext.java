@@ -1,6 +1,7 @@
 package systems.glam.services.integrations.kamino;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.encoding.ByteUtil;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultAllocation;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
@@ -12,15 +13,23 @@ import java.util.Objects;
 import static systems.glam.services.integrations.kamino.ReserveContext.fixedLengthString;
 
 public record KaminoVaultContext(long slot,
-                                 PublicKey publicKey,
+                                 AccountMeta readVaultState,
                                  PublicKey tokenMint,
                                  long tokenMintDecimals,
                                  PublicKey tokenProgram,
-                                 PublicKey sharesMint,
+                                 AccountMeta readSharesMint,
                                  long sharesMintDecimals,
                                  PublicKey[] reserves,
                                  String name,
                                  PublicKey vaultLookupTable) {
+
+  public PublicKey sharesMint() {
+    return readSharesMint.publicKey();
+  }
+
+  public int numReserves() {
+    return reserves.length;
+  }
 
   static KaminoVaultContext createContext(final long slot,
                                           final PublicKey publicKey,
@@ -30,11 +39,11 @@ public record KaminoVaultContext(long slot,
     final var name = fixedLengthString(data, VaultState.NAME_OFFSET, VaultState.NAME_OFFSET + VaultState.NAME_LEN);
     return new KaminoVaultContext(
         slot,
-        publicKey,
+        AccountMeta.createRead(publicKey),
         PublicKey.readPubKey(data, VaultState.TOKEN_MINT_OFFSET),
         ByteUtil.getInt64LE(data, VaultState.TOKEN_MINT_DECIMALS_OFFSET),
         PublicKey.readPubKey(data, VaultState.TOKEN_PROGRAM_OFFSET),
-        PublicKey.readPubKey(data, VaultState.SHARES_MINT_OFFSET),
+        AccountMeta.createRead(PublicKey.readPubKey(data, VaultState.SHARES_MINT_OFFSET)),
         ByteUtil.getInt64LE(data, VaultState.SHARES_MINT_DECIMALS_OFFSET),
         reserveKeys,
         name,
@@ -66,17 +75,18 @@ public record KaminoVaultContext(long slot,
   }
 
   KaminoVaultContext withReserves(final long slot, final PublicKey[] reserves, final PublicKey vaultLookupTable) {
-    if (Arrays.equals(this.reserves, reserves) && Objects.equals(this.vaultLookupTable, vaultLookupTable)) {
+    final var nullableTable = vaultLookupTable.equals(PublicKey.NONE) ? null : vaultLookupTable;
+    if (Arrays.equals(this.reserves, reserves) && Objects.equals(this.vaultLookupTable, nullableTable)) {
       return this;
     } else {
       return new KaminoVaultContext(
           slot,
-          publicKey,
+          readVaultState,
           tokenMint, tokenMintDecimals, tokenProgram,
-          sharesMint, sharesMintDecimals,
+          readSharesMint, sharesMintDecimals,
           reserves,
           name,
-          vaultLookupTable.equals(PublicKey.NONE) ? null : vaultLookupTable
+          nullableTable
       );
     }
   }

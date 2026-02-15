@@ -1,7 +1,6 @@
 package systems.glam.services.integrations.kamino;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.encoding.ByteUtil;
 import software.sava.idl.clients.kamino.lend.gen.types.Reserve;
 import software.sava.idl.clients.kamino.scope.entries.*;
 import software.sava.idl.clients.kamino.scope.entries.Deprecated;
@@ -36,7 +35,6 @@ import java.util.stream.IntStream;
 
 import static java.lang.System.Logger.Level.*;
 import static java.nio.file.StandardOpenOption.*;
-import static systems.glam.services.integrations.kamino.ReserveContext.fixedLengthString;
 
 final class KaminoCacheImpl implements KaminoCache {
 
@@ -338,7 +336,6 @@ final class KaminoCacheImpl implements KaminoCache {
   }
 
   private void handleVaultStateChange(final AccountInfo<byte[]> accountInfo) {
-
     final byte[] data = accountInfo.data();
     final var sharesMint = PublicKey.readPubKey(accountInfo.data(), VaultState.SHARES_MINT_OFFSET);
     final long slot = accountInfo.context().slot();
@@ -352,17 +349,8 @@ final class KaminoCacheImpl implements KaminoCache {
 
     final KaminoVaultContext kaminoVaultContext;
     if (previous == null) {
-      final var name = fixedLengthString(data, VaultState.NAME_OFFSET, VaultState.NAME_OFFSET + VaultState.NAME_LEN);
-      kaminoVaultContext = new KaminoVaultContext(
-          slot, accountInfo.pubKey(),
-          PublicKey.readPubKey(data, VaultState.TOKEN_MINT_OFFSET),
-          ByteUtil.getInt64LE(data, VaultState.TOKEN_MINT_DECIMALS_OFFSET),
-          PublicKey.readPubKey(data, VaultState.TOKEN_PROGRAM_OFFSET),
-          sharesMint,
-          ByteUtil.getInt64LE(data, VaultState.SHARES_MINT_DECIMALS_OFFSET),
-          reserveKeys,
-          name,
-          vaultLookupTable
+      kaminoVaultContext = KaminoVaultContext.createContext(
+          slot, accountInfo.pubKey(), data, reserveKeys, vaultLookupTable
       );
     } else {
       kaminoVaultContext = previous.withReserves(slot, reserveKeys, vaultLookupTable);

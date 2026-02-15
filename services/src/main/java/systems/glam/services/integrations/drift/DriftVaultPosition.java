@@ -40,13 +40,6 @@ public final class DriftVaultPosition implements Position {
   }
 
   @Override
-  public void accountsForPriceInstruction(final Set<PublicKey> keys) {
-    keys.add(vaultKey);
-    keys.add(vaultDepositorKey);
-    driftUsersPosition.accountsForPriceInstruction(keys);
-  }
-
-  @Override
   public boolean priceInstruction(final IntegrationServiceContext serviceContext,
                                   final GlamAccountClient glamAccountClient,
                                   final PublicKey solUSDOracleKey,

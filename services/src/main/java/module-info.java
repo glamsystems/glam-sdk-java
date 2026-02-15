@@ -29,6 +29,7 @@ module systems.glam.services {
   requires java.sql;
   requires com.zaxxer.hikari;
   requires org.postgresql.jdbc;
+  requires org.slf4j;
 
   uses SqlDataSource.Factory;
   provides SqlDataSource.Factory with PostgresDataSourceFactory;

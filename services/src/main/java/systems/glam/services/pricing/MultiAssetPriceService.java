@@ -1,18 +1,18 @@
 package systems.glam.services.pricing;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.lookup.AddressLookupTable;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.accounts.meta.LookupTableAccountMeta;
-import software.sava.core.accounts.token.TokenAccount;
 import software.sava.core.encoding.ByteUtil;
 import software.sava.core.tx.Instruction;
 import software.sava.core.tx.Transaction;
 import software.sava.idl.clients.drift.gen.types.User;
 import software.sava.idl.clients.drift.vaults.gen.types.VaultDepositor;
 import software.sava.idl.clients.kamino.lend.gen.types.Obligation;
-import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
 import software.sava.idl.clients.spl.token.gen.types.Mint;
 import software.sava.rpc.json.http.request.Commitment;
 import software.sava.rpc.json.http.response.AccountInfo;
@@ -20,7 +20,6 @@ import software.sava.rpc.json.http.response.InnerInstructions;
 import software.sava.rpc.json.http.response.IxError;
 import software.sava.rpc.json.http.response.TransactionError;
 import systems.glam.sdk.GlamAccountClient;
-import systems.glam.sdk.Protocol;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.AumRecord;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.GlamMintEvent;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolError;
@@ -52,13 +51,13 @@ public class MultiAssetPriceService extends BaseDelegateService
     implements AccountConsumer, VaultPriceService, Runnable {
 
   private static final System.Logger logger = System.getLogger(MultiAssetPriceService.class.getName());
+  private static final Logger log = LoggerFactory.getLogger(MultiAssetPriceService.class);
 
   private final IntegrationServiceContext serviceContext;
   private final PublicKey mintPDA;
   private final Set<PublicKey> accountsNeededSet;
   private final Map<PublicKey, Position> positions;
   private final VaultTokensPosition vaultTokensPosition;
-  private final Map<Protocol, Position> protocolPositions;
   private final Instruction validateAUMInstruction;
 
   private final AtomicReference<MinGlamStateAccount> stateAccount;
@@ -77,7 +76,6 @@ public class MultiAssetPriceService extends BaseDelegateService
     this.accountsNeededSet = accountsNeededSet;
     this.positions = HashMap.newHashMap(stateAccount.numAccounts());
     this.vaultTokensPosition = new VaultTokensPosition(stateAccount.assets().length);
-    this.protocolPositions = new EnumMap<>(Protocol.class);
     this.stateAccount = new AtomicReference<>(stateAccount);
     this.aumTransaction = new AtomicReference<>(null);
     this.validateAUMInstruction = glamAccountClient.validateAum(true).extraAccount(AccountMeta.createRead(mintPDA));
@@ -97,11 +95,10 @@ public class MultiAssetPriceService extends BaseDelegateService
     }
   }
 
-  private boolean isKVaultTokenAccount(final AccountInfo<byte[]> accountInfo) {
-    if (serviceContext.isTokenAccount(accountInfo)) {
-      final var kVaultCache = serviceContext.kaminoCache();
-      final var mint = PublicKey.readPubKey(accountInfo.data());
-      return kVaultCache.vaultForShareMint(mint) != null;
+  private boolean isKVaultTokenAccount(final PublicKey account) {
+    final var position = this.positions.get(account);
+    if (position instanceof KaminoLendingPositions kaminoPositions) {
+      return kaminoPositions.isVaultTokenAccount(account);
     } else {
       return false;
     }
@@ -109,25 +106,42 @@ public class MultiAssetPriceService extends BaseDelegateService
 
   private StateChange createPosition(final AccountInfo<byte[]> accountInfo) {
     if (serviceContext.isTokenAccount(accountInfo)) {
-      final var mint = PublicKey.readPubKey(accountInfo.data());
-      return StateChange.UNSUPPORTED;
-//      final var kVaultCache = serviceContext.kaminoVaultCache();
-//      final var kVaultContext = kVaultCache.vaultForShareMint(mint);
-//      if (kVaultContext != null) {
-//        return createKVaultPosition(accountInfo);
-//      }
+      final var mint = PublicKey.readPubKey(accountInfo.data(), 0);
+      final var kVaultCache = serviceContext.kaminoCache();
+      final var kVaultContext = kVaultCache.vaultForShareMint(mint);
+      if (kVaultContext != null) {
+        final var kaminoPositions = kaminoPositions();
+        final var tokenAccountKey = accountInfo.pubKey();
+        kaminoPositions.addVaultTokenAccount(tokenAccountKey, kVaultContext);
+        this.positions.put(tokenAccountKey, kaminoPositions);
+        this.accountsNeededSet.remove(tokenAccountKey);
+        final var vaultTable = kVaultContext.vaultLookupTable();
+        if (vaultTable != null) {
+          final var tableCache = serviceContext.integTableCache();
+          final var lookupTable = tableCache.table(vaultTable);
+          if (lookupTable == null) {
+            this.accountsNeededSet.add(vaultTable);
+            return StateChange.ACCOUNTS_NEEDED;
+          }
+        }
+        return StateChange.NEW_POSITION;
+      } else {
+        logger.log(WARNING, "Unsupported Kamino Vault Mint? {0}", mint);
+        return StateChange.UNSUPPORTED;
+      }
     } else {
       final var programOwner = accountInfo.owner();
       if (programOwner.equals(serviceContext.driftProgram())) {
         return createDriftPosition(accountInfo);
-      } else if (programOwner.equals(serviceContext.driftVaultsProgram())) {
-        return createDriftVaultPosition(accountInfo);
       } else if (programOwner.equals(serviceContext.kLendProgram())) {
         return createKaminoLendPosition(accountInfo);
+      } else if (programOwner.equals(serviceContext.driftVaultsProgram())) {
+        return createDriftVaultPosition(accountInfo);
+      } else {
+        logger.log(WARNING, "Unsupported integration program: {0}", accountInfo.owner());
+        return StateChange.UNSUPPORTED;
       }
     }
-    logger.log(WARNING, "Unsupported integration program: {0}", accountInfo.owner());
-    return StateChange.UNSUPPORTED;
   }
 
   /**
@@ -185,21 +199,18 @@ public class MultiAssetPriceService extends BaseDelegateService
 
     // Add New Positions
     for (final var externalAccount : stateAccount.externalPositions()) {
-      if (this.accountsNeededSet.add(externalAccount)) {
-        stateChange = StateChange.ACCOUNTS_NEEDED;
-      } else if (!positions.containsKey(externalAccount)) {
-        // TODO: Some externalAccount's no longer need to be fetched after the position is created in order to construct the simulation tx.
-        //       They only need to be returned from the tx simulation in order to calculate the AUM.
-        //       E.g. KVault ATA.
-        final var positionChangeState = createPosition(accountsNeededMap.get(externalAccount));
-        stateChange = stateChange.escalate(positionChangeState);
-        if (stateChange == StateChange.UNSUPPORTED) {
-          return StateChange.UNSUPPORTED;
+      if (!this.positions.containsKey(externalAccount)) {
+        if (this.accountsNeededSet.add(externalAccount)) {
+          stateChange = StateChange.ACCOUNTS_NEEDED;
+        } else {
+          final var positionChangeState = createPosition(accountsNeededMap.get(externalAccount));
+          stateChange = stateChange.escalate(positionChangeState);
+          if (stateChange == StateChange.UNSUPPORTED) {
+            return StateChange.UNSUPPORTED;
+          }
         }
       }
     }
-
-    // TODO: Check for oracle configuration changes.
 
     return stateChange;
   }
@@ -264,7 +275,6 @@ public class MultiAssetPriceService extends BaseDelegateService
     this.stateAccount.set(null);
     this.accountsNeededMap = null;
     this.accountsNeededSet.clear();
-    this.protocolPositions.clear();
     this.vaultTokensPosition.clear();
     this.glamVaultTables.set(null);
     this.aumTransaction.set(null);
@@ -441,16 +451,18 @@ public class MultiAssetPriceService extends BaseDelegateService
               final var error = GlamProtocolError.getInstance(Math.toIntExact(errorCode));
               if (error instanceof GlamProtocolError.PriceTooOld) { // 51102
                 // TODO: retry in N seconds up to X times.
-              } else if (error instanceof GlamProtocolError.InvalidPricingOracle) {
-                // TODO: refresh oracle caches, trigger alert.
               } else if (error instanceof GlamProtocolError.PriceDivergenceTooLarge) {
 
+              } else if (error instanceof GlamProtocolError.InvalidPricingOracle) {
+                // TODO: refresh oracle caches, trigger alert.
               } else {
                 // 51108 GlamProtocolError.TypeCastingError
                 // TODO: trigger alert and remove vault
+                logger.log(WARNING, "Error processing price vault simulation: {0}", error);
               }
             } catch (final RuntimeException e) {
               // TODO: trigger alert and remove vault
+              logger.log(WARNING, "Error processing price vault simulation: {0}", ixError);
             }
           } else {
             // TODO: trigger alert and remove vault
@@ -613,7 +625,7 @@ public class MultiAssetPriceService extends BaseDelegateService
     return StateChange.UNSUPPORTED;
   }
 
-  private KaminoLendingPositions kLendPositions() {
+  private KaminoLendingPositions kaminoPositions() {
     for (final var position : positions.values()) {
       if (position instanceof KaminoLendingPositions kLendPositions) {
         return kLendPositions;
@@ -625,8 +637,8 @@ public class MultiAssetPriceService extends BaseDelegateService
   private StateChange createKaminoLendPosition(final AccountInfo<byte[]> accountInfo) {
     final byte[] data = accountInfo.data();
     if (Obligation.BYTES == data.length && Obligation.DISCRIMINATOR.equals(data, 0)) {
-      final var kLendPosition = kLendPositions();
-      kLendPosition.addAccount(accountInfo.pubKey());
+      final var kLendPosition = kaminoPositions();
+      kLendPosition.addObligation(accountInfo.pubKey());
       positions.put(accountInfo.pubKey(), kLendPosition);
       return StateChange.NEW_POSITION;
     } else {
@@ -643,53 +655,11 @@ public class MultiAssetPriceService extends BaseDelegateService
     return StateChange.UNSUPPORTED;
   }
 
-  private StateChange createKaminoVaultPosition(final AccountInfo<byte[]> accountInfo) {
-    final byte[] data = accountInfo.data();
-    if (VaultState.BYTES == data.length && VaultState.DISCRIMINATOR.equals(data, 0)) {
-      final var vaultState = VaultState.read(accountInfo.pubKey(), data);
-    } else {
-      final var msg = String.format("""
-              {
-               "event": "Unsupported Kamino Vault Position",
-               "account": "%s"
-              }""",
-          accountInfo.pubKey()
-      );
-      logger.log(WARNING, msg);
-      // TODO: Trigger external alert and put this vault on pause.
-    }
-    return StateChange.UNSUPPORTED;
-  }
-
-  private StateChange createKVaultPosition(final AccountInfo<byte[]> accountInfo) {
-    return StateChange.UNSUPPORTED;
-//    final var tokenAccount = TokenAccount.read(accountInfo.pubKey(), accountInfo.data());
-//    if (tokenAccount.amount() == 0) {
-//      return StateChange.NO_CHANGE;
-//    }
-//    final var kVaultCache = serviceContext.kaminoVaultCache();
-//    final var kVaultContext = kVaultCache.vaultForShareMint(tokenAccount.mint());
-//    if (kVaultContext == null) {
-//      // TODO: refresh kamino vaults
-//      // TODO: consider only fetching this vault with a program account filter by share mint.
-//    } else {
-//      final var vaultState = kVaultContext.vaultState();
-//      final var kVaultPosition = new KaminoVaultPosition(
-//          tokenAccount.address(),
-//          kVaultCache,
-//          vaultState._address()
-//      );
-//      positions.put(accountInfo.pubKey(), kVaultPosition);
-//    }
-//    return StateChange.UNSUPPORTED;
-  }
-
   private LookupTableAccountMeta[] createTableMetaArray(final MinGlamStateAccount stateAccount,
                                                         final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap) {
     int numKVaults = 0;
     for (final var externalAccount : stateAccount.externalPositions()) {
-      final var accountInfo = accountsNeededMap.get(externalAccount);
-      if (isKVaultTokenAccount(accountInfo)) {
+      if (isKVaultTokenAccount(externalAccount)) {
         ++numKVaults;
       }
     }
@@ -719,16 +689,28 @@ public class MultiAssetPriceService extends BaseDelegateService
     tableMetas[i++] = LookupTableAccountMeta.createMeta(table, Transaction.MAX_ACCOUNTS);
 
     for (final var externalAccount : stateAccount.externalPositions()) {
-      final var accountInfo = accountsNeededMap.get(externalAccount);
-      if (isKVaultTokenAccount(accountInfo)) {
-        final var mint = PublicKey.readPubKey(accountInfo.data(), TokenAccount.MINT_OFFSET);
+      final var position = this.positions.get(externalAccount);
+      if (position instanceof KaminoLendingPositions kaminoPositions) {
+        final var mint = kaminoPositions.sharesMint(externalAccount);
+        if (mint == null) {
+          continue;
+        }
         final var vaultContext = serviceContext.kaminoCache().vaultForShareMint(mint);
         final var vaultTableKey = vaultContext.vaultLookupTable();
         if (vaultTableKey != null) {
-          final var vaultTable = tableCache.table(vaultTableKey);
-          if (vaultTable != null) {
-            tableMetas[i++] = LookupTableAccountMeta.createMeta(vaultTable, Transaction.MAX_ACCOUNTS);
+          var vaultTable = tableCache.table(vaultTableKey);
+          if (vaultTable == null) {
+            final var tableAccountInfo = accountsNeededMap.get(vaultTableKey);
+            if (tableAccountInfo == null) {
+              continue;
+            }
+            vaultTable = tableCache.acceptTableAccount(tableAccountInfo);
+            if (vaultTable == null) {
+              continue;
+            }
+            this.accountsNeededSet.remove(vaultTableKey);
           }
+          tableMetas[i++] = LookupTableAccountMeta.createMeta(vaultTable, Transaction.MAX_ACCOUNTS);
         }
       }
     }
