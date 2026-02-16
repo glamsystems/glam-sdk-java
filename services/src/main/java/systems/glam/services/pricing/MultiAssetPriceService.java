@@ -1,7 +1,5 @@
 package systems.glam.services.pricing;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.lookup.AddressLookupTable;
@@ -26,6 +24,7 @@ import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolError;
 import systems.glam.services.BaseDelegateService;
 import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.integrations.drift.DriftUsersPosition;
+import systems.glam.services.integrations.drift.DriftVaultPositions;
 import systems.glam.services.integrations.kamino.KaminoLendingPositions;
 import systems.glam.services.pricing.accounting.*;
 import systems.glam.services.rpc.AccountConsumer;
@@ -51,7 +50,6 @@ public class MultiAssetPriceService extends BaseDelegateService
     implements AccountConsumer, VaultPriceService, Runnable {
 
   private static final System.Logger logger = System.getLogger(MultiAssetPriceService.class.getName());
-  private static final Logger log = LoggerFactory.getLogger(MultiAssetPriceService.class);
 
   private final IntegrationServiceContext serviceContext;
   private final PublicKey mintPDA;
@@ -416,7 +414,23 @@ public class MultiAssetPriceService extends BaseDelegateService
 
     final var tableAccounts = createTableMetaArray(stateAccount, accountsNeededMap);
     final var transaction = Transaction.createTx(glamAccountClient.feePayer(), instructions, tableAccounts);
+    if (transaction.size() > Transaction.MAX_SERIALIZED_LENGTH) {
+      logger.log(WARNING,
+          "Transaction size {0} exceeds maximum allowed {1}. State {2}",
+          transaction.size(), Transaction.MAX_SERIALIZED_LENGTH, stateKey()
+      );
+      clearState();
+      return;
+    }
     final var base64Encoded = transaction.base64EncodeToString();
+    if (base64Encoded.length() > Transaction.MAX_BASE_64_ENCODED_LENGTH) {
+      logger.log(WARNING,
+          "Transaction base64 encoded length {0} exceeds maximum allowed {1}. State {2}",
+          base64Encoded.length(), Transaction.MAX_BASE_64_ENCODED_LENGTH, stateKey()
+      );
+      clearState();
+      return;
+    }
     final var returnAccounts = List.copyOf(returnAccountsSet);
     final var aumTransaction = new AumTransaction(stateAccount, positions, transaction, base64Encoded, returnAccounts);
     this.aumTransaction.set(aumTransaction);
@@ -582,7 +596,7 @@ public class MultiAssetPriceService extends BaseDelegateService
         return driftPosition;
       }
     }
-    return DriftUsersPosition.create(serviceContext.driftMarketCache(), glamAccountClient.vaultAccounts().vaultPublicKey());
+    return DriftUsersPosition.createPosition(serviceContext.driftMarketCache(), glamAccountClient.vaultAccounts().vaultPublicKey());
   }
 
   private StateChange createDriftPosition(final AccountInfo<byte[]> accountInfo) {
@@ -607,10 +621,26 @@ public class MultiAssetPriceService extends BaseDelegateService
     }
   }
 
+  private DriftVaultPositions driftVaultsPosition() {
+    for (final var position : positions.values()) {
+      if (position instanceof DriftVaultPositions driftVaultPositions) {
+        return driftVaultPositions;
+      }
+    }
+    return new DriftVaultPositions();
+  }
+
   private StateChange createDriftVaultPosition(final AccountInfo<byte[]> accountInfo) {
     final byte[] data = accountInfo.data();
     if (VaultDepositor.BYTES == data.length && VaultDepositor.DISCRIMINATOR.equals(data, 0)) {
-      final var vaultDepositor = VaultDepositor.read(accountInfo.pubKey(), data);
+      final var vaultDepositor = accountInfo.pubKey();
+      final var vaultKey = PublicKey.readPubKey(data, VaultDepositor.VAULT_OFFSET);
+      final var vaultPositions = driftVaultsPosition();
+      final var vaultUserKey = vaultPositions.addDepositor(serviceContext.driftAccounts(), vaultDepositor, vaultKey);
+      this.accountsNeededSet.add(vaultUserKey);
+      this.positions.put(vaultDepositor, vaultPositions);
+      this.accountsNeededSet.remove(vaultDepositor);
+      return StateChange.ACCOUNTS_NEEDED;
     } else {
       final var msg = String.format("""
               {
@@ -621,8 +651,8 @@ public class MultiAssetPriceService extends BaseDelegateService
       );
       logger.log(WARNING, msg);
       // TODO: Trigger external alert and put this vault on pause.
+      return StateChange.UNSUPPORTED;
     }
-    return StateChange.UNSUPPORTED;
   }
 
   private KaminoLendingPositions kaminoPositions() {
@@ -651,8 +681,8 @@ public class MultiAssetPriceService extends BaseDelegateService
       );
       logger.log(WARNING, msg);
       // TODO: Trigger external alert and put this vault on pause.
+      return StateChange.UNSUPPORTED;
     }
-    return StateChange.UNSUPPORTED;
   }
 
   private LookupTableAccountMeta[] createTableMetaArray(final MinGlamStateAccount stateAccount,

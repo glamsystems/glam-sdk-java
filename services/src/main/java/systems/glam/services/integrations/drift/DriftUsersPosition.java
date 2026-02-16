@@ -23,19 +23,18 @@ import java.util.*;
 
 public final class DriftUsersPosition implements Position {
 
-  private final DriftMarketCache driftMarketCache;
   private final AccountMeta userStatsMeta;
   private final Map<PublicKey, AccountMeta> userAccounts;
 
-  private DriftUsersPosition(final DriftMarketCache driftMarketCache, final AccountMeta userStatsMeta) {
-    this.driftMarketCache = driftMarketCache;
+  private DriftUsersPosition(final AccountMeta userStatsMeta) {
     this.userStatsMeta = userStatsMeta;
     this.userAccounts = HashMap.newHashMap(8);
   }
 
-  public static DriftUsersPosition create(final DriftMarketCache driftMarketCache, final PublicKey glamVaultKey) {
+  public static DriftUsersPosition createPosition(final DriftMarketCache driftMarketCache,
+                                                  final PublicKey glamVaultKey) {
     final var userStatsKey = DriftPDAs.deriveUserStatsAccount(driftMarketCache.driftAccounts(), glamVaultKey).publicKey();
-    return new DriftUsersPosition(driftMarketCache, AccountMeta.createRead(userStatsKey));
+    return new DriftUsersPosition(AccountMeta.createRead(userStatsKey));
   }
 
   public void addAccount(final PublicKey accountKey) {
@@ -47,12 +46,61 @@ public final class DriftUsersPosition implements Position {
     userAccounts.remove(account);
   }
 
-  private static void addExtraAccounts(final Map<PublicKey, AccountMeta> extraAccounts,
+  private static void addExtraAccounts(final Map<PublicKey, AccountMeta> marketAccounts,
+                                       final Map<PublicKey, AccountMeta> oracleAccounts,
                                        final DriftMarketContext marketContext) {
-    final var readOracle = marketContext.readOracle();
-    extraAccounts.put(readOracle.publicKey(), readOracle);
     final var readMarket = marketContext.readMarket();
-    extraAccounts.put(readMarket.publicKey(), readMarket);
+    marketAccounts.putIfAbsent(readMarket.publicKey(), readMarket);
+    final var readOracle = marketContext.readOracle();
+    oracleAccounts.putIfAbsent(readOracle.publicKey(), readOracle);
+  }
+
+  static int priceUser(final PublicKey userKey,
+                       final DriftMarketCache driftMarketCache,
+                       final Map<PublicKey, AccountInfo<byte[]>> accountMap,
+                       final Map<PublicKey, AccountMeta> extraAccountsMap) {
+    return priceUser(userKey, driftMarketCache, accountMap, extraAccountsMap, extraAccountsMap, extraAccountsMap);
+  }
+
+  static int priceUser(final PublicKey userKey,
+                       final DriftMarketCache driftMarketCache,
+                       final Map<PublicKey, AccountInfo<byte[]>> accountMap,
+                       final Map<PublicKey, AccountMeta> spotMarketAccounts,
+                       final Map<PublicKey, AccountMeta> perpMarketAccounts,
+                       final Map<PublicKey, AccountMeta> oracleAccounts) {
+    final var userAccount = accountMap.get(userKey);
+    if (AccountFetcher.isNull(userAccount)) {
+      return 0;
+    }
+
+    int missingMarkets = 0;
+    final byte[] data = userAccount.data();
+    for (int i = 0, offset = User.SPOT_POSITIONS_OFFSET; i < User.SPOT_POSITIONS_LEN; ++i, offset += SpotPosition.BYTES) {
+      final long scaledBalance = ByteUtil.getInt64LE(data, offset);
+      if (scaledBalance != 0) {
+        final var marketIndex = ByteUtil.getInt16LE(data, offset + SpotPosition.MARKET_INDEX_OFFSET);
+        final var marketContext = driftMarketCache.spotMarket(marketIndex);
+        if (marketContext == null) {
+          ++missingMarkets;
+        } else {
+          addExtraAccounts(spotMarketAccounts, oracleAccounts, marketContext);
+        }
+      }
+    }
+
+    for (int i = 0, offset = User.PERP_POSITIONS_OFFSET; i < User.PERP_POSITIONS_LEN; ++i, offset += PerpPosition.BYTES) {
+      final long baseAssetAmount = ByteUtil.getInt64LE(data, offset + PerpPosition.BASE_ASSET_AMOUNT_OFFSET);
+      if (baseAssetAmount != 0) {
+        final var marketIndex = ByteUtil.getInt16LE(data, offset + PerpPosition.MARKET_INDEX_OFFSET);
+        final var marketContext = driftMarketCache.perpMarket(marketIndex);
+        if (marketContext == null) {
+          ++missingMarkets;
+        } else {
+          addExtraAccounts(perpMarketAccounts, oracleAccounts, marketContext);
+        }
+      }
+    }
+    return missingMarkets;
   }
 
   @Override
@@ -64,43 +112,12 @@ public final class DriftUsersPosition implements Position {
                                   final Map<PublicKey, AccountInfo<byte[]>> accountMap,
                                   final SequencedCollection<Instruction> priceInstructions,
                                   final Set<PublicKey> returnAccounts) {
-    int missingMarkets = 0;
-
     final int numUsers = userAccounts.size();
     final var extraAccountsMap = HashMap.<PublicKey, AccountMeta>newHashMap(numUsers * (User.SPOT_POSITIONS_LEN << 1) + (User.PERP_POSITIONS_LEN << 1));
-
+    final var driftMarketCache = serviceContext.driftMarketCache();
+    int missingMarkets = 0;
     for (final var userKey : userAccounts.keySet()) {
-      final var userAccount = accountMap.get(userKey);
-      if (AccountFetcher.isNull(userAccount)) {
-        continue;
-      }
-
-      final byte[] data = userAccount.data();
-      for (int i = 0, offset = User.SPOT_POSITIONS_OFFSET; i < User.SPOT_POSITIONS_LEN; ++i, offset += SpotPosition.BYTES) {
-        final long scaledBalance = ByteUtil.getInt64LE(data, offset);
-        if (scaledBalance != 0) {
-          final var marketIndex = ByteUtil.getInt16LE(data, offset + SpotPosition.MARKET_INDEX_OFFSET);
-          final var marketContext = driftMarketCache.spotMarket(marketIndex);
-          if (marketContext == null) {
-            ++missingMarkets;
-          } else {
-            addExtraAccounts(extraAccountsMap, marketContext);
-          }
-        }
-      }
-
-      for (int i = 0, offset = User.PERP_POSITIONS_OFFSET; i < User.PERP_POSITIONS_LEN; ++i, offset += PerpPosition.BYTES) {
-        final long baseAssetAmount = ByteUtil.getInt64LE(data, offset + PerpPosition.BASE_ASSET_AMOUNT_OFFSET);
-        if (baseAssetAmount != 0) {
-          final var marketIndex = ByteUtil.getInt16LE(data, offset + PerpPosition.MARKET_INDEX_OFFSET);
-          final var marketContext = driftMarketCache.perpMarket(marketIndex);
-          if (marketContext == null) {
-            ++missingMarkets;
-          } else {
-            addExtraAccounts(extraAccountsMap, marketContext);
-          }
-        }
-      }
+      missingMarkets += priceUser(userKey, driftMarketCache, accountMap, extraAccountsMap);
     }
 
     if (missingMarkets == 0) {
