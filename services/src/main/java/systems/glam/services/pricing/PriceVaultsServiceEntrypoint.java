@@ -9,18 +9,22 @@ import software.sava.services.core.config.ServiceConfigUtil;
 import software.sava.services.solana.websocket.WebSocketManager;
 import software.sava.solana.programs.stakepool.StakePoolAccounts;
 import systems.glam.sdk.GlamAccounts;
+import systems.glam.services.db.sql.BatchSqlExecutor;
 import systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint;
 import systems.glam.services.integrations.IntegLookupTableCache;
 import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoCache;
 import systems.glam.services.mints.StakePoolCache;
+import systems.glam.services.pricing.accounting.VaultAumRecord;
 import systems.glam.services.pricing.config.PriceVaultsServiceConfig;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.GlobalConfigCache;
 
 import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -29,7 +33,8 @@ import java.util.function.Consumer;
 
 import static java.lang.System.Logger.Level.ERROR;
 
-public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
+public record PriceVaultsServiceEntrypoint(Collection<BatchSqlExecutor<?>> sqlExecutors,
+                                           AccountFetcher accountFetcher,
                                            GlobalConfigCache globalConfigCache,
                                            KaminoCache kaminoCache,
                                            IntegLookupTableCache integTableCache,
@@ -45,9 +50,7 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
          final var httpClient = HttpClient.newBuilder().executor(taskExecutor).build();
          final var wsHttpClient = HttpClient.newHttpClient()) {
       final var service = createService(taskExecutor, httpClient, wsHttpClient);
-      if (service != null) {
-        service.run();
-      }
+      service.run();
     } catch (final InterruptedException e) {
       // exit
     } catch (final Throwable e) {
@@ -151,8 +154,16 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
     final var kaminoCache = kaminoCacheFuture.join();
     webSocketConsumers.add(kaminoCache::subscribe);
 
+    final var aumRecordBatchExecutor = VaultAumRecord.createSqlExecutor(
+        serviceContext.primaryDatasource(),
+        256,
+        Duration.ofMillis(100),
+        delegateServiceConfig.serviceBackoff()
+    );
+
     final var integrationServiceContext = IntegrationServiceContext.createContext(
         serviceContext,
+        aumRecordBatchExecutor,
         mintCache,
         stakePoolCache,
         globalConfigCache,
@@ -177,6 +188,7 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
     final var vaultExecutor = GlamVaultExecutor.createExecutor(rpcCaller, glamStateContextCache);
 
     return new PriceVaultsServiceEntrypoint(
+        List.of(aumRecordBatchExecutor),
         accountFetcher,
         globalConfigCache,
         kaminoCache,
@@ -188,7 +200,10 @@ public record PriceVaultsServiceEntrypoint(AccountFetcher accountFetcher,
 
   @Override
   public void run() {
-    try (final var executorService = Executors.newFixedThreadPool(7)) {
+    try (final var executorService = Executors.newFixedThreadPool(sqlExecutors.size() + 7)) {
+      for (final var sqlExecutor : sqlExecutors) {
+        executorService.execute(sqlExecutor);
+      }
       executorService.execute(accountFetcher);
       executorService.execute(globalConfigCache);
       executorService.execute(kaminoCache);

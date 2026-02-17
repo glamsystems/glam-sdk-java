@@ -40,6 +40,148 @@ import static systems.glam.services.integrations.kamino.KaminoCacheImpl.writeSco
 
 public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<AccountInfo<byte[]>> {
 
+  static CompletableFuture<KaminoCache> initService(final RpcCaller rpcCaller,
+                                                    final AccountFetcher accountFetcher,
+                                                    final NotifyClient notifyClient,
+                                                    final KaminoAccounts kaminoAccounts,
+                                                    final Duration pollingDelay) {
+    return CompletableFuture.supplyAsync(() -> {
+      final var kLendProgram = kaminoAccounts.kLendProgram();
+      final var scopeProgram = kaminoAccounts.scopePricesProgram();
+      final var kVaultsProgram = kaminoAccounts.kVaultsProgram();
+
+      // Note: New Configurations will be discovered indirectly via Kamino Lending Reserves.
+      final var configAccountsRequest = ProgramAccountsRequest.build()
+          .filters(List.of(Configuration.SIZE_FILTER, Configuration.DISCRIMINATOR_FILTER))
+          .programId(scopeProgram)
+          .dataSliceLength(0, Configuration.PADDING_OFFSET)
+          .createRequest();
+      final var scopeConfigurationsFuture = rpcCaller.courteousCall(
+          rpcClient -> rpcClient.getProgramAccounts(configAccountsRequest),
+          "Scope Configuration accounts"
+      );
+
+      final var KVaultsRequest = ProgramAccountsRequest.build()
+          .filters(List.of(VaultState.SIZE_FILTER, VaultState.DISCRIMINATOR_FILTER))
+          .programId(kVaultsProgram)
+          .dataSliceLength(0, VaultState.VAULT_FARM_OFFSET)
+          .createRequest();
+      final var vaultStateAccountsFuture = rpcCaller.courteousCall(
+          rpcClient -> rpcClient.getProgramAccounts(KVaultsRequest),
+          "rpcClient#getKaminoVaultAccounts"
+      );
+
+      final var reserveAccountsRequest = ProgramAccountsRequest.build()
+          .filters(List.of(Reserve.SIZE_FILTER, Reserve.DISCRIMINATOR_FILTER))
+          .programId(kLendProgram)
+          .dataSliceLength(0, Reserve.CONFIG_PADDING_OFFSET)
+          .createRequest();
+
+      final var reserveAccountsFuture = rpcCaller.courteousCall(
+          rpcClient -> rpcClient.getProgramAccounts(reserveAccountsRequest),
+          "rpcClient#getKaminoReserves"
+      );
+
+
+      final var configAccounts = scopeConfigurationsFuture.join();
+      final var mappingAccountKeys = HashSet.<PublicKey>newHashSet(configAccounts.size());
+      final var feedContextMap = HashMap.<PublicKey, ScopeFeedContext>newHashMap(configAccounts.size() * 3);
+
+      for (final var accountInfo : configAccounts) {
+        if (accountInfo != null) {
+          final byte[] data = accountInfo.data();
+          if (data.length != Configuration.PADDING_OFFSET || !Configuration.DISCRIMINATOR.equals(data, 0)) {
+            throw new IllegalStateException(String.format(
+                "%s is not a valid Scope Configuration account.", accountInfo.pubKey()
+            ));
+          }
+          final var feedContext = ScopeFeedContext.createContext(accountInfo);
+          feedContextMap.put(feedContext.configurationKey(), feedContext);
+          final var oracleMappings = feedContext.oracleMappings();
+          mappingAccountKeys.add(oracleMappings);
+          feedContextMap.put(oracleMappings, feedContext);
+          feedContextMap.put(feedContext.priceFeed(), feedContext);
+        }
+      }
+
+
+      final var reserveAccounts = reserveAccountsFuture.join();
+      final var reserveContextMap = new ConcurrentHashMap<PublicKey, ReserveContext>(Integer.highestOneBit(reserveAccounts.size()) << 1);
+
+      final int priceFeedKeyFromOffset = Reserve.CONFIG_OFFSET + ReserveConfig.TOKEN_INFO_OFFSET + TokenInfo.SCOPE_CONFIGURATION_OFFSET;
+      final int priceFeedKeyToOffset = priceFeedKeyFromOffset + PUBLIC_KEY_LENGTH;
+      final byte[] nullKeyBytes = PublicKey.NONE.toByteArray();
+      final byte[] nilKeyBytes = KaminoAccounts.NULL_KEY.toByteArray();
+
+      final var priceFeedsNeeded = new HashSet<PublicKey>();
+      final var noMappings = Map.<PublicKey, MappingsContext>of();
+      for (final var reserveAccountInfo : reserveAccounts) {
+        final byte[] data = reserveAccountInfo.data();
+        if (Arrays.equals(
+            data, priceFeedKeyFromOffset, priceFeedKeyToOffset,
+            nullKeyBytes, 0, nullKeyBytes.length
+        ) || Arrays.equals(
+            data, priceFeedKeyFromOffset, priceFeedKeyToOffset,
+            nilKeyBytes, 0, nilKeyBytes.length
+        )) {
+          final var reserveContext = ReserveContext.createContext(reserveAccountInfo, noMappings);
+          reserveContextMap.put(reserveContext.pubKey(), reserveContext);
+        } else {
+          final var priceFeedKey = PublicKey.readPubKey(data, priceFeedKeyFromOffset);
+          priceFeedsNeeded.add(priceFeedKey);
+        }
+      }
+
+      final var mappingAccountList = List.copyOf(mappingAccountKeys);
+      final var mappingsFuture = rpcCaller.courteousCall(
+          rpcClient -> rpcClient.getAccounts(mappingAccountList),
+          "Oracle Mappings accounts"
+      );
+
+      final var mappingsContextMap = new ConcurrentHashMap<PublicKey, MappingsContext>(mappingAccountList.size() << 1);
+      for (final var accountInfo : mappingsFuture.join()) {
+        if (accountInfo == null) {
+          throw new IllegalStateException("Oracle Mappings account not found.");
+        }
+        final byte[] data = accountInfo.data();
+        if (!OracleMappings.DISCRIMINATOR.equals(data, 0) || data.length != OracleMappings.BYTES) {
+          throw new IllegalStateException(String.format(
+              "%s is not a valid Scope OracleMappings account.", accountInfo.pubKey()
+          ));
+        }
+        final var mappingsKey = accountInfo.pubKey();
+        final var priceFeedContext = feedContextMap.get(mappingsKey);
+        final var mappingsContext = MappingsContext.createContext(accountInfo);
+        mappingsContextMap.put(priceFeedContext.priceFeed(), mappingsContext);
+        mappingsContextMap.put(mappingsKey, mappingsContext);
+      }
+
+      final var vaultStateAccounts = vaultStateAccountsFuture.join();
+      final var vaultStateMap = new ConcurrentHashMap<PublicKey, KaminoVaultContext>(Integer.highestOneBit(vaultStateAccounts.size()) << 1);
+      for (final var accountInfo : vaultStateAccounts) {
+        final var vaultStateContext = KaminoVaultContext.createContext(accountInfo);
+        vaultStateMap.put(vaultStateContext.sharesMint(), vaultStateContext);
+      }
+
+      return new KaminoCacheImpl(
+          notifyClient,
+          rpcCaller,
+          accountFetcher,
+          kLendProgram,
+          scopeProgram,
+          kVaultsProgram, KVaultsRequest,
+          pollingDelay,
+          null,
+          null,
+          null,
+          feedContextMap,
+          mappingsContextMap,
+          reserveContextMap,
+          vaultStateMap
+      );
+    });
+  }
+
   static CompletableFuture<KaminoCache> initService(final Path kaminoAccountsPath,
                                                     final RpcCaller rpcCaller,
                                                     final AccountFetcher accountFetcher,

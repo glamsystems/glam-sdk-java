@@ -13,6 +13,7 @@ import software.sava.services.core.remote.call.Backoff;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamAccounts;
 import systems.glam.services.db.sql.SqlDataSource;
+import systems.glam.services.io.FileUtils;
 
 import java.math.BigInteger;
 import java.nio.file.Path;
@@ -237,7 +238,7 @@ public final class ServiceContextImpl implements ServiceContext {
 
   @Override
   public Path resolveGlamStateFilePath(final PublicKey glamStateKey) {
-    return glamMinStateAccountCacheDirectory.resolve(glamStateKey.toBase58() + ".json");
+    return FileUtils.resolveAccountPath(accountsCacheDirectory, glamStateKey);
   }
 
   @Override

@@ -34,6 +34,7 @@ module systems.glam.services {
   uses SqlDataSource.Factory;
   provides SqlDataSource.Factory with PostgresDataSourceFactory;
 
+  exports systems.glam.services.db;
   exports systems.glam.services.config;
   exports systems.glam.services.execution;
   exports systems.glam.services.fulfillment.config;

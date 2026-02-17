@@ -16,7 +16,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -60,7 +60,7 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
     this.stateFilters = List.of(StateAccount.DISCRIMINATOR_FILTER);
     this.vaultTableDirectory = vaultTableDirectory;
     this.priceServicesByState = priceServicesByState;
-    this.unsupportedVaults = new ConcurrentSkipListSet<>();
+    this.unsupportedVaults = ConcurrentHashMap.newKeySet(128);
   }
 
   @Override
@@ -71,6 +71,9 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
   @Override
   public void run() {
     try {
+      for (final var stateService : priceServicesByState.values()) {
+        stateService.init();
+      }
       final var globalConfigCache = serviceContext.globalConfigCache();
       final var rpcCaller = serviceContext.rpcCaller();
       for (; ; ) { // Defensive discovery of new Glam Vaults & Tables.
@@ -143,9 +146,14 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
   @Override
   public void acceptStateAccount(final VaultStateContext stateContext, final AccountInfo<byte[]> accountInfo) {
     if (!stateContext.stateChange(accountInfo)) {
-      final var accountKey = accountInfo.pubKey();
-      unsupportedVaults.add(accountKey);
-      priceServicesByState.remove(accountKey);
+      if (accountInfo == null) {
+        final var key = stateContext.stateAccountKey();
+        priceServicesByState.remove(key);
+      } else {
+        final var accountKey = accountInfo.pubKey();
+        unsupportedVaults.add(accountKey);
+        priceServicesByState.remove(accountKey);
+      }
     }
   }
 

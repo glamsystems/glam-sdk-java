@@ -201,7 +201,11 @@ public class MultiAssetPriceService extends BaseDelegateService
         if (this.accountsNeededSet.add(externalAccount)) {
           stateChange = StateChange.ACCOUNTS_NEEDED;
         } else {
-          final var positionChangeState = createPosition(accountsNeededMap.get(externalAccount));
+          final var accountInfo = accountsNeededMap.get(externalAccount);
+          if (accountInfo == null) {
+            throw new IllegalStateException("Account not found for external account: " + externalAccount);
+          }
+          final var positionChangeState = createPosition(accountInfo);
           stateChange = stateChange.escalate(positionChangeState);
           if (stateChange == StateChange.UNSUPPORTED) {
             return StateChange.UNSUPPORTED;

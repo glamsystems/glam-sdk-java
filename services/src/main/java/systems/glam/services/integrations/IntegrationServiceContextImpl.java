@@ -6,11 +6,12 @@ import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.services.ServiceContext;
+import systems.glam.services.db.sql.BatchSqlExecutor;
 import systems.glam.services.execution.BaseServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
+import systems.glam.services.integrations.kamino.KaminoCache;
 import systems.glam.services.mints.*;
 import systems.glam.services.oracles.scope.FeedIndexes;
-import systems.glam.services.integrations.kamino.KaminoCache;
 import systems.glam.services.pricing.accounting.VaultAumRecord;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
@@ -20,6 +21,7 @@ import java.util.Collection;
 
 final class IntegrationServiceContextImpl extends BaseServiceContext implements IntegrationServiceContext {
 
+  private final BatchSqlExecutor<VaultAumRecord> aumRecordBatchExecutor;
   private final MintCache mintCache;
   private final StakePoolCache stakePoolCache;
   private final GlobalConfigCache globalConfigCache;
@@ -31,6 +33,7 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   private final KaminoCache kaminoCache;
 
   IntegrationServiceContextImpl(final ServiceContext serviceContext,
+                                final BatchSqlExecutor<VaultAumRecord> aumRecordBatchExecutor,
                                 final MintCache mintCache,
                                 final StakePoolCache stakePoolCache,
                                 final GlobalConfigCache globalConfigCache,
@@ -41,6 +44,7 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
                                 final KaminoAccounts kaminoAccounts,
                                 final KaminoCache kaminoCache) {
     super(serviceContext);
+    this.aumRecordBatchExecutor = aumRecordBatchExecutor;
     this.mintCache = mintCache;
     this.stakePoolCache = stakePoolCache;
     this.globalConfigCache = globalConfigCache;
@@ -138,10 +142,8 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   }
 
   @Override
-  public void persistAumRecord(final VaultAumRecord aumRecord) throws InterruptedException {
-    final var datasource = serviceContext.primaryDatasource();
-    final int numInserted = aumRecord.insertRecord(datasource);
-    System.out.println(numInserted);
+  public void persistAumRecord(final VaultAumRecord aumRecord) {
+    aumRecordBatchExecutor.queue(aumRecord);
   }
 
   @Override

@@ -162,17 +162,21 @@ final class KaminoCacheImpl implements KaminoCache {
         }""", configJson
     );
     logger.log(INFO, msg);
-    try {
-      Files.deleteIfExists(FileUtils.resolveAccountPath(configurationsPath, scopeFeedContext.configurationKey()));
-    } catch (final IOException e) {
-      logger.log(WARNING, "Failed to delete Scope Configuration.", e);
+    if (configurationsPath != null) {
+      try {
+        Files.deleteIfExists(FileUtils.resolveAccountPath(configurationsPath, scopeFeedContext.configurationKey()));
+      } catch (final IOException e) {
+        logger.log(WARNING, "Failed to delete Scope Configuration.", e);
+      }
     }
-    logger.log(INFO, msg);
-    try {
-      Files.deleteIfExists(FileUtils.resolveAccountPath(mappingsPath, scopeFeedContext.oracleMappings()));
-    } catch (final IOException e) {
-      logger.log(WARNING, "Failed to delete Scope Mappings.", e);
+    if (mappingsPath != null) {
+      try {
+        Files.deleteIfExists(FileUtils.resolveAccountPath(mappingsPath, scopeFeedContext.oracleMappings()));
+      } catch (final IOException e) {
+        logger.log(WARNING, "Failed to delete Scope Mappings.", e);
+      }
     }
+    notifyClient.postMsg(msg);
   }
 
   private void removeConfig(final ScopeFeedContext scopeFeedContext) {
@@ -223,11 +227,13 @@ final class KaminoCacheImpl implements KaminoCache {
   }
 
   private void persistMappings(final MappingsContext mappingContext) {
-    final var mappingsPath = FileUtils.resolveAccountPath(this.mappingsPath, mappingContext.publicKey());
-    try {
-      Files.write(mappingsPath, mappingContext.data(), CREATE, TRUNCATE_EXISTING, WRITE);
-    } catch (final IOException e) {
-      logger.log(WARNING, "Failed to persist mappings.", e);
+    if (mappingsPath != null) {
+      final var mappingsPath = FileUtils.resolveAccountPath(this.mappingsPath, mappingContext.publicKey());
+      try {
+        Files.write(mappingsPath, mappingContext.data(), CREATE, TRUNCATE_EXISTING, WRITE);
+      } catch (final IOException e) {
+        logger.log(WARNING, "Failed to persist mappings.", e);
+      }
     }
   }
 
@@ -459,7 +465,9 @@ final class KaminoCacheImpl implements KaminoCache {
         readLock.lock();
         try {
           if (this.asyncReserveUpdates.getAndSet(0) > 0) {
-            writeReserves(reserveContextsFilePath, reserveContextMap);
+            if (reserveContextsFilePath != null) {
+              writeReserves(reserveContextsFilePath, reserveContextMap);
+            }
           } else if (accountsDeleted == 0) {
             logger.log(INFO, "No changes to Scope Reserves.");
           }
@@ -740,10 +748,12 @@ final class KaminoCacheImpl implements KaminoCache {
         }""", configJson
     );
     logger.log(INFO, msg);
-    try {
-      writeScopeConfiguration(configurationsPath, scopeFeedContext);
-    } catch (final IOException e) {
-      logger.log(WARNING, "Failed to persist Scope configuration.", e);
+    if (configurationsPath != null) {
+      try {
+        writeScopeConfiguration(configurationsPath, scopeFeedContext);
+      } catch (final IOException e) {
+        logger.log(WARNING, "Failed to persist Scope configuration.", e);
+      }
     }
     notifyClient.postMsg(msg);
   }

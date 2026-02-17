@@ -8,6 +8,7 @@ import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.services.ServiceContext;
+import systems.glam.services.db.sql.BatchSqlExecutor;
 import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoCache;
 import systems.glam.services.mints.*;
@@ -25,6 +26,7 @@ import static systems.glam.services.io.FileUtils.ACCOUNT_FILE_EXTENSION;
 public interface IntegrationServiceContext {
 
   static IntegrationServiceContext createContext(final ServiceContext serviceContext,
+                                                 final BatchSqlExecutor<VaultAumRecord> aumRecordBatchExecutor,
                                                  final MintCache mintCache,
                                                  final StakePoolCache stakePoolCache,
                                                  final GlobalConfigCache globalConfigCache,
@@ -36,6 +38,7 @@ public interface IntegrationServiceContext {
                                                  final KaminoCache kaminoCache) {
     return new IntegrationServiceContextImpl(
         serviceContext,
+        aumRecordBatchExecutor,
         mintCache,
         stakePoolCache,
         globalConfigCache,

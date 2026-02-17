@@ -55,9 +55,9 @@ public interface SqlDataSource extends DataSource, DataSourceHelper {
     // DEFAULT_KEEPALIVE_TIME = 0L;
     hikariDataSource.setKeepaliveTime(SECONDS.toMillis(15));
     // MAX_LIFETIME = MINUTES.toMillis(30);
-    hikariDataSource.setMaxLifetime(MINUTES.toMillis(15));
+    hikariDataSource.setMaxLifetime(MINUTES.toMillis(60));
     // DEFAULT_POOL_SIZE = 10;
-    hikariDataSource.setMaximumPoolSize(Runtime.getRuntime().availableProcessors() << 2);
+    // hikariDataSource.setMaximumPoolSize(Runtime.getRuntime().availableProcessors() << 2);
     return new DelegatedSqlDataSource(hikariDataSource, dataSourceHelper);
   }
 
