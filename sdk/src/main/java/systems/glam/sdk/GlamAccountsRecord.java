@@ -10,7 +10,7 @@ import java.util.Map;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public record GlamAccountsRecord(AccountMeta invokedProtocolProgram,
-                                 PublicKey configProgram,
+                                 PublicKey configProgram, ProgramDerivedAddress globalConfigPDA,
                                  PublicKey policyProgram,
                                  AccountMeta invokedMintIntegrationProgram,
                                  AccountMeta readMintIntegrationAuthority,

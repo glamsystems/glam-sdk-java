@@ -8,6 +8,7 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.services.integrations.IntegrationServiceContext;
+import systems.glam.services.io.FileUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -48,10 +49,13 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
     this.protocolProgram = glamAccounts.protocolProgram();
     final var solanaAccounts = serviceContext.solanaAccounts();
     this.addressLookupTableProgram = solanaAccounts.addressLookupTableProgram();
+//    final var tableDiscriminator = new byte[Integer.BYTES];
+//    ByteUtil.putInt32LE(tableDiscriminator, 0, 1);
     // 0: State Key
     // 1: Vault Key
     // 3: GLAM Config Key
     this.tableFilters = List.of(
+//        Filter.createMemCompFilter(0, tableDiscriminator),
         Filter.createMemCompFilter(
             LOOKUP_TABLE_META_SIZE + PublicKey.PUBLIC_KEY_LENGTH + PublicKey.PUBLIC_KEY_LENGTH,
             glamAccounts.configProgram()
@@ -61,6 +65,11 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
     this.vaultTableDirectory = vaultTableDirectory;
     this.priceServicesByState = priceServicesByState;
     this.unsupportedVaults = ConcurrentHashMap.newKeySet(128);
+  }
+
+  @Override
+  public int size() {
+    return priceServicesByState.size();
   }
 
   @Override
@@ -164,10 +173,10 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
     if (priceService != null) {
       final var accountKey = accountInfo.pubKey();
       final long deactivationSlot = ByteUtil.getInt64LE(data, AddressLookupTable.DEACTIVATION_SLOT_OFFSET);
-      if (deactivationSlot != -1) {
+      if (deactivationSlot == -1) {
         final var addressLookupTable = AddressLookupTable.read(accountKey, data);
         priceService.glamVaultTableUpdate(addressLookupTable);
-        final var fileName = IntegrationServiceContext.resolveFileName(vaultTableDirectory, accountInfo.pubKey());
+        final var fileName = FileUtils.resolveAccountPath(vaultTableDirectory, accountInfo.pubKey());
         try {
           Files.write(fileName, accountInfo.data());
         } catch (final IOException e) {
@@ -175,7 +184,7 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
         }
       } else {
         priceService.removeTable(accountKey);
-        final var fileName = IntegrationServiceContext.resolveFileName(vaultTableDirectory, accountInfo.pubKey());
+        final var fileName = FileUtils.resolveAccountPath(vaultTableDirectory, accountInfo.pubKey());
         try {
           Files.deleteIfExists(fileName);
         } catch (IOException e) {

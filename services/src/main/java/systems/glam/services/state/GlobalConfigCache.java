@@ -26,7 +26,8 @@ import static systems.glam.services.state.GlobalConfigCacheImpl.*;
 public interface GlobalConfigCache extends Runnable {
 
   static CompletableFuture<GlobalConfigCache> initCache(final Path globalConfigFilePath,
-                                                        final PublicKey configProgram, final PublicKey globalConfigKey,
+                                                        final PublicKey configProgram,
+                                                        final PublicKey globalConfigKey,
                                                         final SolanaAccounts solanaAccounts,
                                                         final MintCache mintCache,
                                                         final RpcCaller rpcCaller,
@@ -123,6 +124,10 @@ public interface GlobalConfigCache extends Runnable {
 
   AssetMetaContext watchForMint(final PublicKey mint, final PublicKey stateAccount);
 
+  /**
+   * Returns a set of state accounts that previously could not be priced
+   * because it contained an asset with no Global Config Asset Meta.
+   */
   Set<PublicKey> retryStateAccounts();
 
   void awaitNewAssetMeta(final long awaitNanos) throws InterruptedException;

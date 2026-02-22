@@ -21,8 +21,6 @@ import systems.glam.services.state.GlobalConfigCache;
 import java.nio.file.Path;
 import java.util.Collection;
 
-import static systems.glam.services.io.FileUtils.ACCOUNT_FILE_EXTENSION;
-
 public interface IntegrationServiceContext {
 
   static IntegrationServiceContext createContext(final ServiceContext serviceContext,
@@ -47,10 +45,6 @@ public interface IntegrationServiceContext {
         driftAccounts, driftMarketCache,
         kaminoAccounts, kaminoCache
     );
-  }
-
-  static Path resolveFileName(final Path directory, final PublicKey accountKey) {
-    return directory.resolve(accountKey + ACCOUNT_FILE_EXTENSION);
   }
 
   ServiceContext serviceContext();

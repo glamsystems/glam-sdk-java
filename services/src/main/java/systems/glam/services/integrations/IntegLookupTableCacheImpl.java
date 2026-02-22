@@ -4,6 +4,7 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.lookup.AddressLookupTable;
 import software.sava.core.encoding.ByteUtil;
 import software.sava.rpc.json.http.response.AccountInfo;
+import systems.glam.services.io.FileUtils;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
 
@@ -57,7 +58,7 @@ final class IntegLookupTableCacheImpl implements IntegLookupTableCache, AccountC
   }
 
   private void deleteTableFile(final PublicKey tableKey) {
-    final var fileName = IntegrationServiceContext.resolveFileName(integrationTablesDirectory, tableKey);
+    final var fileName = FileUtils.resolveAccountPath(integrationTablesDirectory, tableKey);
     try {
       Files.deleteIfExists(fileName);
     } catch (IOException e) {
@@ -118,7 +119,7 @@ final class IntegLookupTableCacheImpl implements IntegLookupTableCache, AccountC
   }
 
   static void writeTableData(final Path directory, final AccountInfo<byte[]> accountInfo) {
-    final var fileName = IntegrationServiceContext.resolveFileName(directory, accountInfo.pubKey());
+    final var fileName = FileUtils.resolveAccountPath(directory, accountInfo.pubKey());
     try {
       Files.write(fileName, accountInfo.data());
     } catch (final IOException e) {

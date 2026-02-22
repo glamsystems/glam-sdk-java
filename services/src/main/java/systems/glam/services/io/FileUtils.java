@@ -17,6 +17,16 @@ public final class FileUtils {
     return path.resolve(pubKey.toBase58() + ACCOUNT_FILE_EXTENSION);
   }
 
+  public static PublicKey parseKey(final Path file) {
+    final var fileName = file.getFileName().toString();
+    if (fileName.endsWith(ACCOUNT_FILE_EXTENSION)) {
+      final var keyString = fileName.substring(0, fileName.length() - ACCOUNT_FILE_EXTENSION.length());
+      return PublicKey.fromBase58Encoded(keyString);
+    } else {
+      return null;
+    }
+  }
+
   public static AccountData readAccountData(final Path path) {
     final var fileName = path.getFileName().toString();
     if (fileName.endsWith(ACCOUNT_FILE_EXTENSION)) {

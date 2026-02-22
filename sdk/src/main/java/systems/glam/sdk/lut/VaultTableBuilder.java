@@ -221,14 +221,8 @@ public interface VaultTableBuilder {
 
       final var accountClient = stateAccountClient.accountClient();
       final var vaultAccounts = accountClient.vaultAccounts();
-      final var glamAccounts = accountClient.glamAccounts();
-      final var globalConfig = glamAccounts.globalConfigPDA().publicKey();
 
-      final var tablePrefix = List.of(
-          vaultAccounts.glamStateKey(),
-          vaultAccounts.vaultPublicKey(),
-          globalConfig
-      );
+      final var tablePrefix = vaultAccounts.vaultTablePrefixKeys();
 
       return new VaultTableBuilderImpl(
           stateAccountClient,

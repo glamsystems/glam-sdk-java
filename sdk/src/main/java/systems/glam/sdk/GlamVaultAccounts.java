@@ -149,4 +149,8 @@ public interface GlamVaultAccounts {
   default List<Filter> activeVaultTableFilters() {
     return List.of(ACTIVE_TABLE_FILTER, vaultTableFilter());
   }
+
+  default List<PublicKey> vaultTablePrefixKeys() {
+    return List.of(glamStateKey(), vaultPublicKey(), glamAccounts().configProgram());
+  }
 }

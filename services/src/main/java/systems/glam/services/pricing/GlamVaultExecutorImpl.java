@@ -2,12 +2,17 @@ package systems.glam.services.pricing;
 
 import software.sava.rpc.json.http.client.SolanaRpcClient;
 import software.sava.services.solana.remote.call.RpcCaller;
+import systems.glam.services.pricing.accounting.VaultAum;
 
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.ERROR;
-import static java.util.concurrent.TimeUnit.*;
+import static java.lang.System.Logger.Level.INFO;
 
 final class GlamVaultExecutorImpl implements GlamVaultExecutor {
 
@@ -17,32 +22,89 @@ final class GlamVaultExecutorImpl implements GlamVaultExecutor {
 
   private final RpcCaller rpcCaller;
   private final GlamStateContextCache stateCache;
+  private final TimeUnit scheduleTimeUnit;
+  private final int maxGroupRetries;
 
-  GlamVaultExecutorImpl(final RpcCaller rpcCaller, final GlamStateContextCache stateCache) {
+  GlamVaultExecutorImpl(final RpcCaller rpcCaller,
+                        final GlamStateContextCache stateCache,
+                        final TimeUnit scheduleTimeUnit,
+                        final int maxGroupRetries) {
     this.rpcCaller = rpcCaller;
     this.stateCache = stateCache;
+    this.scheduleTimeUnit = scheduleTimeUnit;
+    this.maxGroupRetries = maxGroupRetries;
+  }
+
+  private static void waitUntil(final TimeUnit timeUnit, final int val) throws InterruptedException {
+    final var now = LocalTime.now();
+    final int nowUnit = switch (timeUnit) {
+      case HOURS -> now.getHour();
+      case MINUTES -> now.getMinute();
+      case SECONDS -> now.getSecond();
+      default -> throw new IllegalStateException("Unexpected value: " + timeUnit);
+    };
+    if (nowUnit < val) {
+      timeUnit.sleep(val - nowUnit);
+    }
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public void run() {
     try {
-      Thread.sleep(5_000);
+      var results = (CompletableFuture<VaultAum>[]) new CompletableFuture[stateCache.size() << 1];
       for (; ; ) {
-        // TODO run N minutes before schedule
-        final var stateContextArray = refreshStateContext();
-        // Delay to one second before the scheduled time.
-        for (int i = stateContextArray.length - 1; i >= 0; i--) {
-          final var stateContext = stateContextArray[i];
-          if (stateContext != null) {
-            final var positionReportFuture = stateContext.priceVault();
-            if (positionReportFuture == null) {
+        waitUntil(scheduleTimeUnit, 30);
 
-            } else {
-              final var positionReport = positionReportFuture.join();
+        final var stateContextArray = refreshStateContext();
+        if (stateContextArray.length > results.length) {
+          results = (CompletableFuture<VaultAum>[]) new CompletableFuture[stateContextArray.length << 1];
+        }
+
+        waitUntil(scheduleTimeUnit, 60);
+        for (int groupRetries = 0; ; ) {
+          int numVaults = 0;
+          for (int i = stateContextArray.length - 1; i >= 0; i--) {
+            final var stateContext = stateContextArray[i];
+            if (stateContext != null) {
+              results[i] = stateContext.priceVault();
+              ++numVaults;
             }
           }
+
+          int retryCount = 0;
+          for (int i = stateContextArray.length - 1; i >= 0; i--) {
+            final var resultFuture = results[i];
+            results[i] = null;
+            if (resultFuture != null) {
+              final var vaultAUM = resultFuture.join();
+              if (vaultAUM != VaultAum.RETRY) {
+                // TODO: Handle vaults that changed state and need accounts.
+                stateContextArray[i] = null;
+              } else {
+                ++retryCount;
+              }
+            }
+          }
+          if (retryCount == 0) {
+            break;
+          } else if (++groupRetries > maxGroupRetries) {
+            final var nonPricedVaults = Arrays.stream(stateContextArray).<String>mapMulti((vault, downstream) -> {
+              if (vault != null) {
+                downstream.accept(vault.stateAccountKey().toBase58());
+              }
+            }).collect(Collectors.joining(","));
+            logger.log(ERROR, "Giving up trying to price the following vault states: " + nonPricedVaults
+            );
+            break;
+          } else {
+            logger.log(INFO, String.format(
+                    "Retrying %d out of %d vaults.",
+                    retryCount, numVaults
+                )
+            );
+          }
         }
-        SECONDS.sleep(15);
       }
     } catch (final InterruptedException e) {
       // exit

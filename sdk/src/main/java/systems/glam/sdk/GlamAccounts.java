@@ -58,7 +58,7 @@ public interface GlamAccounts {
     );
     return new GlamAccountsRecord(
         AccountMeta.createInvoked(protocolProgram),
-        configProgram,
+        configProgram, GlamConfigPDAs.globalConfigPDA(configProgram),
         policyProgram,
         AccountMeta.createInvoked(mintProgram),
         mintIntegrationAuthority,
@@ -105,9 +105,7 @@ public interface GlamAccounts {
 
   PublicKey policyProgram();
 
-  default ProgramDerivedAddress globalConfigPDA() {
-    return GlamConfigPDAs.globalConfigPDA(configProgram());
-  }
+  ProgramDerivedAddress globalConfigPDA();
 
   ProgramDerivedAddress mintPDA(final PublicKey glamPublicKey, final int shareClassId);
 

@@ -12,13 +12,15 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 
 public record VaultAumRecord(PublicKey stateKey,
                              Instant timestamp,
                              long slot,
                              long supply,
                              BigInteger baseAUM,
-                             BigDecimal quoteAUM) {
+                             BigDecimal quoteAUM,
+                             List<AggregatePositionReport> positionReports) implements VaultAum {
 
   public static BatchSqlExecutor<VaultAumRecord> createSqlExecutor(final SqlDataSource datasource,
                                                                    final int batchSize,

@@ -3,7 +3,7 @@ package systems.glam.services.pricing;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.lookup.AddressLookupTable;
 import software.sava.rpc.json.http.response.AccountInfo;
-import systems.glam.services.pricing.accounting.PositionReport;
+import systems.glam.services.pricing.accounting.VaultAum;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -25,7 +25,7 @@ public interface VaultStateContext {
 
   void glamVaultTableUpdate(final AddressLookupTable addressLookupTable);
 
-  CompletableFuture<PositionReport> priceVault();
+  CompletableFuture<VaultAum> priceVault();
 
   long usdValue();
 }

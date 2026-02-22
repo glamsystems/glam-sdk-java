@@ -185,7 +185,10 @@ public record PriceVaultsServiceEntrypoint(Collection<BatchSqlExecutor<?>> sqlEx
     final var webSocketManager = delegateServiceConfig.createWebSocketManager(wsHttpClient, List.copyOf(webSocketConsumers));
     webSocketManager.checkConnection();
 
-    final var vaultExecutor = GlamVaultExecutor.createExecutor(rpcCaller, glamStateContextCache);
+    final var vaultExecutor = GlamVaultExecutor.createExecutor(
+        rpcCaller, glamStateContextCache,
+        serviceConfig.valueVaultTimeUnit(), serviceConfig.valueVaultMaxRetries()
+    );
 
     return new PriceVaultsServiceEntrypoint(
         List.of(aumRecordBatchExecutor),

@@ -17,6 +17,7 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.InnerInstructions;
 import software.sava.rpc.json.http.response.IxError;
 import software.sava.rpc.json.http.response.TransactionError;
+import software.sava.services.core.request_capacity.context.CallContext;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.AumRecord;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.GlamMintEvent;
@@ -28,12 +29,12 @@ import systems.glam.services.integrations.drift.DriftVaultPositions;
 import systems.glam.services.integrations.kamino.KaminoLendingPositions;
 import systems.glam.services.pricing.accounting.*;
 import systems.glam.services.rpc.AccountConsumer;
+import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.MinGlamStateAccount;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -42,8 +43,9 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.WARNING;
+import static java.math.RoundingMode.HALF_EVEN;
 import static systems.glam.services.pricing.accounting.TxSimulationPriceGroup.MAIN_NET_CU_LIMIT_SIMULATION;
 
 public class MultiAssetPriceService extends BaseDelegateService
@@ -76,7 +78,8 @@ public class MultiAssetPriceService extends BaseDelegateService
     this.vaultTokensPosition = new VaultTokensPosition(stateAccount.assets().length);
     this.stateAccount = new AtomicReference<>(stateAccount);
     this.aumTransaction = new AtomicReference<>(null);
-    this.validateAUMInstruction = glamAccountClient.validateAum(true).extraAccount(AccountMeta.createRead(mintPDA));
+    this.validateAUMInstruction = glamAccountClient.validateAum(true)
+        .extraAccount(AccountMeta.createRead(mintPDA));
     this.glamVaultTables = new AtomicReference<>(null);
     this.accountsNeededMap = Map.of();
   }
@@ -219,8 +222,8 @@ public class MultiAssetPriceService extends BaseDelegateService
 
   @Override
   public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
-    final var accountInfo = accountMap.get(stateKey());
-    if (accountInfo == null) {
+    final var accountInfo = accountMap.get(stateAccountKey());
+    if (AccountFetcher.isNull(accountInfo)) {
       this.stateAccount.set(null);
     } else {
       this.accountsNeededMap = accountMap;
@@ -244,7 +247,11 @@ public class MultiAssetPriceService extends BaseDelegateService
     if (witness == null) {
       return false;
     }
-    final long slot = account.context().slot();
+    final var context = account.context();
+    if (context == null) {
+      throw new IllegalStateException("AccountInfo context is null" + account.pubKey());
+    }
+    final long slot = context.slot();
     if (Long.compareUnsigned(slot, witness.slot()) <= 0) {
       return true; // Ignore stale update.
     }
@@ -411,7 +418,7 @@ public class MultiAssetPriceService extends BaseDelegateService
       }
       returnAccountsSet.add(clockSysVar);
     } else if (numAccounts > Transaction.MAX_ACCOUNTS) {
-      logger.log(WARNING, "Vault state {0} needs {1} accounts for pricing.", stateKey(), numAccounts);
+      logger.log(WARNING, "Vault state {0} needs {1} accounts for pricing.", stateAccountKey(), numAccounts);
       clearState();
       return;
     }
@@ -421,7 +428,7 @@ public class MultiAssetPriceService extends BaseDelegateService
     if (transaction.size() > Transaction.MAX_SERIALIZED_LENGTH) {
       logger.log(WARNING,
           "Transaction size {0} exceeds maximum allowed {1}. State {2}",
-          transaction.size(), Transaction.MAX_SERIALIZED_LENGTH, stateKey()
+          transaction.size(), Transaction.MAX_SERIALIZED_LENGTH, stateAccountKey()
       );
       clearState();
       return;
@@ -430,7 +437,7 @@ public class MultiAssetPriceService extends BaseDelegateService
     if (base64Encoded.length() > Transaction.MAX_BASE_64_ENCODED_LENGTH) {
       logger.log(WARNING,
           "Transaction base64 encoded length {0} exceeds maximum allowed {1}. State {2}",
-          base64Encoded.length(), Transaction.MAX_BASE_64_ENCODED_LENGTH, stateKey()
+          base64Encoded.length(), Transaction.MAX_BASE_64_ENCODED_LENGTH, stateAccountKey()
       );
       clearState();
       return;
@@ -445,8 +452,17 @@ public class MultiAssetPriceService extends BaseDelegateService
     return -1;
   }
 
+  private static final CallContext RETRY_CONTEXT = CallContext.createContext(
+      1,
+      0,
+      Long.MAX_VALUE,
+      true,
+      1,
+      false
+  );
+
   @Override
-  public CompletableFuture<PositionReport> priceVault() {
+  public CompletableFuture<VaultAum> priceVault() {
     final var aumTransaction = this.aumTransaction.get();
     if (aumTransaction == null) {
       return null;
@@ -459,7 +475,7 @@ public class MultiAssetPriceService extends BaseDelegateService
             true, true,
             returnAccounts
         ),
-        "rpcClient::simulatePriceGLAMVault"
+        RETRY_CONTEXT, "rpcClient::simulatePriceGLAMVault"
     );
     return simulationResultFuture.thenApplyAsync(simulationResult -> {
       try {
@@ -469,10 +485,12 @@ public class MultiAssetPriceService extends BaseDelegateService
               final var error = GlamProtocolError.getInstance(Math.toIntExact(errorCode));
               if (error instanceof GlamProtocolError.PriceTooOld) { // 51102
                 // TODO: retry in N seconds up to X times.
+                return VaultAum.RETRY;
               } else if (error instanceof GlamProtocolError.PriceDivergenceTooLarge) {
-
+                return VaultAum.RETRY;
               } else if (error instanceof GlamProtocolError.InvalidPricingOracle) {
                 // TODO: refresh oracle caches, trigger alert.
+                logger.log(WARNING, "InvalidPricingOracle for vault state " + stateAccountKey());
               } else {
                 // 51108 GlamProtocolError.TypeCastingError
                 // TODO: trigger alert and remove vault
@@ -481,10 +499,12 @@ public class MultiAssetPriceService extends BaseDelegateService
             } catch (final RuntimeException e) {
               // TODO: trigger alert and remove vault
               logger.log(WARNING, "Error processing price vault simulation: {0}", ixError);
+              throw e;
             }
           } else {
-            // TODO: trigger alert and remove vault
+            throw new IllegalStateException("Broken simulation instruction: " + ixError);
           }
+          return null;
         } else {
           final var returnedAccounts = simulationResult.accounts();
           final var returnedAccountsMap = HashMap.<PublicKey, AccountInfo<byte[]>>newHashMap(returnedAccounts.size());
@@ -492,7 +512,6 @@ public class MultiAssetPriceService extends BaseDelegateService
             returnedAccountsMap.put(returnedAccount.pubKey(), returnedAccount);
           }
 
-          final long slot = simulationResult.context().slot();
           final var clockSysVarAccount = returnedAccountsMap.get(SolanaAccounts.MAIN_NET.clockSysVar());
           final Instant timestamp;
           if (clockSysVarAccount == null) {
@@ -501,6 +520,7 @@ public class MultiAssetPriceService extends BaseDelegateService
             final long epochSeconds = ByteUtil.getInt64LE(clockSysVarAccount.data(), 32);
             timestamp = Instant.ofEpochSecond(epochSeconds);
           }
+          final long slot = simulationResult.context().slot();
 
           final var instructions = aumTransaction.transaction().instructions();
           final var innerInstructionsArray = new InnerInstructions[instructions.size()];
@@ -547,7 +567,11 @@ public class MultiAssetPriceService extends BaseDelegateService
                 downstream.accept(baseAssetAmount);
               }
             }
-          }).findFirst().orElseThrow();
+          }).findFirst().orElse(null);
+          if (baseAssetAUM == null) {
+            logger.log(WARNING, "No AumRecord found for base asset in vault {0}", stateAccountKey());
+            return null;
+          }
           final var baseAssetMintContext = serviceContext.mintContext(stateAccount.baseAssetMint());
           final var baseAssetPrice = assetPrices.get(baseAssetMintContext.mint());
           if (baseAssetPrice == null) {
@@ -555,9 +579,9 @@ public class MultiAssetPriceService extends BaseDelegateService
             return null;
           }
           final var decimalBaseAssetAUM = baseAssetMintContext.toDecimal(baseAssetAUM);
-          final var decimalBaseAssetUSD = decimalBaseAssetAUM.multiply(baseAssetPrice).setScale(2, RoundingMode.HALF_EVEN);
-          final var stateKey = stateKey();
-          logger.log(INFO, String.format("""
+          final var decimalBaseAssetUSD = decimalBaseAssetAUM.multiply(baseAssetPrice).setScale(2, HALF_EVEN);
+          final var stateKey = stateAccountKey();
+          logger.log(DEBUG, String.format("""
                       {
                        "state": "%s",
                        "vault": "%s",
@@ -581,9 +605,13 @@ public class MultiAssetPriceService extends BaseDelegateService
           );
 
           final var aumRecord = new VaultAumRecord(
-              stateKey, timestamp, slot, supply, baseAssetAUM, decimalBaseAssetUSD
+              stateKey,
+              timestamp, slot,
+              supply, baseAssetAUM, decimalBaseAssetUSD,
+              positionReports
           );
           serviceContext.persistAumRecord(aumRecord);
+          return aumRecord;
         }
       } catch (final RuntimeException e) {
         logger.log(WARNING, "Error processing price vault simulation", e);
@@ -791,7 +819,6 @@ public class MultiAssetPriceService extends BaseDelegateService
       }
     }
     this.aumTransaction.set(null);
-    this.serviceContext.executeTask(this);
   }
 
   @Override
@@ -833,6 +860,5 @@ public class MultiAssetPriceService extends BaseDelegateService
       }
     }
     this.aumTransaction.set(null);
-    this.serviceContext.executeTask(this);
   }
 }
