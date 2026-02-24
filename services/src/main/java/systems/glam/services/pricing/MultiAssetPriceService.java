@@ -249,7 +249,7 @@ public class MultiAssetPriceService extends BaseDelegateService
     }
     final var context = account.context();
     if (context == null) {
-      throw new IllegalStateException("AccountInfo context is null" + account.pubKey());
+      throw new IllegalStateException("AccountInfo context is null " + account.pubKey());
     }
     final long slot = context.slot();
     if (Long.compareUnsigned(slot, witness.slot()) <= 0) {
@@ -480,21 +480,23 @@ public class MultiAssetPriceService extends BaseDelegateService
     return simulationResultFuture.thenApplyAsync(simulationResult -> {
       try {
         if (simulationResult.error() instanceof TransactionError.InstructionError(_, final IxError ixError)) {
+          final var stateKey = stateAccountKey();
           if (ixError instanceof IxError.Custom(final long errorCode)) {
             try {
               final var error = GlamProtocolError.getInstance(Math.toIntExact(errorCode));
               if (error instanceof GlamProtocolError.PriceTooOld) { // 51102
-                // TODO: retry in N seconds up to X times.
-                return VaultAum.RETRY;
+                return VaultAum.RETRY_STALE_ORACLE;
               } else if (error instanceof GlamProtocolError.PriceDivergenceTooLarge) {
-                return VaultAum.RETRY;
+                return VaultAum.RETRY_STALE_ORACLE;
               } else if (error instanceof GlamProtocolError.InvalidPricingOracle) {
                 // TODO: refresh oracle caches, trigger alert.
-                logger.log(WARNING, "InvalidPricingOracle for vault state " + stateAccountKey());
+                logger.log(WARNING, "InvalidPricingOracle for vault state " + stateKey);
+                return null;
               } else {
                 // 51108 GlamProtocolError.TypeCastingError
                 // TODO: trigger alert and remove vault
                 logger.log(WARNING, "Error processing price vault simulation: {0}", error);
+                return VaultAum.RETRY_STATE_CHANGE;
               }
             } catch (final RuntimeException e) {
               // TODO: trigger alert and remove vault
@@ -504,7 +506,6 @@ public class MultiAssetPriceService extends BaseDelegateService
           } else {
             throw new IllegalStateException("Broken simulation instruction: " + ixError);
           }
-          return null;
         } else {
           final var returnedAccounts = simulationResult.accounts();
           final var returnedAccountsMap = HashMap.<PublicKey, AccountInfo<byte[]>>newHashMap(returnedAccounts.size());

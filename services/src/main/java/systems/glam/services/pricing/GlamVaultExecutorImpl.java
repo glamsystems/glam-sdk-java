@@ -3,9 +3,11 @@ package systems.glam.services.pricing;
 import software.sava.rpc.json.http.client.SolanaRpcClient;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.services.pricing.accounting.VaultAum;
+import systems.glam.services.rpc.AccountFetcher;
 
 import java.time.LocalTime;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -53,12 +55,14 @@ final class GlamVaultExecutorImpl implements GlamVaultExecutor {
   public void run() {
     try {
       var results = (CompletableFuture<VaultAum>[]) new CompletableFuture[stateCache.size() << 1];
-      for (; ; ) {
+      var stateChanges = new BitSet(results.length);
+      for (; ; stateChanges.clear()) {
         waitUntil(scheduleTimeUnit, 30);
 
         final var stateContextArray = refreshStateContext();
         if (stateContextArray.length > results.length) {
           results = (CompletableFuture<VaultAum>[]) new CompletableFuture[stateContextArray.length << 1];
+          stateChanges = new BitSet(results.length);
         }
 
         waitUntil(scheduleTimeUnit, 60);
@@ -72,21 +76,66 @@ final class GlamVaultExecutorImpl implements GlamVaultExecutor {
             }
           }
 
-          int retryCount = 0;
+          int numStaleOracles = 0;
           for (int i = stateContextArray.length - 1; i >= 0; i--) {
             final var resultFuture = results[i];
             results[i] = null;
             if (resultFuture != null) {
               final var vaultAUM = resultFuture.join();
-              if (vaultAUM != VaultAum.RETRY) {
-                // TODO: Handle vaults that changed state and need accounts.
+              if (!vaultAUM.isRetryable()) {
                 stateContextArray[i] = null;
+              } else if (vaultAUM == VaultAum.RETRY_STALE_ORACLE) {
+                ++numStaleOracles;
+              } else if (vaultAUM == VaultAum.RETRY_STATE_CHANGE) {
+                stateChanges.set(i);
+              }
+            } else {
+              stateContextArray[i] = null;
+            }
+          }
+
+          final int numStateChanges = stateChanges.cardinality();
+          if (numStateChanges > 0) { // Fast retry on state changes.
+            final var stateChangeContextArray = stateChanges.stream().mapToObj(i -> stateContextArray[i]).toArray(VaultStateContext[]::new);
+            final var stateChangeResults = (CompletableFuture<VaultAum>[]) new CompletableFuture[numStateChanges];
+            refreshStateContext(stateChangeContextArray);
+            for (int i = stateChanges.nextSetBit(0), j = 0; ; ++j) {
+              final var stateContext = stateChangeContextArray[j];
+              if (stateContext != null) {
+                stateChangeResults[j] = stateContext.priceVault();
+                ++numVaults;
               } else {
-                ++retryCount;
+                stateContextArray[i] = null;
+              }
+              i = stateChanges.nextSetBit(i + 1);
+              if (i < 0) {
+                break;
+              }
+            }
+            for (int i = stateChanges.nextSetBit(0), j = 0; ; ++j) {
+              final var resultFuture = stateChangeResults[j];
+              if (resultFuture != null) {
+                final var vaultAUM = resultFuture.join();
+                if (vaultAUM != VaultAum.RETRY_STATE_CHANGE) {
+                  stateChanges.clear(i);
+                  if (!vaultAUM.isRetryable()) {
+                    stateContextArray[i] = null;
+                  } else if (vaultAUM == VaultAum.RETRY_STALE_ORACLE) {
+                    ++numStaleOracles;
+                  }
+                }
+              } else {
+                stateChanges.clear(i);
+                stateContextArray[i] = null;
+              }
+              i = stateChanges.nextSetBit(i + 1);
+              if (i < 0) {
+                break;
               }
             }
           }
-          if (retryCount == 0) {
+
+          if (numStaleOracles == 0 && stateChanges.cardinality() == 0) {
             break;
           } else if (++groupRetries > maxGroupRetries) {
             final var nonPricedVaults = Arrays.stream(stateContextArray).<String>mapMulti((vault, downstream) -> {
@@ -94,15 +143,15 @@ final class GlamVaultExecutorImpl implements GlamVaultExecutor {
                 downstream.accept(vault.stateAccountKey().toBase58());
               }
             }).collect(Collectors.joining(","));
-            logger.log(ERROR, "Giving up trying to price the following vault states: " + nonPricedVaults
-            );
+            logger.log(ERROR, "Giving up trying to price the following vault states: " + nonPricedVaults);
             break;
           } else {
             logger.log(INFO, String.format(
                     "Retrying %d out of %d vaults.",
-                    retryCount, numVaults
+                    numStaleOracles, numVaults
                 )
             );
+            Thread.sleep(2000);
           }
         }
       }
@@ -113,11 +162,17 @@ final class GlamVaultExecutorImpl implements GlamVaultExecutor {
     }
   }
 
+
   private VaultStateContext[] refreshStateContext() {
     final var stateContextArray = stateCache.stream().sorted(BY_USD_VALUE).toArray(VaultStateContext[]::new);
+    refreshStateContext(stateContextArray);
+    return stateContextArray;
+  }
+
+  private void refreshStateContext(final VaultStateContext[] stateContextArray) {
     final int numVaults = stateContextArray.length;
     if (numVaults == 0) {
-      return stateContextArray;
+      return;
     }
 
     final var stateAccountKeys = Arrays.stream(stateContextArray).map(VaultStateContext::stateAccountKey).toList();
@@ -132,7 +187,7 @@ final class GlamVaultExecutorImpl implements GlamVaultExecutor {
       int i = from;
       for (final var accountInfo : accountInfoList) {
         stateCache.acceptStateAccount(stateContextArray[i], accountInfo);
-        if (accountInfo == null) {
+        if (AccountFetcher.isNull(accountInfo)) {
           stateContextArray[i] = null;
         }
         ++i;
@@ -141,7 +196,5 @@ final class GlamVaultExecutorImpl implements GlamVaultExecutor {
         break;
       }
     }
-
-    return stateContextArray;
   }
 }

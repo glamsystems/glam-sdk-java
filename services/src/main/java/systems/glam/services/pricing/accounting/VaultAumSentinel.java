@@ -9,6 +9,11 @@ import java.time.Instant;
 final class VaultAumSentinel implements VaultAum {
 
   @Override
+  public boolean isRetryable() {
+    return true;
+  }
+
+  @Override
   public PublicKey stateKey() {
     return null;
   }
