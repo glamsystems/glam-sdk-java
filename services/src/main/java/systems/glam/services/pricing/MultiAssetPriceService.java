@@ -23,10 +23,11 @@ import systems.glam.sdk.idl.programs.glam.mint.gen.events.AumRecord;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.GlamMintEvent;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolError;
 import systems.glam.services.BaseDelegateService;
+import systems.glam.services.execution.FormatUtil;
 import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.integrations.drift.DriftUsersPosition;
 import systems.glam.services.integrations.drift.DriftVaultPositions;
-import systems.glam.services.integrations.kamino.KaminoLendingPositions;
+import systems.glam.services.integrations.kamino.KaminoPositions;
 import systems.glam.services.pricing.accounting.*;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
@@ -42,9 +43,9 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
-import static java.lang.System.Logger.Level.DEBUG;
-import static java.lang.System.Logger.Level.WARNING;
+import static java.lang.System.Logger.Level.*;
 import static java.math.RoundingMode.HALF_EVEN;
 import static systems.glam.services.pricing.accounting.TxSimulationPriceGroup.MAIN_NET_CU_LIMIT_SIMULATION;
 
@@ -56,13 +57,13 @@ public class MultiAssetPriceService extends BaseDelegateService
   private final IntegrationServiceContext serviceContext;
   private final PublicKey mintPDA;
   private final Set<PublicKey> accountsNeededSet;
-  private final Map<PublicKey, Position> positions;
+  private final Map<PublicKey, Position> positionsByExternalAccount;
   private final VaultTokensPosition vaultTokensPosition;
   private final Instruction validateAUMInstruction;
 
   private final AtomicReference<MinGlamStateAccount> stateAccount;
   private final AtomicReference<AumTransaction> aumTransaction;
-  private final AtomicReference<LookupTableAccountMeta[]> glamVaultTables;
+  private final AtomicReference<AddressLookupTable[]> glamVaultTables;
   private volatile Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap; // Reference to a shared batch of accounts.
 
   MultiAssetPriceService(final IntegrationServiceContext serviceContext,
@@ -74,7 +75,7 @@ public class MultiAssetPriceService extends BaseDelegateService
     this.serviceContext = serviceContext;
     this.mintPDA = mintPDA;
     this.accountsNeededSet = accountsNeededSet;
-    this.positions = HashMap.newHashMap(stateAccount.numAccounts());
+    this.positionsByExternalAccount = HashMap.newHashMap(stateAccount.numAccounts());
     this.vaultTokensPosition = new VaultTokensPosition(stateAccount.assets().length);
     this.stateAccount = new AtomicReference<>(stateAccount);
     this.aumTransaction = new AtomicReference<>(null);
@@ -97,8 +98,8 @@ public class MultiAssetPriceService extends BaseDelegateService
   }
 
   private boolean isKVaultTokenAccount(final PublicKey account) {
-    final var position = this.positions.get(account);
-    if (position instanceof KaminoLendingPositions kaminoPositions) {
+    final var position = this.positionsByExternalAccount.get(account);
+    if (position instanceof KaminoPositions kaminoPositions) {
       return kaminoPositions.isVaultTokenAccount(account);
     } else {
       return false;
@@ -114,7 +115,7 @@ public class MultiAssetPriceService extends BaseDelegateService
         final var kaminoPositions = kaminoPositions();
         final var tokenAccountKey = accountInfo.pubKey();
         kaminoPositions.addVaultTokenAccount(tokenAccountKey, kVaultContext);
-        this.positions.put(tokenAccountKey, kaminoPositions);
+        this.positionsByExternalAccount.put(tokenAccountKey, kaminoPositions);
         this.accountsNeededSet.remove(tokenAccountKey);
         final var vaultTable = kVaultContext.vaultLookupTable();
         if (vaultTable != null) {
@@ -189,29 +190,31 @@ public class MultiAssetPriceService extends BaseDelegateService
 
     // Remove Old Positions
     final var externalPositions = stateAccount.externalPositions();
-    for (final var positionKey : this.positions.keySet()) {
+    for (final var positionKey : this.positionsByExternalAccount.keySet()) {
       if (Arrays.binarySearch(externalPositions, positionKey) < 0) {
         this.accountsNeededSet.remove(positionKey);
         // TODO: Remove upstream accounts.
-        final var position = this.positions.remove(positionKey);
+        final var position = this.positionsByExternalAccount.remove(positionKey);
         position.removeAccount(positionKey);
       }
     }
 
     // Add New Positions
     for (final var externalAccount : stateAccount.externalPositions()) {
-      if (!this.positions.containsKey(externalAccount)) {
+      if (!this.positionsByExternalAccount.containsKey(externalAccount)) {
         if (this.accountsNeededSet.add(externalAccount)) {
           stateChange = StateChange.ACCOUNTS_NEEDED;
         } else {
           final var accountInfo = accountsNeededMap.get(externalAccount);
           if (accountInfo == null) {
-            throw new IllegalStateException("Account not found for external account: " + externalAccount);
-          }
-          final var positionChangeState = createPosition(accountInfo);
-          stateChange = stateChange.escalate(positionChangeState);
-          if (stateChange == StateChange.UNSUPPORTED) {
-            return StateChange.UNSUPPORTED;
+            stateChange = StateChange.ACCOUNTS_NEEDED;
+            logger.log(WARNING, "Race condition for vault " + stateAccountKey());
+          } else {
+            final var positionChangeState = createPosition(accountInfo);
+            stateChange = stateChange.escalate(positionChangeState);
+            if (stateChange == StateChange.UNSUPPORTED) {
+              return StateChange.UNSUPPORTED;
+            }
           }
         }
       }
@@ -224,7 +227,7 @@ public class MultiAssetPriceService extends BaseDelegateService
   public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
     final var accountInfo = accountMap.get(stateAccountKey());
     if (AccountFetcher.isNull(accountInfo)) {
-      this.stateAccount.set(null);
+      clearState();
     } else {
       this.accountsNeededMap = accountMap;
       stateChange(accountInfo, true);
@@ -287,6 +290,7 @@ public class MultiAssetPriceService extends BaseDelegateService
     this.vaultTokensPosition.clear();
     this.glamVaultTables.set(null);
     this.aumTransaction.set(null);
+    this.positionsByExternalAccount.clear();
   }
 
   @Override
@@ -296,6 +300,7 @@ public class MultiAssetPriceService extends BaseDelegateService
       if (stateAccount == null) {
         return;
       }
+
       final var accountsNeededMap = this.accountsNeededMap;
       if (accountsNeededMap == null) {
         return;
@@ -358,7 +363,7 @@ public class MultiAssetPriceService extends BaseDelegateService
 
   private void prepareAUMTransaction(final MinGlamStateAccount stateAccount,
                                      final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap) {
-    final var positions = List.copyOf(this.positions.values());
+    final var positions = this.positionsByExternalAccount.values().stream().distinct().toList();
     final var instructions = new ArrayList<Instruction>(2 + (positions.size() << 2));
     instructions.add(MAIN_NET_CU_LIMIT_SIMULATION);
 
@@ -424,27 +429,46 @@ public class MultiAssetPriceService extends BaseDelegateService
     }
 
     final var tableAccounts = createTableMetaArray(stateAccount, accountsNeededMap);
-    final var transaction = Transaction.createTx(glamAccountClient.feePayer(), instructions, tableAccounts);
-    if (transaction.size() > Transaction.MAX_SERIALIZED_LENGTH) {
-      logger.log(WARNING,
-          "Transaction size {0} exceeds maximum allowed {1}. State {2}",
-          transaction.size(), Transaction.MAX_SERIALIZED_LENGTH, stateAccountKey()
+    try {
+      final var transaction = Transaction.createTx(glamAccountClient.feePayer(), instructions, tableAccounts);
+      if (transaction.size() > Transaction.MAX_SERIALIZED_LENGTH) {
+        logger.log(WARNING,
+            "Transaction size {0} exceeds maximum allowed {1}. State {2}",
+            transaction.size(), Transaction.MAX_SERIALIZED_LENGTH, stateAccountKey()
+        );
+        clearState();
+        return;
+      }
+      final var base64Encoded = transaction.base64EncodeToString();
+      if (base64Encoded.length() > Transaction.MAX_BASE_64_ENCODED_LENGTH) {
+        logger.log(WARNING,
+            "Transaction base64 encoded length {0} exceeds maximum allowed {1}. State {2}",
+            base64Encoded.length(), Transaction.MAX_BASE_64_ENCODED_LENGTH, stateAccountKey()
+        );
+        clearState();
+        return;
+      }
+
+      final var returnAccounts = List.copyOf(returnAccountsSet);
+      final var aumTransaction = new AumTransaction(stateAccount, positions, transaction, base64Encoded, returnAccounts);
+      this.aumTransaction.set(aumTransaction);
+    } catch (final RuntimeException e) {
+      logger.log(ERROR, String.format("""
+                  {
+                   "event": "Failed to serialize transaction",
+                   "state": "%s",
+                   "ix": [%s],
+                   "tables": [%s]
+                  }""",
+              stateAccountKey(),
+              FormatUtil.formatInstructions(instructions),
+              Arrays.stream(tableAccounts)
+                  .map(accountMeta -> accountMeta.lookupTable().address().toBase58())
+                  .collect(Collectors.joining("\",\"", "\"", "\""))
+          ), e
       );
       clearState();
-      return;
     }
-    final var base64Encoded = transaction.base64EncodeToString();
-    if (base64Encoded.length() > Transaction.MAX_BASE_64_ENCODED_LENGTH) {
-      logger.log(WARNING,
-          "Transaction base64 encoded length {0} exceeds maximum allowed {1}. State {2}",
-          base64Encoded.length(), Transaction.MAX_BASE_64_ENCODED_LENGTH, stateAccountKey()
-      );
-      clearState();
-      return;
-    }
-    final var returnAccounts = List.copyOf(returnAccountsSet);
-    final var aumTransaction = new AumTransaction(stateAccount, positions, transaction, base64Encoded, returnAccounts);
-    this.aumTransaction.set(aumTransaction);
   }
 
   @Override
@@ -479,7 +503,9 @@ public class MultiAssetPriceService extends BaseDelegateService
     );
     return simulationResultFuture.thenApplyAsync(simulationResult -> {
       try {
-        if (simulationResult.error() instanceof TransactionError.InstructionError(_, final IxError ixError)) {
+        if (simulationResult.error() instanceof TransactionError.InstructionError(
+            final int ixIndex, final IxError ixError
+        )) {
           final var stateKey = stateAccountKey();
           if (ixError instanceof IxError.Custom(final long errorCode)) {
             try {
@@ -495,7 +521,22 @@ public class MultiAssetPriceService extends BaseDelegateService
               } else {
                 // 51108 GlamProtocolError.TypeCastingError
                 // TODO: trigger alert and remove vault
-                logger.log(WARNING, "Error processing price vault simulation: {0}", error);
+                logger.log(WARNING, String.format("""
+                            {
+                             "stateKey": "%s",
+                             "ixIndex": %d,
+                             "error": "%s",
+                             "logs": [%s
+                             ],
+                             "tx": "%s"
+                            }""",
+                        stateKey,
+                        ixIndex,
+                        error,
+                        FormatUtil.formatLogs(simulationResult.logs()),
+                        aumTransaction.base64Encoded()
+                    )
+                );
                 return VaultAum.RETRY_STATE_CHANGE;
               }
             } catch (final RuntimeException e) {
@@ -529,7 +570,7 @@ public class MultiAssetPriceService extends BaseDelegateService
             innerInstructionsArray[innerInstructions.index()] = innerInstructions;
           }
           final var mintProgram = glamAccountClient.glamAccounts().mintProgram();
-          final var positionReports = new ArrayList<AggregatePositionReport>(1 + positions.size());
+          final var positionReports = new ArrayList<AggregatePositionReport>(1 + positionsByExternalAccount.size());
           final var stateAccount = aumTransaction.stateAccount();
           final var assetPrices = HashMap.<PublicKey, BigDecimal>newHashMap(stateAccount.numAssets() + 1);
 
@@ -624,7 +665,7 @@ public class MultiAssetPriceService extends BaseDelegateService
   }
 
   private DriftUsersPosition driftUserPosition() {
-    for (final var position : positions.values()) {
+    for (final var position : positionsByExternalAccount.values()) {
       if (position instanceof DriftUsersPosition driftPosition) {
         return driftPosition;
       }
@@ -638,7 +679,7 @@ public class MultiAssetPriceService extends BaseDelegateService
       final var userKey = accountInfo.pubKey();
       final var driftPosition = driftUserPosition();
       driftPosition.addAccount(userKey);
-      positions.put(userKey, driftPosition);
+      positionsByExternalAccount.put(userKey, driftPosition);
       return StateChange.NEW_POSITION;
     } else {
       final var msg = String.format("""
@@ -655,7 +696,7 @@ public class MultiAssetPriceService extends BaseDelegateService
   }
 
   private DriftVaultPositions driftVaultsPosition() {
-    for (final var position : positions.values()) {
+    for (final var position : positionsByExternalAccount.values()) {
       if (position instanceof DriftVaultPositions driftVaultPositions) {
         return driftVaultPositions;
       }
@@ -671,7 +712,7 @@ public class MultiAssetPriceService extends BaseDelegateService
       final var vaultPositions = driftVaultsPosition();
       final var vaultUserKey = vaultPositions.addDepositor(serviceContext.driftAccounts(), vaultDepositor, vaultKey);
       this.accountsNeededSet.add(vaultUserKey);
-      this.positions.put(vaultDepositor, vaultPositions);
+      this.positionsByExternalAccount.put(vaultDepositor, vaultPositions);
       this.accountsNeededSet.remove(vaultDepositor);
       return StateChange.ACCOUNTS_NEEDED;
     } else {
@@ -688,13 +729,13 @@ public class MultiAssetPriceService extends BaseDelegateService
     }
   }
 
-  private KaminoLendingPositions kaminoPositions() {
-    for (final var position : positions.values()) {
-      if (position instanceof KaminoLendingPositions kLendPositions) {
+  private KaminoPositions kaminoPositions() {
+    for (final var position : positionsByExternalAccount.values()) {
+      if (position instanceof KaminoPositions kLendPositions) {
         return kLendPositions;
       }
     }
-    return new KaminoLendingPositions(serviceContext.kaminoAccounts());
+    return new KaminoPositions(serviceContext.kaminoAccounts());
   }
 
   private StateChange createKaminoLendPosition(final AccountInfo<byte[]> accountInfo) {
@@ -702,7 +743,7 @@ public class MultiAssetPriceService extends BaseDelegateService
     if (Obligation.BYTES == data.length && Obligation.DISCRIMINATOR.equals(data, 0)) {
       final var kLendPosition = kaminoPositions();
       kLendPosition.addObligation(accountInfo.pubKey());
-      positions.put(accountInfo.pubKey(), kLendPosition);
+      positionsByExternalAccount.put(accountInfo.pubKey(), kLendPosition);
       return StateChange.NEW_POSITION;
     } else {
       final var msg = String.format("""
@@ -731,14 +772,14 @@ public class MultiAssetPriceService extends BaseDelegateService
 
     final var glamTables = glamVaultTables.get();
     final LookupTableAccountMeta[] tableMetas;
-    int i;
+    int i = 0;
     if (glamTables == null) {
-      i = 0;
       tableMetas = new LookupTableAccountMeta[driftTableKeys.size() + 1 + numKVaults];
     } else {
-      i = glamTables.length;
-      tableMetas = new LookupTableAccountMeta[i + driftTableKeys.size() + 1 + numKVaults];
-      System.arraycopy(glamTables, 0, tableMetas, 0, i);
+      tableMetas = new LookupTableAccountMeta[glamTables.length + driftTableKeys.size() + 1 + numKVaults];
+      for (; i < glamTables.length; ++i) {
+        tableMetas[i] = LookupTableAccountMeta.createMeta(glamTables[i], Transaction.MAX_ACCOUNTS);
+      }
     }
 
     final var tableCache = serviceContext.integTableCache();
@@ -752,8 +793,8 @@ public class MultiAssetPriceService extends BaseDelegateService
     tableMetas[i++] = LookupTableAccountMeta.createMeta(table, Transaction.MAX_ACCOUNTS);
 
     for (final var externalAccount : stateAccount.externalPositions()) {
-      final var position = this.positions.get(externalAccount);
-      if (position instanceof KaminoLendingPositions kaminoPositions) {
+      final var position = this.positionsByExternalAccount.get(externalAccount);
+      if (position instanceof KaminoPositions kaminoPositions) {
         final var mint = kaminoPositions.sharesMint(externalAccount);
         if (mint == null) {
           continue;
@@ -791,7 +832,7 @@ public class MultiAssetPriceService extends BaseDelegateService
       if (witness == null) {
         return;
       } else if (witness.length == 1) {
-        if (!witness[0].lookupTable().address().equals(tableKey)) {
+        if (!witness[0].address().equals(tableKey)) {
           return;
         }
         if (this.glamVaultTables.compareAndSet(witness, null)) {
@@ -799,8 +840,8 @@ public class MultiAssetPriceService extends BaseDelegateService
         }
       } else {
         for (int i = 0; i < witness.length; i++) {
-          if (witness[i].lookupTable().address().equals(tableKey)) {
-            final var newArray = new LookupTableAccountMeta[witness.length - 1];
+          if (witness[i].address().equals(tableKey)) {
+            final var newArray = new AddressLookupTable[witness.length - 1];
             if (i == 0) {
               System.arraycopy(witness, 1, newArray, 0, witness.length - 1);
             } else {
@@ -824,27 +865,25 @@ public class MultiAssetPriceService extends BaseDelegateService
 
   @Override
   public void glamVaultTableUpdate(final AddressLookupTable addressLookupTable) {
-    final var tableMeta = LookupTableAccountMeta.createMeta(addressLookupTable, Transaction.MAX_ACCOUNTS);
     final var tableKey = addressLookupTable.address();
     SPIN_LOOP:
     for (; ; ) {
       final var witness = this.glamVaultTables.get();
       if (witness == null) {
-        if (this.glamVaultTables.compareAndSet(null, new LookupTableAccountMeta[]{tableMeta})) {
+        if (this.glamVaultTables.compareAndSet(null, new AddressLookupTable[]{addressLookupTable})) {
           break;
         }
       } else {
         final int numAccounts = addressLookupTable.numUniqueAccounts();
         for (int i = 0; i < witness.length; i++) {
-          final var previous = witness[i];
-          final var previousTable = previous.lookupTable();
+          final var previousTable = witness[i];
           if (previousTable.address().equals(tableKey)) {
             if (numAccounts <= previousTable.numAccounts()) {
               return; // Assume stale view
             }
-            final var newArray = new LookupTableAccountMeta[witness.length];
+            final var newArray = new AddressLookupTable[witness.length];
             System.arraycopy(witness, 0, newArray, 0, witness.length);
-            newArray[i] = tableMeta;
+            newArray[i] = addressLookupTable;
             if (this.glamVaultTables.compareAndSet(witness, newArray)) {
               break SPIN_LOOP;
             } else {
@@ -852,9 +891,9 @@ public class MultiAssetPriceService extends BaseDelegateService
             }
           }
         }
-        final var newArray = new LookupTableAccountMeta[witness.length + 1];
+        final var newArray = new AddressLookupTable[witness.length + 1];
         System.arraycopy(witness, 0, newArray, 0, witness.length);
-        newArray[witness.length] = tableMeta;
+        newArray[witness.length] = addressLookupTable;
         if (this.glamVaultTables.compareAndSet(witness, newArray)) {
           break;
         }

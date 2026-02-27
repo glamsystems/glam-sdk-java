@@ -8,6 +8,9 @@ import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.GlamMintEvent;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.PricedProtocolRecord;
 import systems.glam.services.integrations.IntegrationServiceContext;
+import systems.glam.services.integrations.drift.DriftUsersPosition;
+import systems.glam.services.integrations.drift.DriftVaultPositions;
+import systems.glam.services.integrations.kamino.KaminoPositions;
 import systems.glam.services.state.MinGlamStateAccount;
 
 import java.math.BigDecimal;
@@ -17,7 +20,11 @@ import java.util.Map;
 import java.util.SequencedCollection;
 import java.util.Set;
 
-public interface Position {
+public sealed interface Position permits
+    DriftUsersPosition,
+    DriftVaultPositions,
+    KaminoPositions,
+    VaultTokensPosition {
 
   void removeAccount(final PublicKey account);
 

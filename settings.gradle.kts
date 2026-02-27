@@ -21,12 +21,12 @@ pluginManagement {
         }
       }
     }
-//  includeBuild("../sava-build")
+  // includeBuild("../sava-build")
   }
 }
 
 plugins {
-  id("software.sava.build") version "21.3.4"
+  id("software.sava.build") version "21.3.6"
 }
 
 javaModules {

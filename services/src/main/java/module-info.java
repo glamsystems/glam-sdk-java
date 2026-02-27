@@ -33,23 +33,23 @@ module systems.glam.services {
   uses SqlDataSource.Factory;
   provides SqlDataSource.Factory with PostgresDataSourceFactory;
 
+  exports systems.glam.services.db.sql;
   exports systems.glam.services.db;
   exports systems.glam.services.config;
   exports systems.glam.services.execution;
-  exports systems.glam.services.fulfillment.config;
   exports systems.glam.services.fulfillment.accounting;
+  exports systems.glam.services.fulfillment.config;
   exports systems.glam.services.fulfillment;
-  exports systems.glam.services.io;
   exports systems.glam.services.integrations.drift;
   exports systems.glam.services.integrations.kamino;
   exports systems.glam.services.integrations;
+  exports systems.glam.services.io;
   exports systems.glam.services.mints;
-  exports systems.glam.services.oracles.scope;
   exports systems.glam.services.oracles.scope.parsers;
+  exports systems.glam.services.oracles.scope;
   exports systems.glam.services.pricing.accounting;
   exports systems.glam.services.pricing;
-  exports systems.glam.services.db.sql;
   exports systems.glam.services.rpc;
-  exports systems.glam.services;
   exports systems.glam.services.state;
+  exports systems.glam.services;
 }

@@ -89,8 +89,8 @@ public final class DriftUsersPosition implements Position {
     }
 
     for (int i = 0, offset = User.PERP_POSITIONS_OFFSET; i < User.PERP_POSITIONS_LEN; ++i, offset += PerpPosition.BYTES) {
-      final long baseAssetAmount = ByteUtil.getInt64LE(data, offset + PerpPosition.BASE_ASSET_AMOUNT_OFFSET);
-      if (baseAssetAmount != 0) {
+      final long quoteAssetAmount = ByteUtil.getInt64LE(data, offset + PerpPosition.QUOTE_ASSET_AMOUNT_OFFSET);
+      if (quoteAssetAmount != 0) {
         final var marketIndex = ByteUtil.getInt16LE(data, offset + PerpPosition.MARKET_INDEX_OFFSET);
         final var marketContext = driftMarketCache.perpMarket(marketIndex);
         if (marketContext == null) {

@@ -30,8 +30,8 @@ public final class FormatUtil {
         .collect(Collectors.joining("\",\""));
   }
 
-  private static String formatInstructions(final List<Instruction> instructions) {
-    return instructions.stream().map(ix -> String.format("""
+  public static String formatInstruction(final Instruction ix) {
+    return String.format("""
             {
               "p": "%s",
               "a": ["%s"],
@@ -40,7 +40,11 @@ public final class FormatUtil {
         ix.programId().publicKey(),
         formatAccounts(ix),
         Base64.getEncoder().encodeToString(ix.data())
-    )).collect(Collectors.joining(",\n"));
+    );
+  }
+
+  public static String formatInstructions(final List<Instruction> instructions) {
+    return instructions.stream().map(FormatUtil::formatInstruction).collect(Collectors.joining(",\n"));
   }
 
   public static String formatInstructionException(final String event,

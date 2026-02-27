@@ -5,7 +5,6 @@ import systems.comodal.jsoniter.JsonIterator;
 
 import java.util.Locale;
 
-import static systems.comodal.jsoniter.JsonIterator.fieldEquals;
 import static systems.comodal.jsoniter.JsonIterator.fieldEqualsIgnoreCase;
 
 public record DatasourceConfig(DatasourceType type,

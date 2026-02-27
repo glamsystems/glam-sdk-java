@@ -21,13 +21,13 @@ import systems.glam.services.state.MinGlamStateAccount;
 import java.math.BigDecimal;
 import java.util.*;
 
-public final class KaminoLendingPositions implements Position {
+public final class KaminoPositions implements Position {
 
   private final Instruction refreshReserveBatchIx;
   private final Map<PublicKey, AccountMeta> obligationAccounts;
   private final Map<PublicKey, AccountMeta> vaultTokenAccounts;
 
-  public KaminoLendingPositions(final KaminoAccounts kaminoAccounts) {
+  public KaminoPositions(final KaminoAccounts kaminoAccounts) {
     this.refreshReserveBatchIx = KaminoLendingProgram.refreshReservesBatch(kaminoAccounts.invokedKLendProgram(), false);
     this.obligationAccounts = new HashMap<>();
     this.vaultTokenAccounts = new HashMap<>();

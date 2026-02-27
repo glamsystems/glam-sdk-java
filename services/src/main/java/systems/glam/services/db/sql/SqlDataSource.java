@@ -53,7 +53,7 @@ public interface SqlDataSource extends DataSource, DataSourceHelper {
     // IDLE_TIMEOUT = MINUTES.toMillis(10);
     hikariDataSource.setIdleTimeout(MINUTES.toMillis(5));
     // DEFAULT_KEEPALIVE_TIME = 0L;
-    hikariDataSource.setKeepaliveTime(SECONDS.toMillis(15));
+    hikariDataSource.setKeepaliveTime(SECONDS.toMillis(30));
     // MAX_LIFETIME = MINUTES.toMillis(30);
     hikariDataSource.setMaxLifetime(MINUTES.toMillis(60));
     // DEFAULT_POOL_SIZE = 10;

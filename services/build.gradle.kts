@@ -7,10 +7,10 @@ dependencies {
   project(":sdk")
 }
 
-dependencyAnalysis {
-  issues {
-    onAny {
-      severity("ignore")
-    }
-  }
-}
+//dependencyAnalysis {
+//  issues {
+//    onAny {
+//      severity("ignore")
+//    }
+//  }
+//}
