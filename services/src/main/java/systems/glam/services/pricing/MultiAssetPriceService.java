@@ -5,6 +5,7 @@ import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.lookup.AddressLookupTable;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.accounts.meta.LookupTableAccountMeta;
+import software.sava.core.accounts.token.TokenAccount;
 import software.sava.core.encoding.ByteUtil;
 import software.sava.core.tx.Instruction;
 import software.sava.core.tx.Transaction;
@@ -19,6 +20,7 @@ import software.sava.rpc.json.http.response.IxError;
 import software.sava.rpc.json.http.response.TransactionError;
 import software.sava.services.core.request_capacity.context.CallContext;
 import systems.glam.sdk.GlamAccountClient;
+import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintProgram;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.AumRecord;
 import systems.glam.sdk.idl.programs.glam.mint.gen.events.GlamMintEvent;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolError;
@@ -28,6 +30,7 @@ import systems.glam.services.integrations.IntegrationServiceContext;
 import systems.glam.services.integrations.drift.DriftUsersPosition;
 import systems.glam.services.integrations.drift.DriftVaultPositions;
 import systems.glam.services.integrations.kamino.KaminoPositions;
+import systems.glam.services.integrations.kamino.KaminoVaultContext;
 import systems.glam.services.pricing.accounting.*;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
@@ -90,6 +93,7 @@ public class MultiAssetPriceService extends BaseDelegateService
     UNSUPPORTED,
     ACCOUNTS_NEEDED,
     NEW_POSITION,
+    REMOVED_POSITION,
     NO_CHANGE;
 
     StateChange escalate(final StateChange stateChange) {
@@ -106,9 +110,14 @@ public class MultiAssetPriceService extends BaseDelegateService
     }
   }
 
+  @Override
+  public void onKaminoVaultChange(final KaminoVaultContext vaultContext) {
+    this.aumTransaction.set(null);
+  }
+
   private StateChange createPosition(final AccountInfo<byte[]> accountInfo) {
     if (serviceContext.isTokenAccount(accountInfo)) {
-      final var mint = PublicKey.readPubKey(accountInfo.data(), 0);
+      final var mint = PublicKey.readPubKey(accountInfo.data(), TokenAccount.MINT_OFFSET);
       final var kVaultCache = serviceContext.kaminoCache();
       final var kVaultContext = kVaultCache.vaultForShareMint(mint);
       if (kVaultContext != null) {
@@ -126,8 +135,10 @@ public class MultiAssetPriceService extends BaseDelegateService
             return StateChange.ACCOUNTS_NEEDED;
           }
         }
+        kVaultCache.subscribeToVaultChanges(mint, this);
         return StateChange.NEW_POSITION;
       } else {
+        // If the cache is stale, it will eventually be updated and this vault will be retried.
         logger.log(WARNING, "Unsupported Kamino Vault Mint? {0}", mint);
         return StateChange.UNSUPPORTED;
       }
@@ -149,22 +160,22 @@ public class MultiAssetPriceService extends BaseDelegateService
   /**
    * Registers the Mint to be fetched if it does not exist in the MintCache.
    * Otherwise, derives the Vaults token account and ensures the mint is no longer fetched.
+   *
    */
-  private void putTokenPosition(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap,
-                                final PublicKey assetMint) {
+  private StateChange putTokenPosition(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap,
+                                       final PublicKey assetMint) {
     var mintContext = this.serviceContext.mintContext(assetMint);
     if (mintContext == null) {
       final var mintAccountInfo = accountsNeededMap.get(assetMint);
       if (mintAccountInfo == null) {
-        this.accountsNeededSet.add(assetMint);
-        return;
+        return StateChange.ACCOUNTS_NEEDED;
       }
       mintContext = this.serviceContext.setMintContext(mintAccountInfo);
     }
     final var vaultATA = this.glamAccountClient.findATA(mintContext.tokenProgram(), mintContext.mint()).publicKey();
     this.vaultTokensPosition.addVaultATA(assetMint, vaultATA);
-    this.accountsNeededSet.add(vaultATA);
     this.accountsNeededSet.remove(assetMint);
+    return StateChange.NEW_POSITION;
   }
 
   private StateChange stateAccountChanged(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap,
@@ -180,13 +191,14 @@ public class MultiAssetPriceService extends BaseDelegateService
             return StateChange.UNSUPPORTED;
           }
         }
-        putTokenPosition(accountsNeededMap, assetMint);
-        stateChange = StateChange.ACCOUNTS_NEEDED; // Either a new Mint or ATA needs to be fetched.
+        stateChange.escalate(putTokenPosition(accountsNeededMap, assetMint));
       }
     }
 
     // Remove Old Assets
-    this.vaultTokensPosition.removeOldAccounts(stateAccount, this.accountsNeededSet);
+    if (this.vaultTokensPosition.removeOldAccounts(stateAccount, this.accountsNeededSet) > 0) {
+      stateChange.escalate(StateChange.REMOVED_POSITION);
+    }
 
     // Remove Old Positions
     final var externalPositions = stateAccount.externalPositions();
@@ -195,7 +207,16 @@ public class MultiAssetPriceService extends BaseDelegateService
         this.accountsNeededSet.remove(positionKey);
         // TODO: Remove upstream accounts.
         final var position = this.positionsByExternalAccount.remove(positionKey);
-        position.removeAccount(positionKey);
+
+        if (position instanceof KaminoPositions kaminoPositions) {
+          final var kVaultMint = kaminoPositions.removeAccountReturnMint(positionKey);
+          if (kVaultMint != null) {
+            serviceContext.kaminoCache().unSubscribeToVaultChanges(kVaultMint, this);
+          }
+        } else {
+          position.removeAccount(positionKey);
+        }
+        stateChange.escalate(StateChange.REMOVED_POSITION);
       }
     }
 
@@ -304,7 +325,11 @@ public class MultiAssetPriceService extends BaseDelegateService
       final var accountsNeededMap = this.accountsNeededMap;
       if (accountsNeededMap == null) {
         return;
+      } else if (!accountsNeededMap.isEmpty()) {
+        // TODO: track latest accountsNeededMap slot. and break out if not greater than.
+
       }
+
       final var stateChange = stateAccountChanged(accountsNeededMap, stateAccount);
       switch (stateChange) {
         case UNSUPPORTED -> clearState();
@@ -313,9 +338,12 @@ public class MultiAssetPriceService extends BaseDelegateService
           serviceContext.queue(accountsNeededSet, this);
           persist(stateAccount);
         }
-        case NEW_POSITION -> prepareAUMTransaction(stateAccount, accountsNeededMap);
+        case NEW_POSITION, REMOVED_POSITION -> {
+          this.aumTransaction.set(null);
+          prepareAUMTransaction(stateAccount, accountsNeededMap);
+        }
         case NO_CHANGE -> {
-          if (this.aumTransaction.get() == null) { // Happens the first time an ATA is retrieved.
+          if (this.aumTransaction.get() == null) {
             prepareAUMTransaction(stateAccount, accountsNeededMap);
           }
         }
@@ -363,6 +391,11 @@ public class MultiAssetPriceService extends BaseDelegateService
 
   private void prepareAUMTransaction(final MinGlamStateAccount stateAccount,
                                      final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap) {
+    for (final var accountNeeded : this.accountsNeededSet) {
+      if (!accountsNeededMap.containsKey(accountNeeded)) {
+        return;
+      }
+    }
     final var positions = this.positionsByExternalAccount.values().stream().distinct().toList();
     final var instructions = new ArrayList<Instruction>(2 + (positions.size() << 2));
     instructions.add(MAIN_NET_CU_LIMIT_SIMULATION);
@@ -510,34 +543,51 @@ public class MultiAssetPriceService extends BaseDelegateService
           if (ixError instanceof IxError.Custom(final long errorCode)) {
             try {
               final var error = GlamProtocolError.getInstance(Math.toIntExact(errorCode));
-              if (error instanceof GlamProtocolError.PriceTooOld) { // 51102
-                return VaultAum.RETRY_STALE_ORACLE;
-              } else if (error instanceof GlamProtocolError.PriceDivergenceTooLarge) {
-                return VaultAum.RETRY_STALE_ORACLE;
-              } else if (error instanceof GlamProtocolError.InvalidPricingOracle) {
-                // TODO: refresh oracle caches, trigger alert.
-                logger.log(WARNING, "InvalidPricingOracle for vault state " + stateKey);
-                return null;
-              } else {
-                // 51108 GlamProtocolError.TypeCastingError
-                // TODO: trigger alert and remove vault
-                logger.log(WARNING, String.format("""
-                            {
-                             "stateKey": "%s",
-                             "ixIndex": %d,
-                             "error": "%s",
-                             "logs": [%s
-                             ],
-                             "tx": "%s"
-                            }""",
-                        stateKey,
-                        ixIndex,
-                        error,
-                        FormatUtil.formatLogs(simulationResult.logs()),
-                        aumTransaction.base64Encoded()
-                    )
-                );
-                return VaultAum.RETRY_STATE_CHANGE;
+              switch (error) {
+                case GlamProtocolError.PriceTooOld priceTooOld -> {
+                  return VaultAum.RETRY_STALE_ORACLE;  // 51102
+                }
+                case GlamProtocolError.PriceDivergenceTooLarge priceDivergenceTooLarge -> {
+                  return VaultAum.RETRY_STALE_ORACLE;
+                }
+                case GlamProtocolError.InvalidPricingOracle invalidPricingOracle -> {
+                  this.aumTransaction.set(null);
+                  // TODO: refresh oracle caches, trigger alert.
+                  logger.log(WARNING, "InvalidPricingOracle for vault state " + stateKey);
+                  return null;
+                }
+                case null, default -> {
+                  this.aumTransaction.set(null);
+                  // 51108 GlamProtocolError.TypeCastingError
+                  // TODO: trigger alert and remove vault
+                  logger.log(WARNING, String.format("""
+                              {
+                               "stateKey": "%s",
+                               "ixIndex": %d,
+                               "error": "%s",
+                               "logs": [%s
+                               ],
+                               "tx": "%s"
+                              }""",
+                          stateKey,
+                          ixIndex,
+                          error,
+                          FormatUtil.formatLogs(simulationResult.logs()),
+                          aumTransaction.base64Encoded()
+                      )
+                  );
+                  final var instruction = aumTransaction.transaction().instructions().get(ixIndex);
+                  final var program = instruction.programId().publicKey();
+                  final var glamMintProgram = glamAccountClient.glamAccounts().mintProgram();
+                  if (program.equals(glamMintProgram)) {
+                    final byte[] ixData = instruction.data();
+                    if (GlamMintProgram.PRICE_KAMINO_VAULT_SHARES_DISCRIMINATOR.equals(ixData, 0)) {
+                      final var kaminoPositions = kaminoPositions();
+                      kaminoPositions.invalidateVaults(serviceContext.kaminoCache());
+                    }
+                  }
+                  return null;
+                }
               }
             } catch (final RuntimeException e) {
               // TODO: trigger alert and remove vault
@@ -825,7 +875,7 @@ public class MultiAssetPriceService extends BaseDelegateService
   }
 
   @Override
-  public void removeTable(final PublicKey tableKey) {
+  public void removeGlamVaultTable(final PublicKey tableKey) {
     SPIN_LOOP:
     for (; ; ) {
       final var witness = this.glamVaultTables.get();

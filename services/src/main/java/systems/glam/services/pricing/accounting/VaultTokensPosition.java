@@ -57,7 +57,8 @@ public final class VaultTokensPosition implements Position {
     vaultATAMap.remove(account);
   }
 
-  public void removeOldAccounts(final MinGlamStateAccount stateAccount, final Set<PublicKey> accountsNeededSet) {
+  public int removeOldAccounts(final MinGlamStateAccount stateAccount, final Set<PublicKey> accountsNeededSet) {
+    int numRemoved = 0;
     if (vaultATAMap.size() > stateAccount.numAssets()) {
       final var iterator = vaultATAMap.entrySet().iterator();
       while (iterator.hasNext()) {
@@ -67,9 +68,11 @@ public final class VaultTokensPosition implements Position {
           accountsNeededSet.remove(mint);
           accountsNeededSet.remove(entry.getValue().publicKey());
           iterator.remove();
+          ++numRemoved;
         }
       }
     }
+    return numRemoved;
   }
 
   public void clear() {

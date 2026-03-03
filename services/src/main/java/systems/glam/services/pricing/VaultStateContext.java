@@ -21,7 +21,7 @@ public interface VaultStateContext {
    */
   boolean stateChange(final AccountInfo<byte[]> account);
 
-  void removeTable(final PublicKey tableKey);
+  void removeGlamVaultTable(final PublicKey tableKey);
 
   void glamVaultTableUpdate(final AddressLookupTable addressLookupTable);
 

@@ -238,7 +238,7 @@ public final class ServiceContextImpl implements ServiceContext {
 
   @Override
   public Path resolveGlamStateFilePath(final PublicKey glamStateKey) {
-    return FileUtils.resolveAccountPath(accountsCacheDirectory, glamStateKey);
+    return FileUtils.resolveAccountPath(glamMinStateAccountCacheDirectory, glamStateKey);
   }
 
   @Override

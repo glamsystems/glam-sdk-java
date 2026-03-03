@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS vault_positions
 (
     state_key   BYTEA                    NOT NULL CHECK (octet_length(state_key) = 32),
     timestamp   TIMESTAMP WITH TIME ZONE NOT NULL,
-    account     BYTEA                    NOT NULL CHECK (octet_length(state_key) = 32),
+    account     BYTEA                    NOT NULL CHECK (octet_length(account) = 32),
     slot        BIGINT                   NOT NULL CHECK (slot > 0),
     type        vault_positions_type     NOT NULL,
     mint_owner  BYTEA,

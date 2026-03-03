@@ -18,6 +18,8 @@ import systems.glam.services.io.FileUtils;
 import systems.glam.services.oracles.scope.FeedIndexes;
 import systems.glam.services.oracles.scope.MappingsContext;
 import systems.glam.services.oracles.scope.ScopeFeedContext;
+import systems.glam.services.pricing.VaultPriceService;
+import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
 
 import java.io.IOException;
@@ -36,7 +38,7 @@ import java.util.stream.IntStream;
 import static java.lang.System.Logger.Level.*;
 import static java.nio.file.StandardOpenOption.*;
 
-final class KaminoCacheImpl implements KaminoCache {
+final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
 
   static final System.Logger logger = System.getLogger(KaminoCache.class.getName());
 
@@ -60,6 +62,8 @@ final class KaminoCacheImpl implements KaminoCache {
   private final Condition reserveScopeChangeCondition;
   private final ReentrantReadWriteLock.ReadLock readLock;
   private final AtomicInteger asyncReserveUpdates;
+
+  private final Map<PublicKey, Map<PublicKey, VaultPriceService>> vaultListeners;
 
   KaminoCacheImpl(final NotifyClient notifyClient,
                   final RpcCaller rpcCaller,
@@ -110,6 +114,7 @@ final class KaminoCacheImpl implements KaminoCache {
     this.readLock = lock.readLock();
     this.reserveScopeChangeCondition = writeLock.newCondition();
     this.asyncReserveUpdates = new AtomicInteger();
+    this.vaultListeners = new ConcurrentHashMap<>();
   }
 
   static void writeScopeConfiguration(final Path configurationsPath,
@@ -370,6 +375,41 @@ final class KaminoCacheImpl implements KaminoCache {
         kaminoVaultContext,
         (a, b) -> Long.compareUnsigned(a.slot(), b.slot()) >= 0 ? a : b
     );
+
+    if (previous != null && !Arrays.equals(previous.reserves(), kaminoVaultContext.reserves())) {
+      final var listeners = vaultListeners.get(sharesMint);
+      if (listeners != null) {
+        for (final var listener : listeners.values()) {
+          listener.onKaminoVaultChange(kaminoVaultContext);
+        }
+      }
+    }
+  }
+
+  @Override
+  public void subscribeToVaultChanges(final PublicKey vaultMint, final VaultPriceService listener) {
+    final var listeners = vaultListeners.computeIfAbsent(vaultMint, _ -> new ConcurrentHashMap<>());
+    listeners.put(listener.stateAccountKey(), listener);
+  }
+
+  @Override
+  public void unSubscribeToVaultChanges(final PublicKey vaultMint, final VaultPriceService listener) {
+    final var listeners = vaultListeners.get(vaultMint);
+    if (listeners != null) {
+      listeners.remove(listener.stateAccountKey());
+    }
+  }
+
+  @Override
+  public void refreshVaults(final Set<PublicKey> vaultMints) {
+    final var accountsNeeded = new ArrayList<PublicKey>(vaultMints.size());
+    for (final var vaultMint : vaultMints) {
+      final var vaultContext = vaultStateContextMap.remove(vaultMint);
+      if (vaultContext != null) {
+        accountsNeeded.add(vaultContext.readVaultState().publicKey());
+      }
+    }
+    accountFetcher.priorityQueue(accountsNeeded, this);
   }
 
   @Override
@@ -414,10 +454,20 @@ final class KaminoCacheImpl implements KaminoCache {
       } else if (data.length == Configuration.BYTES && Configuration.DISCRIMINATOR.equals(data, 0)) {
         handleConfigurationChange(accountInfo.context().slot(), accountInfo.pubKey(), data);
       } else {
-        logger.log(WARNING, "Unhandled Scope account " + accountInfo.pubKey());
+        logger.log(WARNING, "Unhandled Kamino Account: " + accountInfo.pubKey());
       }
     } catch (final RuntimeException ex) {
       logger.log(ERROR, "Failed to handle Scope account " + accountInfo.pubKey(), ex);
+    }
+  }
+
+  @Override
+  public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
+    for (final var accountInfo : accounts) {
+      final byte[] data = accountInfo.data();
+      if (data.length == VaultState.BYTES && VaultState.DISCRIMINATOR.equals(data, 0)) {
+        handleVaultStateChange(accountInfo);
+      }
     }
   }
 

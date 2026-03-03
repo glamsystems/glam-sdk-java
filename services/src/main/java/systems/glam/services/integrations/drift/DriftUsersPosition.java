@@ -70,7 +70,7 @@ public final class DriftUsersPosition implements Position {
                        final Map<PublicKey, AccountMeta> oracleAccounts) {
     final var userAccount = accountMap.get(userKey);
     if (AccountFetcher.isNull(userAccount)) {
-      return 0;
+      return 1;
     }
 
     int missingMarkets = 0;

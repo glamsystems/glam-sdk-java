@@ -33,6 +33,10 @@ public final class KaminoPositions implements Position {
     this.vaultTokenAccounts = new HashMap<>();
   }
 
+  public void invalidateVaults(final KaminoCache kaminoCache) {
+    kaminoCache.refreshVaults(vaultTokenAccounts.keySet());
+  }
+
   public void addObligation(final PublicKey obligationAccount) {
     obligationAccounts.put(obligationAccount, AccountMeta.createWrite(obligationAccount));
   }
@@ -41,24 +45,29 @@ public final class KaminoPositions implements Position {
     vaultTokenAccounts.put(kVaultContext.sharesMint(), AccountMeta.createRead(vaultTokenAccount));
   }
 
-  @Override
-  public void removeAccount(final PublicKey account) {
+  public PublicKey removeAccountReturnMint(final PublicKey account) {
     if (obligationAccounts.remove(account) == null) {
       final var iterator = vaultTokenAccounts.entrySet().iterator();
-      while (iterator.hasNext()) {
-        if (iterator.next().getValue().publicKey().equals(account)) {
+      for (Map.Entry<PublicKey, AccountMeta> entry; iterator.hasNext(); ) {
+        entry = iterator.next();
+        if (entry.getValue().publicKey().equals(account)) {
           iterator.remove();
-          return;
+          return entry.getKey();
         }
       }
     }
+    return null;
+  }
+
+  @Override
+  public void removeAccount(final PublicKey account) {
+    throw new IllegalStateException("Use removeAccountReturnMint() instead.");
   }
 
   public boolean isVaultTokenAccount(final PublicKey vaultTokenAccount) {
     return !obligationAccounts.containsKey(vaultTokenAccount)
         && vaultTokenAccounts.values().stream().anyMatch(meta -> meta.publicKey().equals(vaultTokenAccount));
   }
-
 
   public PublicKey sharesMint(final PublicKey vaultTokenAccount) {
     if (!obligationAccounts.containsKey(vaultTokenAccount)) {
@@ -76,16 +85,17 @@ public final class KaminoPositions implements Position {
                                     final List<AccountMeta> reserveAccounts,
                                     final KaminoCache kaminoCache,
                                     final PublicKey reserve) {
-    if (returnAccounts.add(reserve)) {
-      final var reserveContext = kaminoCache.reserveContext(reserve);
-      if (reserveContext == null) {
-        return false;
-      } else {
+
+    final var reserveContext = kaminoCache.reserveContext(reserve);
+    if (reserveContext == null) {
+      return false;
+    } else {
+      reserveAccounts.add(reserveContext.writeReserve());
+      if (returnAccounts.add(reserve)) {
         reserveContext.refreshReserveAccounts(refreshReservesAccounts);
-        reserveAccounts.add(reserveContext.writeReserve());
       }
+      return true;
     }
-    return true;
   }
 
   private boolean priceKaminoObligations(final GlamAccountClient glamAccountClient,
@@ -158,28 +168,18 @@ public final class KaminoPositions implements Position {
                                   final KaminoCache kaminoCache,
                                   final int numVaults,
                                   final List<AccountMeta> refreshReservesAccounts) {
-    final var extraAccounts = new ArrayList<AccountMeta>(numVaults << 2);
-    int numReserves = 0;
+    final var extraAccounts = new ArrayList<AccountMeta>(numVaults << 3);
+    final var reserveAccounts = new ArrayList<AccountMeta>(numVaults << 2);
     for (final var entry : vaultTokenAccounts.entrySet()) {
       extraAccounts.add(entry.getValue());
       final var vaultContext = kaminoCache.vaultForShareMint(entry.getKey());
+      if (vaultContext == null) {
+        return null;
+      }
       extraAccounts.add(vaultContext.readSharesMint());
       extraAccounts.add(vaultContext.readVaultState());
       final var assetMeta = serviceContext.globalConfigAssetMeta(vaultContext.tokenMint());
       extraAccounts.add(assetMeta.readOracle());
-      numReserves += vaultContext.numReserves();
-    }
-
-    final var priceIx = glamAccountClient.priceKaminoVaultShares(
-        solUSDOracleKey,
-        baseAssetUSDOracleKey,
-        numVaults,
-        true
-    ).extraAccounts(extraAccounts);
-
-    final var reserveAccounts = new ArrayList<AccountMeta>(numReserves);
-    for (final var shareMint : vaultTokenAccounts.keySet()) {
-      final var vaultContext = kaminoCache.vaultForShareMint(shareMint);
       for (final var reserve : vaultContext.reserves()) {
         if (!addReserve(returnAccounts, refreshReservesAccounts, reserveAccounts, kaminoCache, reserve)) {
           return null;
@@ -187,7 +187,14 @@ public final class KaminoPositions implements Position {
       }
     }
 
-    return priceIx.extraAccounts(reserveAccounts);
+    extraAccounts.addAll(reserveAccounts);
+
+    return glamAccountClient.priceKaminoVaultShares(
+        solUSDOracleKey,
+        baseAssetUSDOracleKey,
+        numVaults,
+        true
+    ).extraAccounts(extraAccounts);
   }
 
   @Override

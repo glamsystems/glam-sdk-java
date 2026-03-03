@@ -82,7 +82,7 @@ final class GlamVaultExecutorImpl implements GlamVaultExecutor {
             results[i] = null;
             if (resultFuture != null) {
               final var vaultAUM = resultFuture.join();
-              if (!vaultAUM.isRetryable()) {
+              if (vaultAUM == null || !vaultAUM.isRetryable()) {
                 stateContextArray[i] = null;
               } else if (vaultAUM == VaultAum.RETRY_STALE_ORACLE) {
                 ++numStaleOracles;
@@ -178,7 +178,7 @@ final class GlamVaultExecutorImpl implements GlamVaultExecutor {
     final var stateAccountKeys = Arrays.stream(stateContextArray).map(VaultStateContext::stateAccountKey).toList();
 
     for (int from = 0, to; ; from = to) {
-      to = Math.min(from + SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS, stateContextArray.length);
+      to = Math.min(from + SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS, numVaults);
       final var batch = stateAccountKeys.subList(from, to);
       final var accountInfoList = rpcCaller.courteousGet(
           rpcClient -> rpcClient.getAccounts(batch),

@@ -51,9 +51,9 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
     this.addressLookupTableProgram = solanaAccounts.addressLookupTableProgram();
 //    final var tableDiscriminator = new byte[Integer.BYTES];
 //    ByteUtil.putInt32LE(tableDiscriminator, 0, 1);
-    // 0: State Key
-    // 1: Vault Key
-    // 3: GLAM Config Key
+    // 0: State
+    // 1: Vault
+    // 3: GLAM Config Program
     this.tableFilters = List.of(
 //        Filter.createMemCompFilter(0, tableDiscriminator),
         Filter.createMemCompFilter(
@@ -155,14 +155,14 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
   @Override
   public void acceptStateAccount(final VaultStateContext stateContext, final AccountInfo<byte[]> accountInfo) {
     if (!stateContext.stateChange(accountInfo)) {
+      final PublicKey stateKey;
       if (accountInfo == null) {
-        final var key = stateContext.stateAccountKey();
-        priceServicesByState.remove(key);
+        stateKey = stateContext.stateAccountKey();
       } else {
-        final var accountKey = accountInfo.pubKey();
-        unsupportedVaults.add(accountKey);
-        priceServicesByState.remove(accountKey);
+        stateKey = accountInfo.pubKey();
+        unsupportedVaults.add(stateKey);
       }
+      priceServicesByState.remove(stateKey);
     }
   }
 
@@ -183,7 +183,7 @@ final class GlamStateContextCacheImpl implements GlamStateContextCache, Consumer
           logger.log(WARNING, "Failed to write glam vault lookup table data: " + fileName, e);
         }
       } else {
-        priceService.removeTable(accountKey);
+        priceService.removeGlamVaultTable(accountKey);
         final var fileName = FileUtils.resolveAccountPath(vaultTableDirectory, accountInfo.pubKey());
         try {
           Files.deleteIfExists(fileName);

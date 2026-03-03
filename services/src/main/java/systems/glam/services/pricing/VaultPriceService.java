@@ -5,9 +5,10 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.AccountType;
 import systems.glam.services.integrations.IntegrationServiceContext;
+import systems.glam.services.integrations.kamino.KaminoVaultContext;
 import systems.glam.services.state.MinGlamStateAccount;
 
-import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 public interface VaultPriceService extends VaultStateContext {
 
@@ -20,7 +21,7 @@ public interface VaultPriceService extends VaultStateContext {
     final var serviceContext = integContext.serviceContext();
     final var glamClient = GlamAccountClient.createClient(serviceContext.serviceKey(), stateAccountKey);
     final var mintPDA = glamClient.vaultAccounts().mintPDA().publicKey();
-    final var accountsNeeded = HashSet.<PublicKey>newHashSet((3 + (minGlamStateAccount.numAccounts() << 2)));
+    final var accountsNeeded = ConcurrentHashMap.<PublicKey>newKeySet((3 + (minGlamStateAccount.numAccounts() << 2)));
     accountsNeeded.add(stateAccountKey);
     accountsNeeded.add(mintPDA); // Always needed for NAV calculation.
     // Asset mints/ata's and external positions will be added on init.
@@ -46,4 +47,5 @@ public interface VaultPriceService extends VaultStateContext {
     return createService(integContext, stateAccountKey, minStateAccount);
   }
 
+  void onKaminoVaultChange(final KaminoVaultContext vaultContext);
 }

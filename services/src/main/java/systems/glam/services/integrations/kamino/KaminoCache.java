@@ -19,6 +19,7 @@ import systems.glam.services.oracles.scope.MappingsContext;
 import systems.glam.services.oracles.scope.ScopeFeedContext;
 import systems.glam.services.oracles.scope.parsers.KaminoReserveContextsParser;
 import systems.glam.services.pricing.ScopeAggregateIndexes;
+import systems.glam.services.pricing.VaultPriceService;
 import systems.glam.services.rpc.AccountFetcher;
 
 import java.io.IOException;
@@ -523,4 +524,10 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
   KaminoVaultContext vaultForShareMint(final PublicKey sharesMint);
 
   void subscribe(final SolanaRpcWebsocket websocket);
+
+  void subscribeToVaultChanges(final PublicKey vaultMint, final VaultPriceService listener);
+
+  void unSubscribeToVaultChanges(final PublicKey vaultMint, final VaultPriceService listener);
+
+  void refreshVaults(final Set<PublicKey> vaultMints);
 }

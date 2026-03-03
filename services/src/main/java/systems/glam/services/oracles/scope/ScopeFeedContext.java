@@ -193,8 +193,17 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
     for (final short index : previousContext.priceChainIndexes()) {
       if (index < 0) {
         break;
+      } else {
+        final var reservesForIndex = reservesByIndex.get(index);
+        if (reservesForIndex != null) {
+          final int numReserves = reservesForIndex.size();
+          if (numReserves == 1 && reservesForIndex.containsKey(reservePubKey)) {
+            reservesByIndex.set(index, null);
+          } else if (numReserves > 0) {
+            reservesForIndex.remove(reservePubKey);
+          }
+        }
       }
-      reservesForIndex(index).remove(reservePubKey);
     }
 
     final var reservesForMint = this.reservesByMint.get(previousContext.mint());
