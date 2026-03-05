@@ -8,6 +8,7 @@ import systems.glam.services.ServiceContext;
 
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 public class BaseServiceContext {
 
@@ -51,5 +52,9 @@ public class BaseServiceContext {
 
   public final void executeTask(final Runnable task) {
     serviceContext.executeTask(task);
+  }
+
+  public final ExecutorService taskExecutor() {
+    return serviceContext.taskExecutor();
   }
 }

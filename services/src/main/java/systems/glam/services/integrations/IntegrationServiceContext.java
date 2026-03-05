@@ -8,23 +8,21 @@ import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.services.ServiceContext;
-import systems.glam.services.db.sql.BatchSqlExecutor;
 import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.integrations.kamino.KaminoCache;
 import systems.glam.services.mints.*;
 import systems.glam.services.oracles.scope.FeedIndexes;
-import systems.glam.services.pricing.accounting.VaultAumRecord;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.GlobalConfigCache;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.concurrent.ExecutorService;
 
 public interface IntegrationServiceContext {
 
   static IntegrationServiceContext createContext(final ServiceContext serviceContext,
-                                                 final BatchSqlExecutor<VaultAumRecord> aumRecordBatchExecutor,
                                                  final MintCache mintCache,
                                                  final StakePoolCache stakePoolCache,
                                                  final GlobalConfigCache globalConfigCache,
@@ -36,7 +34,6 @@ public interface IntegrationServiceContext {
                                                  final KaminoCache kaminoCache) {
     return new IntegrationServiceContextImpl(
         serviceContext,
-        aumRecordBatchExecutor,
         mintCache,
         stakePoolCache,
         globalConfigCache,
@@ -65,6 +62,8 @@ public interface IntegrationServiceContext {
 
   void executeTask(final Runnable task);
 
+  ExecutorService taskExecutor();
+
   RpcCaller rpcCaller();
 
   MintContext mintContext(final PublicKey mint);
@@ -82,8 +81,6 @@ public interface IntegrationServiceContext {
   AssetMetaContext watchForMint(final PublicKey mint, final PublicKey stateAccount);
 
   FeedIndexes scopeAggregateIndexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType);
-
-  void persistAumRecord(final VaultAumRecord aumRecord) throws InterruptedException;
 
   IntegLookupTableCache integTableCache();
 

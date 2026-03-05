@@ -13,6 +13,7 @@ import systems.glam.services.io.FileUtils;
 
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 public interface ServiceContext {
 
@@ -50,6 +51,8 @@ public interface ServiceContext {
   PublicKey glamMintProgram();
 
   void executeTask(final Runnable task);
+
+  ExecutorService taskExecutor();
 
   void backoff(final long failureCount) throws InterruptedException;
 

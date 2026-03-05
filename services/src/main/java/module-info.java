@@ -47,7 +47,6 @@ module systems.glam.services {
   exports systems.glam.services.mints;
   exports systems.glam.services.oracles.scope.parsers;
   exports systems.glam.services.oracles.scope;
-  exports systems.glam.services.pricing.accounting;
   exports systems.glam.services.pricing;
   exports systems.glam.services.rpc;
   exports systems.glam.services.state;

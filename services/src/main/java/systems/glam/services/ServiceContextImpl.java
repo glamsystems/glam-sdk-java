@@ -141,6 +141,11 @@ public final class ServiceContextImpl implements ServiceContext {
   }
 
   @Override
+  public ExecutorService taskExecutor() {
+    return taskExecutor;
+  }
+
+  @Override
   public void backoff(final long failureCount) throws InterruptedException {
     NANOSECONDS.sleep(Math.max(minCheckStateDelayNanos, backoff.delay(failureCount, NANOSECONDS)));
   }

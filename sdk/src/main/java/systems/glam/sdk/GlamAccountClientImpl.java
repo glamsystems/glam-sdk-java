@@ -38,7 +38,7 @@ class GlamAccountClientImpl implements GlamAccountClient {
     this.wrappedSolPDA = splAccountClient.wrappedSolPDA().publicKey();
     this.glamAccounts = glamVaultAccounts.glamAccounts();
     this.invokedProtocolProgram = glamAccounts.invokedProtocolProgram();
-    this.globalConfigKey = glamVaultAccounts.glamAccounts().globalConfigPDA().publicKey();
+    this.globalConfigKey = glamAccounts.globalConfigPDA().publicKey();
   }
 
   static ProtocolPermissions adaptPermissions(final GlamAccounts glamAccounts,

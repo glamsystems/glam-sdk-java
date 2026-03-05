@@ -18,7 +18,6 @@ import systems.glam.services.io.FileUtils;
 import systems.glam.services.oracles.scope.FeedIndexes;
 import systems.glam.services.oracles.scope.MappingsContext;
 import systems.glam.services.oracles.scope.ScopeFeedContext;
-import systems.glam.services.pricing.VaultPriceService;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
 
@@ -63,7 +62,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   private final ReentrantReadWriteLock.ReadLock readLock;
   private final AtomicInteger asyncReserveUpdates;
 
-  private final Map<PublicKey, Map<PublicKey, VaultPriceService>> vaultListeners;
+  private final Map<PublicKey, Map<PublicKey, KaminoVaultListener>> vaultListeners;
 
   KaminoCacheImpl(final NotifyClient notifyClient,
                   final RpcCaller rpcCaller,
@@ -387,16 +386,16 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   }
 
   @Override
-  public void subscribeToVaultChanges(final PublicKey vaultMint, final VaultPriceService listener) {
+  public void subscribeToVaultChanges(final PublicKey vaultMint, final KaminoVaultListener listener) {
     final var listeners = vaultListeners.computeIfAbsent(vaultMint, _ -> new ConcurrentHashMap<>());
-    listeners.put(listener.stateAccountKey(), listener);
+    listeners.put(listener.key(), listener);
   }
 
   @Override
-  public void unSubscribeToVaultChanges(final PublicKey vaultMint, final VaultPriceService listener) {
+  public void unSubscribeToVaultChanges(final PublicKey vaultMint, final KaminoVaultListener listener) {
     final var listeners = vaultListeners.get(vaultMint);
     if (listeners != null) {
-      listeners.remove(listener.stateAccountKey());
+      listeners.remove(listener.key());
     }
   }
 
