@@ -396,10 +396,6 @@ public record ReserveContext(long slot,
     }
   }
 
-  boolean isBefore(final ReserveContext o) {
-    return Long.compareUnsigned(this.slot, o.slot) > 0;
-  }
-
   Set<ReserveChange> changed(final ReserveContext o) {
     if (!pubKey.equals(o.pubKey)) {
       throw new IllegalStateException("Cannot compare different reserves");

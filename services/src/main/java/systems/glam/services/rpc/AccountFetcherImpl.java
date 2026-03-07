@@ -8,6 +8,7 @@ import software.sava.services.solana.remote.call.RpcCaller;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -29,6 +30,7 @@ final class AccountFetcherImpl implements AccountFetcher {
   private final Condition newBatch;
   private final ConcurrentLinkedDeque<AccountBatch> queue;
   private final ConcurrentLinkedDeque<AccountBatch> currentBatch;
+  private final Set<AccountConsumer> alwaysCall;
 
   private volatile Set<PublicKey> currentBatchKeys;
 
@@ -48,6 +50,17 @@ final class AccountFetcherImpl implements AccountFetcher {
     this.queue = new ConcurrentLinkedDeque<>();
     this.currentBatch = new ConcurrentLinkedDeque<>();
     this.currentBatchKeys = this.alwaysFetch;
+    this.alwaysCall = ConcurrentHashMap.newKeySet(32);
+  }
+
+  @Override
+  public void listenToAll(final AccountConsumer accountConsumer) {
+    this.alwaysCall.add(accountConsumer);
+  }
+
+  @Override
+  public void stopListening(final AccountConsumer accountConsumer) {
+    this.alwaysCall.remove(accountConsumer);
   }
 
   private void queue(final boolean priority, final AccountBatch accountBatch) {
@@ -273,7 +286,12 @@ final class AccountFetcherImpl implements AccountFetcher {
             "rpcClient#getAccountsBatch"
         );
 
-        for (final var accountsMap = toMap(keys, accounts); ; ) {
+        final var accountsMap = toMap(keys, accounts);
+        for (final var accountConsumer : alwaysCall) {
+          accountConsumer.accept(accounts, accountsMap);
+        }
+
+        for (; ; ) {
           final var accountBatch = currentBatch.pollFirst();
           if (accountBatch == null) {
             lock.lock();

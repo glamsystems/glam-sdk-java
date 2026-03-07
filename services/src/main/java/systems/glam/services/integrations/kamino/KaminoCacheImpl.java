@@ -1,7 +1,9 @@
 package systems.glam.services.integrations.kamino;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.lend.gen.types.Reserve;
+import software.sava.idl.clients.kamino.lend.gen.types.TokenInfo;
 import software.sava.idl.clients.kamino.scope.entries.*;
 import software.sava.idl.clients.kamino.scope.entries.Deprecated;
 import software.sava.idl.clients.kamino.scope.gen.types.Configuration;
@@ -47,6 +49,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   private final PublicKey kLendProgram;
   private final PublicKey scopeProgram;
   private final PublicKey kVaultsProgram;
+  private final ProgramAccountsRequest<byte[]> reservesRequest;
   private final ProgramAccountsRequest<byte[]> kVaultsRequest;
   private final Set<PublicKey> accountsNeededSet;
   private final long pollingDelayNanos;
@@ -70,6 +73,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
                   final PublicKey kLendProgram,
                   final PublicKey scopeProgram,
                   final PublicKey kVaultsProgram,
+                  final ProgramAccountsRequest<byte[]> reservesRequest,
                   final ProgramAccountsRequest<byte[]> kVaultsRequest,
                   final Duration pollingDelay,
                   final Path configurationsPath,
@@ -85,6 +89,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     this.kLendProgram = kLendProgram;
     this.scopeProgram = scopeProgram;
     this.kVaultsProgram = kVaultsProgram;
+    this.reservesRequest = reservesRequest;
     this.kVaultsRequest = kVaultsRequest;
     this.pollingDelayNanos = pollingDelay.toNanos();
     this.configurationsPath = configurationsPath;
@@ -309,7 +314,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
       }
     }
     for (; ; ) {
-      if (witness.isBefore(reserveContext)) {
+      if (Long.compareUnsigned(witness.slot(), reserveContext.slot()) < 0) {
         final var changes = witness.changed(reserveContext);
         if (changes.isEmpty()) {
           return;
@@ -464,8 +469,15 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
     for (final var accountInfo : accounts) {
       final byte[] data = accountInfo.data();
-      if (data.length == VaultState.BYTES && VaultState.DISCRIMINATOR.equals(data, 0)) {
+      if (data.length == Reserve.BYTES && Reserve.DISCRIMINATOR.equals(data, 0)) {
+        final var reserveContext = ReserveContext.createContext(accountInfo, mappingsContextMap);
+        updateIfChanged(reserveContext);
+      } else if (data.length == VaultState.BYTES && VaultState.DISCRIMINATOR.equals(data, 0)) {
         handleVaultStateChange(accountInfo);
+      } else if (data.length == OracleMappings.BYTES && OracleMappings.DISCRIMINATOR.equals(data, 0)) {
+        handleMappingChange(accountInfo);
+      } else if (data.length == Configuration.BYTES && Configuration.DISCRIMINATOR.equals(data, 0)) {
+        handleConfigurationChange(accountInfo.context().slot(), accountInfo.pubKey(), data);
       }
     }
   }
@@ -507,7 +519,14 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
           accountsNeededList = new ArrayList<>(this.accountsNeededSet);
         }
 
-        for (final var accountInfo : kVaultsFuture.join()) {
+
+        final var kVaultAccounts = kVaultsFuture.join();
+        final var reserveAccountsFutures = rpcCaller.courteousCall(
+            rpcClient -> rpcClient.getProgramAccounts(reservesRequest),
+            "rpcClient#getKaminoReserves"
+        );
+
+        for (final var accountInfo : kVaultAccounts) {
           handleVaultStateChange(accountInfo);
         }
 
@@ -518,6 +537,25 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
               writeReserves(reserveContextsFilePath, reserveContextMap);
             }
           } else if (accountsDeleted == 0) {
+            logger.log(INFO, "No changes to Scope Configurations.");
+          }
+        } finally {
+          readLock.unlock();
+        }
+
+        final var reserveAccounts = reserveAccountsFutures.join();
+        for (final var accountInfo : reserveAccounts) {
+          final var reserveContext = ReserveContext.createContext(accountInfo, mappingsContextMap);
+          updateIfChanged(reserveContext);
+        }
+
+        readLock.lock();
+        try {
+          if (this.asyncReserveUpdates.getAndSet(0) > 0) {
+            if (reserveContextsFilePath != null) {
+              writeReserves(reserveContextsFilePath, reserveContextMap);
+            }
+          } else {
             logger.log(INFO, "No changes to Scope Reserves.");
           }
         } finally {
@@ -536,7 +574,6 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
           writeLock.unlock();
         }
       }
-
     } catch (final InterruptedException e) {
       // exit
     } catch (final RuntimeException e) {
@@ -878,5 +915,105 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
       // TODO retry handling.
       notifyClient.postMsg(msg);
     }
+  }
+
+  static void analyzeMarkets(final Map<PublicKey, ReserveContext> reserveContextMap) {
+    final var byMarket = reserveContextMap.values().stream()
+        .collect(Collectors.groupingBy(ReserveContext::market));
+
+    record MarketOracles(PublicKey market, Set<PublicKey> switchboard, Set<PublicKey> pyth, Set<PublicKey> scope) {
+
+      String toJson() {
+        return String.format("""
+                {
+                 "market": "%s",
+                 "switchboard": [%s],
+                 "pyth": [%s],
+                 "scope": [%s]
+                }""",
+            market.toBase58(),
+            switchboard.isEmpty() ? "" : switchboard.stream().map(PublicKey::toBase58).collect(Collectors.joining("\",\"", "\"", "\"")),
+            pyth.isEmpty() ? "" : pyth.stream().map(PublicKey::toBase58).collect(Collectors.joining("\",\"", "\"", "\"")),
+            scope.isEmpty() ? "" : scope.stream().map(PublicKey::toBase58).collect(Collectors.joining("\",\"", "\"", "\""))
+        );
+      }
+    }
+
+    final class MarketOraclesBuilder {
+
+      Set<PublicKey> switchboard;
+      Set<PublicKey> pyth;
+      Set<PublicKey> scope;
+
+      int addAccounts(final TokenInfo tokenInfo) {
+        int numOracleSources = 0;
+        final var priceFeed = tokenInfo.scopeConfiguration().priceFeed();
+        if (!priceFeed.equals(PublicKey.NONE) && !priceFeed.equals(KaminoAccounts.NULL_KEY)) {
+          if (scope == null) {
+            scope = new HashSet<>();
+          }
+          scope.add(priceFeed);
+          ++numOracleSources;
+        }
+        final var switchboard = tokenInfo.switchboardConfiguration().priceAggregator();
+        if (!switchboard.equals(PublicKey.NONE) && !switchboard.equals(KaminoAccounts.NULL_KEY)) {
+          if (this.switchboard == null) {
+            this.switchboard = new HashSet<>();
+          }
+          this.switchboard.add(switchboard);
+          ++numOracleSources;
+        }
+        final var pyth = tokenInfo.pythConfiguration().price();
+        if (!pyth.equals(PublicKey.NONE) && !pyth.equals(KaminoAccounts.NULL_KEY)) {
+          if (this.pyth == null) {
+            this.pyth = new HashSet<>();
+          }
+          this.pyth.add(pyth);
+          ++numOracleSources;
+        }
+        return numOracleSources;
+      }
+
+      int numAccounts() {
+        int numAccounts = 0;
+        if (switchboard != null) {
+          numAccounts += switchboard.size();
+        }
+        if (pyth != null) {
+          numAccounts += pyth.size();
+        }
+        if (scope != null) {
+          numAccounts += scope.size();
+        }
+        return numAccounts;
+      }
+
+      MarketOracles build(final PublicKey market) {
+        return new MarketOracles(
+            market,
+            switchboard == null ? Set.of() : Set.copyOf(switchboard),
+            pyth == null ? Set.of() : Set.copyOf(pyth),
+            scope == null ? Set.of() : Set.copyOf(scope)
+        );
+      }
+    }
+
+    final var marketOracles = HashMap.<PublicKey, MarketOracles>newHashMap(byMarket.size());
+
+    for (final var entry : byMarket.entrySet()) {
+      final var market = entry.getKey();
+      final var builder = new MarketOraclesBuilder();
+      for (final var reserveContext : entry.getValue()) {
+        final var tokenInfo = reserveContext.tokenInfo();
+        builder.addAccounts(tokenInfo);
+      }
+      marketOracles.put(market, builder.build(market));
+    }
+
+    final var json = marketOracles.values().stream()
+        .map(MarketOracles::toJson)
+        .map(indented -> indented.indent(2).stripTrailing())
+        .collect(Collectors.joining(",\n", "[\n", "\n]"));
+    System.out.println(json);
   }
 }

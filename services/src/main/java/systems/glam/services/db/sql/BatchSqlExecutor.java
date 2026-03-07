@@ -20,5 +20,7 @@ public interface BatchSqlExecutor<T> extends Runnable {
     );
   }
 
+  void awaitBatchComplete() throws InterruptedException;
+
   void queue(final T item);
 }

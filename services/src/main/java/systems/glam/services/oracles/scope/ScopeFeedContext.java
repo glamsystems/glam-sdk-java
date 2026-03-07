@@ -197,8 +197,10 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
         final var reservesForIndex = reservesByIndex.get(index);
         if (reservesForIndex != null) {
           final int numReserves = reservesForIndex.size();
-          if (numReserves == 1 && reservesForIndex.containsKey(reservePubKey)) {
-            reservesByIndex.set(index, null);
+          if (numReserves == 1) {
+            if (reservesForIndex.containsKey(reservePubKey)) {
+              reservesByIndex.set(index, null);
+            }
           } else if (numReserves > 0) {
             reservesForIndex.remove(reservePubKey);
           }

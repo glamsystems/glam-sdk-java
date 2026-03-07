@@ -27,6 +27,10 @@ public interface AccountFetcher extends Runnable {
     return new AccountFetcherImpl(fetchDelay, reactive, rpcCaller, alwaysFetch);
   }
 
+  void listenToAll(final AccountConsumer accountConsumer);
+
+  void stopListening(final AccountConsumer accountConsumer);
+
   void priorityQueueBatchable(final List<PublicKey> accounts, final AccountConsumer callback);
 
   void queueBatchable(final List<PublicKey> accounts, final AccountConsumer callback);

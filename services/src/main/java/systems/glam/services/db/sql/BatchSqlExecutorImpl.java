@@ -30,6 +30,8 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
   private final ReentrantLock lock;
   private final Condition startWindow;
   private final Condition batchLimit;
+  private final Condition batchCompleteCondition;
+  private volatile boolean batchComplete;
 
   BatchSqlExecutorImpl(final Class<T> componentType,
                        final SqlDataSource datasource,
@@ -49,6 +51,8 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
     this.lock = new ReentrantLock();
     this.startWindow = lock.newCondition();
     this.batchLimit = lock.newCondition();
+    this.batchCompleteCondition = lock.newCondition();
+    this.batchComplete = true;
   }
 
   @Override
@@ -56,15 +60,18 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
     try {
       //noinspection unchecked
       final T[] batch = (T[]) Array.newInstance(componentType, batchSize);
-      int numItems = 0, numInserted = 0;
+      int numItems = 0, numInserted;
       for (long errorCount = 0, remainingNanos; ; ) {
         if (pending.size() < batchSize) {
           Arrays.fill(batch, null);
           lock.lock();
           try {
             while (pending.isEmpty()) {
+              this.batchComplete = true;
+              this.batchCompleteCondition.signalAll();
               startWindow.await();
             }
+            this.batchComplete = false;
             for (remainingNanos = batchDelayNanos; pending.size() < batchSize && remainingNanos > 0; ) {
               remainingNanos = batchLimit.awaitNanos(remainingNanos);
             }
@@ -119,6 +126,20 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
       // exit
     } catch (final RuntimeException ex) {
       logger.log(ERROR, "Unexpected error executing batch.", ex);
+    }
+  }
+
+  @Override
+  public void awaitBatchComplete() throws InterruptedException {
+    if (!this.batchComplete) {
+      lock.lock();
+      try {
+        while (!this.batchComplete) {
+          this.batchCompleteCondition.await();
+        }
+      } finally {
+        lock.unlock();
+      }
     }
   }
 
