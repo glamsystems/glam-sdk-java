@@ -24,6 +24,7 @@ import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -145,12 +146,43 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   public FeedIndexes indexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType) {
     readLock.lock();
     try {
-      return priceFeedContextMap.values().stream().<FeedIndexes>mapMulti((scopeFeedContext, downstream) -> {
+      final var bestFeedIndexes = priceFeedContextMap.values().stream().<FeedIndexes>mapMulti((scopeFeedContext, downstream) -> {
         final var feedIndexes = scopeFeedContext.indexes(mint, oracle, oracleType);
         if (feedIndexes != null) {
           downstream.accept(feedIndexes);
         }
       }).sorted().findFirst().orElse(null);
+      if (bestFeedIndexes != null) {
+        return bestFeedIndexes;
+      } else {
+        final short[] indexes = new short[]{-1, -1, -1, -1};
+        int i = 0;
+        for (final var mappingsContext : mappingsContextMap.values()) {
+          final var scopeEntries = mappingsContext.scopeEntries();
+          final int numEntries = scopeEntries.numEntries();
+          for (int e = 0; e < numEntries; ++e) {
+            final var entry = scopeEntries.scopeEntry(e);
+            if (entry instanceof OracleEntry oracleEntry) {
+              if (oracleEntry.oracleType() == oracleType && oracleEntry.oracle().equals(oracle)) {
+                indexes[i] = (short) oracleEntry.index();
+                if (++i == indexes.length) {
+                  break;
+                }
+              }
+            }
+          }
+          if (i > 0) {
+            final var scopeFeedContext = this.priceFeedContextMap.get(mappingsContext.publicKey());
+            return new FeedIndexes(
+                scopeFeedContext.readPriceFeed(),
+                scopeFeedContext.readOracleMappings(),
+                indexes,
+                BigInteger.ZERO
+            );
+          }
+        }
+        return null;
+      }
     } finally {
       readLock.unlock();
     }
