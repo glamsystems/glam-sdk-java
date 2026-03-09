@@ -99,6 +99,22 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
     );
   }
 
+  public PublicKey admin() {
+    return PublicKey.readPubKey(configurationData, Configuration.ADMIN_OFFSET);
+  }
+
+  public PublicKey tokensMetadata() {
+    return PublicKey.readPubKey(configurationData, Configuration.TOKENS_METADATA_OFFSET);
+  }
+
+  public PublicKey oracleTwaps() {
+    return PublicKey.readPubKey(configurationData, Configuration.ORACLE_TWAPS_OFFSET);
+  }
+
+  public PublicKey adminCached() {
+    return PublicKey.readPubKey(configurationData, Configuration.ADMIN_CACHED_OFFSET);
+  }
+
   public String toJson() {
     return configurationToJson(slot, configurationKey, oracleMappings, priceFeed, configurationData);
   }

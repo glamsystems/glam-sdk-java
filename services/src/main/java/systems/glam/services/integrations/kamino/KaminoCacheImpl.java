@@ -14,7 +14,6 @@ import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
 import software.sava.rpc.json.http.client.ProgramAccountsRequest;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
-import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.services.io.FileUtils;
 import systems.glam.services.oracles.scope.FeedIndexes;
@@ -35,7 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static java.lang.System.Logger.Level.*;
 import static java.nio.file.StandardOpenOption.*;
@@ -44,7 +42,6 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
 
   static final System.Logger logger = System.getLogger(KaminoCache.class.getName());
 
-  private final NotifyClient notifyClient;
   private final RpcCaller rpcCaller;
   private final AccountFetcher accountFetcher;
   private final PublicKey kLendProgram;
@@ -66,10 +63,11 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   private final ReentrantReadWriteLock.ReadLock readLock;
   private final AtomicInteger asyncReserveUpdates;
 
-  private final Map<PublicKey, Map<PublicKey, KaminoVaultListener>> vaultListeners;
+  private final Map<PublicKey, KaminoListener> listeners;
+  private final Map<PublicKey, Map<PublicKey, KaminoListener>> specificReserveListeners;
+  private final Map<PublicKey, Map<PublicKey, KaminoListener>> vaultListeners;
 
-  KaminoCacheImpl(final NotifyClient notifyClient,
-                  final RpcCaller rpcCaller,
+  KaminoCacheImpl(final RpcCaller rpcCaller,
                   final AccountFetcher accountFetcher,
                   final PublicKey kLendProgram,
                   final PublicKey scopeProgram,
@@ -84,7 +82,6 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
                   final ConcurrentMap<PublicKey, MappingsContext> mappingsContextMap,
                   final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap,
                   final ConcurrentMap<PublicKey, KaminoVaultContext> vaultStateContextMap) {
-    this.notifyClient = notifyClient;
     this.rpcCaller = rpcCaller;
     this.accountFetcher = accountFetcher;
     this.kLendProgram = kLendProgram;
@@ -119,6 +116,8 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     this.readLock = lock.readLock();
     this.reserveScopeChangeCondition = writeLock.newCondition();
     this.asyncReserveUpdates = new AtomicInteger();
+    this.listeners = new ConcurrentHashMap<>();
+    this.specificReserveListeners = new ConcurrentHashMap<>();
     this.vaultListeners = new ConcurrentHashMap<>();
   }
 
@@ -188,21 +187,16 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     }
   }
 
-  private void deleteScopeConfiguration(final ScopeFeedContext scopeFeedContext) {
+  private void deleteScopeConfiguration(final PublicKey deletedAccount, final ScopeFeedContext scopeFeedContext) {
     writeLock.lock();
     try {
       removeConfig(scopeFeedContext);
     } finally {
       writeLock.unlock();
     }
-    final var configJson = scopeFeedContext.toJson();
-    final var msg = String.format("""
-        {
-          "event": "Scope Account Deleted",
-          "config": %s
-        }""", configJson
-    );
-    logger.log(INFO, msg);
+    for (final var listener : listeners.values()) {
+      listener.onScopeAccountDeleted(deletedAccount, scopeFeedContext);
+    }
     if (configurationsPath != null) {
       try {
         Files.deleteIfExists(FileUtils.resolveAccountPath(configurationsPath, scopeFeedContext.configurationKey()));
@@ -217,7 +211,6 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
         logger.log(WARNING, "Failed to delete Scope Mappings.", e);
       }
     }
-    notifyClient.postMsg(msg);
   }
 
   private void removeConfig(final ScopeFeedContext scopeFeedContext) {
@@ -260,10 +253,18 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
       } finally {
         writeLock.unlock();
       }
-      notifyNewConfiguration(scopeFeedContext);
+      for (final var listener : listeners.values()) {
+        listener.onNewScopeConfiguration(scopeFeedContext.configurationKey(), scopeFeedContext);
+      }
     } else if (!witness.isStaleOrUnchanged(slot, data)) {
       removeConfig(witness);
-      notifyConfigurationChange(witness, slot, data);
+      final var scopeFeedContext = ScopeFeedContext.createContext(
+          slot, data,
+          configurationKey
+      );
+      for (final var listener : listeners.values()) {
+        listener.onScopeConfigurationChange(witness, scopeFeedContext);
+      }
     }
   }
 
@@ -368,7 +369,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
             } else {
               feedContext.removePreviousEntry(witness);
               feedContext.indexReserveContext(reserveContext);
-              notifyReserveChange(witness, reserveContext);
+              notifyReserveChange(witness, reserveContext, changes);
               this.asyncReserveUpdates.incrementAndGet();
               this.reserveScopeChangeCondition.signal();
             }
@@ -378,6 +379,20 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
         }
       } else {
         return;
+      }
+    }
+  }
+
+  private void notifyReserveChange(final ReserveContext previous,
+                                   final ReserveContext reserveContext,
+                                   final Set<ReserveChange> changes) {
+    for (final var listener : listeners.values()) {
+      listener.onReserveChange(previous, reserveContext, changes);
+    }
+    final var listeners = this.specificReserveListeners.get(reserveContext.pubKey());
+    if (listeners != null) {
+      for (final var listener : listeners.values()) {
+        listener.onReserveChange(previous, reserveContext, changes);
       }
     }
   }
@@ -423,14 +438,38 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   }
 
   @Override
-  public void subscribeToVaultChanges(final PublicKey vaultMint, final KaminoVaultListener listener) {
+  public void subscribeToVault(final PublicKey vaultMint, final KaminoListener listener) {
     final var listeners = vaultListeners.computeIfAbsent(vaultMint, _ -> new ConcurrentHashMap<>());
     listeners.put(listener.key(), listener);
   }
 
   @Override
-  public void unSubscribeToVaultChanges(final PublicKey vaultMint, final KaminoVaultListener listener) {
+  public void unSubscribeToVault(final PublicKey vaultMint, final KaminoListener listener) {
     final var listeners = vaultListeners.get(vaultMint);
+    if (listeners != null) {
+      listeners.remove(listener.key());
+    }
+  }
+
+  @Override
+  public void subscribe(final KaminoListener listener) {
+    listeners.put(listener.key(), listener);
+  }
+
+  @Override
+  public void unsubscribe(final KaminoListener listener) {
+    listeners.put(listener.key(), listener);
+  }
+
+  @Override
+  public void subscribeToReserve(final PublicKey reserveKey, final KaminoListener listener) {
+    final var listeners = specificReserveListeners.computeIfAbsent(reserveKey, _ -> new ConcurrentHashMap<>());
+    listeners.put(listener.key(), listener);
+  }
+
+  @Override
+  public void unSubscribeToReserve(final PublicKey reserveKey, final KaminoListener listener) {
+    final var listeners = specificReserveListeners.get(reserveKey);
     if (listeners != null) {
       listeners.remove(listener.key());
     }
@@ -537,7 +576,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
             this.accountsNeededSet.remove(key);
             final var feedContext = priceFeedContextMap.remove(key);
             if (feedContext != null) {
-              deleteScopeConfiguration(feedContext);
+              deleteScopeConfiguration(key, feedContext);
             } else {
               this.mappingsContextMap.remove(key);
               logger.log(WARNING, "Scope OracleMappings account has been deleted " + key);
@@ -829,123 +868,11 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     }).collect(Collectors.joining(",\n", "[\n", "\n  ]"));
   }
 
-  private void notifyReserveChange(final ReserveContext previous, final ReserveContext reserveContext) {
-    final var changes = previous.changed(reserveContext);
-    final var changesString = changes.stream().map(Enum::name).collect(Collectors.joining("\",\""));
-    var msg = String.format("""
-            {
-              "event": "Kamino Reserve Change",
-              "changes": ["%s"]
-              "previous": %s,
-              "latest": %s,
-            }""",
-        changesString,
-        previous.priceChainsToJson(), reserveContext.priceChainsToJson()
-    );
-    logger.log(INFO, msg);
-    // TODO retry handling.
-    msg = String.format("""
-            {
-              "event": "Kamino Reserve Change",
-              "changes": ["%s"]
-              "previous": %s,
-              "latest": %s,
-            }""",
-        changesString,
-        previous.priceChainsToJsonNoTokenInfo(), reserveContext.priceChainsToJsonNoTokenInfo()
-    );
-    notifyClient.postMsg(msg);
-  }
-
-  private void notifyNewConfiguration(final ScopeFeedContext scopeFeedContext) {
-    final var configJson = scopeFeedContext.toJson();
-    final var msg = String.format("""
-        {
-          "event": "New Scope Configuration",
-          "config": %s
-        }""", configJson
-    );
-    logger.log(INFO, msg);
-    if (configurationsPath != null) {
-      try {
-        writeScopeConfiguration(configurationsPath, scopeFeedContext);
-      } catch (final IOException e) {
-        logger.log(WARNING, "Failed to persist Scope configuration.", e);
-      }
-    }
-    notifyClient.postMsg(msg);
-  }
-
-  private void notifyConfigurationChange(final ScopeFeedContext witness, final long slot, final byte[] data) {
-    final var msg = String.format("""
-            {
-              "event": "Scope Configuration Change",
-              "previous": %s,
-              "latest": %s
-            }""",
-        witness.toJson(),
-        ScopeFeedContext.configurationToJson(slot, witness.configurationKey(), data)
-    );
-    logger.log(ERROR, msg);
-    // TODO: Trigger Alert
-  }
-
   private void notifyMappingsChange(final ScopeFeedContext scopeFeedContext,
                                     final MappingsContext witness,
                                     final MappingsContext mappingContext) {
-    final var mappingsKey = mappingContext.publicKey();
-    final var previousEntries = witness.scopeEntries();
-    final var newEntries = mappingContext.scopeEntries();
-    final int numEntries = newEntries.numEntries();
-    if (previousEntries.numEntries() != numEntries) {
-      throw new IllegalStateException(String.format(
-          "Scope Mappings %s changed in length from %d to %d.",
-          mappingsKey, previousEntries.numEntries(), numEntries
-      ));
-    }
-
-    final var changes = IntStream.range(0, numEntries).mapToObj(i -> {
-      final var prevEntry = previousEntries.scopeEntry(i);
-      final var newEntry = newEntries.scopeEntry(i);
-      if (prevEntry.equals(newEntry)) {
-        return null;
-      } else {
-        final var affectedReserves = scopeFeedContext.reservesForIndex(i);
-        if (affectedReserves == null || affectedReserves.isEmpty()) {
-          return null;
-        }
-        return String.format("""
-                {
-                  "previous": %s,
-                  "latest": %s,
-                  "reserves": [%s]
-                }""",
-            prevEntry, newEntry,
-            affectedReserves.values().stream()
-                .map(ReserveContext::keysToJson)
-                .collect(Collectors.joining(",\n"))
-        );
-      }
-    }).filter(Objects::nonNull).toList();
-
-    final int numChanges = changes.size();
-    if (numChanges > 0) {
-      final var msg = String.format("""
-              {
-                "event": "Scope Mappings Change",
-                "priceFeed": "%s",
-                "numChanges": %d,
-                "slot": %s,
-                "changes": [%s]
-              }""",
-          mappingsKey.toBase58(),
-          numChanges,
-          Long.toUnsignedString(mappingContext.slot()),
-          String.join(",\n", changes)
-      );
-      logger.log(INFO, msg);
-      // TODO retry handling.
-      notifyClient.postMsg(msg);
+    for (final var listener : listeners.values()) {
+      listener.onMappingChange(scopeFeedContext, witness, mappingContext);
     }
   }
 

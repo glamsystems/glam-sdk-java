@@ -148,6 +148,16 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   }
 
   @Override
+  public boolean hasAssetMetaForMint(final PublicKey mint) {
+    readLock.lock();
+    try {
+      return assetMetaMap.containsKey(mint);
+    } finally {
+      readLock.unlock();
+    }
+  }
+
+  @Override
   public AssetMetaContext solAssetMeta() {
     return topPriorityForMint(solanaAccounts.wrappedSolTokenMint());
   }

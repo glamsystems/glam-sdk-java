@@ -46,7 +46,6 @@ public record ScopeMonitorServiceEntrypoint(ExecutorService executorService,
         serviceConfig.configurationsPath(),
         serviceConfig.rpcCaller(),
         null, //  TODO
-        serviceConfig.notifyClient(),
         serviceConfig.kaminoAccounts(),
         serviceConfig.pollingDelay()
     );

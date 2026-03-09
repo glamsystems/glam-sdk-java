@@ -12,7 +12,6 @@ import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
 import software.sava.rpc.json.http.client.ProgramAccountsRequest;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
-import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.services.io.FileUtils;
 import systems.glam.services.oracles.scope.MappingsContext;
@@ -40,7 +39,6 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
 
   static CompletableFuture<KaminoCache> initService(final RpcCaller rpcCaller,
                                                     final AccountFetcher accountFetcher,
-                                                    final NotifyClient notifyClient,
                                                     final KaminoAccounts kaminoAccounts,
                                                     final Duration pollingDelay) {
     return CompletableFuture.supplyAsync(() -> {
@@ -158,7 +156,6 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
       }
 
       final var cache = new KaminoCacheImpl(
-          notifyClient,
           rpcCaller,
           accountFetcher,
           kLendProgram,
@@ -183,7 +180,6 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
   static CompletableFuture<KaminoCache> initService(final Path kaminoAccountsPath,
                                                     final RpcCaller rpcCaller,
                                                     final AccountFetcher accountFetcher,
-                                                    final NotifyClient notifyClient,
                                                     final KaminoAccounts kaminoAccounts,
                                                     final Duration pollingDelay) {
     return CompletableFuture.supplyAsync(() -> {
@@ -343,7 +339,6 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
 //        analyzeMarkets(reserveContextMap);
 
         final var cache = new KaminoCacheImpl(
-            notifyClient,
             rpcCaller,
             accountFetcher,
             kLendProgram,
@@ -427,9 +422,17 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
 
   void subscribe(final SolanaRpcWebsocket websocket);
 
-  void subscribeToVaultChanges(final PublicKey vaultMint, final KaminoVaultListener listener);
+  void subscribe(final KaminoListener listener);
 
-  void unSubscribeToVaultChanges(final PublicKey vaultMint, final KaminoVaultListener listener);
+  void unsubscribe(final KaminoListener listener);
+
+  void subscribeToReserve(final PublicKey reserveKey, final KaminoListener listener);
+
+  void unSubscribeToReserve(final PublicKey reserveKey, final KaminoListener listener);
+
+  void subscribeToVault(final PublicKey vaultMint, final KaminoListener listener);
+
+  void unSubscribeToVault(final PublicKey vaultMint, final KaminoListener listener);
 
   void refreshVaults(final Set<PublicKey> vaultMints);
 }

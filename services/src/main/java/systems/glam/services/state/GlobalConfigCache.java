@@ -136,6 +136,8 @@ public interface GlobalConfigCache extends Runnable {
 
   AssetMetaContext topPriorityForMint(final PublicKey mint);
 
+  boolean hasAssetMetaForMint(final PublicKey mint);
+
   AssetMetaContext solAssetMeta();
 
   AssetMetaContext topPriorityForMintChecked(final PublicKey mint);

@@ -210,7 +210,7 @@ public record ReserveContext(long slot,
     }
   }
 
-  String keysToJson() {
+  public String keysToJson() {
     return String.format("""
             {
               "market": "%s",
@@ -227,7 +227,7 @@ public record ReserveContext(long slot,
     );
   }
 
-  String priceChainsToJson() {
+  public String priceChainsToJson() {
     final byte[] tokenInfo = new byte[TokenInfo.BYTES];
     this.tokenInfo.write(tokenInfo, 0);
     final var encodedTokenInfo = Base64.getEncoder().encodeToString(tokenInfo);
@@ -302,7 +302,7 @@ public record ReserveContext(long slot,
     }
   }
 
-  String priceChainsToJsonNoTokenInfo() {
+  public String priceChainsToJsonNoTokenInfo() {
     if (priceChains == null) {
       return String.format("""
               {
@@ -366,19 +366,6 @@ public record ReserveContext(long slot,
         );
       }
     }
-  }
-
-  enum ReserveChange {
-    MARKET,
-    MINT,
-    TOKEN_NAME,
-    TOTAL_COLLATERAL,
-    MAX_AGE_PRICE_SECONDS,
-    MAX_AGE_TWAP_SECONDS,
-    MAX_TWAP_DIVERGENCE_BPS,
-    PRICE_FEED,
-    PRICE_CHAIN,
-    TWAP_CHAIN
   }
 
   static boolean onlyCollateralChanged(final Set<ReserveChange> changes) {
