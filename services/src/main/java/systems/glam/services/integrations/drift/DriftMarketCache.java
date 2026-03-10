@@ -1,13 +1,13 @@
 package systems.glam.services.integrations.drift;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.encoding.ByteUtil;
 import software.sava.core.rpc.Filter;
 import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.drift.gen.types.MarketStatus;
 import software.sava.idl.clients.drift.gen.types.PerpMarket;
 import software.sava.idl.clients.drift.gen.types.SpotMarket;
 import software.sava.rpc.json.http.response.AccountInfo;
+import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.services.rpc.AccountFetcher;
 
@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 import static java.lang.System.Logger.Level.ERROR;
 import static systems.glam.services.io.FileUtils.ACCOUNT_FILE_EXTENSION;
 
-public interface DriftMarketCache {
+public interface DriftMarketCache extends Runnable {
 
   static CompletableFuture<DriftMarketCache> initCache(final Path driftCacheDirectory,
                                                        final DriftAccounts driftAccounts,
@@ -33,7 +33,7 @@ public interface DriftMarketCache {
     final var driftProgram = driftAccounts.driftProgram();
     try {
       final var spotMarketsDirectory = driftCacheDirectory.resolve("spot_markets");
-      final CompletableFuture<AtomicReferenceArray<DriftMarketContext>> spotMarketsFuture;
+      final CompletableFuture<AtomicReferenceArray<DriftSpotMarketContext>> spotMarketsFuture;
       if (Files.exists(spotMarketsDirectory)) {
         spotMarketsFuture = loadSpotMarkets(spotMarketsDirectory, rpcCaller, driftAccounts);
       } else {
@@ -42,7 +42,7 @@ public interface DriftMarketCache {
       }
 
       final var perpMarketsDirectory = driftCacheDirectory.resolve("perp_markets");
-      final CompletableFuture<AtomicReferenceArray<DriftMarketContext>> perpMarketsFuture;
+      final CompletableFuture<AtomicReferenceArray<DriftPerpMarketContext>> perpMarketsFuture;
       if (Files.exists(perpMarketsDirectory)) {
         perpMarketsFuture = loadPerpMarkets(perpMarketsDirectory, rpcCaller, driftAccounts);
       } else {
@@ -63,43 +63,31 @@ public interface DriftMarketCache {
     }
   }
 
-  private static CompletableFuture<AtomicReferenceArray<DriftMarketContext>> loadSpotMarkets(final Path marketsDirectory,
-                                                                                             final RpcCaller rpcCaller,
-                                                                                             final DriftAccounts driftAccounts) {
+  private static CompletableFuture<AtomicReferenceArray<DriftSpotMarketContext>> loadSpotMarkets(final Path marketsDirectory,
+                                                                                                 final RpcCaller rpcCaller,
+                                                                                                 final DriftAccounts driftAccounts) {
     final var driftProgram = driftAccounts.driftProgram();
     return loadMarkets(
         marketsDirectory,
-        data -> {
-          final var marketKey = PublicKey.readPubKey(data, SpotMarket.PUBKEY_OFFSET);
-          final var oracle = PublicKey.readPubKey(data, SpotMarket.ORACLE_OFFSET);
-          final int marketIndex = ByteUtil.getInt16LE(data, SpotMarket.MARKET_INDEX_OFFSET);
-          final int poolId = data[SpotMarket.POOL_ID_OFFSET] & 0xFF;
-          return DriftMarketContext.createContext(poolId, marketIndex, marketKey, oracle);
-        },
+        data -> DriftSpotMarketContext.createContext(0, data),
         () -> fetchSpotMarkets(marketsDirectory, rpcCaller, driftProgram)
     );
   }
 
-  private static CompletableFuture<AtomicReferenceArray<DriftMarketContext>> loadPerpMarkets(final Path marketsDirectory,
-                                                                                             final RpcCaller rpcCaller,
-                                                                                             final DriftAccounts driftAccounts) {
+  private static CompletableFuture<AtomicReferenceArray<DriftPerpMarketContext>> loadPerpMarkets(final Path marketsDirectory,
+                                                                                                 final RpcCaller rpcCaller,
+                                                                                                 final DriftAccounts driftAccounts) {
     final var driftProgram = driftAccounts.driftProgram();
     return loadMarkets(
         marketsDirectory,
-        data -> {
-          final var marketKey = PublicKey.readPubKey(data, PerpMarket.PUBKEY_OFFSET);
-          final var oracle = PublicKey.readPubKey(data, PerpMarket.AMM_OFFSET);
-          final int marketIndex = ByteUtil.getInt16LE(data, PerpMarket.MARKET_INDEX_OFFSET);
-          final int poolId = data[PerpMarket.POOL_ID_OFFSET] & 0xFF;
-          return DriftMarketContext.createContext(poolId, marketIndex, marketKey, oracle);
-        },
+        data -> DriftPerpMarketContext.createContext(0, data),
         () -> fetchPerpMarkets(marketsDirectory, rpcCaller, driftProgram)
     );
   }
 
-  private static CompletableFuture<AtomicReferenceArray<DriftMarketContext>> loadMarkets(final Path marketsDirectory,
-                                                                                         final Function<byte[], DriftMarketContext> contextFactory,
-                                                                                         final Supplier<CompletableFuture<AtomicReferenceArray<DriftMarketContext>>> fallback) {
+  private static <T extends DriftMarketContext> CompletableFuture<AtomicReferenceArray<T>> loadMarkets(final Path marketsDirectory,
+                                                                                                       final Function<byte[], T> contextFactory,
+                                                                                                       final Supplier<CompletableFuture<AtomicReferenceArray<T>>> fallback) {
     try (final var files = Files.list(marketsDirectory)) {
       final var datFiles = files
           .filter(p -> p.getFileName().toString().endsWith(ACCOUNT_FILE_EXTENSION))
@@ -109,9 +97,9 @@ public interface DriftMarketCache {
         return fallback.get();
       }
 
-      final var marketsArray = new AtomicReferenceArray<DriftMarketContext>(datFiles.size() << 1);
+      final var marketsArray = new AtomicReferenceArray<T>(datFiles.size() << 1);
       datFiles.parallelStream().forEach(datFile -> {
-        final DriftMarketContext marketContext;
+        final T marketContext;
         try {
           final byte[] data = Files.readAllBytes(datFile);
           marketContext = contextFactory.apply(data);
@@ -139,10 +127,10 @@ public interface DriftMarketCache {
     );
   }
 
-  private static CompletableFuture<AtomicReferenceArray<DriftMarketContext>> fetchSpotMarkets(final Path marketsDirectory,
-                                                                                              final RpcCaller rpcCaller,
-                                                                                              final PublicKey driftProgram) {
-    return fetchMarkets(marketsDirectory, rpcCaller, spotMarketFilters(), driftProgram, DriftMarketContext::createSpotContext);
+  private static CompletableFuture<AtomicReferenceArray<DriftSpotMarketContext>> fetchSpotMarkets(final Path marketsDirectory,
+                                                                                                  final RpcCaller rpcCaller,
+                                                                                                  final PublicKey driftProgram) {
+    return fetchMarkets(marketsDirectory, rpcCaller, spotMarketFilters(), driftProgram, DriftSpotMarketContext::createContext);
   }
 
   static List<Filter> perpMarketFilters() {
@@ -153,25 +141,25 @@ public interface DriftMarketCache {
     );
   }
 
-  private static CompletableFuture<AtomicReferenceArray<DriftMarketContext>> fetchPerpMarkets(final Path marketsDirectory,
-                                                                                              final RpcCaller rpcCaller,
-                                                                                              final PublicKey driftProgram) {
-    return fetchMarkets(marketsDirectory, rpcCaller, perpMarketFilters(), driftProgram, DriftMarketContext::createPerpContext);
+  private static CompletableFuture<AtomicReferenceArray<DriftPerpMarketContext>> fetchPerpMarkets(final Path marketsDirectory,
+                                                                                                  final RpcCaller rpcCaller,
+                                                                                                  final PublicKey driftProgram) {
+    return fetchMarkets(marketsDirectory, rpcCaller, perpMarketFilters(), driftProgram, DriftPerpMarketContext::createContext);
   }
 
-  private static CompletableFuture<AtomicReferenceArray<DriftMarketContext>> fetchMarkets(final Path marketsDirectory,
-                                                                                          final RpcCaller rpcCaller,
-                                                                                          final List<Filter> filters,
-                                                                                          final PublicKey driftProgram,
-                                                                                          final Function<AccountInfo<byte[]>, DriftMarketContext> contextFactory) {
+  private static <T extends DriftMarketContext> CompletableFuture<AtomicReferenceArray<T>> fetchMarkets(final Path marketsDirectory,
+                                                                                                        final RpcCaller rpcCaller,
+                                                                                                        final List<Filter> filters,
+                                                                                                        final PublicKey driftProgram,
+                                                                                                        final Function<AccountInfo<byte[]>, T> contextFactory) {
     final var fetchFuture = rpcCaller.courteousCall(
         rpcClient -> rpcClient.getProgramAccounts(driftProgram, filters),
         "rpcClient::getDriftSpotMarkets"
     );
     return fetchFuture.thenApplyAsync(accounts -> {
-      final var marketsArray = new AtomicReferenceArray<DriftMarketContext>(accounts.size() << 1);
+      final var marketsArray = new AtomicReferenceArray<T>(accounts.size() << 1);
       accounts.parallelStream().forEach(accountInfo -> {
-        final DriftMarketContext marketContext;
+        final T marketContext;
         try {
           marketContext = contextFactory.apply(accountInfo);
         } catch (final RuntimeException ex) {
@@ -190,11 +178,33 @@ public interface DriftMarketCache {
 
   DriftAccounts driftAccounts();
 
-  DriftMarketContext spotMarket(final int marketIndex);
+  DriftSpotMarketContext spotMarket(final int marketIndex);
 
-  DriftMarketContext perpMarket(final int marketIndex);
+  DriftPerpMarketContext perpMarket(final int marketIndex);
 
   void refreshSpotMarket(final int marketIndex);
 
   void refreshPerpMarket(final int marketIndex);
+
+  void subscribeToCriticalMarketChanges(final DriftListener listener);
+
+  void unSubscribeToCriticalMarketChanges(final DriftListener listener);
+
+  void subscribeToCriticalPerpMarketChanges(final PublicKey market, final DriftListener listener);
+
+  void unSubscribeToCriticalPerpMarketChanges(final PublicKey market, final DriftListener listener);
+
+  void subscribeToCriticalSpotMarketChanges(final PublicKey market, final DriftListener listener);
+
+  void unSubscribeToCriticalSpotMarketChanges(final PublicKey market, final DriftListener listener);
+
+  void subscribeToCriticalPerpMarketChanges(final int marketIndex, final DriftListener listener);
+
+  void unSubscribeToCriticalPerpMarketChanges(final int marketIndex, final DriftListener listener);
+
+  void subscribeToCriticalSpotMarketChanges(final int marketIndex, final DriftListener listener);
+
+  void unSubscribeToCriticalSpotMarketChanges(final int marketIndex, final DriftListener listener);
+
+  void subscribe(SolanaRpcWebsocket websocket);
 }

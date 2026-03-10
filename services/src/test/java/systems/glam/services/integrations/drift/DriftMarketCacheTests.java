@@ -20,17 +20,19 @@ final class DriftMarketCacheTests {
   private static final String SPOT_MARKETS_RESOURCE_PATH = "accounts/drift/spot_markets";
   private static final String PERP_MARKETS_RESOURCE_PATH = "accounts/drift/perp_markets";
 
-  private static DriftMarketContext[] SPOT_MARKETS;
-  private static DriftMarketContext[] PERP_MARKETS;
+  private static DriftSpotMarketContext[] SPOT_MARKETS;
+  private static DriftPerpMarketContext[] PERP_MARKETS;
 
   @BeforeAll
   static void loadMarkets() throws IOException, URISyntaxException {
-    SPOT_MARKETS = loadMarketsFromResource(SPOT_MARKETS_RESOURCE_PATH, DriftMarketContext::createSpotContext);
-    PERP_MARKETS = loadMarketsFromResource(PERP_MARKETS_RESOURCE_PATH, DriftMarketContext::createPerpContext);
+    SPOT_MARKETS = loadMarketsFromResource(SPOT_MARKETS_RESOURCE_PATH, DriftSpotMarketContext.class, data -> DriftSpotMarketContext.createContext(0, data));
+    PERP_MARKETS = loadMarketsFromResource(PERP_MARKETS_RESOURCE_PATH, DriftPerpMarketContext.class, data -> DriftPerpMarketContext.createContext(0, data));
   }
 
-  private static DriftMarketContext[] loadMarketsFromResource(final String resourcePath,
-                                                              final Function<byte[], DriftMarketContext> contextFactory) throws IOException, URISyntaxException {
+  @SuppressWarnings("unchecked")
+  private static <T extends DriftMarketContext> T[] loadMarketsFromResource(final String resourcePath,
+                                                                            final Class<T> componentType,
+                                                                            final Function<byte[], T> contextFactory) throws IOException, URISyntaxException {
     final var classLoader = DriftMarketCacheTests.class.getClassLoader();
     final var resourceUrl = classLoader.getResource(resourcePath);
     if (resourceUrl == null) {
@@ -44,7 +46,7 @@ final class DriftMarketCacheTests {
           .sorted()
           .toList();
 
-      final var markets = new DriftMarketContext[marketFiles.size()];
+      final var markets = (T[]) java.lang.reflect.Array.newInstance(componentType, marketFiles.size());
       for (int i = 0; i < marketFiles.size(); i++) {
         final var fileName = marketFiles.get(i).getFileName().toString();
         final var fullResourcePath = resourcePath + "/" + fileName;
@@ -59,7 +61,7 @@ final class DriftMarketCacheTests {
   void testSpotMarkets() {
     for (final var market : SPOT_MARKETS) {
       assertTrue(market.marketIndex() >= 0);
-      assertTrue(market.poolId() >= 0);
+      assertTrue(market.spotMarket().poolId() >= 0);
     }
   }
 
@@ -67,7 +69,6 @@ final class DriftMarketCacheTests {
   void testPerpMarkets() {
     for (final var market : PERP_MARKETS) {
       assertTrue(market.marketIndex() >= 0);
-      assertEquals(0, market.poolId());
     }
   }
 
@@ -79,9 +80,9 @@ final class DriftMarketCacheTests {
     return marketIndex;
   }
 
-  private static AtomicReferenceArray<DriftMarketContext> createMarketArray(final DriftMarketContext[] markets,
-                                                                            final int size) {
-    final var marketsArray = new AtomicReferenceArray<DriftMarketContext>(size);
+  private static <T extends DriftMarketContext> AtomicReferenceArray<T> createMarketArray(final T[] markets,
+                                                                                          final int size) {
+    final var marketsArray = new AtomicReferenceArray<T>(size);
     for (final var market : markets) {
       marketsArray.set(market.marketIndex(), market);
     }
@@ -104,34 +105,34 @@ final class DriftMarketCacheTests {
 
     var spotMarketContext = cache.spotMarket(24);
     assertNotNull(spotMarketContext);
-    assertEquals(0, spotMarketContext.poolId());
+    assertEquals(0, spotMarketContext.spotMarket().poolId());
     assertEquals(24, spotMarketContext.marketIndex());
-    assertEquals(PublicKey.fromBase58Encoded("13EdTpaMp1MeHSXqFVA3hFfEiLZWpatu4gEf5xCtRufN"), spotMarketContext.market());
-    assertEquals(PublicKey.fromBase58Encoded("CX7JCXtUTiC43ZA4uzoH7iQBD15jtVwdBNCnjKHt1BrQ"), spotMarketContext.oracle());
+    assertEquals(PublicKey.fromBase58Encoded("13EdTpaMp1MeHSXqFVA3hFfEiLZWpatu4gEf5xCtRufN"), spotMarketContext.readMarket().publicKey());
+    assertEquals(PublicKey.fromBase58Encoded("CX7JCXtUTiC43ZA4uzoH7iQBD15jtVwdBNCnjKHt1BrQ"), spotMarketContext.readOracle().publicKey());
 
     // Validate spot market index 47 (USDC-4)
     var spotMarketContext47 = cache.spotMarket(47);
     assertNotNull(spotMarketContext47);
-    assertEquals(4, spotMarketContext47.poolId());
+    assertEquals(4, spotMarketContext47.spotMarket().poolId());
     assertEquals(47, spotMarketContext47.marketIndex());
-    assertEquals(PublicKey.fromBase58Encoded("xas1HioZboo2nYuYa7yFVY1aVg3ypRRMb1A5v6hUXeE"), spotMarketContext47.market());
-    assertEquals(PublicKey.fromBase58Encoded("9VCioxmni2gDLv11qufWzT3RDERhQE4iY5Gf7NTfYyAV"), spotMarketContext47.oracle());
+    assertEquals(PublicKey.fromBase58Encoded("xas1HioZboo2nYuYa7yFVY1aVg3ypRRMb1A5v6hUXeE"), spotMarketContext47.readMarket().publicKey());
+    assertEquals(PublicKey.fromBase58Encoded("9VCioxmni2gDLv11qufWzT3RDERhQE4iY5Gf7NTfYyAV"), spotMarketContext47.readOracle().publicKey());
 
     // Validate spot market index 0 (USDC)
     var spotMarketContext0 = cache.spotMarket(0);
     assertNotNull(spotMarketContext0);
-    assertEquals(0, spotMarketContext0.poolId());
+    assertEquals(0, spotMarketContext0.spotMarket().poolId());
     assertEquals(0, spotMarketContext0.marketIndex());
-    assertEquals(PublicKey.fromBase58Encoded("6gMq3mRCKf8aP3ttTyYhuijVZ2LGi14oDsBbkgubfLB3"), spotMarketContext0.market());
-    assertEquals(PublicKey.fromBase58Encoded("9VCioxmni2gDLv11qufWzT3RDERhQE4iY5Gf7NTfYyAV"), spotMarketContext0.oracle());
+    assertEquals(PublicKey.fromBase58Encoded("6gMq3mRCKf8aP3ttTyYhuijVZ2LGi14oDsBbkgubfLB3"), spotMarketContext0.readMarket().publicKey());
+    assertEquals(PublicKey.fromBase58Encoded("9VCioxmni2gDLv11qufWzT3RDERhQE4iY5Gf7NTfYyAV"), spotMarketContext0.readOracle().publicKey());
 
     // Validate spot market index 62 (USD1)
     var spotMarketContext62 = cache.spotMarket(62);
     assertNotNull(spotMarketContext62);
-    assertEquals(0, spotMarketContext62.poolId());
+    assertEquals(0, spotMarketContext62.spotMarket().poolId());
     assertEquals(62, spotMarketContext62.marketIndex());
-    assertEquals(PublicKey.fromBase58Encoded("GHZ58w1YEh79NHwEvfKwXH7trQXGwd5a48HKbWc5xzNL"), spotMarketContext62.market());
-    assertEquals(PublicKey.fromBase58Encoded("Hk34ANkHfu4LHJhACMNCPNgGbi5ixpom2e3T7oh7EPDG"), spotMarketContext62.oracle());
+    assertEquals(PublicKey.fromBase58Encoded("GHZ58w1YEh79NHwEvfKwXH7trQXGwd5a48HKbWc5xzNL"), spotMarketContext62.readMarket().publicKey());
+    assertEquals(PublicKey.fromBase58Encoded("Hk34ANkHfu4LHJhACMNCPNgGbi5ixpom2e3T7oh7EPDG"), spotMarketContext62.readOracle().publicKey());
 
     // SpotMarket index 63 does not exist and tries to queue with a null AccountFetcher
     assertThrows(NullPointerException.class, () -> cache.spotMarket(maxSpotIndex + 1));
@@ -139,42 +140,37 @@ final class DriftMarketCacheTests {
     // Validate perp market index 0 (SOL-PERP)
     var perpMarketContext0 = cache.perpMarket(0);
     assertNotNull(perpMarketContext0);
-    assertEquals(0, perpMarketContext0.poolId());
     assertEquals(0, perpMarketContext0.marketIndex());
-    assertEquals(PublicKey.fromBase58Encoded("8UJgxaiQx5nTrdDgph5FiahMmzduuLTLf5WmsPegYA6W"), perpMarketContext0.market());
-    assertEquals(PublicKey.fromBase58Encoded("3m6i4RFWEDw2Ft4tFHPJtYgmpPe21k56M3FHeWYrgGBz"), perpMarketContext0.oracle());
+    assertEquals(PublicKey.fromBase58Encoded("8UJgxaiQx5nTrdDgph5FiahMmzduuLTLf5WmsPegYA6W"), perpMarketContext0.readMarket().publicKey());
+    assertEquals(PublicKey.fromBase58Encoded("3m6i4RFWEDw2Ft4tFHPJtYgmpPe21k56M3FHeWYrgGBz"), perpMarketContext0.readOracle().publicKey());
 
     // Validate perp market index 2 (ETH-PERP)
     var perpMarketContext2 = cache.perpMarket(2);
     assertNotNull(perpMarketContext2);
-    assertEquals(0, perpMarketContext2.poolId());
     assertEquals(2, perpMarketContext2.marketIndex());
-    assertEquals(PublicKey.fromBase58Encoded("25Eax9W8SA3wpCQFhJEGyHhQ2NDHEshZEDzyMNtthR8D"), perpMarketContext2.market());
-    assertEquals(PublicKey.fromBase58Encoded("93FG52TzNKCnMiasV14Ba34BYcHDb9p4zK4GjZnLwqWR"), perpMarketContext2.oracle());
+    assertEquals(PublicKey.fromBase58Encoded("25Eax9W8SA3wpCQFhJEGyHhQ2NDHEshZEDzyMNtthR8D"), perpMarketContext2.readMarket().publicKey());
+    assertEquals(PublicKey.fromBase58Encoded("93FG52TzNKCnMiasV14Ba34BYcHDb9p4zK4GjZnLwqWR"), perpMarketContext2.readOracle().publicKey());
 
     // Validate perp market index 8 (BNB-PERP)
     var perpMarketContext8 = cache.perpMarket(8);
     assertNotNull(perpMarketContext8);
-    assertEquals(0, perpMarketContext8.poolId());
     assertEquals(8, perpMarketContext8.marketIndex());
-    assertEquals(PublicKey.fromBase58Encoded("J6MErLoamPSkr6RzoYo8Da2WLCRmmmMQpanDSaenVCvq"), perpMarketContext8.market());
-    assertEquals(PublicKey.fromBase58Encoded("A9J2j1pRB2aPqAbjUTtKy94niSCTuPUrpimfzvpZHKG1"), perpMarketContext8.oracle());
+    assertEquals(PublicKey.fromBase58Encoded("J6MErLoamPSkr6RzoYo8Da2WLCRmmmMQpanDSaenVCvq"), perpMarketContext8.readMarket().publicKey());
+    assertEquals(PublicKey.fromBase58Encoded("A9J2j1pRB2aPqAbjUTtKy94niSCTuPUrpimfzvpZHKG1"), perpMarketContext8.readOracle().publicKey());
 
     // Validate perp market index 83 (1KMON-PERP)
     var perpMarketContext83 = cache.perpMarket(83);
     assertNotNull(perpMarketContext83);
-    assertEquals(0, perpMarketContext83.poolId());
     assertEquals(83, perpMarketContext83.marketIndex());
-    assertEquals(PublicKey.fromBase58Encoded("Cdx9uefR5d8HJQY5cQ69pkY5rFC6iiw4imDvT5W5dihC"), perpMarketContext83.market());
-    assertEquals(PublicKey.fromBase58Encoded("585jsthKg9BeTfnFGAxgfNie9krGGyPbd5feMpWneHf7"), perpMarketContext83.oracle());
+    assertEquals(PublicKey.fromBase58Encoded("Cdx9uefR5d8HJQY5cQ69pkY5rFC6iiw4imDvT5W5dihC"), perpMarketContext83.readMarket().publicKey());
+    assertEquals(PublicKey.fromBase58Encoded("585jsthKg9BeTfnFGAxgfNie9krGGyPbd5feMpWneHf7"), perpMarketContext83.readOracle().publicKey());
 
     // Validate perp market index 84 (LIT-PERP)
     var perpMarketContext84 = cache.perpMarket(84);
     assertNotNull(perpMarketContext84);
-    assertEquals(0, perpMarketContext84.poolId());
     assertEquals(84, perpMarketContext84.marketIndex());
-    assertEquals(PublicKey.fromBase58Encoded("7CcLj3MGYu2W8AEhaTS2pdvAWbx8BjCXu1YLMLnHFRFx"), perpMarketContext84.market());
-    assertEquals(PublicKey.fromBase58Encoded("HsfwxaJdpY5Dvd3ttrrY7YL635T7D9W443XdTwE2Dvbh"), perpMarketContext84.oracle());
+    assertEquals(PublicKey.fromBase58Encoded("7CcLj3MGYu2W8AEhaTS2pdvAWbx8BjCXu1YLMLnHFRFx"), perpMarketContext84.readMarket().publicKey());
+    assertEquals(PublicKey.fromBase58Encoded("HsfwxaJdpY5Dvd3ttrrY7YL635T7D9W443XdTwE2Dvbh"), perpMarketContext84.readOracle().publicKey());
 
     // PerpMarket index 85 does not exist and tries to queue with a null AccountFetcher
     assertThrows(NullPointerException.class, () -> cache.perpMarket(maxPerpIndex + 1));
