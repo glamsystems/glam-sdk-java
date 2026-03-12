@@ -20,6 +20,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -262,14 +265,18 @@ final class GlobalConfigCacheTests {
     );
 
     // Call createMapChecked with the invalid config - should return null
+    final var called = new AtomicReference<String>();
+    final var listener = new TestGlobalConfigListener(called);
     final var result = GlobalConfigCacheImpl.createMapChecked(
         1L,
         previousGlobalConfigUpdate.assetMetaContexts(),
         cache.assetMetaMap,
         AssetMetaContext.mapAssetMetas(invalidGlobalConfig),
-        NULL_MINT_CACHE
+        NULL_MINT_CACHE,
+        Set.of(listener)
     );
     assertNull(result);
+    assertEquals("onAssetMetaRemoved", called.get());
   }
 
   @Test
@@ -307,13 +314,17 @@ final class GlobalConfigCacheTests {
         oracleChangedMetas
     );
 
+    final var called = new AtomicReference<String>();
+    final var listener = new TestGlobalConfigListener(called);
     assertNull(GlobalConfigCacheImpl.createMapChecked(
         1L,
         previousGlobalConfigUpdate.assetMetaContexts(),
         cache.assetMetaMap,
         AssetMetaContext.mapAssetMetas(oracleChangedConfig),
-        NULL_MINT_CACHE
+        NULL_MINT_CACHE,
+        Set.of(listener)
     ));
+    assertEquals("onUnexpectedOracleChange", called.get());
 
     // Case 2: Different asset (without negative priority)
     final var assetChangedMetas = Arrays.copyOf(previousAssetMetas, previousAssetMetas.length);
@@ -338,13 +349,16 @@ final class GlobalConfigCacheTests {
         assetChangedMetas
     );
 
+    called.set(null);
     assertNull(GlobalConfigCacheImpl.createMapChecked(
         1L,
         previousGlobalConfigUpdate.assetMetaContexts(),
         cache.assetMetaMap,
         AssetMetaContext.mapAssetMetas(assetChangedConfig),
-        NULL_MINT_CACHE
+        NULL_MINT_CACHE,
+        Set.of(listener)
     ));
+    assertEquals("onUnexpectedOracleChange", called.get());
   }
 
   @Test
@@ -382,8 +396,11 @@ final class GlobalConfigCacheTests {
         modifiedMetas
     );
 
-    final var result = GlobalConfigCacheImpl.createMapChecked(1L, AssetMetaContext.mapAssetMetas(invalidConfig), NULL_MINT_CACHE);
+    final var called = new AtomicReference<String>();
+    final var listener = new TestGlobalConfigListener(called);
+    final var result = GlobalConfigCacheImpl.createMapChecked(1L, AssetMetaContext.mapAssetMetas(invalidConfig), Map.of(), NULL_MINT_CACHE, Set.of(listener));
     assertNull(result);
+    assertEquals("onInconsistentOracleSourceWithinConfig", called.get());
   }
 
   @Test
@@ -420,14 +437,18 @@ final class GlobalConfigCacheTests {
         modifiedMetas
     );
 
+    final var called = new AtomicReference<String>();
+    final var listener = new TestGlobalConfigListener(called);
     final var result = GlobalConfigCacheImpl.createMapChecked(
         1L,
         previousGlobalConfigUpdate.assetMetaContexts(),
         cache.assetMetaMap,
         AssetMetaContext.mapAssetMetas(newGlobalConfig),
-        NULL_MINT_CACHE
+        NULL_MINT_CACHE,
+        Set.of(listener)
     );
     assertNull(result);
+    assertEquals("onInconsistentOracleSource", called.get());
   }
 
   @Test
@@ -454,8 +475,11 @@ final class GlobalConfigCacheTests {
         duplicatedMetas
     );
 
-    final var result = GlobalConfigCacheImpl.createMapChecked(1L, AssetMetaContext.mapAssetMetas(invalidConfig), NULL_MINT_CACHE);
+    final var called = new AtomicReference<String>();
+    final var listener = new TestGlobalConfigListener(called);
+    final var result = GlobalConfigCacheImpl.createMapChecked(1L, AssetMetaContext.mapAssetMetas(invalidConfig), Map.of(), NULL_MINT_CACHE, Set.of(listener));
     assertNull(result);
+    assertEquals("onDuplicateOracleForAsset", called.get());
   }
 
   @Test
@@ -494,8 +518,11 @@ final class GlobalConfigCacheTests {
         modifiedMetas
     );
 
-    final var result = GlobalConfigCacheImpl.createMapChecked(1L, AssetMetaContext.mapAssetMetas(invalidConfig), NULL_MINT_CACHE);
+    final var called = new AtomicReference<String>();
+    final var listener = new TestGlobalConfigListener(called);
+    final var result = GlobalConfigCacheImpl.createMapChecked(1L, AssetMetaContext.mapAssetMetas(invalidConfig), Map.of(), NULL_MINT_CACHE, Set.of(listener));
     assertNull(result);
+    assertEquals("onInconsistentDecimalsWithinConfig", called.get());
   }
 
   @Test
@@ -531,13 +558,125 @@ final class GlobalConfigCacheTests {
         modifiedMetas
     );
 
+    final var called = new AtomicReference<String>();
+    final var listener = new TestGlobalConfigListener(called);
     final var result = GlobalConfigCacheImpl.createMapChecked(
         1L,
         previousGlobalConfigUpdate.assetMetaContexts(),
         cache.assetMetaMap,
         AssetMetaContext.mapAssetMetas(invalidConfig),
-        NULL_MINT_CACHE
+        NULL_MINT_CACHE,
+        Set.of(listener)
     );
     assertNull(result);
+    assertEquals("onDecimalsChange", called.get());
+  }
+
+  private record TestGlobalConfigListener(AtomicReference<String> called) implements GlobalConfigListener {
+
+    @Override
+    public void onInvalidDecimals(final PublicKey mint,
+                                  final int mintDecimals,
+                                  final AssetMetaContext assetMeta,
+                                  final GlobalConfigUpdate globalConfigUpdate) {
+      called.set("onInvalidDecimals");
+    }
+
+    @Override
+    public void onAssetMetaRemoved(final long slot,
+                                   final AssetMetaContext[] previous,
+                                   final AssetMetaContext[] latest) {
+      called.set("onAssetMetaRemoved");
+    }
+
+    @Override
+    public void onAssetMetaAdded(final long slot,
+                                 final AssetMetaContext[] previous,
+                                 final AssetMetaContext[] latest) {
+      called.set("onAssetMetaAdded");
+    }
+
+    @Override
+    public void onDecimalsChange(final long slot,
+                                 final AssetMetaContext previous,
+                                 final AssetMetaContext latest) {
+      called.set("onDecimalsChange");
+    }
+
+    @Override
+    public void onInconsistentOracleSource(final long slot,
+                                           final AssetMetaContext previous,
+                                           final AssetMetaContext latest) {
+      called.set("onInconsistentOracleSource");
+    }
+
+    @Override
+    public void onOracleConfigurationChange(final long slot,
+                                            final AssetMetaContext previous,
+                                            final AssetMetaContext latest, final AssetMetaContext[] assetMetaContexts) {
+      called.set("onOracleConfigurationChange");
+    }
+
+    @Override
+    public void onOracleEntryRotation(final long slot,
+                                      final AssetMetaContext previous,
+                                      final AssetMetaContext latest, final AssetMetaContext[] assetMetaContexts) {
+      called.set("onOracleEntryRotation");
+    }
+
+    @Override
+    public void onUnexpectedOracleChange(final long slot,
+                                         final AssetMetaContext previous,
+                                         final AssetMetaContext latest) {
+      called.set("onUnexpectedOracleChange");
+    }
+
+    @Override
+    public void onInconsistentDecimals(final long slot,
+                                       final AssetMetaContext previous,
+                                       final AssetMetaContext latest) {
+      called.set("onInconsistentDecimals");
+    }
+
+    @Override
+    public void onDecimalsDoNotMatchMint(final long slot,
+                                         final MintContext mintContext,
+                                         final AssetMetaContext assetMeta) {
+      called.set("onDecimalsDoNotMatchMint");
+    }
+
+    @Override
+    public void onInvalidOracleSource(final long slot,
+                                      final AssetMetaContext assetMeta) {
+      called.set("onInvalidOracleSource");
+    }
+
+    @Override
+    public void onInconsistentOracleSourceAcrossConfigs(final long slot,
+                                                        final OracleSource previousOracleSource,
+                                                        final AssetMetaContext assetMeta) {
+      called.set("onInconsistentOracleSourceAcrossConfigs");
+    }
+
+    @Override
+    public void onInconsistentOracleSourceWithinConfig(final long slot,
+                                                       final AssetMetaContext a,
+                                                       final AssetMetaContext b) {
+      called.set("onInconsistentOracleSourceWithinConfig");
+    }
+
+    @Override
+    public void onDuplicateOracleForAsset(final long slot,
+                                          final AssetMetaContext a,
+                                          final AssetMetaContext b) {
+      called.set("onDuplicateOracleForAsset");
+    }
+
+    @Override
+    public void onInconsistentDecimalsWithinConfig(final long slot,
+                                                   final AssetMetaContext a,
+                                                   final AssetMetaContext b) {
+      called.set("onInconsistentDecimalsWithinConfig");
+    }
   }
 }

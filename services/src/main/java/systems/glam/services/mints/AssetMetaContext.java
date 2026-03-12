@@ -7,14 +7,13 @@ import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.GlobalConfig;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.OracleSource;
 
-import java.util.Arrays;
-
 public interface AssetMetaContext extends Comparable<AssetMetaContext>, DecimalInteger {
 
-  static AssetMetaContext create(final AssetMeta assetMeta) {
+  static AssetMetaContext create(final int index, final AssetMeta assetMeta) {
     final var asset = assetMeta.asset();
     final var oracle = assetMeta.oracle();
     return new AssetMetaContextRecord(
+        index,
         assetMeta.asset(),
         AccountMeta.createRead(asset),
         assetMeta.decimals(),
@@ -27,8 +26,15 @@ public interface AssetMetaContext extends Comparable<AssetMetaContext>, DecimalI
   }
 
   static AssetMetaContext[] mapAssetMetas(final GlobalConfig globalConfig) {
-    return Arrays.stream(globalConfig.assetMetas()).map(AssetMetaContext::create).toArray(AssetMetaContext[]::new);
+    final var assetMetas = globalConfig.assetMetas();
+    final var assetMetaContext = new AssetMetaContext[assetMetas.length];
+    for (int i = 0; i < assetMetas.length; i++) {
+      assetMetaContext[i] = AssetMetaContext.create(i, assetMetas[i]);
+    }
+    return assetMetaContext;
   }
+
+  int index();
 
   PublicKey asset();
 

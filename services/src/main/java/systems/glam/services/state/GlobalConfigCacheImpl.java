@@ -31,13 +31,6 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
 
   private static final System.Logger logger = System.getLogger(GlobalConfigCache.class.getName());
 
-  record GlobalConfigUpdate(long slot, AssetMetaContext[] assetMetaContexts, byte[] data) {
-
-    public AssetMetaContext get(final int index) {
-      return index < assetMetaContexts.length ? assetMetaContexts[index] : null;
-    }
-  }
-
   private final Path globalConfigFilePath;
   private final PublicKey configProgram;
   private final PublicKey globalConfigKey;
@@ -50,6 +43,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   private final ReentrantReadWriteLock.WriteLock writeLock;
   private final Condition invalidGlobalConfig;
   private final Condition newAssetMeta;
+  private final Set<GlobalConfigListener> listeners;
 
   volatile GlobalConfigUpdate globalConfigUpdate;
   volatile Map<PublicKey, AssetMetaContext[]> assetMetaMap;
@@ -78,6 +72,12 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     this.newAssetMeta = writeLock.newCondition();
     this.globalConfigUpdate = globalConfigUpdate;
     this.assetMetaMap = assetMetaMap;
+    this.listeners = ConcurrentHashMap.newKeySet();
+  }
+
+  @Override
+  public GlobalConfigUpdate globalConfig() {
+    return globalConfigUpdate;
   }
 
   @Override
@@ -184,7 +184,8 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     }
     writeLock.lock();
     try {
-      if (this.globalConfigUpdate == null || this.assetMetaMap == null) {
+      final var globalConfigUpdate = this.globalConfigUpdate;
+      if (globalConfigUpdate == null || this.assetMetaMap == null) {
         return null;
       }
       this.globalConfigUpdate = null;
@@ -199,7 +200,9 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
           mintDecimals, assetMeta.toJson()
       );
       logger.log(ERROR, msg);
-      // TODO: Trigger alert and exit.
+      for (final var listener : listeners) {
+        listener.onInvalidDecimals(mint, mintDecimals, assetMeta, globalConfigUpdate);
+      }
       throw new IllegalStateException(msg);
     } finally {
       writeLock.unlock();
@@ -257,7 +260,8 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                                                              final AssetMetaContext[] previousAssetMetaContexts,
                                                              final Map<PublicKey, AssetMetaContext[]> previousMetaMap,
                                                              final AssetMetaContext[] assetMetaContexts,
-                                                             final MintCache mintCache) {
+                                                             final MintCache mintCache,
+                                                             final Set<GlobalConfigListener> listeners) {
     if (previousAssetMetaContexts.length > assetMetaContexts.length) {
       final var msg = String.format("""
               {
@@ -270,7 +274,9 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
           Long.toUnsignedString(slot), previousAssetMetaContexts.length, assetMetaContexts.length
       );
       logger.log(ERROR, msg);
-      // TODO: Trigger alert and exit.
+      for (final var listener : listeners) {
+        listener.onAssetMetaRemoved(slot, previousAssetMetaContexts, assetMetaContexts);
+      }
       return null;
     }
 
@@ -294,7 +300,9 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
               previous.toJson(), current.toJson()
           );
           logger.log(ERROR, msg);
-          // TODO: Trigger alert and exit.
+          for (final var listener : listeners) {
+            listener.onDecimalsChange(slot, previous, current);
+          }
           return null;
         } else if (previous.oracleSource() != current.oracleSource()) {
           final var msg = String.format("""
@@ -311,7 +319,9 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
               previous.toJson(), current.toJson()
           );
           logger.log(ERROR, msg);
-          // TODO: Trigger alert and exit.
+          for (final var listener : listeners) {
+            listener.onInconsistentOracleSource(slot, previous, current);
+          }
           return null;
         }
         // Consistent OracleSource types are checked below.
@@ -328,6 +338,9 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                   previous.toJson(), current.toJson()
               )
           );
+          for (final var listener : listeners) {
+            listener.onOracleConfigurationChange(slot, previous, current, assetMetaContexts);
+          }
         }
       } else if (previous.priority() < 0) {
         final var msg = String.format("""
@@ -341,6 +354,9 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
             Long.toUnsignedString(slot), i, previous.toJson(), current.toJson()
         );
         logger.log(INFO, msg);
+        for (final var listener : listeners) {
+          listener.onOracleEntryRotation(slot, previous, current, assetMetaContexts);
+        }
       } else {
         final var msg = String.format("""
                 {
@@ -355,7 +371,9 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
             previous.toJson(), current.toJson()
         );
         logger.log(ERROR, msg);
-        // TODO: Trigger alert and exit.
+        for (final var listener : listeners) {
+          listener.onUnexpectedOracleChange(slot, previous, current);
+        }
         return null;
       }
 
@@ -376,9 +394,12 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
             )
         );
       }
+      for (final var listener : listeners) {
+        listener.onAssetMetaAdded(slot, previousAssetMetaContexts, assetMetaContexts);
+      }
     }
 
-    final var assetMetaMap = createMapChecked(slot, assetMetaContexts, previousOracleSourceMap, mintCache);
+    final var assetMetaMap = createMapChecked(slot, assetMetaContexts, previousOracleSourceMap, mintCache, listeners);
     if (assetMetaMap == null) {
       return null;
     }
@@ -403,7 +424,9 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
               previousMetas[0].toJson(), assetMetas[0].toJson()
           );
           logger.log(ERROR, msg);
-          // TODO: Trigger alert and exit.
+          for (final var listener : listeners) {
+            listener.onInconsistentDecimals(slot, previousMetas[0], assetMetas[0]);
+          }
           return null;
         }
       }
@@ -422,13 +445,14 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   static Map<PublicKey, AssetMetaContext[]> createMapChecked(final long slot,
                                                              final AssetMetaContext[] assetMetaContexts,
                                                              final MintCache mintCache) {
-    return createMapChecked(slot, assetMetaContexts, Map.of(), mintCache);
+    return createMapChecked(slot, assetMetaContexts, Map.of(), mintCache, Set.of());
   }
 
   static Map<PublicKey, AssetMetaContext[]> createMapChecked(final long slot,
                                                              final AssetMetaContext[] assetMetaContexts,
                                                              final Map<PublicKey, OracleSource> previousOracleSourceMap,
-                                                             final MintCache mintCache) {
+                                                             final MintCache mintCache,
+                                                             final Set<GlobalConfigListener> listeners) {
     final var distinctOracleSource = HashMap.<PublicKey, AssetMetaContext>newHashMap(assetMetaContexts.length << 2);
     final var assetMetaMap = HashMap.<PublicKey, AssetMetaContext[]>newHashMap(assetMetaContexts.length);
     for (int i = 0; i < assetMetaContexts.length; ++i) {
@@ -446,7 +470,9 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
             Long.toUnsignedString(slot), mintContext.decimals(), i, assetMeta.toJson()
         );
         logger.log(ERROR, msg);
-        // TODO: Trigger alert and exit.
+        for (final var listener : listeners) {
+          listener.onDecimalsDoNotMatchMint(slot, mintContext, assetMeta);
+        }
         return null;
       }
 
@@ -461,7 +487,9 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
             Long.toUnsignedString(slot), i, assetMeta.toJson()
         );
         logger.log(ERROR, msg);
-        // TODO: Trigger alert and exit.
+        for (final var listener : listeners) {
+          listener.onInvalidOracleSource(slot, assetMeta);
+        }
         return null;
       }
       final var mint = assetMeta.asset();
@@ -484,7 +512,9 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
             i, assetMeta.toJson()
         );
         logger.log(ERROR, msg);
-        // TODO: Trigger alert and exit.
+        for (final var listener : listeners) {
+          listener.onInconsistentOracleSourceAcrossConfigs(slot, previousOracleSource, assetMeta);
+        }
         return null;
       }
 
@@ -502,7 +532,9 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
             otherMeta.toJson(), assetMeta.toJson()
         );
         logger.log(ERROR, msg);
-        // TODO: Trigger alert and exit.
+        for (final var listener : listeners) {
+          listener.onInconsistentOracleSourceWithinConfig(slot, otherMeta, assetMeta);
+        }
         return null;
       }
 
@@ -523,7 +555,9 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                 entry.toJson(), assetMeta.toJson()
             );
             logger.log(ERROR, msg);
-            // TODO: Trigger alert and exit.
+            for (final var listener : listeners) {
+              listener.onDuplicateOracleForAsset(slot, entry, assetMeta);
+            }
             return null;
           }
         }
@@ -538,7 +572,8 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     for (final var assetMetas : assetMetaMap.values()) {
       if (assetMetas.length > 1) {
         Arrays.sort(assetMetas);
-        final int expectedDecimals = assetMetas[0].decimals();
+        final var refMeta = assetMetas[0];
+        final int expectedDecimals = refMeta.decimals();
         for (int i = 1; i < assetMetas.length; ++i) {
           final var assetMeta = assetMetas[i];
           if (assetMeta.decimals() != expectedDecimals) {
@@ -551,10 +586,12 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                     }
                     """,
                 Long.toUnsignedString(slot),
-                assetMetas[0].toJson(), assetMeta.toJson()
+                refMeta.toJson(), assetMeta.toJson()
             );
             logger.log(ERROR, msg);
-            // TODO: Trigger alert and exit.
+            for (final var listener : listeners) {
+              listener.onInconsistentDecimalsWithinConfig(slot, refMeta, assetMeta);
+            }
             return null;
           }
         }
@@ -571,7 +608,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     } else {
       final var msg = String.format("""
               {
-               "event": "Invalid GlobalConfig Account",
+               "event": "Unexpected GlobalConfig Account",
                "slot": %s,
                "program": "%s",
                "account": "%s",
@@ -590,6 +627,16 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   @Override
   public void subscribe(final SolanaRpcWebsocket websocket) {
     websocket.accountSubscribe(globalConfigKey, this);
+  }
+
+  @Override
+  public void subscribe(final GlobalConfigListener listener) {
+    listeners.add(listener);
+  }
+
+  @Override
+  public void unsubscribe(final GlobalConfigListener listener) {
+    listeners.remove(listener);
   }
 
   @Override
@@ -633,7 +680,13 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
         final var assetMetaContexts = AssetMetaContext.mapAssetMetas(globalConfig);
 
         final var previousAssetMetaMap = this.assetMetaMap;
-        final var assetMetaMap = createMapChecked(slot, previousConfigUpdate.assetMetaContexts(), previousAssetMetaMap, assetMetaContexts, this.mintCache);
+        final var assetMetaMap = createMapChecked(
+            slot,
+            previousConfigUpdate.assetMetaContexts(), previousAssetMetaMap,
+            assetMetaContexts,
+            this.mintCache,
+            this.listeners
+        );
         if (assetMetaMap == null) {
           this.assetMetaMap = null;
           this.globalConfigUpdate = null;

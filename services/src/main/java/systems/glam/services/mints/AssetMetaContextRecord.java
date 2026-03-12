@@ -4,7 +4,8 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.OracleSource;
 
-public record AssetMetaContextRecord(PublicKey asset,
+public record AssetMetaContextRecord(int index,
+                                     PublicKey asset,
                                      AccountMeta readAssetMint,
                                      int decimals,
                                      PublicKey oracle,
@@ -33,6 +34,7 @@ public record AssetMetaContextRecord(PublicKey asset,
   public String toJson() {
     return String.format("""
             {
+             "index": %d,
              "asset": "%s",
              "decimals": %d,
              "oracle": "%s",
@@ -40,6 +42,7 @@ public record AssetMetaContextRecord(PublicKey asset,
              "priority": %d,
              "maxAgeSeconds": %d
             }""",
+        index,
         asset.toBase58(),
         decimals,
         oracle.toBase58(),

@@ -39,7 +39,7 @@ public interface GlobalConfigCache extends Runnable {
         final var globalConfig = GlobalConfig.read(globalConfigKey, data);
         final var assetMetaContexts = AssetMetaContext.mapAssetMetas(globalConfig);
         final var assetMetaMap = createMap(assetMetaContexts);
-        final var globalConfigUpdate = new GlobalConfigCacheImpl.GlobalConfigUpdate(0, assetMetaContexts, data);
+        final var globalConfigUpdate = new GlobalConfigUpdate(0, assetMetaContexts, data);
         final var cache = new GlobalConfigCacheImpl(
             globalConfigFilePath,
             configProgram, globalConfigKey,
@@ -69,7 +69,7 @@ public interface GlobalConfigCache extends Runnable {
           final var globalConfig = GlobalConfig.read(accountInfo.pubKey(), data);
           final var assetMetaContexts = AssetMetaContext.mapAssetMetas(globalConfig);
           final var assetMetaMap = createMapChecked(slot, assetMetaContexts, mintCache);
-          final var globalConfigUpdate = new GlobalConfigCacheImpl.GlobalConfigUpdate(
+          final var globalConfigUpdate = new GlobalConfigUpdate(
               slot, assetMetaContexts, data
           );
           persistGlobalConfig(globalConfigFilePath, data);
@@ -122,6 +122,8 @@ public interface GlobalConfigCache extends Runnable {
     return assetMetaMap;
   }
 
+  GlobalConfigUpdate globalConfig();
+
   AssetMetaContext watchForMint(final PublicKey mint, final PublicKey stateAccount);
 
   /**
@@ -147,4 +149,8 @@ public interface GlobalConfigCache extends Runnable {
   CompletableFuture<Void> initCache();
 
   void subscribe(final SolanaRpcWebsocket websocket);
+
+  void subscribe(final GlobalConfigListener listener);
+
+  void unsubscribe(final GlobalConfigListener listener);
 }
