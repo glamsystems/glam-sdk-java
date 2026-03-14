@@ -142,6 +142,16 @@ final class DriftMarketCacheImpl implements DriftMarketCache, AccountConsumer, C
   }
 
   @Override
+  public void subscribeToCriticalPerpMarketChanges(final int marketIndex, final DriftListener listener) {
+    subscribeToCriticalPerpMarketChanges(perpMarketKey(marketIndex), listener);
+  }
+
+  @Override
+  public void unSubscribeToCriticalPerpMarketChanges(final int marketIndex, final DriftListener listener) {
+    unSubscribeToCriticalPerpMarketChanges(perpMarketKey(marketIndex), listener);
+  }
+
+  @Override
   public void subscribeToCriticalSpotMarketChanges(final PublicKey market, final DriftListener listener) {
     final var listeners = this.criticalSpotMarketListeners.computeIfAbsent(market, _ -> new ConcurrentHashMap<>());
     listeners.put(listener.key(), listener);
@@ -156,23 +166,13 @@ final class DriftMarketCacheImpl implements DriftMarketCache, AccountConsumer, C
   }
 
   @Override
-  public void subscribeToCriticalPerpMarketChanges(final int marketIndex, final DriftListener listener) {
-    subscribeToCriticalPerpMarketChanges(perpMarketKey(marketIndex), listener);
-  }
-
-  @Override
-  public void unSubscribeToCriticalPerpMarketChanges(final int marketIndex, final DriftListener listener) {
-    unSubscribeToCriticalPerpMarketChanges(perpMarketKey(marketIndex), listener);
-  }
-
-  @Override
   public void subscribeToCriticalSpotMarketChanges(final int marketIndex, final DriftListener listener) {
-    subscribeToCriticalSpotMarketChanges(perpMarketKey(marketIndex), listener);
+    subscribeToCriticalSpotMarketChanges(spotMarketKey(marketIndex), listener);
   }
 
   @Override
   public void unSubscribeToCriticalSpotMarketChanges(final int marketIndex, final DriftListener listener) {
-    unSubscribeToCriticalSpotMarketChanges(perpMarketKey(marketIndex), listener);
+    unSubscribeToCriticalSpotMarketChanges(spotMarketKey(marketIndex), listener);
   }
 
   static void writeMarketData(final Path directory, final int marketIndex, final byte[] data) {
@@ -313,16 +313,16 @@ final class DriftMarketCacheImpl implements DriftMarketCache, AccountConsumer, C
     websocket.programSubscribe(
         driftAccounts.driftProgram(),
         List.of(
-            PerpMarket.DISCRIMINATOR_FILTER,
-            PerpMarket.SIZE_FILTER
+            SpotMarket.DISCRIMINATOR_FILTER,
+            SpotMarket.SIZE_FILTER
         ),
         this
     );
     websocket.programSubscribe(
         driftAccounts.driftProgram(),
         List.of(
-            SpotMarket.DISCRIMINATOR_FILTER,
-            SpotMarket.SIZE_FILTER
+            PerpMarket.DISCRIMINATOR_FILTER,
+            PerpMarket.SIZE_FILTER
         ),
         this
     );

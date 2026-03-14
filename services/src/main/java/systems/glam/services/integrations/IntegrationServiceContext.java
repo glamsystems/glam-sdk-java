@@ -9,6 +9,7 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
+import systems.glam.services.integrations.drift.DriftUserCache;
 import systems.glam.services.integrations.kamino.KaminoCache;
 import systems.glam.services.mints.*;
 import systems.glam.services.oracles.scope.FeedIndexes;
@@ -30,6 +31,7 @@ public interface IntegrationServiceContext {
                                                  final AccountFetcher accountFetcher,
                                                  final DriftAccounts driftAccounts,
                                                  final DriftMarketCache driftMarketCache,
+                                                 final DriftUserCache driftUserCache,
                                                  final KaminoAccounts kaminoAccounts,
                                                  final KaminoCache kaminoCache) {
     return new IntegrationServiceContextImpl(
@@ -39,7 +41,7 @@ public interface IntegrationServiceContext {
         globalConfigCache,
         integLookupTableCache,
         accountFetcher,
-        driftAccounts, driftMarketCache,
+        driftAccounts, driftMarketCache, driftUserCache,
         kaminoAccounts, kaminoCache
     );
   }
@@ -85,6 +87,8 @@ public interface IntegrationServiceContext {
   IntegLookupTableCache integTableCache();
 
   DriftMarketCache driftMarketCache();
+
+  DriftUserCache driftUserCache();
 
   DriftAccounts driftAccounts();
 

@@ -8,6 +8,7 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.execution.BaseServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
+import systems.glam.services.integrations.drift.DriftUserCache;
 import systems.glam.services.integrations.kamino.KaminoCache;
 import systems.glam.services.mints.*;
 import systems.glam.services.oracles.scope.FeedIndexes;
@@ -26,6 +27,7 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   private final AccountFetcher accountFetcher;
   private final DriftAccounts driftAccounts;
   private final DriftMarketCache driftMarketCache;
+  private final DriftUserCache driftUserCache;
   private final KaminoAccounts kaminoAccounts;
   private final KaminoCache kaminoCache;
 
@@ -37,6 +39,7 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
                                 final AccountFetcher accountFetcher,
                                 final DriftAccounts driftAccounts,
                                 final DriftMarketCache driftMarketCache,
+                                final DriftUserCache driftUserCache,
                                 final KaminoAccounts kaminoAccounts,
                                 final KaminoCache kaminoCache) {
     super(serviceContext);
@@ -47,6 +50,7 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
     this.accountFetcher = accountFetcher;
     this.driftAccounts = driftAccounts;
     this.driftMarketCache = driftMarketCache;
+    this.driftUserCache = driftUserCache;
     this.kaminoAccounts = kaminoAccounts;
     this.kaminoCache = kaminoCache;
   }
@@ -104,6 +108,11 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   @Override
   public DriftMarketCache driftMarketCache() {
     return driftMarketCache;
+  }
+
+  @Override
+  public DriftUserCache driftUserCache() {
+    return driftUserCache;
   }
 
   @Override

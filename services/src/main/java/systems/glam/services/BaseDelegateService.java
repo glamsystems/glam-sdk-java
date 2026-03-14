@@ -22,4 +22,8 @@ public abstract class BaseDelegateService implements DelegateService {
   public PublicKey key() {
     return glamAccountClient.vaultAccounts().glamStateKey();
   }
+
+  protected PublicKey vaultKey() {
+    return glamAccountClient.vaultAccounts().vaultPublicKey();
+  }
 }
