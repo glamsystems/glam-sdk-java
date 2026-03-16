@@ -1,5 +1,3 @@
-import systems.glam.services.db.sql.SqlDataSource;
-import systems.glam.services.db.sql.postgres.PostgresDataSourceFactory;
 
 module systems.glam.services {
   requires java.logging;
@@ -28,14 +26,8 @@ module systems.glam.services {
   // Database
   requires java.sql;
   requires com.zaxxer.hikari;
-  requires org.postgresql.jdbc;
-  requires java.desktop;
-
-  uses SqlDataSource.Factory;
-  provides SqlDataSource.Factory with PostgresDataSourceFactory;
 
   exports systems.glam.services.db.sql;
-  exports systems.glam.services.db;
   exports systems.glam.services.config;
   exports systems.glam.services.execution;
   exports systems.glam.services.fulfillment.accounting;

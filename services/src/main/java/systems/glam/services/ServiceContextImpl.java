@@ -12,9 +12,9 @@ import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.core.remote.call.Backoff;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamAccounts;
-import systems.glam.services.db.sql.SqlDataSource;
 import systems.glam.services.io.FileUtils;
 
+import javax.sql.DataSource;
 import java.math.BigInteger;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -39,7 +39,7 @@ public final class ServiceContextImpl implements ServiceContext {
   private final GlamAccounts glamAccounts;
   private final NotifyClient notifyClient;
   private final RpcCaller rpcCaller;
-  private final SqlDataSource primaryDatasource;
+  private final DataSource primaryDatasource;
 
   public ServiceContextImpl(final PublicKey serviceKey,
                             final BigInteger warnFeePayerBalance, final BigInteger minFeePayerBalance,
@@ -51,7 +51,7 @@ public final class ServiceContextImpl implements ServiceContext {
                             final GlamAccounts glamAccounts,
                             final NotifyClient notifyClient,
                             final RpcCaller rpcCaller,
-                            final SqlDataSource primaryDatasource) {
+                            final DataSource primaryDatasource) {
     this.serviceKey = serviceKey;
     this.warnFeePayerBalance = warnFeePayerBalance;
     this.minFeePayerBalance = minFeePayerBalance;
@@ -232,7 +232,7 @@ public final class ServiceContextImpl implements ServiceContext {
   }
 
   @Override
-  public SqlDataSource primaryDatasource() {
+  public DataSource primaryDatasource() {
     return primaryDatasource;
   }
 

@@ -21,7 +21,6 @@ import software.sava.services.solana.websocket.WebSocketManager;
 import systems.glam.sdk.GlamAccounts;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.execution.ExecutionServiceContext;
-import systems.glam.services.db.DatasourceConfig;
 import systems.glam.services.execution.InstructionProcessor;
 import systems.glam.services.mints.MintCache;
 import systems.glam.services.rpc.AccountFetcher;
@@ -84,7 +83,7 @@ public interface DelegateServiceConfig {
 
   int maxTransactionRetries();
 
-  DatasourceConfig datasourceConfig();
+  String hikariPropertiesFile();
 
   WebSocketManager createWebSocketManager(final HttpClient wsHttpClient,
                                           final Collection<Consumer<SolanaRpcWebsocket>> webSocketConsumers);

@@ -2,6 +2,7 @@ package systems.glam.services.db.sql;
 
 import software.sava.services.core.remote.call.Backoff;
 
+import javax.sql.DataSource;
 import java.lang.reflect.Array;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -20,7 +21,7 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
   private static final System.Logger logger = System.getLogger(BatchSqlExecutor.class.getName());
 
   private final Class<T> componentType;
-  private final SqlDataSource datasource;
+  private final DataSource datasource;
   private final String statement;
   private final int batchSize;
   private final StatementPreparer<T> statementPreparer;
@@ -34,7 +35,7 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
   private volatile boolean batchComplete;
 
   BatchSqlExecutorImpl(final Class<T> componentType,
-                       final SqlDataSource datasource,
+                       final DataSource datasource,
                        final String statement,
                        final int batchSize,
                        final StatementPreparer<T> statementPreparer,

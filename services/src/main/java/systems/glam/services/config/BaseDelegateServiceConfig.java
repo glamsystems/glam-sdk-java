@@ -1,5 +1,7 @@
 package systems.glam.services.config;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.tx.Transaction;
@@ -35,13 +37,12 @@ import systems.comodal.jsoniter.JsonIterator;
 import systems.glam.sdk.GlamAccounts;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.ServiceContextImpl;
-import systems.glam.services.db.DatasourceConfig;
-import systems.glam.services.db.sql.SqlDataSource;
 import systems.glam.services.execution.ExecutionServiceContext;
 import systems.glam.services.execution.InstructionProcessor;
 import systems.glam.services.mints.MintCache;
 import systems.glam.services.rpc.AccountFetcher;
 
+import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.http.HttpClient;
@@ -81,7 +82,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
                                         Backoff serviceBackoff,
                                         double defaultCuBudgetMultiplier,
                                         int maxTransactionRetries,
-                                        DatasourceConfig datasourceConfig) implements DelegateServiceConfig {
+                                        String hikariPropertiesFile) implements DelegateServiceConfig {
 
   private static final Backoff DEFAULT_NETWORK_BACKOFF = Backoff.fibonacci(1, 21);
 
@@ -169,10 +170,13 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
   public ServiceContext createServiceContext(final ExecutorService taskExecutor,
                                              final PublicKey serviceKey,
                                              final GlamAccounts glamAccounts) {
-    final var primaryDatasource = datasourceConfig == null
-        ? null
-        : SqlDataSource.createDataSource("price_vault_service", datasourceConfig);
-
+    final DataSource dataSource;
+    if (hikariPropertiesFile == null) {
+      dataSource = null;
+    } else {
+      final var hikariConfig = new HikariConfig(hikariPropertiesFile);
+      dataSource = new HikariDataSource(hikariConfig);
+    }
     return new ServiceContextImpl(
         serviceKey,
         warnFeePayerBalance, minFeePayerBalance,
@@ -183,7 +187,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
         solanaAccounts, glamAccounts,
         notifyClient,
         rpcCaller,
-        primaryDatasource
+        dataSource
     );
   }
 
@@ -243,7 +247,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
     private Backoff serviceBackoff;
     private double defaultCuBudgetMultiplier = 1.13;
     private int maxTransactionRetries = 3;
-    private DatasourceConfig datasourceConfig;
+    private String hikariPropertiesFile;
 
     protected ConfigParser(final ExecutorService taskExecutor, final HttpClient httpClient) {
       this.taskExecutor = taskExecutor;
@@ -323,7 +327,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
           serviceBackoff,
           defaultCuBudgetMultiplier,
           maxTransactionRetries,
-          datasourceConfig
+          hikariPropertiesFile
       );
     }
 
@@ -419,8 +423,8 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
         defaultCuBudgetMultiplier = ji.readDouble();
       } else if (fieldEquals("maxTransactionRetries", buf, offset, len)) {
         maxTransactionRetries = ji.readInt();
-      } else if (fieldEquals("datasource", buf, offset, len)) {
-        datasourceConfig = DatasourceConfig.parseConfig(ji);
+      } else if (fieldEquals("hikariPropertiesFile", buf, offset, len)) {
+        hikariPropertiesFile = ji.readString();
       } else {
         throw new IllegalStateException("Unknown service config field " + new String(buf, offset, len));
       }
