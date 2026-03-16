@@ -31,6 +31,7 @@ import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.SequencedCollection;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -83,7 +84,7 @@ public interface DelegateServiceConfig {
 
   int maxTransactionRetries();
 
-  String hikariPropertiesFile();
+  SequencedCollection<String> hikariPropertiesFiles();
 
   WebSocketManager createWebSocketManager(final HttpClient wsHttpClient,
                                           final Collection<Consumer<SolanaRpcWebsocket>> webSocketConsumers);

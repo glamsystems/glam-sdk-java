@@ -81,7 +81,6 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
           }
         }
         try (final var connection = datasource.getConnection()) {
-          connection.setAutoCommit(false);
           try (final var ps = connection.prepareStatement(statement)) {
             for (numItems = 0; ; ) {
               final var item = pending.pollFirst();

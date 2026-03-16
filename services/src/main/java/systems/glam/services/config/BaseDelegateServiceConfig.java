@@ -48,10 +48,7 @@ import java.math.BigInteger;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -82,7 +79,8 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
                                         Backoff serviceBackoff,
                                         double defaultCuBudgetMultiplier,
                                         int maxTransactionRetries,
-                                        String hikariPropertiesFile) implements DelegateServiceConfig {
+                                        SequencedCollection<String> hikariPropertiesFiles)
+    implements DelegateServiceConfig {
 
   private static final Backoff DEFAULT_NETWORK_BACKOFF = Backoff.fibonacci(1, 21);
 
@@ -171,10 +169,11 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
                                              final PublicKey serviceKey,
                                              final GlamAccounts glamAccounts) {
     final DataSource dataSource;
-    if (hikariPropertiesFile == null) {
+    if (hikariPropertiesFiles == null || hikariPropertiesFiles.isEmpty()) {
       dataSource = null;
     } else {
-      final var hikariConfig = new HikariConfig(hikariPropertiesFile);
+      final var mergedProperties = ConfigUtils.joinPropertyFiles(hikariPropertiesFiles);
+      final var hikariConfig = new HikariConfig(mergedProperties);
       dataSource = new HikariDataSource(hikariConfig);
     }
     return new ServiceContextImpl(
@@ -247,7 +246,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
     private Backoff serviceBackoff;
     private double defaultCuBudgetMultiplier = 1.13;
     private int maxTransactionRetries = 3;
-    private String hikariPropertiesFile;
+    private List<String> hikariPropertiesFiles;
 
     protected ConfigParser(final ExecutorService taskExecutor, final HttpClient httpClient) {
       this.taskExecutor = taskExecutor;
@@ -327,7 +326,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
           serviceBackoff,
           defaultCuBudgetMultiplier,
           maxTransactionRetries,
-          hikariPropertiesFile
+          hikariPropertiesFiles == null ? List.of() : hikariPropertiesFiles
       );
     }
 
@@ -423,8 +422,12 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
         defaultCuBudgetMultiplier = ji.readDouble();
       } else if (fieldEquals("maxTransactionRetries", buf, offset, len)) {
         maxTransactionRetries = ji.readInt();
-      } else if (fieldEquals("hikariPropertiesFile", buf, offset, len)) {
-        hikariPropertiesFile = ji.readString();
+      } else if (fieldEquals("hikariPropertiesFiles", buf, offset, len)) {
+        final var files = new ArrayList<String>();
+        while (ji.readArray()) {
+          files.add(ji.readString());
+        }
+        hikariPropertiesFiles = List.copyOf(files);
       } else {
         throw new IllegalStateException("Unknown service config field " + new String(buf, offset, len));
       }
