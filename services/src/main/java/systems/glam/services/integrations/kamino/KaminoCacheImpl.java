@@ -444,7 +444,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   }
 
   @Override
-  public void unSubscribeToVault(final PublicKey vaultMint, final KaminoListener listener) {
+  public void unSubscribeFromVault(final PublicKey vaultMint, final KaminoListener listener) {
     final var listeners = vaultListeners.get(vaultMint);
     if (listeners != null) {
       listeners.remove(listener.key());

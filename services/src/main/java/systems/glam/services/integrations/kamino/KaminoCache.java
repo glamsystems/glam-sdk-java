@@ -432,7 +432,7 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
 
   void subscribeToVault(final PublicKey vaultMint, final KaminoListener listener);
 
-  void unSubscribeToVault(final PublicKey vaultMint, final KaminoListener listener);
+  void unSubscribeFromVault(final PublicKey vaultMint, final KaminoListener listener);
 
   void refreshVaults(final Set<PublicKey> vaultMints);
 }
