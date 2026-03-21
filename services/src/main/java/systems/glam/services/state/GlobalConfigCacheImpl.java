@@ -647,12 +647,13 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     }
     final var assetMap = this.assetMetaMap;
     for (final var accountInfo : accounts) {
-      if (accountInfo != null) {
-        final var key = accountInfo.pubKey();
-        if (assetMap.containsKey(key) && mintCache.get(key) == null) {
-          final var mintContext = mintCache.setGet(MintContext.createContext(solanaAccounts, accountInfo));
-          topPriorityForMintChecked(mintContext);
-        }
+      if (AccountFetcher.isNull(accountInfo)) {
+        continue;
+      }
+      final var key = accountInfo.pubKey();
+      if (assetMap.containsKey(key) && mintCache.get(key) == null) {
+        final var mintContext = mintCache.setGet(MintContext.createContext(solanaAccounts, accountInfo));
+        topPriorityForMintChecked(mintContext);
       }
     }
   }

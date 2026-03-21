@@ -60,6 +60,8 @@ public interface IntegrationServiceContext {
 
   Path resolveGlamStateFilePath(final PublicKey glamStateKey);
 
+  AccountFetcher accountFetcher();
+
   void queue(final Collection<PublicKey> accounts, final AccountConsumer callback);
 
   void executeTask(final Runnable task);

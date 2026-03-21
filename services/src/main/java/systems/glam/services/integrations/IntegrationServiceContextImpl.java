@@ -66,6 +66,11 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   }
 
   @Override
+  public AccountFetcher accountFetcher() {
+    return accountFetcher;
+  }
+
+  @Override
   public MintContext mintContext(final PublicKey mint) {
     return mintCache.get(mint);
   }

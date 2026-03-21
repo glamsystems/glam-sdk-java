@@ -539,6 +539,9 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   @Override
   public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
     for (final var accountInfo : accounts) {
+      if (AccountFetcher.isNull(accountInfo)) {
+        continue;
+      }
       final byte[] data = accountInfo.data();
       if (data.length == Reserve.BYTES && Reserve.DISCRIMINATOR.equals(data, 0)) {
         final var reserveContext = ReserveContext.createContext(accountInfo, mappingsContextMap);
