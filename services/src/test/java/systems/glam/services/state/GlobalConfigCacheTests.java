@@ -275,7 +275,8 @@ final class GlobalConfigCacheTests {
         NULL_MINT_CACHE,
         Set.of(listener)
     );
-    assertNull(result);
+    assertNotNull(result);
+    // assertNull(result); // TODO: Update once v2 is deployed to production.
     assertEquals("onAssetMetaRemoved", called.get());
   }
 
@@ -316,14 +317,16 @@ final class GlobalConfigCacheTests {
 
     final var called = new AtomicReference<String>();
     final var listener = new TestGlobalConfigListener(called);
-    assertNull(GlobalConfigCacheImpl.createMapChecked(
+    var globalConfigCache = GlobalConfigCacheImpl.createMapChecked(
         1L,
         previousGlobalConfigUpdate.assetMetaContexts(),
         cache.assetMetaMap,
         AssetMetaContext.mapAssetMetas(oracleChangedConfig),
         NULL_MINT_CACHE,
         Set.of(listener)
-    ));
+    );
+    assertNotNull(globalConfigCache);
+    // assertNull(globalConfigCache); TODO: Update once v2 is deployed to production.
     assertEquals("onUnexpectedOracleChange", called.get());
 
     // Case 2: Different asset (without negative priority)
@@ -350,14 +353,16 @@ final class GlobalConfigCacheTests {
     );
 
     called.set(null);
-    assertNull(GlobalConfigCacheImpl.createMapChecked(
+    globalConfigCache = GlobalConfigCacheImpl.createMapChecked(
         1L,
         previousGlobalConfigUpdate.assetMetaContexts(),
         cache.assetMetaMap,
         AssetMetaContext.mapAssetMetas(assetChangedConfig),
         NULL_MINT_CACHE,
         Set.of(listener)
-    ));
+    );
+    assertNotNull(globalConfigCache);
+    // assertNull(globalConfigCache); TODO: Update once v2 is deployed to production.
     assertEquals("onUnexpectedOracleChange", called.get());
   }
 

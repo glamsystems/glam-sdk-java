@@ -54,6 +54,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNullElse;
+import static software.sava.services.core.config.PropertiesParser.getProperty;
+import static software.sava.services.core.config.PropertiesParser.propertyPrefix;
 import static software.sava.services.solana.config.ChainItemFormatter.parseFormatter;
 import static software.sava.services.solana.load_balance.LoadBalanceUtil.createRPCLoadBalancer;
 import static systems.comodal.jsoniter.JsonIterator.fieldEquals;
@@ -251,6 +253,172 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
     protected ConfigParser(final ExecutorService taskExecutor, final HttpClient httpClient) {
       this.taskExecutor = taskExecutor;
       this.httpClient = httpClient;
+    }
+
+    protected void parseProperties(final String prefix, final Properties properties) {
+      final var p = propertyPrefix(prefix);
+
+      final var glamStateKeyStr = getProperty(properties, p, "glamStateKey");
+      if (glamStateKeyStr != null) {
+        this.glamStateKey = PublicKey.fromBase58Encoded(glamStateKeyStr);
+      }
+
+      final var signingServicePrefix = p + "signingService.";
+      if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(signingServicePrefix))) {
+        this.signingServiceConfig = SigningServiceConfig.parseConfig(
+            taskExecutor, signingServicePrefix, DEFAULT_NETWORK_BACKOFF, properties
+        );
+      }
+
+      final var serviceBackoffPrefix = p + "serviceBackoff.";
+      if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(serviceBackoffPrefix))) {
+        final var backoffConfig = BackoffConfig.parse(serviceBackoffPrefix, properties);
+        this.serviceBackoff = backoffConfig.createBackoff();
+      }
+
+      final var formatterPrefix = p + "formatter.";
+      if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(formatterPrefix))) {
+        this.formatter = ChainItemFormatter.parseConfig(formatterPrefix, properties);
+      }
+
+      final var notificationHooksPrefix = p + "notificationHooks.";
+      if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(notificationHooksPrefix))) {
+        final var webHookConfigs = WebHookConfig.parseConfigs(
+            notificationHooksPrefix,
+            properties,
+            null,
+            CapacityConfig.createSimpleConfig(
+                Duration.ofSeconds(13),
+                2,
+                Duration.ofSeconds(1)
+            ),
+            DEFAULT_NETWORK_BACKOFF
+        );
+        this.notifyClient = createNotifyClient(webHookConfigs);
+      }
+
+      final var cacheDirectoryStr = getProperty(properties, p, "cacheDirectory");
+      if (cacheDirectoryStr != null) {
+        this.cacheDirectory = Path.of(cacheDirectoryStr);
+      }
+
+      final var tableCachePrefix = p + "tableCache.";
+      if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(tableCachePrefix))) {
+        this.tableCacheConfig = TableCacheConfig.parseConfig(tableCachePrefix, properties);
+      }
+
+      final var rpcCallWeightsPrefix = p + "rpcCallWeights.";
+      if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(rpcCallWeightsPrefix))) {
+        this.callWeights = CallWeights.parseConfig(rpcCallWeightsPrefix, properties);
+      }
+
+      final var rpcPrefix = p + "rpc.";
+      if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(rpcPrefix))) {
+        final var loadBalancerConfig = LoadBalancerConfig.parse(
+            rpcPrefix,
+            properties,
+            CapacityConfig.createSimpleConfig(
+                Duration.ofSeconds(13),
+                10,
+                Duration.ofSeconds(1)
+            ),
+            DEFAULT_NETWORK_BACKOFF
+        );
+        this.defaultRPCBackoff = loadBalancerConfig.defaultBackoff();
+        this.rpcClients = createRPCLoadBalancer(loadBalancerConfig, httpClient);
+      }
+
+      final var sendRPCPrefix = p + "sendRPC.";
+      if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(sendRPCPrefix))) {
+        final var loadBalancerConfig = LoadBalancerConfig.parse(
+            sendRPCPrefix,
+            properties,
+            CapacityConfig.createSimpleConfig(
+                Duration.ofSeconds(5),
+                1,
+                Duration.ofSeconds(1)
+            ),
+            defaultRPCBackoff
+        );
+        this.sendClients = createRPCLoadBalancer(loadBalancerConfig, httpClient);
+      }
+
+      final var websocketPrefix = p + "websocket.";
+      if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(websocketPrefix))) {
+        this.websocketConfig = RemoteResourceConfig.parseConfig(websocketPrefix, properties, null, DEFAULT_NETWORK_BACKOFF);
+      }
+
+      final var epochServicePrefix = p + "epochService.";
+      if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(epochServicePrefix))) {
+        this.epochServiceConfig = EpochServiceConfig.parseConfig(epochServicePrefix, properties);
+      }
+
+      final var txMonitorPrefix = p + "txMonitor.";
+      if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(txMonitorPrefix))) {
+        this.txMonitorConfig = TxMonitorConfig.parseConfig(txMonitorPrefix, properties);
+      }
+
+      final var accountFetcherPrefix = p + "accountFetcher.";
+      if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(accountFetcherPrefix))) {
+        this.accountFetcherConfig = AccountFetcherConfig.parseConfig(accountFetcherPrefix, properties);
+      }
+
+      final var defensivePollingPrefix = p + "defensivePolling.";
+      if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(defensivePollingPrefix))) {
+        this.defensivePollingConfig = DefensivePollingConfig.parseConfig(defensivePollingPrefix, properties);
+      }
+
+      final var heliusPrefix = p + "helius.";
+      if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(heliusPrefix))) {
+        final var heliusConfig = HeliusConfig.parse(heliusPrefix, properties);
+        final var heliusClient = heliusConfig.createClient(httpClient);
+        final var balancedItem = BalancedItem.createItem(
+            new HeliusFeeProvider(heliusClient),
+            heliusConfig.capacityMonitor(),
+            requireNonNullElse(heliusConfig.backoff(), DEFAULT_NETWORK_BACKOFF)
+        );
+        this.feeProviders = LoadBalancer.createBalancer(balancedItem);
+      }
+
+      final var maxSOLPriorityFeeStr = getProperty(properties, p, "maxSOLPriorityFee");
+      if (maxSOLPriorityFeeStr != null) {
+        this.maxSOLPriorityFee = new BigDecimal(maxSOLPriorityFeeStr);
+      }
+
+      final var warnFeePayerBalanceStr = getProperty(properties, p, "warnFeePayerBalance");
+      if (warnFeePayerBalanceStr != null) {
+        this.warnFeePayerBalance = new BigDecimal(warnFeePayerBalanceStr);
+      }
+
+      final var minFeePayerBalanceStr = getProperty(properties, p, "minFeePayerBalance");
+      if (minFeePayerBalanceStr != null) {
+        this.minFeePayerBalance = new BigDecimal(minFeePayerBalanceStr);
+      }
+
+      final var minCheckStateDelayStr = getProperty(properties, p, "minCheckStateDelay");
+      if (minCheckStateDelayStr != null) {
+        this.minCheckStateDelay = ServiceConfigUtil.parseDuration(minCheckStateDelayStr);
+      }
+
+      final var maxCheckStateDelayStr = getProperty(properties, p, "maxCheckStateDelay");
+      if (maxCheckStateDelayStr != null) {
+        this.maxCheckStateDelay = ServiceConfigUtil.parseDuration(maxCheckStateDelayStr);
+      }
+
+      final var defaultCuBudgetMultiplierStr = getProperty(properties, p, "defaultCuBudgetMultiplier");
+      if (defaultCuBudgetMultiplierStr != null) {
+        this.defaultCuBudgetMultiplier = Double.parseDouble(defaultCuBudgetMultiplierStr);
+      }
+
+      final var maxTransactionRetriesStr = getProperty(properties, p, "maxTransactionRetries");
+      if (maxTransactionRetriesStr != null) {
+        this.maxTransactionRetries = Integer.parseInt(maxTransactionRetriesStr);
+      }
+
+      final var hikariPropertiesFilesStr = getProperty(properties, p, "hikariPropertiesFiles");
+      if (hikariPropertiesFilesStr != null) {
+        this.hikariPropertiesFiles = List.of(hikariPropertiesFilesStr.split(","));
+      }
     }
 
     private NotifyClient createNotifyClient(final List<WebHookConfig> webHookConfigs) {

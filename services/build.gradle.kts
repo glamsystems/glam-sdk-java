@@ -3,10 +3,6 @@ testModuleInfo {
   runtimeOnly("org.junit.jupiter.engine")
 }
 
-dependencies {
-  project(":sdk")
-}
-
 //dependencyAnalysis {
 //  issues {
 //    onAny {
@@ -14,3 +10,10 @@ dependencies {
 //    }
 //  }
 //}
+
+dependencies {
+  project(":sdk")
+
+//  project(":ravina:ravina-core")
+//  project(":ravina:ravina-solana")
+}

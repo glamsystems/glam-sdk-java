@@ -11,9 +11,7 @@ final class ScopeTwapParser extends BaseScopeEntryParser {
 
   ScopeTwapParser(final OracleType oracleType) {
     super(oracleType);
-    if (oracleType != OracleType.ScopeTwap1h
-        && oracleType != OracleType.ScopeTwap8h
-        && oracleType != OracleType.ScopeTwap24h) {
+    if (!oracleType.name().startsWith("ScopeTwap")) {
       throw new IllegalStateException("OracleType must be ScopeTwap, not: " + oracleType);
     }
   }

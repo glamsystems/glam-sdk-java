@@ -406,16 +406,14 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
       return;
     }
 
-    final var reserveKeys = KaminoVaultContext.parseReserveKeys(data);
-    final var vaultLookupTable = PublicKey.readPubKey(data, VaultState.VAULT_LOOKUP_TABLE_OFFSET);
 
     final KaminoVaultContext kaminoVaultContext;
     if (previous == null) {
       kaminoVaultContext = KaminoVaultContext.createContext(
-          slot, accountInfo.pubKey(), data, reserveKeys, vaultLookupTable
+          slot, data, accountInfo.pubKey(), sharesMint
       );
     } else {
-      kaminoVaultContext = previous.withReserves(slot, reserveKeys, vaultLookupTable);
+      kaminoVaultContext = previous.createIfChanged(slot, data);
       if (kaminoVaultContext == previous) {
         return;
       }

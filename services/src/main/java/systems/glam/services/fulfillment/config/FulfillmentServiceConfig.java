@@ -9,8 +9,11 @@ import java.io.UncheckedIOException;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 
+import static software.sava.services.core.config.PropertiesParser.getProperty;
+import static software.sava.services.core.config.PropertiesParser.propertyPrefix;
 import static systems.comodal.jsoniter.JsonIterator.fieldEquals;
 
 public record FulfillmentServiceConfig(DelegateServiceConfig delegateServiceConfig, boolean softRedeem) {
@@ -33,6 +36,16 @@ public record FulfillmentServiceConfig(DelegateServiceConfig delegateServiceConf
 
     protected Parser(final ExecutorService taskExecutor, final HttpClient httpClient) {
       super(taskExecutor, httpClient);
+    }
+
+    @Override
+    protected void parseProperties(final String prefix, final Properties properties) {
+      super.parseProperties(prefix, properties);
+      final var p = propertyPrefix(prefix);
+      final var softRedeemStr = getProperty(properties, p, "softRedeem");
+      if (softRedeemStr != null) {
+        this.softRedeem = Boolean.parseBoolean(softRedeemStr);
+      }
     }
 
     public FulfillmentServiceConfig createFulfillmentConfig() {

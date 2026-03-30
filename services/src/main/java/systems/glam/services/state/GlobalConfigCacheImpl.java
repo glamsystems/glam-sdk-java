@@ -277,11 +277,11 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
       for (final var listener : listeners) {
         listener.onAssetMetaRemoved(slot, previousAssetMetaContexts, assetMetaContexts);
       }
-      return null;
+      // return null; TODO: Currently allowed in production env, return null once updated.
     }
 
     final var previousOracleSourceMap = HashMap.<PublicKey, OracleSource>newHashMap(previousAssetMetaContexts.length);
-    for (int i = 0; i < previousAssetMetaContexts.length; ++i) {
+    for (int i = 0, to = Math.min(previousAssetMetaContexts.length, assetMetaContexts.length); i < to; ++i) {
       final var previous = previousAssetMetaContexts[i];
       final var current = assetMetaContexts[i];
       if (previous.asset().equals(current.asset()) && previous.oracle().equals(current.oracle())) {
@@ -374,7 +374,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
         for (final var listener : listeners) {
           listener.onUnexpectedOracleChange(slot, previous, current);
         }
-        return null;
+        // return null; TODO: Currently allowed in production env, return null once updated.
       }
 
       previousOracleSourceMap.put(previous.oracle(), previous.oracleSource());

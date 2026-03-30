@@ -1,10 +1,12 @@
 package systems.glam.services.config;
 
+import software.sava.services.core.config.PropertiesParser;
 import software.sava.services.core.config.ServiceConfigUtil;
 import systems.comodal.jsoniter.FieldBufferPredicate;
 import systems.comodal.jsoniter.JsonIterator;
 
 import java.time.Duration;
+import java.util.Properties;
 
 import static systems.comodal.jsoniter.JsonIterator.fieldEquals;
 
@@ -15,6 +17,16 @@ public record DefensivePollingConfig(Duration globalConfig,
                                      Duration kaminoScope) {
 
   private static final Duration EIGHT_HOURS = Duration.ofHours(8);
+
+  public static DefensivePollingConfig parseConfig(final Properties properties) {
+    return parseConfig("", properties);
+  }
+
+  public static DefensivePollingConfig parseConfig(final String prefix, final Properties properties) {
+    final var parser = new DefensivePollingConfig.Parser();
+    parser.parseProperties(prefix, properties);
+    return parser.createConfig();
+  }
 
   public static DefensivePollingConfig parseConfig(final JsonIterator ji) {
     final var parser = new DefensivePollingConfig.Parser();
@@ -32,7 +44,7 @@ public record DefensivePollingConfig(Duration globalConfig,
     );
   }
 
-  private static final class Parser implements FieldBufferPredicate {
+  private static final class Parser extends PropertiesParser implements FieldBufferPredicate {
 
     private Duration globalConfig;
     private Duration glamStateAccounts;
@@ -41,6 +53,30 @@ public record DefensivePollingConfig(Duration globalConfig,
     private Duration kaminoScope;
 
     private Parser() {
+    }
+
+    private void parseProperties(final String prefix, final Properties properties) {
+      final var p = propertyPrefix(prefix);
+      final var globalConfig = PropertiesParser.parseDuration(properties, p, "globalConfig");
+      if (globalConfig != null) {
+        this.globalConfig = globalConfig;
+      }
+      final var glamStateAccounts = PropertiesParser.parseDuration(properties, p, "glamStateAccounts");
+      if (glamStateAccounts != null) {
+        this.glamStateAccounts = glamStateAccounts;
+      }
+      final var integTables = PropertiesParser.parseDuration(properties, p, "integTables");
+      if (integTables != null) {
+        this.integTables = integTables;
+      }
+      final var stakePools = PropertiesParser.parseDuration(properties, p, "stakePools");
+      if (stakePools != null) {
+        this.stakePools = stakePools;
+      }
+      final var kaminoScope = PropertiesParser.parseDuration(properties, p, "kaminoScope");
+      if (kaminoScope != null) {
+        this.kaminoScope = kaminoScope;
+      }
     }
 
     private DefensivePollingConfig createConfig() {

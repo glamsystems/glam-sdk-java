@@ -36,7 +36,7 @@ public interface ScopeEntryParser extends FieldBufferPredicate {
       case ChainlinkRWA, ChainlinkX -> new ChainlinkStatusEntryParser(oracleType);
       case PythPull, Securitize -> new ReferencesEntryParser(oracleType);
       case PythLazer -> new PythLazerParser(oracleType);
-      case ScopeTwap1h, ScopeTwap8h, ScopeTwap24h -> new ScopeTwapParser(oracleType);
+      case ScopeTwap1h, ScopeTwap8h, ScopeTwap7d, ScopeTwap24h -> new ScopeTwapParser(oracleType);
       case FixedPrice -> new FixedPriceParser(oracleType);
       case DiscountToMaturity -> new DiscountToMaturityParser(oracleType);
       case CappedFloored -> new CappedFlooredParser(oracleType);
