@@ -37,4 +37,8 @@ public interface KaminoListener {
   default void onScopeConfigurationChange(final ScopeFeedContext witness, final ScopeFeedContext latest) {
 
   }
+
+  default void onCachedReserveJsonChange(final String marketsReservePriceChainsJSON) {
+
+  }
 }

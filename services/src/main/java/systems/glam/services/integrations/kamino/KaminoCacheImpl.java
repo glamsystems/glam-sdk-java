@@ -604,11 +604,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
 
         readLock.lock();
         try {
-          if (this.asyncReserveUpdates.getAndSet(0) > 0) {
-            if (reserveContextsFilePath != null) {
-              writeReserves(reserveContextsFilePath, reserveContextMap);
-            }
-          } else if (accountsDeleted == 0) {
+          if (noReserveChanges()) {
             logger.log(INFO, "No changes to Scope Configurations.");
           }
         } finally {
@@ -623,11 +619,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
 
         readLock.lock();
         try {
-          if (this.asyncReserveUpdates.getAndSet(0) > 0) {
-            if (reserveContextsFilePath != null) {
-              writeReserves(reserveContextsFilePath, reserveContextMap);
-            }
-          } else {
+          if (noReserveChanges()) {
             logger.log(INFO, "No changes to Scope Reserves.");
           }
         } finally {
@@ -653,9 +645,23 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     }
   }
 
-  static void writeReserves(final Path reserveContextsFilePath,
-                            final Map<PublicKey, ReserveContext> reserveContextMap) {
-    final var marketsJson = reserveContextMap.values().stream()
+  private boolean noReserveChanges() {
+    if (this.asyncReserveUpdates.getAndSet(0) > 0) {
+      final var marketsJson = marketsJson(reserveContextMap);
+      if (reserveContextsFilePath != null) {
+        writeMarketsJSON(reserveContextsFilePath, marketsJson);
+      }
+      for (final var listener : listeners.values()) {
+        listener.onCachedReserveJsonChange(marketsJson);
+      }
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  private static String marketsJson(final Map<PublicKey, ReserveContext> reserveContextMap) {
+    return reserveContextMap.values().stream()
         .collect(Collectors.groupingBy(ReserveContext::market))
         .entrySet().stream()
         .map(entry -> {
@@ -672,7 +678,15 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
               }""", market, reserveJSON
           );
         }).collect(Collectors.joining(",\n", "[", "]"));
+  }
 
+  static void writeReserves(final Path reserveContextsFilePath,
+                            final Map<PublicKey, ReserveContext> reserveContextMap) {
+    final var marketsJson = marketsJson(reserveContextMap);
+    writeMarketsJSON(reserveContextsFilePath, marketsJson);
+  }
+
+  private static void writeMarketsJSON(final Path reserveContextsFilePath, final String marketsJson) {
     try {
       Files.writeString(
           reserveContextsFilePath,

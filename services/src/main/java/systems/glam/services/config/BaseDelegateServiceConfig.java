@@ -174,7 +174,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
     if (hikariPropertiesFiles == null || hikariPropertiesFiles.isEmpty()) {
       dataSource = null;
     } else {
-      final var mergedProperties = ConfigUtils.joinPropertyFiles(hikariPropertiesFiles);
+      final var mergedProperties = ServiceConfigUtil.joinPropertyFiles(hikariPropertiesFiles);
       final var hikariConfig = new HikariConfig(mergedProperties);
       dataSource = new HikariDataSource(hikariConfig);
     }
