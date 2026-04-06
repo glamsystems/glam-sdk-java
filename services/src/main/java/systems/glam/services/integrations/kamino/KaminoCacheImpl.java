@@ -132,6 +132,21 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   }
 
   @Override
+  public Path reservesJsonFilePath() {
+    return reserveContextsFilePath;
+  }
+
+  @Override
+  public Path mappingsPath() {
+    return mappingsPath;
+  }
+
+  @Override
+  public Path configurationsPath() {
+    return configurationsPath;
+  }
+
+  @Override
   public ReserveContext reserveContext(final PublicKey pubKey) {
     return reserveContextMap.get(pubKey);
   }

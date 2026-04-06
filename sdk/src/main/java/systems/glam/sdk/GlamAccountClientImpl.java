@@ -277,6 +277,7 @@ class GlamAccountClientImpl implements GlamAccountClient {
         vaultTokenAccount.publicKey(),
         escrowTokenAccount.publicKey(),
         baseAssetTokenProgram,
+        solanaAccounts.token2022Program(),
         invokedProtocolProgram.publicKey(),
         limit
     );

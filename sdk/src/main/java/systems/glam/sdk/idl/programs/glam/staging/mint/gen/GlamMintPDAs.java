@@ -1,9 +1,9 @@
 package systems.glam.sdk.idl.programs.glam.staging.mint.gen;
 
-import java.util.List;
-
 import software.sava.core.accounts.ProgramDerivedAddress;
 import software.sava.core.accounts.PublicKey;
+
+import java.util.List;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
@@ -81,6 +81,14 @@ public final class GlamMintPDAs {
     ), program);
   }
 
+  public static ProgramDerivedAddress extraMetasPDA(final PublicKey program,
+                                                    final PublicKey glamMintAccount) {
+    return PublicKey.findProgramAddress(List.of(
+      "thaw_extra_account_metas".getBytes(US_ASCII),
+      glamMintAccount.toByteArray()
+    ), program);
+  }
+
   public static ProgramDerivedAddress glamConfigPDA(final PublicKey program) {
     return PublicKey.findProgramAddress(List.of(
       "global-config".getBytes(US_ASCII)
@@ -109,6 +117,16 @@ public final class GlamMintPDAs {
     ), program);
   }
 
+  public static ProgramDerivedAddress listConfigPDA(final PublicKey program,
+                                                    final PublicKey glamMintAccount,
+                                                    final byte[] seed) {
+    return PublicKey.findProgramAddress(List.of(
+      "list_config".getBytes(US_ASCII),
+      glamMintAccount.toByteArray(),
+      seed
+    ), program);
+  }
+
   public static ProgramDerivedAddress managerFeeAuthorityAtaPDA(final PublicKey program,
                                                                 final PublicKey managerFeeAuthorityAccount,
                                                                 final PublicKey depositTokenProgramAccount,
@@ -117,6 +135,14 @@ public final class GlamMintPDAs {
       managerFeeAuthorityAccount.toByteArray(),
       depositTokenProgramAccount.toByteArray(),
       depositAssetAccount.toByteArray()
+    ), program);
+  }
+
+  public static ProgramDerivedAddress mintConfigPDA(final PublicKey program,
+                                                    final PublicKey glamMintAccount) {
+    return PublicKey.findProgramAddress(List.of(
+      "MINT_CONFIG".getBytes(US_ASCII),
+      glamMintAccount.toByteArray()
     ), program);
   }
 
@@ -221,6 +247,16 @@ public final class GlamMintPDAs {
       glamVaultAccount.toByteArray(),
       depositTokenProgramAccount.toByteArray(),
       depositAssetAccount.toByteArray()
+    ), program);
+  }
+
+  public static ProgramDerivedAddress walletEntryPDA(final PublicKey program,
+                                                     final PublicKey listConfigAccount,
+                                                     final PublicKey walletAccount) {
+    return PublicKey.findProgramAddress(List.of(
+      "wallet_entry".getBytes(US_ASCII),
+      listConfigAccount.toByteArray(),
+      walletAccount.toByteArray()
     ), program);
   }
 

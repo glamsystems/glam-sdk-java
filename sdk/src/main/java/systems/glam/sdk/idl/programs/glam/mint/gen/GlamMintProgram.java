@@ -1,8 +1,5 @@
 package systems.glam.sdk.idl.programs.glam.mint.gen;
 
-import java.util.List;
-import java.util.OptionalInt;
-
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
@@ -10,22 +7,17 @@ import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
-
 import systems.glam.sdk.idl.programs.glam.mint.gen.types.EmergencyUpdateMintArgs;
 import systems.glam.sdk.idl.programs.glam.mint.gen.types.MintModel;
 import systems.glam.sdk.idl.programs.glam.mint.gen.types.MintPolicy;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.AccountType;
 
-import static java.util.Objects.requireNonNullElse;
+import java.util.List;
+import java.util.OptionalInt;
 
-import static software.sava.core.accounts.meta.AccountMeta.createRead;
-import static software.sava.core.accounts.meta.AccountMeta.createWritableSigner;
-import static software.sava.core.accounts.meta.AccountMeta.createWrite;
-import static software.sava.core.encoding.ByteUtil.getInt16LE;
-import static software.sava.core.encoding.ByteUtil.getInt32LE;
-import static software.sava.core.encoding.ByteUtil.getInt64LE;
-import static software.sava.core.encoding.ByteUtil.putInt16LE;
-import static software.sava.core.encoding.ByteUtil.putInt64LE;
+import static java.util.Objects.requireNonNullElse;
+import static software.sava.core.accounts.meta.AccountMeta.*;
+import static software.sava.core.encoding.ByteUtil.*;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
@@ -33,37 +25,37 @@ public final class GlamMintProgram {
 
   public static final Discriminator BURN_TOKENS_DISCRIMINATOR = toDiscriminator(76, 15, 51, 254, 229, 215, 121, 66);
 
-  public static List<AccountMeta> burnTokensKeys(final SolanaAccounts solanaAccounts,
-                                                 final PublicKey glamStateKey,
+  public static List<AccountMeta> burnTokensKeys(final PublicKey glamStateKey,
                                                  final PublicKey glamSignerKey,
                                                  final PublicKey glamMintKey,
                                                  final PublicKey fromTokenAccountKey,
-                                                 final PublicKey fromKey) {
+                                                 final PublicKey fromKey,
+                                                 final PublicKey token2022ProgramKey) {
     return List.of(
       createRead(glamStateKey),
       createWritableSigner(glamSignerKey),
       createWrite(glamMintKey),
       createWrite(fromTokenAccountKey),
       createRead(fromKey),
-      createRead(solanaAccounts.token2022Program())
+      createRead(token2022ProgramKey)
     );
   }
 
   public static Instruction burnTokens(final AccountMeta invokedGlamMintProgramMeta,
-                                       final SolanaAccounts solanaAccounts,
                                        final PublicKey glamStateKey,
                                        final PublicKey glamSignerKey,
                                        final PublicKey glamMintKey,
                                        final PublicKey fromTokenAccountKey,
                                        final PublicKey fromKey,
+                                       final PublicKey token2022ProgramKey,
                                        final long amount) {
     final var keys = burnTokensKeys(
-      solanaAccounts,
       glamStateKey,
       glamSignerKey,
       glamMintKey,
       fromTokenAccountKey,
-      fromKey
+      fromKey,
+      token2022ProgramKey
     );
     return burnTokens(invokedGlamMintProgramMeta, keys, amount);
   }
@@ -266,7 +258,8 @@ public final class GlamMintProgram {
                                                 final PublicKey managerFeeAuthorityAtaKey,
                                                 final PublicKey glamConfigKey,
                                                 final PublicKey glamProtocolProgramKey,
-                                                final PublicKey depositTokenProgramKey) {
+                                                final PublicKey depositTokenProgramKey,
+                                                final PublicKey token2022ProgramKey) {
     return List.of(
       createRead(glamStateKey),
       createWrite(glamVaultKey),
@@ -285,7 +278,7 @@ public final class GlamMintProgram {
       createRead(solanaAccounts.systemProgram()),
       createRead(solanaAccounts.associatedTokenAccountProgram()),
       createRead(depositTokenProgramKey),
-      createRead(solanaAccounts.token2022Program())
+      createRead(token2022ProgramKey)
     );
   }
 
@@ -308,7 +301,8 @@ public final class GlamMintProgram {
                                       final PublicKey managerFeeAuthorityAtaKey,
                                       final PublicKey glamConfigKey,
                                       final PublicKey glamProtocolProgramKey,
-                                      final PublicKey depositTokenProgramKey) {
+                                      final PublicKey depositTokenProgramKey,
+                                      final PublicKey token2022ProgramKey) {
     final var keys = claimFeesKeys(
       solanaAccounts,
       glamStateKey,
@@ -325,7 +319,8 @@ public final class GlamMintProgram {
       managerFeeAuthorityAtaKey,
       glamConfigKey,
       glamProtocolProgramKey,
-      depositTokenProgramKey
+      depositTokenProgramKey,
+      token2022ProgramKey
     );
     return claimFees(invokedGlamMintProgramMeta, keys);
   }
@@ -345,6 +340,7 @@ public final class GlamMintProgram {
                                                 final PublicKey requestQueueKey,
                                                 final PublicKey extraMetasAccountKey,
                                                 final PublicKey policiesProgramKey,
+                                                final PublicKey token2022ProgramKey,
                                                 final PublicKey glamProtocolKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -354,7 +350,7 @@ public final class GlamMintProgram {
       createWrite(extraMetasAccountKey),
       createRead(solanaAccounts.systemProgram()),
       createRead(policiesProgramKey),
-      createRead(solanaAccounts.token2022Program()),
+      createRead(token2022ProgramKey),
       createRead(glamProtocolKey)
     );
   }
@@ -367,6 +363,7 @@ public final class GlamMintProgram {
                                       final PublicKey requestQueueKey,
                                       final PublicKey extraMetasAccountKey,
                                       final PublicKey policiesProgramKey,
+                                      final PublicKey token2022ProgramKey,
                                       final PublicKey glamProtocolKey) {
     final var keys = closeMintKeys(
       invokedGlamMintProgramMeta,
@@ -377,6 +374,7 @@ public final class GlamMintProgram {
       requestQueueKey,
       extraMetasAccountKey,
       policiesProgramKey,
+      token2022ProgramKey,
       glamProtocolKey
     );
     return closeMint(invokedGlamMintProgramMeta, keys);
@@ -389,13 +387,13 @@ public final class GlamMintProgram {
 
   public static final Discriminator CRYSTALLIZE_FEES_DISCRIMINATOR = toDiscriminator(78, 0, 111, 26, 7, 12, 41, 249);
 
-  public static List<AccountMeta> crystallizeFeesKeys(final SolanaAccounts solanaAccounts,
-                                                      final PublicKey glamStateKey,
+  public static List<AccountMeta> crystallizeFeesKeys(final PublicKey glamStateKey,
                                                       final PublicKey glamEscrowKey,
                                                       final PublicKey glamMintKey,
                                                       final PublicKey escrowMintAtaKey,
                                                       final PublicKey signerKey,
-                                                      final PublicKey glamProtocolProgramKey) {
+                                                      final PublicKey glamProtocolProgramKey,
+                                                      final PublicKey token2022ProgramKey) {
     return List.of(
       createWrite(glamStateKey),
       createRead(glamEscrowKey),
@@ -403,26 +401,26 @@ public final class GlamMintProgram {
       createWrite(escrowMintAtaKey),
       createWritableSigner(signerKey),
       createRead(glamProtocolProgramKey),
-      createRead(solanaAccounts.token2022Program())
+      createRead(token2022ProgramKey)
     );
   }
 
   public static Instruction crystallizeFees(final AccountMeta invokedGlamMintProgramMeta,
-                                            final SolanaAccounts solanaAccounts,
                                             final PublicKey glamStateKey,
                                             final PublicKey glamEscrowKey,
                                             final PublicKey glamMintKey,
                                             final PublicKey escrowMintAtaKey,
                                             final PublicKey signerKey,
-                                            final PublicKey glamProtocolProgramKey) {
+                                            final PublicKey glamProtocolProgramKey,
+                                            final PublicKey token2022ProgramKey) {
     final var keys = crystallizeFeesKeys(
-      solanaAccounts,
       glamStateKey,
       glamEscrowKey,
       glamMintKey,
       escrowMintAtaKey,
       signerKey,
-      glamProtocolProgramKey
+      glamProtocolProgramKey,
+      token2022ProgramKey
     );
     return crystallizeFees(invokedGlamMintProgramMeta, keys);
   }
@@ -516,6 +514,7 @@ public final class GlamMintProgram {
                                                           final PublicKey fromKey,
                                                           final PublicKey toKey,
                                                           final PublicKey toPolicyAccountKey,
+                                                          final PublicKey token2022ProgramKey,
                                                           final PublicKey policiesProgramKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -527,7 +526,7 @@ public final class GlamMintProgram {
       createRead(toKey),
       createWrite(requireNonNullElse(toPolicyAccountKey, invokedGlamMintProgramMeta.publicKey())),
       createRead(solanaAccounts.systemProgram()),
-      createRead(solanaAccounts.token2022Program()),
+      createRead(token2022ProgramKey),
       createRead(policiesProgramKey)
     );
   }
@@ -542,6 +541,7 @@ public final class GlamMintProgram {
                                                 final PublicKey fromKey,
                                                 final PublicKey toKey,
                                                 final PublicKey toPolicyAccountKey,
+                                                final PublicKey token2022ProgramKey,
                                                 final PublicKey policiesProgramKey,
                                                 final long amount) {
     final var keys = forceTransferTokensKeys(
@@ -555,6 +555,7 @@ public final class GlamMintProgram {
       fromKey,
       toKey,
       toPolicyAccountKey,
+      token2022ProgramKey,
       policiesProgramKey
     );
     return forceTransferTokens(invokedGlamMintProgramMeta, keys, amount);
@@ -618,6 +619,7 @@ public final class GlamMintProgram {
                                               final PublicKey vaultAssetAtaKey,
                                               final PublicKey escrowAssetAtaKey,
                                               final PublicKey depositTokenProgramKey,
+                                              final PublicKey token2022ProgramKey,
                                               final PublicKey glamProtocolProgramKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -632,7 +634,7 @@ public final class GlamMintProgram {
       createWrite(escrowAssetAtaKey),
       createRead(solanaAccounts.systemProgram()),
       createRead(depositTokenProgramKey),
-      createRead(solanaAccounts.token2022Program()),
+      createRead(token2022ProgramKey),
       createRead(solanaAccounts.associatedTokenAccountProgram()),
       createRead(glamProtocolProgramKey)
     );
@@ -651,6 +653,7 @@ public final class GlamMintProgram {
                                     final PublicKey vaultAssetAtaKey,
                                     final PublicKey escrowAssetAtaKey,
                                     final PublicKey depositTokenProgramKey,
+                                    final PublicKey token2022ProgramKey,
                                     final PublicKey glamProtocolProgramKey,
                                     final OptionalInt limit) {
     final var keys = fulfillKeys(
@@ -666,6 +669,7 @@ public final class GlamMintProgram {
       vaultAssetAtaKey,
       escrowAssetAtaKey,
       depositTokenProgramKey,
+      token2022ProgramKey,
       glamProtocolProgramKey
     );
     return fulfill(invokedGlamMintProgramMeta, keys, limit);
@@ -738,6 +742,7 @@ public final class GlamMintProgram {
                                                      final PublicKey requestQueueKey,
                                                      final PublicKey extraMetasAccountKey,
                                                      final PublicKey baseAssetMintKey,
+                                                     final PublicKey token2022ProgramKey,
                                                      final PublicKey policiesProgramKey,
                                                      final PublicKey glamProtocolKey) {
     return List.of(
@@ -748,7 +753,7 @@ public final class GlamMintProgram {
       createWrite(extraMetasAccountKey),
       createRead(baseAssetMintKey),
       createRead(solanaAccounts.systemProgram()),
-      createRead(solanaAccounts.token2022Program()),
+      createRead(token2022ProgramKey),
       createRead(policiesProgramKey),
       createRead(glamProtocolKey)
     );
@@ -769,6 +774,7 @@ public final class GlamMintProgram {
                                            final PublicKey requestQueueKey,
                                            final PublicKey extraMetasAccountKey,
                                            final PublicKey baseAssetMintKey,
+                                           final PublicKey token2022ProgramKey,
                                            final PublicKey policiesProgramKey,
                                            final PublicKey glamProtocolKey,
                                            final MintModel mintModel,
@@ -784,6 +790,7 @@ public final class GlamMintProgram {
       requestQueueKey,
       extraMetasAccountKey,
       baseAssetMintKey,
+      token2022ProgramKey,
       policiesProgramKey,
       glamProtocolKey
     );
@@ -888,6 +895,7 @@ public final class GlamMintProgram {
                                                  final PublicKey mintToKey,
                                                  final PublicKey recipientKey,
                                                  final PublicKey policyAccountKey,
+                                                 final PublicKey token2022ProgramKey,
                                                  final PublicKey policiesProgramKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -897,7 +905,7 @@ public final class GlamMintProgram {
       createWrite(recipientKey),
       createWrite(requireNonNullElse(policyAccountKey, invokedGlamMintProgramMeta.publicKey())),
       createRead(solanaAccounts.systemProgram()),
-      createRead(solanaAccounts.token2022Program()),
+      createRead(token2022ProgramKey),
       createRead(policiesProgramKey)
     );
   }
@@ -910,6 +918,7 @@ public final class GlamMintProgram {
                                        final PublicKey mintToKey,
                                        final PublicKey recipientKey,
                                        final PublicKey policyAccountKey,
+                                       final PublicKey token2022ProgramKey,
                                        final PublicKey policiesProgramKey,
                                        final long amount) {
     final var keys = mintTokensKeys(
@@ -921,6 +930,7 @@ public final class GlamMintProgram {
       mintToKey,
       recipientKey,
       policyAccountKey,
+      token2022ProgramKey,
       policiesProgramKey
     );
     return mintTokens(invokedGlamMintProgramMeta, keys, amount);
@@ -1620,7 +1630,8 @@ public final class GlamMintProgram {
                                                    final PublicKey requestQueueKey,
                                                    final PublicKey signerKey,
                                                    final PublicKey signerMintAtaKey,
-                                                   final PublicKey escrowMintAtaKey) {
+                                                   final PublicKey escrowMintAtaKey,
+                                                   final PublicKey token2022ProgramKey) {
     return List.of(
       createRead(glamStateKey),
       createWrite(glamMintKey),
@@ -1630,7 +1641,7 @@ public final class GlamMintProgram {
       createWrite(signerMintAtaKey),
       createWrite(escrowMintAtaKey),
       createRead(solanaAccounts.systemProgram()),
-      createRead(solanaAccounts.token2022Program()),
+      createRead(token2022ProgramKey),
       createRead(solanaAccounts.associatedTokenAccountProgram())
     );
   }
@@ -1644,6 +1655,7 @@ public final class GlamMintProgram {
                                          final PublicKey signerKey,
                                          final PublicKey signerMintAtaKey,
                                          final PublicKey escrowMintAtaKey,
+                                         final PublicKey token2022ProgramKey,
                                          final long amountIn) {
     final var keys = queuedRedeemKeys(
       solanaAccounts,
@@ -1653,7 +1665,8 @@ public final class GlamMintProgram {
       requestQueueKey,
       signerKey,
       signerMintAtaKey,
-      escrowMintAtaKey
+      escrowMintAtaKey,
+      token2022ProgramKey
     );
     return queuedRedeem(invokedGlamMintProgramMeta, keys, amountIn);
   }
@@ -1954,29 +1967,29 @@ public final class GlamMintProgram {
 
   public static final Discriminator SET_TOKEN_ACCOUNTS_STATES_DISCRIMINATOR = toDiscriminator(50, 133, 45, 86, 117, 66, 115, 195);
 
-  public static List<AccountMeta> setTokenAccountsStatesKeys(final SolanaAccounts solanaAccounts,
-                                                             final PublicKey glamStateKey,
+  public static List<AccountMeta> setTokenAccountsStatesKeys(final PublicKey glamStateKey,
                                                              final PublicKey glamSignerKey,
-                                                             final PublicKey glamMintKey) {
+                                                             final PublicKey glamMintKey,
+                                                             final PublicKey token2022ProgramKey) {
     return List.of(
       createRead(glamStateKey),
       createWritableSigner(glamSignerKey),
       createWrite(glamMintKey),
-      createRead(solanaAccounts.token2022Program())
+      createRead(token2022ProgramKey)
     );
   }
 
   public static Instruction setTokenAccountsStates(final AccountMeta invokedGlamMintProgramMeta,
-                                                   final SolanaAccounts solanaAccounts,
                                                    final PublicKey glamStateKey,
                                                    final PublicKey glamSignerKey,
                                                    final PublicKey glamMintKey,
+                                                   final PublicKey token2022ProgramKey,
                                                    final boolean frozen) {
     final var keys = setTokenAccountsStatesKeys(
-      solanaAccounts,
       glamStateKey,
       glamSignerKey,
-      glamMintKey
+      glamMintKey,
+      token2022ProgramKey
     );
     return setTokenAccountsStates(invokedGlamMintProgramMeta, keys, frozen);
   }
@@ -2042,6 +2055,7 @@ public final class GlamMintProgram {
                                                 final PublicKey signerDepositAtaKey,
                                                 final PublicKey signerPolicyKey,
                                                 final PublicKey depositTokenProgramKey,
+                                                final PublicKey token2022ProgramKey,
                                                 final PublicKey policiesProgramKey,
                                                 final PublicKey glamProtocolProgramKey) {
     return List.of(
@@ -2059,7 +2073,7 @@ public final class GlamMintProgram {
       createWrite(requireNonNullElse(signerPolicyKey, invokedGlamMintProgramMeta.publicKey())),
       createRead(solanaAccounts.systemProgram()),
       createRead(depositTokenProgramKey),
-      createRead(solanaAccounts.token2022Program()),
+      createRead(token2022ProgramKey),
       createRead(solanaAccounts.associatedTokenAccountProgram()),
       createRead(policiesProgramKey),
       createRead(glamProtocolProgramKey)
@@ -2081,6 +2095,7 @@ public final class GlamMintProgram {
                                       final PublicKey signerDepositAtaKey,
                                       final PublicKey signerPolicyKey,
                                       final PublicKey depositTokenProgramKey,
+                                      final PublicKey token2022ProgramKey,
                                       final PublicKey policiesProgramKey,
                                       final PublicKey glamProtocolProgramKey,
                                       final long amountIn) {
@@ -2100,6 +2115,7 @@ public final class GlamMintProgram {
       signerDepositAtaKey,
       signerPolicyKey,
       depositTokenProgramKey,
+      token2022ProgramKey,
       policiesProgramKey,
       glamProtocolProgramKey
     );
@@ -2156,13 +2172,14 @@ public final class GlamMintProgram {
                                                  final PublicKey glamStateKey,
                                                  final PublicKey glamSignerKey,
                                                  final PublicKey glamMintKey,
+                                                 final PublicKey token2022ProgramKey,
                                                  final PublicKey glamProtocolKey) {
     return List.of(
       createWrite(glamStateKey),
       createWritableSigner(glamSignerKey),
       createWrite(glamMintKey),
       createRead(solanaAccounts.systemProgram()),
-      createRead(solanaAccounts.token2022Program()),
+      createRead(token2022ProgramKey),
       createRead(glamProtocolKey)
     );
   }
@@ -2172,6 +2189,7 @@ public final class GlamMintProgram {
                                        final PublicKey glamStateKey,
                                        final PublicKey glamSignerKey,
                                        final PublicKey glamMintKey,
+                                       final PublicKey token2022ProgramKey,
                                        final PublicKey glamProtocolKey,
                                        final MintModel mintModel) {
     final var keys = updateMintKeys(
@@ -2179,6 +2197,7 @@ public final class GlamMintProgram {
       glamStateKey,
       glamSignerKey,
       glamMintKey,
+      token2022ProgramKey,
       glamProtocolKey
     );
     return updateMint(invokedGlamMintProgramMeta, keys, mintModel);
@@ -2233,6 +2252,7 @@ public final class GlamMintProgram {
                                                               final PublicKey glamSignerKey,
                                                               final PublicKey glamMintKey,
                                                               final PublicKey requestQueueKey,
+                                                              final PublicKey token2022ProgramKey,
                                                               final PublicKey glamProtocolKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -2240,7 +2260,7 @@ public final class GlamMintProgram {
       createWrite(glamMintKey),
       createRead(requireNonNullElse(requestQueueKey, invokedGlamMintProgramMeta.publicKey())),
       createRead(solanaAccounts.systemProgram()),
-      createRead(solanaAccounts.token2022Program()),
+      createRead(token2022ProgramKey),
       createRead(glamProtocolKey)
     );
   }
@@ -2251,6 +2271,7 @@ public final class GlamMintProgram {
                                                     final PublicKey glamSignerKey,
                                                     final PublicKey glamMintKey,
                                                     final PublicKey requestQueueKey,
+                                                    final PublicKey token2022ProgramKey,
                                                     final PublicKey glamProtocolKey) {
     final var keys = updateMintApplyTimelockKeys(
       invokedGlamMintProgramMeta,
@@ -2259,6 +2280,7 @@ public final class GlamMintProgram {
       glamSignerKey,
       glamMintKey,
       requestQueueKey,
+      token2022ProgramKey,
       glamProtocolKey
     );
     return updateMintApplyTimelock(invokedGlamMintProgramMeta, keys);

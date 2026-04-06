@@ -414,6 +414,12 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
     return mappingsContextByPriceFeed;
   }
 
+  Path reservesJsonFilePath();
+
+  Path mappingsPath();
+
+  Path configurationsPath();
+
   ReserveContext reserveContext(final PublicKey pubKey);
 
   ReserveContext acceptReserve(final AccountInfo<byte[]> accountInfo);
