@@ -16,7 +16,10 @@ public sealed interface GlamMintError extends ProgramError permits
     GlamMintError.RequestQueueNotEmpty,
     GlamMintError.InvalidRequestQueueData,
     GlamMintError.RequestQueueFull,
-    GlamMintError.ProtocolFeesNotCrystallized {
+    GlamMintError.ProtocolFeesNotCrystallized,
+    GlamMintError.AmountBelowMinimum,
+    GlamMintError.ManagerFeesNotCrystallized,
+    GlamMintError.AmountAboveMaximum {
 
   static GlamMintError getInstance(final int errorCode) {
     return switch (errorCode) {
@@ -34,6 +37,9 @@ public sealed interface GlamMintError extends ProgramError permits
       case 6011 -> InvalidRequestQueueData.INSTANCE;
       case 6012 -> RequestQueueFull.INSTANCE;
       case 6013 -> ProtocolFeesNotCrystallized.INSTANCE;
+      case 6014 -> AmountBelowMinimum.INSTANCE;
+      case 6015 -> ManagerFeesNotCrystallized.INSTANCE;
+      case 6016 -> AmountAboveMaximum.INSTANCE;
       default -> null;
     };
   }
@@ -133,6 +139,27 @@ public sealed interface GlamMintError extends ProgramError permits
 
     public static final ProtocolFeesNotCrystallized INSTANCE = new ProtocolFeesNotCrystallized(
         6013, "Protocol fees should be crystallized before updating"
+    );
+  }
+
+  record AmountBelowMinimum(int code, String msg) implements GlamMintError {
+
+    public static final AmountBelowMinimum INSTANCE = new AmountBelowMinimum(
+        6014, "Amount is below the minimum required"
+    );
+  }
+
+  record ManagerFeesNotCrystallized(int code, String msg) implements GlamMintError {
+
+    public static final ManagerFeesNotCrystallized INSTANCE = new ManagerFeesNotCrystallized(
+        6015, "Manager fees should be crystallized before updating"
+    );
+  }
+
+  record AmountAboveMaximum(int code, String msg) implements GlamMintError {
+
+    public static final AmountAboveMaximum INSTANCE = new AmountAboveMaximum(
+        6016, "Amount exceeds maximum threshold"
     );
   }
 }

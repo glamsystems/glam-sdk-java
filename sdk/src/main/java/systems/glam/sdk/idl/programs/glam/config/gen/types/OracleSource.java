@@ -25,7 +25,9 @@ public enum OracleSource implements RustEnum {
   LstPoolState,
   MarinadeState,
   BaseAsset,
-  ChainlinkRWA;
+  ChainlinkRWA,
+  ChainlinkX,
+  KaminoReserve;
 
   public static OracleSource read(final byte[] _data, final int _offset) {
     return SerDeUtil.read(1, OracleSource.values(), _data, _offset);

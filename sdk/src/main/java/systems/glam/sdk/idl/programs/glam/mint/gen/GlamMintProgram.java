@@ -986,6 +986,11 @@ public final class GlamMintProgram {
   /// - user_stats x 1
   /// - drift_user x N
   /// - markets and oracles used by all drift users (no specific order)
+  /// 
+  /// Clients must pre-refresh any stale Drift spot market cumulative interest by
+  /// prepending Drift `update_spot_market_cumulative_interest` instructions for the
+  /// referenced spot markets. Calls will fail with `StaleDriftInterest` if a required
+  /// spot market's cumulative interest is too old.
   ///
   public static List<AccountMeta> priceDriftUsersKeys(final AccountMeta invokedGlamMintProgramMeta,
                                                       final PublicKey glamStateKey,
@@ -1016,6 +1021,11 @@ public final class GlamMintProgram {
   /// - user_stats x 1
   /// - drift_user x N
   /// - markets and oracles used by all drift users (no specific order)
+  /// 
+  /// Clients must pre-refresh any stale Drift spot market cumulative interest by
+  /// prepending Drift `update_spot_market_cumulative_interest` instructions for the
+  /// referenced spot markets. Calls will fail with `StaleDriftInterest` if a required
+  /// spot market's cumulative interest is too old.
   ///
   public static Instruction priceDriftUsers(final AccountMeta invokedGlamMintProgramMeta,
                                             final PublicKey glamStateKey,
@@ -1049,6 +1059,11 @@ public final class GlamMintProgram {
   /// - user_stats x 1
   /// - drift_user x N
   /// - markets and oracles used by all drift users (no specific order)
+  /// 
+  /// Clients must pre-refresh any stale Drift spot market cumulative interest by
+  /// prepending Drift `update_spot_market_cumulative_interest` instructions for the
+  /// referenced spot markets. Calls will fail with `StaleDriftInterest` if a required
+  /// spot market's cumulative interest is too old.
   ///
   public static Instruction priceDriftUsers(final AccountMeta invokedGlamMintProgramMeta,
                                             final List<AccountMeta> keys,
@@ -1101,6 +1116,11 @@ public final class GlamMintProgram {
   /// - spot_market used by drift users of vaults (no specific order)
   /// - perp markets used by drift users of vaults (no specific order)
   /// - oracles of spot markets and perp markets (no specific order)
+  /// 
+  /// Clients must pre-refresh any stale Drift spot market cumulative interest by
+  /// prepending Drift `update_spot_market_cumulative_interest` instructions for the
+  /// referenced spot markets. Calls will fail with `StaleDriftInterest` if a required
+  /// spot market's cumulative interest is too old.
   ///
   public static List<AccountMeta> priceDriftVaultDepositorsKeys(final AccountMeta invokedGlamMintProgramMeta,
                                                                 final PublicKey glamStateKey,
@@ -1132,6 +1152,11 @@ public final class GlamMintProgram {
   /// - spot_market used by drift users of vaults (no specific order)
   /// - perp markets used by drift users of vaults (no specific order)
   /// - oracles of spot markets and perp markets (no specific order)
+  /// 
+  /// Clients must pre-refresh any stale Drift spot market cumulative interest by
+  /// prepending Drift `update_spot_market_cumulative_interest` instructions for the
+  /// referenced spot markets. Calls will fail with `StaleDriftInterest` if a required
+  /// spot market's cumulative interest is too old.
   ///
   public static Instruction priceDriftVaultDepositors(final AccountMeta invokedGlamMintProgramMeta,
                                                       final PublicKey glamStateKey,
@@ -1174,6 +1199,11 @@ public final class GlamMintProgram {
   /// - spot_market used by drift users of vaults (no specific order)
   /// - perp markets used by drift users of vaults (no specific order)
   /// - oracles of spot markets and perp markets (no specific order)
+  /// 
+  /// Clients must pre-refresh any stale Drift spot market cumulative interest by
+  /// prepending Drift `update_spot_market_cumulative_interest` instructions for the
+  /// referenced spot markets. Calls will fail with `StaleDriftInterest` if a required
+  /// spot market's cumulative interest is too old.
   ///
   public static Instruction priceDriftVaultDepositors(final AccountMeta invokedGlamMintProgramMeta,
                                                       final List<AccountMeta> keys,

@@ -31,6 +31,7 @@ public sealed interface GlamProtocolError extends ProgramError permits
     GlamProtocolError.EngineFieldNotFound,
     GlamProtocolError.InvalidBaseAsset,
     GlamProtocolError.InvalidProtocolBitflag,
+    GlamProtocolError.StaleDriftInterest,
     GlamProtocolError.WithdrawDenied,
     GlamProtocolError.InvalidAssetForSwap,
     GlamProtocolError.UnsupportedSwapIx,
@@ -39,6 +40,7 @@ public sealed interface GlamProtocolError extends ProgramError permits
     GlamProtocolError.InvalidTokenAccount,
     GlamProtocolError.InvalidSwapAmount,
     GlamProtocolError.MultipleStakeAccountsDisallowed,
+    GlamProtocolError.MaxDeviationExceeded,
     GlamProtocolError.InvalidAssetPrice,
     GlamProtocolError.InvalidStableCoinPriceForSubscribe,
     GlamProtocolError.InvalidPricingOracle,
@@ -55,10 +57,17 @@ public sealed interface GlamProtocolError extends ProgramError permits
     GlamProtocolError.UnknownExternalVaultAsset,
     GlamProtocolError.InvalidPriceDenom,
     GlamProtocolError.UnexpectedDiscriminator,
+    GlamProtocolError.InvalidAccountData,
+    GlamProtocolError.OraclePriceSuspended,
+    GlamProtocolError.AssetNotInPricingSet,
+    GlamProtocolError.TransferRateLimitExceeded,
+    GlamProtocolError.TransferRateLimitDenied,
     GlamProtocolError.TransfersDisabled,
     GlamProtocolError.InvalidPolicyAccount,
     GlamProtocolError.AmountTooBig,
-    GlamProtocolError.LockUp {
+    GlamProtocolError.LockUp,
+    GlamProtocolError.PolicyNotSet,
+    GlamProtocolError.UnsupportedOracleSource {
 
   static GlamProtocolError getInstance(final int errorCode) {
     return switch (errorCode) {
@@ -90,6 +99,7 @@ public sealed interface GlamProtocolError extends ProgramError permits
       case 49013 -> EngineFieldNotFound.INSTANCE;
       case 49014 -> InvalidBaseAsset.INSTANCE;
       case 49015 -> InvalidProtocolBitflag.INSTANCE;
+      case 49016 -> StaleDriftInterest.INSTANCE;
       case 50000 -> WithdrawDenied.INSTANCE;
       case 50001 -> InvalidAssetForSwap.INSTANCE;
       case 50002 -> UnsupportedSwapIx.INSTANCE;
@@ -98,6 +108,7 @@ public sealed interface GlamProtocolError extends ProgramError permits
       case 50005 -> InvalidTokenAccount.INSTANCE;
       case 50006 -> InvalidSwapAmount.INSTANCE;
       case 50007 -> MultipleStakeAccountsDisallowed.INSTANCE;
+      case 50008 -> MaxDeviationExceeded.INSTANCE;
       case 51000 -> InvalidAssetPrice.INSTANCE;
       case 51001 -> InvalidStableCoinPriceForSubscribe.INSTANCE;
       case 51100 -> InvalidPricingOracle.INSTANCE;
@@ -114,10 +125,17 @@ public sealed interface GlamProtocolError extends ProgramError permits
       case 51111 -> UnknownExternalVaultAsset.INSTANCE;
       case 51112 -> InvalidPriceDenom.INSTANCE;
       case 51113 -> UnexpectedDiscriminator.INSTANCE;
+      case 51114 -> InvalidAccountData.INSTANCE;
+      case 51115 -> OraclePriceSuspended.INSTANCE;
+      case 51116 -> AssetNotInPricingSet.INSTANCE;
+      case 50100 -> TransferRateLimitExceeded.INSTANCE;
+      case 50101 -> TransferRateLimitDenied.INSTANCE;
       case 52000 -> TransfersDisabled.INSTANCE;
       case 52001 -> InvalidPolicyAccount.INSTANCE;
       case 52002 -> AmountTooBig.INSTANCE;
       case 52003 -> LockUp.INSTANCE;
+      case 52004 -> PolicyNotSet.INSTANCE;
+      case 52005 -> UnsupportedOracleSource.INSTANCE;
       default -> null;
     };
   }
@@ -318,6 +336,13 @@ public sealed interface GlamProtocolError extends ProgramError permits
     );
   }
 
+  record StaleDriftInterest(int code, String msg) implements GlamProtocolError {
+
+    public static final StaleDriftInterest INSTANCE = new StaleDriftInterest(
+        49016, "Drift spot market cumulative interest is stale"
+    );
+  }
+
   record WithdrawDenied(int code, String msg) implements GlamProtocolError {
 
     public static final WithdrawDenied INSTANCE = new WithdrawDenied(
@@ -371,6 +396,13 @@ public sealed interface GlamProtocolError extends ProgramError permits
 
     public static final MultipleStakeAccountsDisallowed INSTANCE = new MultipleStakeAccountsDisallowed(
         50007, "Multiple stake accounts disallowed"
+    );
+  }
+
+  record MaxDeviationExceeded(int code, String msg) implements GlamProtocolError {
+
+    public static final MaxDeviationExceeded INSTANCE = new MaxDeviationExceeded(
+        50008, "Max deviation exceeded"
     );
   }
 
@@ -486,6 +518,41 @@ public sealed interface GlamProtocolError extends ProgramError permits
     );
   }
 
+  record InvalidAccountData(int code, String msg) implements GlamProtocolError {
+
+    public static final InvalidAccountData INSTANCE = new InvalidAccountData(
+        51114, "Invalid account data"
+    );
+  }
+
+  record OraclePriceSuspended(int code, String msg) implements GlamProtocolError {
+
+    public static final OraclePriceSuspended INSTANCE = new OraclePriceSuspended(
+        51115, "Oracle price is suspended"
+    );
+  }
+
+  record AssetNotInPricingSet(int code, String msg) implements GlamProtocolError {
+
+    public static final AssetNotInPricingSet INSTANCE = new AssetNotInPricingSet(
+        51116, "Asset not in pricing set"
+    );
+  }
+
+  record TransferRateLimitExceeded(int code, String msg) implements GlamProtocolError {
+
+    public static final TransferRateLimitExceeded INSTANCE = new TransferRateLimitExceeded(
+        50100, "Transfer rate limit exceeded"
+    );
+  }
+
+  record TransferRateLimitDenied(int code, String msg) implements GlamProtocolError {
+
+    public static final TransferRateLimitDenied INSTANCE = new TransferRateLimitDenied(
+        50101, "Transfer denied: no rate limit defined for this asset"
+    );
+  }
+
   record TransfersDisabled(int code, String msg) implements GlamProtocolError {
 
     public static final TransfersDisabled INSTANCE = new TransfersDisabled(
@@ -511,6 +578,20 @@ public sealed interface GlamProtocolError extends ProgramError permits
 
     public static final LockUp INSTANCE = new LockUp(
         52003, "Policy violation: lock-up has not expired"
+    );
+  }
+
+  record PolicyNotSet(int code, String msg) implements GlamProtocolError {
+
+    public static final PolicyNotSet INSTANCE = new PolicyNotSet(
+        52004, "Protocol policy not set"
+    );
+  }
+
+  record UnsupportedOracleSource(int code, String msg) implements GlamProtocolError {
+
+    public static final UnsupportedOracleSource INSTANCE = new UnsupportedOracleSource(
+        52005, "Oracle source not supported in this context"
     );
   }
 }

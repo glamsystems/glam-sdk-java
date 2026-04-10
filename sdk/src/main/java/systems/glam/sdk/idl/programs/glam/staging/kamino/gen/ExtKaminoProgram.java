@@ -1,4 +1,4 @@
-package systems.glam.sdk.idl.programs.glam.kamino.gen;
+package systems.glam.sdk.idl.programs.glam.staging.kamino.gen;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
@@ -7,8 +7,8 @@ import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.kamino.lend.gen.types.InitObligationArgs;
-import systems.glam.sdk.idl.programs.glam.kamino.gen.types.LendingPolicy;
-import systems.glam.sdk.idl.programs.glam.kamino.gen.types.VaultsPolicy;
+import systems.glam.sdk.idl.programs.glam.staging.kamino.gen.types.LendingPolicy;
+import systems.glam.sdk.idl.programs.glam.staging.kamino.gen.types.VaultsPolicy;
 
 import java.math.BigInteger;
 import java.util.List;

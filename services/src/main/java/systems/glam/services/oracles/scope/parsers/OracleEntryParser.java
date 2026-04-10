@@ -44,7 +44,6 @@ class OracleEntryParser extends BaseScopeEntryParser {
              RaydiumAmmV3AtoB,
              RaydiumAmmV3BtoA,
              RedStone,
-             SplStake,
              SwitchboardOnDemand -> {
           final var clas = Class.forName("software.sava.idl.clients.kamino.scope.entries." + oracleType);
           final var constructor = clas.getConstructor(int.class, PublicKey.class, Set.class);

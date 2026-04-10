@@ -1,7 +1,5 @@
 package systems.glam.sdk.idl.programs.glam.protocol.gen;
 
-import java.util.List;
-
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
@@ -9,28 +7,14 @@ import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
+import systems.glam.sdk.idl.programs.glam.protocol.gen.types.*;
 
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.EmergencyAccessUpdateArgs;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.EngineField;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.ExtraParams;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.JupiterSwapPolicy;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.PricedProtocol;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateModel;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.TransferPolicy;
+import java.util.List;
 
 import static java.util.Objects.requireNonNullElse;
-
 import static software.sava.core.accounts.PublicKey.readPubKey;
-import static software.sava.core.accounts.meta.AccountMeta.createRead;
-import static software.sava.core.accounts.meta.AccountMeta.createReadOnlySigner;
-import static software.sava.core.accounts.meta.AccountMeta.createWritableSigner;
-import static software.sava.core.accounts.meta.AccountMeta.createWrite;
-import static software.sava.core.encoding.ByteUtil.getInt16LE;
-import static software.sava.core.encoding.ByteUtil.getInt32LE;
-import static software.sava.core.encoding.ByteUtil.getInt64LE;
-import static software.sava.core.encoding.ByteUtil.putInt16LE;
-import static software.sava.core.encoding.ByteUtil.putInt32LE;
-import static software.sava.core.encoding.ByteUtil.putInt64LE;
+import static software.sava.core.accounts.meta.AccountMeta.*;
+import static software.sava.core.encoding.ByteUtil.*;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
@@ -688,6 +672,111 @@ public final class GlamProtocolProgram {
     @Override
     public int l() {
       return 8 + SerDeUtil.lenVector(4, data);
+    }
+  }
+
+  public static final Discriminator JUPITER_SWAP_V_2_DISCRIMINATOR = toDiscriminator(28, 155, 14, 63, 87, 96, 62, 221);
+
+  public static List<AccountMeta> jupiterSwapV2Keys(final AccountMeta invokedGlamProtocolProgramMeta,
+                                                    final PublicKey glamStateKey,
+                                                    final PublicKey glamVaultKey,
+                                                    final PublicKey glamSignerKey,
+                                                    final PublicKey cpiProgramKey,
+                                                    final PublicKey inputStakePoolKey,
+                                                    final PublicKey outputStakePoolKey,
+                                                    final PublicKey glamConfigKey,
+                                                    final PublicKey solUsdOracleKey,
+                                                    final PublicKey inputTokenOracleKey,
+                                                    final PublicKey outputTokenOracleKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(cpiProgramKey),
+      createRead(requireNonNullElse(inputStakePoolKey, invokedGlamProtocolProgramMeta.publicKey())),
+      createRead(requireNonNullElse(outputStakePoolKey, invokedGlamProtocolProgramMeta.publicKey())),
+      createRead(requireNonNullElse(glamConfigKey, invokedGlamProtocolProgramMeta.publicKey())),
+      createRead(requireNonNullElse(solUsdOracleKey, invokedGlamProtocolProgramMeta.publicKey())),
+      createRead(requireNonNullElse(inputTokenOracleKey, invokedGlamProtocolProgramMeta.publicKey())),
+      createRead(requireNonNullElse(outputTokenOracleKey, invokedGlamProtocolProgramMeta.publicKey()))
+    );
+  }
+
+  public static Instruction jupiterSwapV2(final AccountMeta invokedGlamProtocolProgramMeta,
+                                          final PublicKey glamStateKey,
+                                          final PublicKey glamVaultKey,
+                                          final PublicKey glamSignerKey,
+                                          final PublicKey cpiProgramKey,
+                                          final PublicKey inputStakePoolKey,
+                                          final PublicKey outputStakePoolKey,
+                                          final PublicKey glamConfigKey,
+                                          final PublicKey solUsdOracleKey,
+                                          final PublicKey inputTokenOracleKey,
+                                          final PublicKey outputTokenOracleKey,
+                                          final boolean skipQuotePriceCheck,
+                                          final byte[] data) {
+    final var keys = jupiterSwapV2Keys(
+      invokedGlamProtocolProgramMeta,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      cpiProgramKey,
+      inputStakePoolKey,
+      outputStakePoolKey,
+      glamConfigKey,
+      solUsdOracleKey,
+      inputTokenOracleKey,
+      outputTokenOracleKey
+    );
+    return jupiterSwapV2(invokedGlamProtocolProgramMeta, keys, skipQuotePriceCheck, data);
+  }
+
+  public static Instruction jupiterSwapV2(final AccountMeta invokedGlamProtocolProgramMeta,
+                                          final List<AccountMeta> keys,
+                                          final boolean skipQuotePriceCheck,
+                                          final byte[] data) {
+    final byte[] _data = new byte[9 + SerDeUtil.lenVector(4, data)];
+    int i = JUPITER_SWAP_V_2_DISCRIMINATOR.write(_data, 0);
+    _data[i] = (byte) (skipQuotePriceCheck ? 1 : 0);
+    ++i;
+    SerDeUtil.writeVector(4, data, _data, i);
+
+    return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
+  }
+
+  public record JupiterSwapV2IxData(Discriminator discriminator, boolean skipQuotePriceCheck, byte[] data) implements SerDe {  
+
+    public static JupiterSwapV2IxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int SKIP_QUOTE_PRICE_CHECK_OFFSET = 8;
+    public static final int DATA_OFFSET = 9;
+
+    public static JupiterSwapV2IxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var skipQuotePriceCheck = _data[i] == 1;
+      ++i;
+      final var data = SerDeUtil.readbyteVector(4, _data, i);
+      return new JupiterSwapV2IxData(discriminator, skipQuotePriceCheck, data);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      _data[i] = (byte) (skipQuotePriceCheck ? 1 : 0);
+      ++i;
+      i += SerDeUtil.writeVector(4, data, _data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + 1 + SerDeUtil.lenVector(4, data);
     }
   }
 

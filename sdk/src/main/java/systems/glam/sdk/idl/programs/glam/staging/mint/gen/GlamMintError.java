@@ -17,11 +17,9 @@ public sealed interface GlamMintError extends ProgramError permits
     GlamMintError.InvalidRequestQueueData,
     GlamMintError.RequestQueueFull,
     GlamMintError.ProtocolFeesNotCrystallized,
-    GlamMintError.ManagerFeesNotCrystallized,
-    GlamMintError.InsufficientEscrowBalance,
     GlamMintError.AmountBelowMinimum,
-    GlamMintError.TokenAclManagesFreezeThaw,
-    GlamMintError.InvalidMintState {
+    GlamMintError.ManagerFeesNotCrystallized,
+    GlamMintError.AmountAboveMaximum {
 
   static GlamMintError getInstance(final int errorCode) {
     return switch (errorCode) {
@@ -39,11 +37,9 @@ public sealed interface GlamMintError extends ProgramError permits
       case 6011 -> InvalidRequestQueueData.INSTANCE;
       case 6012 -> RequestQueueFull.INSTANCE;
       case 6013 -> ProtocolFeesNotCrystallized.INSTANCE;
-      case 6014 -> ManagerFeesNotCrystallized.INSTANCE;
-      case 6015 -> InsufficientEscrowBalance.INSTANCE;
-      case 6016 -> AmountBelowMinimum.INSTANCE;
-      case 6017 -> TokenAclManagesFreezeThaw.INSTANCE;
-      case 6018 -> InvalidMintState.INSTANCE;
+      case 6014 -> AmountBelowMinimum.INSTANCE;
+      case 6015 -> ManagerFeesNotCrystallized.INSTANCE;
+      case 6016 -> AmountAboveMaximum.INSTANCE;
       default -> null;
     };
   }
@@ -72,7 +68,7 @@ public sealed interface GlamMintError extends ProgramError permits
   record InvalidAsset(int code, String msg) implements GlamMintError {
 
     public static final InvalidAsset INSTANCE = new InvalidAsset(
-        6003, "Invalid asset"
+        6003, "Asset not allowed to subscribe"
     );
   }
 
@@ -146,38 +142,24 @@ public sealed interface GlamMintError extends ProgramError permits
     );
   }
 
-  record ManagerFeesNotCrystallized(int code, String msg) implements GlamMintError {
-
-    public static final ManagerFeesNotCrystallized INSTANCE = new ManagerFeesNotCrystallized(
-        6014, "Manager fees should be crystallized before updating"
-    );
-  }
-
-  record InsufficientEscrowBalance(int code, String msg) implements GlamMintError {
-
-    public static final InsufficientEscrowBalance INSTANCE = new InsufficientEscrowBalance(
-        6015, "Insufficient escrow balance for fee burn"
-    );
-  }
-
   record AmountBelowMinimum(int code, String msg) implements GlamMintError {
 
     public static final AmountBelowMinimum INSTANCE = new AmountBelowMinimum(
-        6016, "Amount below minimum threshold"
+        6014, "Amount is below the minimum required"
     );
   }
 
-  record TokenAclManagesFreezeThaw(int code, String msg) implements GlamMintError {
+  record ManagerFeesNotCrystallized(int code, String msg) implements GlamMintError {
 
-    public static final TokenAclManagesFreezeThaw INSTANCE = new TokenAclManagesFreezeThaw(
-        6017, "Token ACL is enabled; freeze/thaw is managed by the Token ACL program"
+    public static final ManagerFeesNotCrystallized INSTANCE = new ManagerFeesNotCrystallized(
+        6015, "Manager fees should be crystallized before updating"
     );
   }
 
-  record InvalidMintState(int code, String msg) implements GlamMintError {
+  record AmountAboveMaximum(int code, String msg) implements GlamMintError {
 
-    public static final InvalidMintState INSTANCE = new InvalidMintState(
-        6018, "Invalid mint state"
+    public static final AmountAboveMaximum INSTANCE = new AmountAboveMaximum(
+        6016, "Amount exceeds maximum threshold"
     );
   }
 }

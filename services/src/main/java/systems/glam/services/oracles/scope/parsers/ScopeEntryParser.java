@@ -30,18 +30,21 @@ public interface ScopeEntryParser extends FieldBufferPredicate {
            RaydiumAmmV3AtoB,
            RaydiumAmmV3BtoA,
            RedStone,
-           SplStake,
            SwitchboardOnDemand -> new OracleEntryParser(oracleType);
+      case SplBalance,
+           SplStake,
+           StakedSolBalance -> new FunctionalEntryParser(oracleType);
       case Chainlink -> new ChainlinkParser(oracleType);
       case ChainlinkRWA, ChainlinkX -> new ChainlinkStatusEntryParser(oracleType);
+      case CappedFloored -> new CappedFlooredParser(oracleType);
+      case CappedMostRecentOf, MostRecentOf -> new MostRecentOfParser(oracleType);
+      case DiscountToMaturity -> new DiscountToMaturityParser(oracleType);
+      case FixedPrice -> new FixedPriceParser(oracleType);
+      case KTokenToTokenA, KTokenToTokenB -> throw new IllegalStateException("Unsupported oracle type: " + oracleType);
+      case MultiplicationChain -> new MultiplicationChainParser(oracleType);
       case PythPull, Securitize -> new ReferencesEntryParser(oracleType);
       case PythLazer -> new PythLazerParser(oracleType);
       case ScopeTwap1h, ScopeTwap8h, ScopeTwap7d, ScopeTwap24h -> new ScopeTwapParser(oracleType);
-      case FixedPrice -> new FixedPriceParser(oracleType);
-      case DiscountToMaturity -> new DiscountToMaturityParser(oracleType);
-      case CappedFloored -> new CappedFlooredParser(oracleType);
-      case CappedMostRecentOf, MostRecentOf -> new MostRecentOfParser(oracleType);
-      case KTokenToTokenA, KTokenToTokenB -> throw new IllegalStateException("Unsupported oracle type: " + oracleType);
     };
     ji.testObject(parser);
     return parser.createEntry();

@@ -426,6 +426,8 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
 
   KaminoVaultContext vaultForShareMint(final PublicKey sharesMint);
 
+  Collection<KaminoVaultContext> vaultContexts();
+
   void subscribe(final SolanaRpcWebsocket websocket);
 
   void subscribe(final KaminoListener listener);

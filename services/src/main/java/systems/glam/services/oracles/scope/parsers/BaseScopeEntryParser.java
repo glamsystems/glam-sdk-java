@@ -28,38 +28,12 @@ public class BaseScopeEntryParser implements ScopeEntryParser {
   }
 
   static CharBufferFunction<OracleType> PARSE_ORACLE_TYPE = (buf, offset, len) -> {
-    if (fieldStartsWith("PythPull", buf, offset, len)) {
-      if (fieldEndsWith("EMA", buf, offset, len)) {
-        return OracleType.PythPullEMA;
-      } else {
-        return OracleType.PythPull;
-      }
-    } else if (fieldEquals("PythLazer", buf, offset, len)) {
-      return OracleType.PythLazer;
-    } else if (fieldEquals("SwitchboardOnDemand", buf, offset, len)) {
-      return OracleType.SwitchboardOnDemand;
-    } else if (fieldEquals("FixedPrice", buf, offset, len)) {
-      return OracleType.FixedPrice;
-    } else if (fieldEquals("JitoRestaking", buf, offset, len)) {
-      return OracleType.JitoRestaking;
-    } else if (fieldEquals("RedStone", buf, offset, len)) {
-      return OracleType.RedStone;
-    } else if (fieldEquals("Securitize", buf, offset, len)) {
-      return OracleType.Securitize;
-    } else if (fieldEquals("FlashtradeLp", buf, offset, len)) {
-      return OracleType.FlashtradeLp;
-    } else if (fieldEquals("DiscountToMaturity", buf, offset, len)) {
-      return OracleType.DiscountToMaturity;
-    } else if (fieldEquals("SplStake", buf, offset, len)) {
-      return OracleType.SplStake;
-    } else if (fieldEquals("KToken", buf, offset, len)) {
-      return OracleType.KToken;
-    } else if (fieldEquals("MsolStake", buf, offset, len)) {
-      return OracleType.MsolStake;
-    } else if (fieldEquals("JupiterLpFetch", buf, offset, len)) {
-      return OracleType.JupiterLpFetch;
-    } else if (fieldEquals("AdrenaLp", buf, offset, len)) {
+    if (fieldEquals("AdrenaLp", buf, offset, len)) {
       return OracleType.AdrenaLp;
+    } else if (fieldStartsWith("CappedFloored", buf, offset, len)) {
+      return OracleType.CappedFloored;
+    } else if (fieldEquals("CappedMostRecentOf", buf, offset, len)) {
+      return OracleType.CappedMostRecentOf;
     } else if (fieldStartsWith("Chainlink", buf, offset, len)) {
       if (fieldEndsWith("ExchangeRate", buf, offset, len)) {
         return OracleType.ChainlinkExchangeRate;
@@ -72,40 +46,6 @@ public class BaseScopeEntryParser implements ScopeEntryParser {
       } else {
         return OracleType.Chainlink;
       }
-    } else if (fieldEquals("CappedMostRecentOf", buf, offset, len)) {
-      return OracleType.CappedMostRecentOf;
-    } else if (fieldEquals("MostRecentOf", buf, offset, len)) {
-      return OracleType.MostRecentOf;
-    } else if (fieldStartsWith("CappedFloored", buf, offset, len)) {
-      return OracleType.CappedFloored;
-    } else if (fieldStartsWith("ScopeTwap", buf, offset, len)) {
-      if (fieldEndsWith("8h", buf, offset, len)) {
-        return OracleType.ScopeTwap8h;
-      } else if (fieldEndsWith("24h", buf, offset, len)) {
-        return OracleType.ScopeTwap24h;
-      } else {
-        return OracleType.ScopeTwap1h;
-      }
-    } else if (fieldStartsWith("MeteoraDlmm", buf, offset, len)) {
-      if (fieldEndsWith("AtoB", buf, offset, len)) {
-        return OracleType.MeteoraDlmmAtoB;
-      } else {
-        return OracleType.MeteoraDlmmBtoA;
-      }
-    } else if (fieldStartsWith("OrcaWhirlpool", buf, offset, len)) {
-      if (fieldEndsWith("AtoB", buf, offset, len)) {
-        return OracleType.OrcaWhirlpoolAtoB;
-      } else {
-        return OracleType.OrcaWhirlpoolBtoA;
-      }
-    } else if (fieldStartsWith("RaydiumAmmV3", buf, offset, len)) {
-      if (fieldEndsWith("AtoB", buf, offset, len)) {
-        return OracleType.RaydiumAmmV3AtoB;
-      } else {
-        return OracleType.RaydiumAmmV3BtoA;
-      }
-    } else if (fieldEquals("Unused", buf, offset, len)) {
-      return OracleType.Unused;
     } else if (fieldStartsWith("Deprecated", buf, offset, len)) {
       if (fieldEndsWith("1", buf, offset, len)) {
         return OracleType.DeprecatedPlaceholder1;
@@ -122,6 +62,72 @@ public class BaseScopeEntryParser implements ScopeEntryParser {
       } else {
         return OracleType.DeprecatedPlaceholder7;
       }
+    } else if (fieldEquals("DiscountToMaturity", buf, offset, len)) {
+      return OracleType.DiscountToMaturity;
+    } else if (fieldEquals("FixedPrice", buf, offset, len)) {
+      return OracleType.FixedPrice;
+    } else if (fieldEquals("FlashtradeLp", buf, offset, len)) {
+      return OracleType.FlashtradeLp;
+    } else if (fieldEquals("JitoRestaking", buf, offset, len)) {
+      return OracleType.JitoRestaking;
+    } else if (fieldEquals("JupiterLpFetch", buf, offset, len)) {
+      return OracleType.JupiterLpFetch;
+    } else if (fieldEquals("KToken", buf, offset, len)) {
+      return OracleType.KToken;
+    } else if (fieldStartsWith("MeteoraDlmm", buf, offset, len)) {
+      if (fieldEndsWith("AtoB", buf, offset, len)) {
+        return OracleType.MeteoraDlmmAtoB;
+      } else {
+        return OracleType.MeteoraDlmmBtoA;
+      }
+    } else if (fieldEquals("MostRecentOf", buf, offset, len)) {
+      return OracleType.MostRecentOf;
+    } else if (fieldEquals("MsolStake", buf, offset, len)) {
+      return OracleType.MsolStake;
+    } else if (fieldEquals("MultiplicationChain", buf, offset, len)) {
+      return OracleType.MultiplicationChain;
+    } else if (fieldStartsWith("OrcaWhirlpool", buf, offset, len)) {
+      if (fieldEndsWith("AtoB", buf, offset, len)) {
+        return OracleType.OrcaWhirlpoolAtoB;
+      } else {
+        return OracleType.OrcaWhirlpoolBtoA;
+      }
+    } else if (fieldEquals("PythLazer", buf, offset, len)) {
+      return OracleType.PythLazer;
+    } else if (fieldStartsWith("PythPull", buf, offset, len)) {
+      if (fieldEndsWith("EMA", buf, offset, len)) {
+        return OracleType.PythPullEMA;
+      } else {
+        return OracleType.PythPull;
+      }
+    } else if (fieldStartsWith("RaydiumAmmV3", buf, offset, len)) {
+      if (fieldEndsWith("AtoB", buf, offset, len)) {
+        return OracleType.RaydiumAmmV3AtoB;
+      } else {
+        return OracleType.RaydiumAmmV3BtoA;
+      }
+    } else if (fieldEquals("RedStone", buf, offset, len)) {
+      return OracleType.RedStone;
+    } else if (fieldStartsWith("ScopeTwap", buf, offset, len)) {
+      if (fieldEndsWith("8h", buf, offset, len)) {
+        return OracleType.ScopeTwap8h;
+      } else if (fieldEndsWith("24h", buf, offset, len)) {
+        return OracleType.ScopeTwap24h;
+      } else {
+        return OracleType.ScopeTwap1h;
+      }
+    } else if (fieldEquals("Securitize", buf, offset, len)) {
+      return OracleType.Securitize;
+    } else if (fieldEquals("SplBalance", buf, offset, len)) {
+      return OracleType.SplBalance;
+    } else if (fieldEquals("SwitchboardOnDemand", buf, offset, len)) {
+      return OracleType.SwitchboardOnDemand;
+    } else if (fieldEquals("SplStake", buf, offset, len)) {
+      return OracleType.SplStake;
+    } else if (fieldEquals("StakedSolBalance", buf, offset, len)) {
+      return OracleType.StakedSolBalance;
+    } else if (fieldEquals("Unused", buf, offset, len)) {
+      return OracleType.Unused;
     } else {
       throw new IllegalStateException("Unknown oracle type: " + new String(buf, offset, len));
     }

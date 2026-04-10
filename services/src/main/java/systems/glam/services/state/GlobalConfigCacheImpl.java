@@ -437,8 +437,12 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   private static boolean validOracleSource(final AssetMetaContext assetMeta) {
     return switch (assetMeta.oracleSource()) {
       case NotSet, BaseAsset, QuoteAsset, Prelaunch, Pyth, Pyth1K, Pyth1M, PythStableCoin, Switchboard -> false;
-      case PythPull, Pyth1KPull, Pyth1MPull, PythStableCoinPull, SwitchboardOnDemand, PythLazer, PythLazer1K,
-           PythLazer1M, PythLazerStableCoin, LstPoolState, MarinadeState, ChainlinkRWA -> true;
+      case ChainlinkRWA, ChainlinkX,
+           KaminoReserve,
+           LstPoolState,
+           MarinadeState,
+           PythPull, Pyth1KPull, Pyth1MPull, PythStableCoinPull, SwitchboardOnDemand, PythLazer, PythLazer1K,
+           PythLazer1M, PythLazerStableCoin -> true;
     };
   }
 

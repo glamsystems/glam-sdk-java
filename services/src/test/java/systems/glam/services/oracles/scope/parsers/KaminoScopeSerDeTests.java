@@ -202,6 +202,30 @@ final class KaminoScopeSerDeTests {
     var usdgtwap = assertInstanceOf(PythPullEMA.class, chain[0]);
     assertEquals(PublicKey.fromBase58Encoded("6JkZmXGgWnzsyTQaqRARzP64iFYnpMNT4siiuUDUaB8s"), usdgtwap.oracle());
     assertFalse(usdgtwap.twapEnabled());
+
+    reserveContext = reserveContexts.get(PublicKey.fromBase58Encoded("EsSHMpVMtwHALxDGzaS1jt4VWQzWcYcQu715KvLQS7F"));
+
+    assertEquals("dfdvSOL", reserveContext.tokenName());
+    assertEquals(PublicKey.fromBase58Encoded("sctmB7GPi5L2Q5G9tUSzXvhZ4YiDMEGcRov9KfArQpx"), reserveContext.mint());
+    assertEquals(120L, reserveContext.maxAgePriceSeconds());
+    assertEquals(240L, reserveContext.maxAgeTwapSeconds());
+    assertEquals(1000L, reserveContext.maxTwapDivergenceBps());
+
+    chain = reserveContext.priceChains().priceChain();
+    assertEquals(2, chain.length);
+    var dfdvSplStake = assertInstanceOf(SplStake.class, chain[0]);
+    assertEquals(PublicKey.fromBase58Encoded("pyZMBjpWsVjKANAYK5mpNbKiws2krjRPZ2N2UYCSnbP"), dfdvSplStake.priceAccount());
+    var dfdvPyth = assertInstanceOf(PythPull.class, chain[1]);
+    assertEquals(PublicKey.fromBase58Encoded("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE"), dfdvPyth.oracle());
+    assertFalse(dfdvPyth.twapEnabled());
+
+    chain = reserveContext.priceChains().twapChain();
+    assertEquals(2, chain.length);
+    var dfdvTwapSplStake = assertInstanceOf(SplStake.class, chain[0]);
+    assertEquals(PublicKey.fromBase58Encoded("pyZMBjpWsVjKANAYK5mpNbKiws2krjRPZ2N2UYCSnbP"), dfdvTwapSplStake.priceAccount());
+    var dfdvTwapPythEma = assertInstanceOf(PythPullEMA.class, chain[1]);
+    assertEquals(PublicKey.fromBase58Encoded("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE"), dfdvTwapPythEma.oracle());
+    assertFalse(dfdvTwapPythEma.twapEnabled());
   }
   @Test
   void testReserveContextDeserialization() {

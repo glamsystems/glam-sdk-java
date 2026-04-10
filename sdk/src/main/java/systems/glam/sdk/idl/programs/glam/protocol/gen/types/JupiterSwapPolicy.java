@@ -7,7 +7,9 @@ import software.sava.idl.clients.core.gen.SerDeUtil;
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 
-public record JupiterSwapPolicy(int maxSlippageBps, PublicKey[] swapAllowlist) implements SerDe {
+public record JupiterSwapPolicy(int maxSlippageBps,
+                                PublicKey[] swapAllowlist,
+                                int maxDeviationBps) implements SerDe {
 
   public static final int MAX_SLIPPAGE_BPS_OFFSET = 0;
   public static final int SWAP_ALLOWLIST_OFFSET = 3;
@@ -22,11 +24,14 @@ public record JupiterSwapPolicy(int maxSlippageBps, PublicKey[] swapAllowlist) i
     final PublicKey[] swapAllowlist;
     if (SerDeUtil.isAbsent(1, _data, i)) {
       swapAllowlist = null;
+      ++i;
     } else {
       ++i;
       swapAllowlist = SerDeUtil.readPublicKeyVector(4, _data, i);
+      i += SerDeUtil.lenVector(4, swapAllowlist);
     }
-    return new JupiterSwapPolicy(maxSlippageBps, swapAllowlist);
+    final var maxDeviationBps = getInt16LE(_data, i);
+    return new JupiterSwapPolicy(maxSlippageBps, swapAllowlist, maxDeviationBps);
   }
 
   @Override
@@ -40,11 +45,13 @@ public record JupiterSwapPolicy(int maxSlippageBps, PublicKey[] swapAllowlist) i
       _data[i++] = 1;
       i += SerDeUtil.writeVector(4, swapAllowlist, _data, i);
     }
+    putInt16LE(_data, i, maxDeviationBps);
+    i += 2;
     return i - _offset;
   }
 
   @Override
   public int l() {
-    return 2 + (swapAllowlist == null || swapAllowlist.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, swapAllowlist)));
+    return 2 + (swapAllowlist == null || swapAllowlist.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, swapAllowlist))) + 2;
   }
 }

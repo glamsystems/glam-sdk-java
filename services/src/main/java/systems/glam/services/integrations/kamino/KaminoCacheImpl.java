@@ -157,6 +157,11 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   }
 
   @Override
+  public Collection<KaminoVaultContext> vaultContexts() {
+    return List.copyOf(vaultStateContextMap.values());
+  }
+
+  @Override
   public FeedIndexes indexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType) {
     readLock.lock();
     try {
@@ -724,6 +729,111 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
       return null;
     }
     return switch (scopeEntry) {
+      case CappedFloored cappedFloored -> String.format("""
+              {
+                "type": "%s",
+                "index": %d,
+                "source": %s,
+                "cap": %s,
+                "floor": %s
+              }""",
+          cappedFloored.oracleType().name(),
+          cappedFloored.index(),
+          toJson(cappedFloored.sourceEntry()),
+          toJson(cappedFloored.capEntry()),
+          toJson(cappedFloored.flooredEntry())
+      );
+      case Deprecated e -> String.format("""
+          {
+            "type": "Deprecated",
+            "index": %d
+          }""", e.index()
+      );
+      case DiscountToMaturity discountToMaturity -> String.format("""
+              {
+                "type": "%s",
+                "index": %d,
+                "discountPerYearBps": %d,
+                "maturityTimestamp": %d
+              }""",
+          discountToMaturity.oracleType().name(),
+          discountToMaturity.index(),
+          discountToMaturity.discountPerYearBps(),
+          discountToMaturity.maturityTimestamp()
+      );
+      case FixedPrice fixedPrice -> String.format("""
+              {
+                "type": "%s",
+                "index": %d,
+                "value": %d,
+                "exp": %d,
+                "decimal": "%s"
+              }""",
+          fixedPrice.oracleType().name(),
+          fixedPrice.index(),
+          fixedPrice.value(), fixedPrice.exp(),
+          fixedPrice.decimal().toPlainString()
+      );
+      case MostRecentOf mostRecentOf -> {
+        final var prefix = String.format("""
+                {
+                  "type": "%s",
+                  "index": %d,
+                  "sources": %s,
+                  "maxDivergenceBps": %d,
+                  "sourcesMaxAgeS": %d,""",
+            mostRecentOf.oracleType().name(),
+            mostRecentOf.index(),
+            toJson(mostRecentOf.sources()),
+            mostRecentOf.maxDivergenceBps(),
+            mostRecentOf.sourcesMaxAgeS()
+        );
+        yield switch (mostRecentOf) {
+          case CappedMostRecentOf cappedMostRecentOf -> String.format("""
+                  %s
+                    "cap": %s
+                  }""",
+              prefix,
+              toJson(cappedMostRecentOf.capEntry())
+          );
+          case MostRecentOfEntry mostRecentOfRecord -> String.format("""
+                  %s
+                    "refPrice": %s
+                  }""",
+              prefix,
+              toJson(mostRecentOfRecord.refPrice())
+          );
+        };
+      }
+      case MultiplicationChain multiplicationChain -> String.format("""
+              {
+                "type": "%s",
+                "index": %d,
+                "sourceEntries": %s,
+                "sourcesMaxAgeS": %d
+              }""",
+          multiplicationChain.oracleType().name(),
+          multiplicationChain.index(),
+          toJson(multiplicationChain.sourceEntries()),
+          multiplicationChain.sourcesMaxAgeS()
+      );
+      case NotYetSupported notYetSupported -> String.format("""
+              {
+                "type": "%s",
+                "index": %d,
+                "oracle": "%s",
+                "twapSource": %s,%s
+                "refPrice": %s,
+                "generic": "%s"
+              }""",
+          notYetSupported.oracleType().name(),
+          notYetSupported.index(),
+          notYetSupported.priceAccount(),
+          toJson(notYetSupported.twapSource()),
+          toJson(notYetSupported.emaTypes()),
+          toJson(notYetSupported.refPrice()),
+          Base64.getEncoder().encodeToString(notYetSupported.generic())
+      );
       case OracleEntry e -> {
         final var prefix = String.format("""
                 {
@@ -775,99 +885,6 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
           default -> prefix + "\n}";
         };
       }
-      case CappedFloored cappedFloored -> String.format("""
-              {
-                "type": "%s",
-                "index": %d,
-                "source": %s,
-                "cap": %s,
-                "floor": %s
-              }""",
-          cappedFloored.oracleType().name(),
-          cappedFloored.index(),
-          toJson(cappedFloored.sourceEntry()),
-          toJson(cappedFloored.capEntry()),
-          toJson(cappedFloored.flooredEntry())
-      );
-      case MostRecentOf mostRecentOf -> {
-        final var prefix = String.format("""
-                {
-                  "type": "%s",
-                  "index": %d,
-                  "sources": %s,
-                  "maxDivergenceBps": %d,
-                  "sourcesMaxAgeS": %d,""",
-            mostRecentOf.oracleType().name(),
-            mostRecentOf.index(),
-            toJson(mostRecentOf.sources()),
-            mostRecentOf.maxDivergenceBps(),
-            mostRecentOf.sourcesMaxAgeS()
-        );
-        yield switch (mostRecentOf) {
-          case CappedMostRecentOf cappedMostRecentOf -> String.format("""
-                  %s
-                    "cap": %s
-                  }""",
-              prefix,
-              toJson(cappedMostRecentOf.capEntry())
-          );
-          case MostRecentOfEntry mostRecentOfRecord -> String.format("""
-                  %s
-                    "refPrice": %s
-                  }""",
-              prefix,
-              toJson(mostRecentOfRecord.refPrice())
-          );
-        };
-      }
-      case Deprecated e -> String.format("""
-          {
-            "type": "Deprecated",
-            "index": %d
-          }""", e.index()
-      );
-      case DiscountToMaturity discountToMaturity -> String.format("""
-              {
-                "type": "%s",
-                "index": %d,
-                "discountPerYearBps": %d,
-                "maturityTimestamp": %d
-              }""",
-          discountToMaturity.oracleType().name(),
-          discountToMaturity.index(),
-          discountToMaturity.discountPerYearBps(),
-          discountToMaturity.maturityTimestamp()
-      );
-      case FixedPrice fixedPrice -> String.format("""
-              {
-                "type": "%s",
-                "index": %d,
-                "value": %d,
-                "exp": %d,
-                "decimal": "%s"
-              }""",
-          fixedPrice.oracleType().name(),
-          fixedPrice.index(),
-          fixedPrice.value(), fixedPrice.exp(),
-          fixedPrice.decimal().toPlainString()
-      );
-      case NotYetSupported notYetSupported -> String.format("""
-              {
-                "type": "%s",
-                "index": %d,
-                "oracle": "%s",
-                "twapSource": %s,%s
-                "refPrice": %s,
-                "generic": "%s"
-              }""",
-          notYetSupported.oracleType().name(),
-          notYetSupported.index(),
-          notYetSupported.priceAccount(),
-          toJson(notYetSupported.twapSource()),
-          toJson(notYetSupported.emaTypes()),
-          toJson(notYetSupported.refPrice()),
-          Base64.getEncoder().encodeToString(notYetSupported.generic())
-      );
       case ScopeTwap scopeTwap -> String.format("""
               {
                 "type": "%s",
@@ -883,6 +900,16 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
             "type": "Unused",
             "index": %d
           }""", e.index()
+      );
+      case FunctionalEntry functionalEntry -> String.format("""
+              {
+                "type": "%s",
+                "index": %d,
+                "priceAccount": "%s"
+              }""",
+          scopeEntry.oracleType().name(),
+          scopeEntry.index(),
+          functionalEntry.priceAccount()
       );
     };
   }

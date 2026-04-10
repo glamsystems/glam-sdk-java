@@ -11,36 +11,6 @@
   "tabLength": 2,
   "programs": [
     {
-      "name": "Drift",
-      "external": true,
-      "module": "software.sava.idl.clients.drift",
-      "package": "software.sava.idl.clients.drift.gen",
-      "program": "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH"
-    },
-    {
-      "name": "Drift Merkle Distributor",
-      "external": true,
-      "module": "software.sava.idl.clients.drift",
-      "package": "software.sava.idl.clients.drift.merkle.distributor.gen",
-      "program": "E7HtfkEMhmn9uwL7EFNydcXBWy5WCYN1vFmKKjipEH1x"
-    },
-    {
-      "name": "Drift Vaults",
-      "external": true,
-      "module": "software.sava.idl.clients.drift",
-      "package": "software.sava.idl.clients.drift.vaults.gen",
-      "program": "vAuLTsyrvSfZRuRB3XgvkPwNGgYSs9YRYymVebLKoxR",
-      "typeRefs": [
-        {
-          "refProgram": "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH",
-          "srcMismatch": "ERROR",
-          "matchOnTypeName": true,
-          "excludeTypes": [],
-          "explicitRules": []
-        }
-      ]
-    },
-    {
       "name": "Kamino Farms",
       "external": true,
       "module": "software.sava.idl.clients.kamino",
@@ -81,46 +51,6 @@
           "matchOnTypeName": true,
           "excludeTypes": [],
           "explicitRules": []
-        }
-      ]
-    },
-    {
-      "name": "GLAM Drift",
-      "source": "sdk",
-      "package": "glam.drift",
-      "module": "sdk",
-      "program": "G1NTdrBmBpW43msRQmsf7qXSw3MFBNaqJcAkGiRmRq2F",
-      "typeRefs": [
-        {
-          "refProgram": "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH",
-          "srcMismatch": "ERROR",
-          "matchOnTypeName": true,
-          "excludeTypes": [
-            "FeeStructure"
-          ],
-          "explicitRules": []
-        },
-        {
-          "refProgram": "vAuLTsyrvSfZRuRB3XgvkPwNGgYSs9YRYymVebLKoxR",
-          "srcMismatch": "ERROR",
-          "matchOnTypeName": true,
-          "excludeTypes": [
-            "FeeStructure"
-          ],
-          "explicitRules": []
-        },
-        {
-          "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
-          "srcMismatch": "ERROR",
-          "matchOnTypeName": true,
-          "excludeTypes": [],
-          "explicitRules": [
-            {
-              "refType": "AccountType",
-              "localType": "AccountType",
-              "srcMismatch": "KEEP_REF"
-            }
-          ]
         }
       ]
     },
@@ -200,41 +130,11 @@
       ]
     },
     {
-      "name": "Glam Staging Mint",
-      "source": "sdk",
-      "package": "glam.staging.mint",
-      "module": "sdk",
-      "program": "gstgm1M39mhgnvgyScGUDRwNn5kNVSd97hTtyow1Et5",
-      "typeRefs": [
-        {
-          "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
-          "srcMismatch": "WARN_KEEP_LOCAL",
-          "matchOnTypeName": true,
-          "excludeTypes": [],
-          "explicitRules": []
-        },
-        {
-          "refProgram": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
-          "srcMismatch": "WARN_KEEP_LOCAL",
-          "matchOnTypeName": true,
-          "excludeTypes": [],
-          "explicitRules": []
-        }
-      ]
-    },
-    {
       "name": "Glam Protocol",
       "source": "sdk",
       "package": "glam.protocol",
       "module": "sdk",
       "program": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"
-    },
-    {
-      "name": "Glam Staging Protocol",
-      "source": "sdk",
-      "package": "glam.staging.protocol",
-      "module": "sdk",
-      "program": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
     },
     {
       "name": "GLAM Policy Program",
@@ -261,6 +161,110 @@
       "typeRefs": [
         {
           "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": [
+            {
+              "refType": "AccountType",
+              "localType": "AccountType",
+              "srcMismatch": "KEEP_REF"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "GLAM Staging Kamino",
+      "source": "sdk",
+      "package": "glam.staging.kamino",
+      "module": "sdk",
+      "program": "gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq",
+      "typeRefs": [
+        {
+          "refProgram": "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD",
+          "srcMismatch": "ERROR",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "HFn8GnPADiny6XqUoWE8uRPPxb29ikn4yTuPa9MF2fWJ",
+          "srcMismatch": "ERROR",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "FarmsPZpWu9i7Kky8tPN37rs2TpmMrAZrC7S7vJa91Hr",
+          "srcMismatch": "ERROR",
+          "matchOnTypeName": true,
+          "excludeTypes": [
+            "TimeUnit"
+          ],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd",
+          "srcMismatch": "ERROR",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "srcMismatch": "ERROR",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": [
+            {
+              "refType": "AccountType",
+              "localType": "AccountType",
+              "srcMismatch": "KEEP_REF"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Glam Staging Mint",
+      "source": "sdk",
+      "package": "glam.staging.mint",
+      "module": "sdk",
+      "program": "gstgm1M39mhgnvgyScGUDRwNn5kNVSd97hTtyow1Et5",
+      "typeRefs": [
+        {
+          "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
+      "name": "Glam Staging Protocol",
+      "source": "sdk",
+      "package": "glam.staging.protocol",
+      "module": "sdk",
+      "program": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+    },
+    {
+      "name": "GLAM Staging SPL",
+      "source": "sdk",
+      "package": "glam.staging.spl",
+      "module": "sdk",
+      "program": "gstgs9nJgX8PmRHWAAEP9H7xT3ZkaPWSGPYbj3mXdTa",
+      "typeRefs": [
+        {
+          "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
           "srcMismatch": "WARN_KEEP_LOCAL",
           "matchOnTypeName": true,
           "excludeTypes": [],

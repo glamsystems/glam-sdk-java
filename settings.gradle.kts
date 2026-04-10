@@ -37,3 +37,4 @@ javaModules {
 }
 
 //includeBuild("../ravina")
+//includeBuild("../idl-clients")

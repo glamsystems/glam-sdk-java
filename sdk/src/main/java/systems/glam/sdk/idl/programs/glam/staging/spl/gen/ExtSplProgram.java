@@ -1,0 +1,244 @@
+package systems.glam.sdk.idl.programs.glam.staging.spl.gen;
+
+import software.sava.core.accounts.PublicKey;
+import software.sava.core.accounts.SolanaAccounts;
+import software.sava.core.accounts.meta.AccountMeta;
+import software.sava.core.programs.Discriminator;
+import software.sava.core.tx.Instruction;
+import software.sava.idl.clients.core.gen.SerDe;
+import systems.glam.sdk.idl.programs.glam.staging.protocol.gen.types.TransferPolicy;
+
+import java.util.List;
+
+import static software.sava.core.accounts.meta.AccountMeta.*;
+import static software.sava.core.encoding.ByteUtil.getInt64LE;
+import static software.sava.core.encoding.ByteUtil.putInt64LE;
+import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
+import static software.sava.core.programs.Discriminator.toDiscriminator;
+
+public final class ExtSplProgram {
+
+  public static final Discriminator SET_TOKEN_TRANSFER_POLICY_DISCRIMINATOR = toDiscriminator(0, 144, 15, 4, 149, 22, 95, 50);
+
+  public static List<AccountMeta> setTokenTransferPolicyKeys(final PublicKey glamStateKey,
+                                                             final PublicKey glamSignerKey,
+                                                             final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  public static Instruction setTokenTransferPolicy(final AccountMeta invokedExtSplProgramMeta,
+                                                   final PublicKey glamStateKey,
+                                                   final PublicKey glamSignerKey,
+                                                   final PublicKey glamProtocolProgramKey,
+                                                   final TransferPolicy policy) {
+    final var keys = setTokenTransferPolicyKeys(
+      glamStateKey,
+      glamSignerKey,
+      glamProtocolProgramKey
+    );
+    return setTokenTransferPolicy(invokedExtSplProgramMeta, keys, policy);
+  }
+
+  public static Instruction setTokenTransferPolicy(final AccountMeta invokedExtSplProgramMeta,
+                                                   final List<AccountMeta> keys,
+                                                   final TransferPolicy policy) {
+    final byte[] _data = new byte[8 + policy.l()];
+    int i = SET_TOKEN_TRANSFER_POLICY_DISCRIMINATOR.write(_data, 0);
+    policy.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtSplProgramMeta, keys, _data);
+  }
+
+  public record SetTokenTransferPolicyIxData(Discriminator discriminator, TransferPolicy policy) implements SerDe {  
+
+    public static SetTokenTransferPolicyIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int POLICY_OFFSET = 8;
+
+    public static SetTokenTransferPolicyIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var policy = TransferPolicy.read(_data, i);
+      return new SetTokenTransferPolicyIxData(discriminator, policy);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += policy.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + policy.l();
+    }
+  }
+
+  public static final Discriminator TOKEN_CLOSE_ACCOUNT_DISCRIMINATOR = toDiscriminator(240, 32, 179, 154, 96, 110, 43, 79);
+
+  public static List<AccountMeta> tokenCloseAccountKeys(final SolanaAccounts solanaAccounts,
+                                                        final PublicKey glamStateKey,
+                                                        final PublicKey glamVaultKey,
+                                                        final PublicKey glamSignerKey,
+                                                        final PublicKey integrationAuthorityKey,
+                                                        final PublicKey cpiProgramKey,
+                                                        final PublicKey glamProtocolProgramKey,
+                                                        final PublicKey tokenAccountKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createWrite(tokenAccountKey)
+    );
+  }
+
+  public static Instruction tokenCloseAccount(final AccountMeta invokedExtSplProgramMeta,
+                                              final SolanaAccounts solanaAccounts,
+                                              final PublicKey glamStateKey,
+                                              final PublicKey glamVaultKey,
+                                              final PublicKey glamSignerKey,
+                                              final PublicKey integrationAuthorityKey,
+                                              final PublicKey cpiProgramKey,
+                                              final PublicKey glamProtocolProgramKey,
+                                              final PublicKey tokenAccountKey) {
+    final var keys = tokenCloseAccountKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      tokenAccountKey
+    );
+    return tokenCloseAccount(invokedExtSplProgramMeta, keys);
+  }
+
+  public static Instruction tokenCloseAccount(final AccountMeta invokedExtSplProgramMeta,
+                                              final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedExtSplProgramMeta, keys, TOKEN_CLOSE_ACCOUNT_DISCRIMINATOR);
+  }
+
+  public static final Discriminator TOKEN_TRANSFER_CHECKED_DISCRIMINATOR = toDiscriminator(169, 178, 117, 156, 169, 191, 199, 116);
+
+  public static List<AccountMeta> tokenTransferCheckedKeys(final SolanaAccounts solanaAccounts,
+                                                           final PublicKey glamStateKey,
+                                                           final PublicKey glamVaultKey,
+                                                           final PublicKey glamSignerKey,
+                                                           final PublicKey integrationAuthorityKey,
+                                                           final PublicKey cpiProgramKey,
+                                                           final PublicKey glamProtocolProgramKey,
+                                                           final PublicKey fromKey,
+                                                           final PublicKey mintKey,
+                                                           final PublicKey toKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createWrite(fromKey),
+      createRead(mintKey),
+      createWrite(toKey)
+    );
+  }
+
+  public static Instruction tokenTransferChecked(final AccountMeta invokedExtSplProgramMeta,
+                                                 final SolanaAccounts solanaAccounts,
+                                                 final PublicKey glamStateKey,
+                                                 final PublicKey glamVaultKey,
+                                                 final PublicKey glamSignerKey,
+                                                 final PublicKey integrationAuthorityKey,
+                                                 final PublicKey cpiProgramKey,
+                                                 final PublicKey glamProtocolProgramKey,
+                                                 final PublicKey fromKey,
+                                                 final PublicKey mintKey,
+                                                 final PublicKey toKey,
+                                                 final long amount,
+                                                 final int decimals) {
+    final var keys = tokenTransferCheckedKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      fromKey,
+      mintKey,
+      toKey
+    );
+    return tokenTransferChecked(invokedExtSplProgramMeta, keys, amount, decimals);
+  }
+
+  public static Instruction tokenTransferChecked(final AccountMeta invokedExtSplProgramMeta,
+                                                 final List<AccountMeta> keys,
+                                                 final long amount,
+                                                 final int decimals) {
+    final byte[] _data = new byte[17];
+    int i = TOKEN_TRANSFER_CHECKED_DISCRIMINATOR.write(_data, 0);
+    putInt64LE(_data, i, amount);
+    i += 8;
+    _data[i] = (byte) decimals;
+
+    return Instruction.createInstruction(invokedExtSplProgramMeta, keys, _data);
+  }
+
+  public record TokenTransferCheckedIxData(Discriminator discriminator, long amount, int decimals) implements SerDe {  
+
+    public static TokenTransferCheckedIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int BYTES = 17;
+
+    public static final int AMOUNT_OFFSET = 8;
+    public static final int DECIMALS_OFFSET = 16;
+
+    public static TokenTransferCheckedIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var amount = getInt64LE(_data, i);
+      i += 8;
+      final var decimals = _data[i] & 0xFF;
+      return new TokenTransferCheckedIxData(discriminator, amount, decimals);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      putInt64LE(_data, i, amount);
+      i += 8;
+      _data[i] = (byte) decimals;
+      ++i;
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
+  private ExtSplProgram() {
+  }
+}

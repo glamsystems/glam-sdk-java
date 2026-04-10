@@ -14,6 +14,7 @@ testModuleInfo {
 dependencies {
   project(":sdk")
 
+//  project(":idl-clients:idl-clients-kamino")
 //  project(":ravina:ravina-core")
 //  project(":ravina:ravina-solana")
 }

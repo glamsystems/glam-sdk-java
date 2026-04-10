@@ -1,13 +1,19 @@
 package systems.glam.sdk.idl.programs.glam.staging.protocol.gen;
 
-import java.util.List;
-
 import software.sava.core.accounts.ProgramDerivedAddress;
 import software.sava.core.accounts.PublicKey;
+
+import java.util.List;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public final class GlamProtocolPDAs {
+
+  public static ProgramDerivedAddress glamConfigPDA(final PublicKey program) {
+    return PublicKey.findProgramAddress(List.of(
+      "global-config".getBytes(US_ASCII)
+    ), program);
+  }
 
   public static ProgramDerivedAddress glamStatePDA(final PublicKey program,
                                                    final PublicKey glamSignerAccount,

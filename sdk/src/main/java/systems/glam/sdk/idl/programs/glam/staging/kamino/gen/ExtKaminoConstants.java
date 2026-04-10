@@ -1,4 +1,4 @@
-package systems.glam.sdk.idl.programs.glam.kamino.gen;
+package systems.glam.sdk.idl.programs.glam.staging.kamino.gen;
 
 public final class ExtKaminoConstants {
 
