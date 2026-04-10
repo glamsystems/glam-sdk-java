@@ -208,6 +208,11 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
             .dataSliceLength(0, Reserve.CONFIG_PADDING_OFFSET)
             .createRequest();
 
+        final int priceFeedKeyFromOffset = Reserve.CONFIG_OFFSET + ReserveConfig.TOKEN_INFO_OFFSET + TokenInfo.SCOPE_CONFIGURATION_OFFSET;
+        final int priceFeedKeyToOffset = priceFeedKeyFromOffset + PUBLIC_KEY_LENGTH;
+        final byte[] nullKeyBytes = PublicKey.NONE.toByteArray();
+        final byte[] nilKeyBytes = KaminoAccounts.NULL_KEY.toByteArray();
+
         final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap;
         final List<AccountInfo<byte[]>> reserveAccounts;
         final Set<PublicKey> priceFeedsNeeded;
@@ -222,13 +227,9 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
           );
           reserveContextMap = new ConcurrentHashMap<>(Integer.highestOneBit(reserveAccounts.size()) << 1);
 
-          final int priceFeedKeyFromOffset = Reserve.CONFIG_OFFSET + ReserveConfig.TOKEN_INFO_OFFSET + TokenInfo.SCOPE_CONFIGURATION_OFFSET;
-          final int priceFeedKeyToOffset = priceFeedKeyFromOffset + PUBLIC_KEY_LENGTH;
-          final byte[] nullKeyBytes = PublicKey.NONE.toByteArray();
-          final byte[] nilKeyBytes = KaminoAccounts.NULL_KEY.toByteArray();
-
-          priceFeedsNeeded = new HashSet<>();
           final var noMappings = Map.<PublicKey, MappingsContext>of();
+          priceFeedsNeeded = HashSet.newHashSet(8);
+          ;
           for (final var reserveAccountInfo : reserveAccounts) {
             final byte[] data = reserveAccountInfo.data();
             if (Arrays.equals(
@@ -250,7 +251,7 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
         final var feedContextMap = KaminoCache.loadFeedContexts(configurationsPath);
         // Note: New Configurations will be discovered indirectly via Kamino Lending Reserves.
         final CompletableFuture<List<AccountInfo<byte[]>>> scopeConfigurationsFuture;
-        if (feedContextMap.keySet().containsAll(priceFeedsNeeded)) {
+        if (feedContextMap.keySet().containsAll(priceFeedsNeeded) && !feedContextMap.isEmpty()) {
           scopeConfigurationsFuture = null;
         } else {
           final var configAccountsRequest = ProgramAccountsRequest.build()
@@ -263,8 +264,6 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
               "Scope Configuration accounts"
           );
         }
-
-        final var mappingsContextMap = loadMappings(mappingsPath, feedContextMap);
 
         if (scopeConfigurationsFuture != null) {
           final var accounts = scopeConfigurationsFuture.join();
@@ -284,6 +283,8 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
             }
           }
         }
+
+        final var mappingsContextMap = loadMappings(mappingsPath, feedContextMap);
 
         final var missingMappings = feedContextMap.values().stream().<PublicKey>mapMulti((configuration, downstream) -> {
           if (!mappingsContextMap.containsKey(configuration.priceFeed())) {
@@ -383,6 +384,12 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
             feedContextMap.put(feedContext.configurationKey(), feedContext);
             feedContextMap.put(feedContext.oracleMappings(), feedContext);
             feedContextMap.put(feedContext.priceFeed(), feedContext);
+          } else {
+            try {
+              Files.delete(path);
+            } catch (final IOException e) {
+              throw new UncheckedIOException(e);
+            }
           }
         });
       }
