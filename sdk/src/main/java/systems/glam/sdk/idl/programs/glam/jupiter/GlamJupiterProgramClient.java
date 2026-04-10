@@ -57,6 +57,11 @@ public interface GlamJupiterProgramClient {
 
   JupiterAccounts jupiterAccounts();
 
+  List<Instruction> swap(final JupiterSwapContext swapContext);
+
+  Map<PublicKey, Instruction> createSwapTokenAccountsIdempotent(final JupiterSwapContext swapContext);
+
+
   default List<Instruction> swapChecked(final PublicKey inputMintKey,
                                         final PublicKey inputTokenProgram,
                                         final PublicKey outputMintKey,
