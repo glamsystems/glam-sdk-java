@@ -14,6 +14,8 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.protocol.gen.types;
   exports systems.glam.sdk.idl.programs.glam.protocol.gen;
   exports systems.glam.sdk.idl.programs.glam.spl.gen;
+  exports systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.staging.external_positions.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.kamino.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.kamino.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.mint.gen.events;

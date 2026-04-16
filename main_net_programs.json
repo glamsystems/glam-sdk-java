@@ -175,6 +175,29 @@
       ]
     },
     {
+      "name": "Glam Staging External Positions",
+      "source": "sdk",
+      "package": "glam.staging.external_positions",
+      "module": "sdk",
+      "program": "gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX",
+      "typeRefs": [
+        {
+          "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
       "name": "GLAM Staging Kamino",
       "source": "sdk",
       "package": "glam.staging.kamino",

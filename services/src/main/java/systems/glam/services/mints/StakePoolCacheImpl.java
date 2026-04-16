@@ -68,7 +68,11 @@ final class StakePoolCacheImpl implements StakePoolCache, Consumer<AccountInfo<b
     if (stakePoolFileChannel == null) {
       return;
     }
-    final var mintKey = PublicKey.readPubKey(accountInfo.data(), StakePoolState.POOL_MINT_OFFSET);
+    final byte[] data = accountInfo.data();
+    if (data.length < StakePoolState.NEXT_EPOCH_FEE_OFFSET) {
+      return;
+    }
+    final var mintKey = PublicKey.readPubKey(data, StakePoolState.POOL_MINT_OFFSET);
     if (this.stakePoolContextByMint.containsKey(mintKey)) {
       return;
     }

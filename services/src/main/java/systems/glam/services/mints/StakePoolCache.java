@@ -8,6 +8,7 @@ import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.solana.remote.call.RpcCaller;
 import software.sava.solana.programs.stakepool.AccountType;
 import software.sava.solana.programs.stakepool.StakePoolAccounts;
+import software.sava.solana.programs.stakepool.StakePoolState;
 import systems.glam.services.io.FileUtils;
 import systems.glam.services.io.KeyedFlatFile;
 
@@ -16,6 +17,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -36,6 +38,7 @@ public interface StakePoolCache extends Runnable, AutoCloseable {
                                                      final Duration fetchDelay,
                                                      final RpcCaller rpcCaller) {
     final var multiValidatorStakePoolProgram = stakePoolAccounts.stakePoolProgram();
+//    final var singleValidatorStakePoolProgram = stakePoolAccounts.singleValidatorStakePoolProgram();
     final var sanctumMultiValidatorStakePoolProgram = stakePoolAccounts.sanctumMultiValidatorStakePoolProgram();
     final var sanctumSingleValidatorStakePoolProgram = stakePoolAccounts.sanctumSingleValidatorStakePoolProgram();
     final var stakePoolFilters = List.of(
@@ -46,6 +49,7 @@ public interface StakePoolCache extends Runnable, AutoCloseable {
             Files.createDirectories(stakePoolStateCacheDirectory);
             final var stakePoolFileChannelByProgram = Map.of(
                 multiValidatorStakePoolProgram, createFlatFile(stakePoolStateCacheDirectory, multiValidatorStakePoolProgram),
+//                singleValidatorStakePoolProgram, createFlatFile(stakePoolStateCacheDirectory, singleValidatorStakePoolProgram),
                 sanctumMultiValidatorStakePoolProgram, createFlatFile(stakePoolStateCacheDirectory, sanctumMultiValidatorStakePoolProgram),
                 sanctumSingleValidatorStakePoolProgram, createFlatFile(stakePoolStateCacheDirectory, sanctumSingleValidatorStakePoolProgram)
             );
@@ -70,14 +74,23 @@ public interface StakePoolCache extends Runnable, AutoCloseable {
               final byte[] data = Files.readAllBytes(stakePoolFileChannel.filePath());
               if (data.length == 0) {
                 final var stateAccounts = stakePoolCache.fetchStateAccounts(stakePoolProgram);
-                final byte[] flatFileData = new byte[stateAccounts.size() * StakePoolContext.BYTES];
+                byte[] flatFileData = new byte[stateAccounts.size() * StakePoolContext.BYTES];
                 int i = 0;
                 for (final var accountInfo : stateAccounts) {
+                  final int length = accountInfo.data().length;
+                  if (length < StakePoolState.NEXT_EPOCH_FEE_OFFSET) {
+                    continue;
+                  }
                   final var stakePoolContext = StakePoolContext.read(accountInfo);
                   stakePoolContextByMint.put(stakePoolContext.mintKey(), stakePoolContext);
                   i += stakePoolContext.write(flatFileData, i);
                 }
-                stakePoolFileChannel.overwriteFile(flatFileData);
+                if (i > 0) {
+                  if (i < flatFileData.length) {
+                    flatFileData = Arrays.copyOfRange(flatFileData, 0, i);
+                  }
+                  stakePoolFileChannel.overwriteFile(flatFileData);
+                }
               } else {
                 for (int i = 0; i < data.length; i += StakePoolContext.BYTES) {
                   final var stakePoolContext = StakePoolContext.read(stakePoolProgram, data, i);
