@@ -250,6 +250,29 @@
       ]
     },
     {
+      "name": "Glam Staging Loopscale",
+      "source": "sdk",
+      "package": "glam.staging.loopscale",
+      "module": "sdk",
+      "program": "gstgL6y4uWjsfM3Qjs5euoTDmEcXoUjqx8rkYJhYngG",
+      "typeRefs": [
+        {
+          "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
       "name": "Glam Staging Mint",
       "source": "sdk",
       "package": "glam.staging.mint",

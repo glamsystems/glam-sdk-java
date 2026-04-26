@@ -18,6 +18,8 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.staging.external_positions.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.kamino.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.kamino.gen;
+  exports systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.staging.loopscale.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.mint.gen.events;
   exports systems.glam.sdk.idl.programs.glam.staging.mint.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.mint.gen;

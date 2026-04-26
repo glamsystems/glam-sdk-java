@@ -78,7 +78,6 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
           "rpcClient#getKaminoReserves"
       );
 
-
       final var configAccounts = scopeConfigurationsFuture.join();
       final var mappingAccountKeys = HashSet.<PublicKey>newHashSet(configAccounts.size());
       final var feedContextMap = HashMap.<PublicKey, ScopeFeedContext>newHashMap(configAccounts.size() * 3);
@@ -99,7 +98,6 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
           feedContextMap.put(feedContext.priceFeed(), feedContext);
         }
       }
-
 
       final var reserveAccounts = reserveAccountsFuture.join();
       final var reserveContextMap = new ConcurrentHashMap<PublicKey, ReserveContext>(Integer.highestOneBit(reserveAccounts.size()) << 1);
