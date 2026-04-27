@@ -108,7 +108,8 @@ public interface DelegateServiceConfig {
 
   ServiceContext createServiceContext(final ExecutorService taskExecutor,
                                       final PublicKey serviceKey,
-                                      final GlamAccounts glamAccounts);
+                                      final GlamAccounts glamAccounts,
+                                      final GlamAccounts glamStagingAccounts);
 
   MintCache createMintCache();
 

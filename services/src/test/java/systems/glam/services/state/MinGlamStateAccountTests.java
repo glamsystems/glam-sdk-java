@@ -2,11 +2,15 @@ package systems.glam.services.state;
 
 import org.junit.jupiter.api.Test;
 import software.sava.core.accounts.PublicKey;
+import software.sava.rpc.json.http.response.AccountInfo;
+import software.sava.rpc.json.http.response.Context;
+import systems.glam.sdk.GlamAccounts;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.AccountType;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.services.tests.ResourceUtil;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,7 +28,17 @@ final class MinGlamStateAccountTests {
     assertEquals(5, stateAccount.externalPositions().length);
 
     long slot = System.currentTimeMillis();
-    final var minStateAccount = MinGlamStateAccount.createRecord(slot, stateAccountData);
+    var accountInfo = new AccountInfo<>(
+        stateAccount._address(),
+        new Context(slot, null),
+        false,
+        0,
+        GlamAccounts.MAIN_NET.protocolProgram(),
+        BigInteger.ZERO,
+        0,
+        stateAccountData
+    );
+    final var minStateAccount = MinGlamStateAccount.createRecord(accountInfo);
     assertEquals(slot, minStateAccount.slot());
     assertEquals(stateAccount.accountType(), minStateAccount.accountType());
     assertEquals(stateAccount.baseAssetMint(), minStateAccount.baseAssetMint());
@@ -49,8 +63,28 @@ final class MinGlamStateAccountTests {
     assertArrayEquals(minStateAccount.externalPositions(), deserialized.externalPositions());
     assertArrayEquals(minStateAccount.externalPositionsBytes(), deserialized.externalPositionsBytes());
 
-    assertNull(minStateAccount.createIfChanged(slot, STATE_ACCOUNT_KEY, null));
-    assertNull(minStateAccount.createIfChanged(slot + 1, STATE_ACCOUNT_KEY, stateAccountData));
+    accountInfo = new AccountInfo<>(
+        STATE_ACCOUNT_KEY,
+        new Context(slot, null),
+        false,
+        0,
+        GlamAccounts.MAIN_NET.protocolProgram(),
+        BigInteger.ZERO,
+        0,
+        null
+    );
+    assertNull(minStateAccount.createIfChanged(accountInfo));
+    accountInfo = new AccountInfo<>(
+        STATE_ACCOUNT_KEY,
+        new Context(slot + 1, null),
+        false,
+        0,
+        GlamAccounts.MAIN_NET.protocolProgram(),
+        BigInteger.ZERO,
+        0,
+        stateAccountData
+    );
+    assertNull(minStateAccount.createIfChanged(accountInfo));
 
     final var changedAssets = stateAccount.assets().clone();
     changedAssets[0] = PublicKey.fromBase58Encoded("11111111111111111111111111111111");
@@ -80,7 +114,17 @@ final class MinGlamStateAccountTests {
 
     byte[] data = stateAccountWithChangedAssets.write();
     ++slot;
-    var changed = minStateAccount.createIfChanged(slot, STATE_ACCOUNT_KEY, data);
+    accountInfo = new AccountInfo<>(
+        STATE_ACCOUNT_KEY,
+        new Context(slot, null),
+        false,
+        0,
+        GlamAccounts.MAIN_NET.protocolProgram(),
+        BigInteger.ZERO,
+        0,
+        data
+    );
+    var changed = minStateAccount.createIfChanged(accountInfo);
     assertNotNull(changed);
     assertEquals(slot, changed.slot());
     validateBaseNotChanged(minStateAccount, deserialized);
@@ -117,7 +161,17 @@ final class MinGlamStateAccountTests {
 
     data = stateAccountWithChangedPositions.write();
     ++slot;
-    changed = minStateAccount.createIfChanged(slot, STATE_ACCOUNT_KEY, data);
+    accountInfo = new AccountInfo<>(
+        STATE_ACCOUNT_KEY,
+        new Context(slot, null),
+        false,
+        0,
+        GlamAccounts.MAIN_NET.protocolProgram(),
+        BigInteger.ZERO,
+        0,
+        data
+    );
+    changed = minStateAccount.createIfChanged(accountInfo);
     assertNotNull(changed);
     assertEquals(slot, changed.slot());
     validateBaseNotChanged(minStateAccount, deserialized);

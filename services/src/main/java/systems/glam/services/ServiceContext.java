@@ -64,6 +64,8 @@ public interface ServiceContext {
 
   GlamAccounts glamAccounts();
 
+  GlamAccounts glamStagingAccounts();
+
   NotifyClient notifyClient();
 
   RpcCaller rpcCaller();

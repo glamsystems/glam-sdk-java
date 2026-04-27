@@ -162,6 +162,7 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
     final var serviceContext = delegateServiceConfig.createServiceContext(
         taskExecutor,
         serviceKey,
+        glamAccounts,
         glamAccounts
     );
 

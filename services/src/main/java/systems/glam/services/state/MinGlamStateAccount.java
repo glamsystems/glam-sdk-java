@@ -5,12 +5,15 @@ import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.encoding.ByteUtil;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 import software.sava.rpc.json.http.response.AccountInfo;
+import systems.glam.sdk.GlamEnv;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.*;
 
 import java.util.Arrays;
 
 public record MinGlamStateAccount(long slot,
+                                  GlamEnv glamEnv,
                                   AccountType accountType,
+                                  boolean enabled,
                                   int baseAssetIndex,
                                   int baseAssetDecimals,
                                   int baseAssetTokenProgram,
@@ -18,6 +21,10 @@ public record MinGlamStateAccount(long slot,
                                   PublicKey[] assets,
                                   byte[] externalPositionsBytes,
                                   PublicKey[] externalPositions) {
+
+  public boolean disabled() {
+    return !enabled;
+  }
 
   public int numAssets() {
     return assets.length;
@@ -42,11 +49,13 @@ public record MinGlamStateAccount(long slot,
   }
 
   public byte[] serialize() {
-    final int len = Long.BYTES + 1 + 1 + 1 + 1 + 1 + assetBytes.length + 1 + externalPositionsBytes.length;
+    final int len = Long.BYTES + 1 + 1 + 1 + 1 + 1 + 1 + 1 + assetBytes.length + 1 + externalPositionsBytes.length;
     final byte[] data = new byte[len];
     ByteUtil.putInt64LE(data, 0, slot);
     int i = Long.BYTES;
+    data[i++] = (byte) (glamEnv.ordinal() | 0b1000_0000);
     data[i++] = (byte) accountType.ordinal();
+    data[i++] = (byte) (enabled ? 1 : 0);
     data[i++] = (byte) baseAssetIndex;
     data[i++] = (byte) baseAssetDecimals;
     data[i++] = (byte) baseAssetTokenProgram;
@@ -61,7 +70,17 @@ public record MinGlamStateAccount(long slot,
   public static MinGlamStateAccount deserialize(final byte[] data) {
     final long slot = ByteUtil.getInt64LE(data, 0);
     int i = Long.BYTES;
-    final var accountType = AccountType.values()[data[i++] & 0xFF];
+    final byte version = data[i++];
+    final GlamEnv glamEnv;
+    final AccountType accountType;
+    if (version < 0) {
+      glamEnv = GlamEnv.values()[version & 0b0111_1111];
+      accountType = AccountType.values()[data[i++]];
+    } else {
+      glamEnv = GlamEnv.PRODUCTION;
+      accountType = AccountType.values()[version];
+    }
+    final boolean enabled = data[i++] == 1;
     final var baseAssetMintIndex = data[i++] & 0xFF;
     final int baseAssetDecimals = data[i++] & 0xFF;
     final int baseAssetTokenProgram = data[i++] & 0xFF;
@@ -75,7 +94,9 @@ public record MinGlamStateAccount(long slot,
     final byte[] externalPositionsBytes = Arrays.copyOfRange(data, i, data.length);
     return new MinGlamStateAccount(
         slot,
+        glamEnv,
         accountType,
+        enabled,
         baseAssetMintIndex, baseAssetDecimals, baseAssetTokenProgram,
         assetBytes, assets,
         externalPositionsBytes, externalPositions
@@ -116,7 +137,8 @@ public record MinGlamStateAccount(long slot,
     return i;
   }
 
-  public static MinGlamStateAccount createRecord(final long slot, final byte[] data) {
+  public static MinGlamStateAccount createRecord(final AccountInfo<byte[]> accountInfo) {
+    final byte[] data = accountInfo.data();
     final var assets = SerDeUtil.readPublicKeyVector(4, data, StateAccount.ASSETS_OFFSET);
     Arrays.sort(assets);
 
@@ -130,27 +152,29 @@ public record MinGlamStateAccount(long slot,
     final byte[] externalPositionsBytes = Arrays.copyOfRange(data, i, i + (externalPositions.length * PublicKey.PUBLIC_KEY_LENGTH));
 
     final var accountType = AccountType.values()[data[StateAccount.ACCOUNT_TYPE_OFFSET] & 0xFF];
+    final boolean enabled = data[StateAccount.ENABLED_OFFSET] == 1;
     final var baseAssetMint = PublicKey.readPubKey(data, StateAccount.BASE_ASSET_MINT_OFFSET);
     final int baseAssetIndex = Arrays.binarySearch(assets, baseAssetMint);
     final int baseAssetDecimals = data[StateAccount.BASE_ASSET_DECIMALS_OFFSET] & 0xFF;
     final int baseAssetTokenProgram = data[StateAccount.BASE_ASSET_TOKEN_PROGRAM_OFFSET] & 0xFF;
 
     return new MinGlamStateAccount(
-        slot,
+        accountInfo.context().slot(),
+        GlamEnv.from(accountInfo.owner()),
         accountType,
+        enabled,
         baseAssetIndex, baseAssetDecimals, baseAssetTokenProgram,
         assetBytes, assets, externalPositionsBytes, externalPositions
     );
   }
 
-  public static MinGlamStateAccount createRecord(final AccountInfo<byte[]> data) {
-    return createRecord(data.context().slot(), data.data());
-  }
-
-  public MinGlamStateAccount createIfChanged(final long slot, final PublicKey stateKey, final byte[] data) {
+  public MinGlamStateAccount createIfChanged(final AccountInfo<byte[]> accountInfo) {
+    final long slot = accountInfo.context().slot();
     if (Long.compareUnsigned(slot, this.slot) <= 0) {
       return null;
     }
+    final var stateKey = accountInfo.pubKey();
+    final byte[] data = accountInfo.data();
     if (baseAssetDecimals != (data[StateAccount.BASE_ASSET_DECIMALS_OFFSET] & 0xFF)) {
       throw new IllegalStateException("Base asset decimals changed for state account " + stateKey);
     }
@@ -180,7 +204,9 @@ public record MinGlamStateAccount(long slot,
         data, fromExternalPositionOffset, toExternalPositionOffset
     );
 
-    if (!assetsChanged && !externalPositionsChanged) {
+    final boolean enabled = data[StateAccount.ENABLED_OFFSET] == 1;
+
+    if (!assetsChanged && !externalPositionsChanged && (this.enabled == enabled)) {
       return null;
     }
 
@@ -213,7 +239,9 @@ public record MinGlamStateAccount(long slot,
 
     return new MinGlamStateAccount(
         slot,
+        GlamEnv.from(accountInfo.owner()),
         this.accountType,
+        enabled,
         baseAssetIndex, this.baseAssetDecimals, this.baseAssetTokenProgram,
         assetBytes, assets,
         externalPositionsBytes, externalPositions
@@ -224,12 +252,16 @@ public record MinGlamStateAccount(long slot,
   public boolean equals(final Object o) {
     if (!(o instanceof MinGlamStateAccount(
         _,
+        GlamEnv oGlamEnv,
         AccountType type,
+        boolean oEnabled,
         int assetIndex, int assetDecimals, int assetTokenProgram,
         byte[] bytes, _,
         byte[] positionsBytes, _
     ))) return false;
-    return baseAssetIndex == assetIndex
+    return glamEnv == oGlamEnv
+        && enabled == oEnabled
+        && baseAssetIndex == assetIndex
         && baseAssetDecimals == assetDecimals
         && baseAssetTokenProgram == assetTokenProgram
         && Arrays.equals(assetBytes, bytes)
@@ -240,6 +272,7 @@ public record MinGlamStateAccount(long slot,
   @Override
   public int hashCode() {
     int result = accountType.hashCode();
+    result = 31 * result + glamEnv.hashCode();
     result = 31 * result + baseAssetIndex;
     result = 31 * result + baseAssetDecimals;
     result = 31 * result + baseAssetTokenProgram;

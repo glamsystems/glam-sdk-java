@@ -169,7 +169,8 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
   @Override
   public ServiceContext createServiceContext(final ExecutorService taskExecutor,
                                              final PublicKey serviceKey,
-                                             final GlamAccounts glamAccounts) {
+                                             final GlamAccounts glamAccounts,
+                                             final GlamAccounts glamStagingAccounts) {
     final DataSource dataSource;
     if (hikariPropertiesFiles == null || hikariPropertiesFiles.isEmpty()) {
       dataSource = null;
@@ -185,7 +186,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
         minCheckStateDelay, maxCheckStateDelay,
         taskExecutor,
         serviceBackoff,
-        solanaAccounts, glamAccounts,
+        solanaAccounts, glamAccounts, glamStagingAccounts,
         notifyClient,
         rpcCaller,
         dataSource

@@ -21,6 +21,8 @@ public record GlamAccountsRecord(AccountMeta invokedProtocolProgram,
                                  AccountMeta readDriftIntegrationAuthority,
                                  AccountMeta invokedKaminoIntegrationProgram,
                                  AccountMeta readKaminoIntegrationAuthority,
+                                 AccountMeta invokedLoopscaleIntegrationProgram,
+                                 AccountMeta readLoopscaleIntegrationAuthority,
                                  Map<PublicKey, AccountMeta> integrationAuthorities) implements GlamAccounts {
 
   @Override

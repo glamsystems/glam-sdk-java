@@ -37,6 +37,7 @@ public final class ServiceContextImpl implements ServiceContext {
   private final Backoff backoff;
   private final SolanaAccounts solanaAccounts;
   private final GlamAccounts glamAccounts;
+  private final GlamAccounts glamStagingAccounts;
   private final NotifyClient notifyClient;
   private final RpcCaller rpcCaller;
   private final DataSource primaryDatasource;
@@ -48,7 +49,7 @@ public final class ServiceContextImpl implements ServiceContext {
                             final ExecutorService taskExecutor,
                             final Backoff backoff,
                             final SolanaAccounts solanaAccounts,
-                            final GlamAccounts glamAccounts,
+                            final GlamAccounts glamAccounts, final GlamAccounts glamStagingAccounts,
                             final NotifyClient notifyClient,
                             final RpcCaller rpcCaller,
                             final DataSource primaryDatasource) {
@@ -57,6 +58,7 @@ public final class ServiceContextImpl implements ServiceContext {
     this.minFeePayerBalance = minFeePayerBalance;
     this.cacheDirectory = cacheDirectory;
     this.accountsCacheDirectory = cacheDirectory.resolve("accounts");
+    this.glamStagingAccounts = glamStagingAccounts;
     this.primaryDatasource = primaryDatasource;
     this.glamMinStateAccountCacheDirectory = accountsCacheDirectory.resolve("glam/min_state");
     this.minCheckStateDelayNanos = minCheckStateDelay.toNanos();
@@ -219,6 +221,11 @@ public final class ServiceContextImpl implements ServiceContext {
   @Override
   public GlamAccounts glamAccounts() {
     return glamAccounts;
+  }
+
+  @Override
+  public GlamAccounts glamStagingAccounts() {
+    return glamStagingAccounts;
   }
 
   @Override

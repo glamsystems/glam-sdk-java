@@ -9,11 +9,13 @@ import systems.glam.sdk.idl.programs.glam.drift.gen.ExtDriftPDAs;
 import systems.glam.sdk.idl.programs.glam.kamino.gen.ExtKaminoPDAs;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintPDAs;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplPDAs;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.ExtLoopscalePDAs;
 import systems.glam.sdk.proxy.DynamicGlamAccountFactory;
 
 import java.nio.file.Path;
 import java.util.Map;
 
+import static software.sava.core.accounts.meta.AccountMeta.createInvoked;
 import static software.sava.core.accounts.meta.AccountMeta.createRead;
 
 public interface GlamAccounts {
@@ -26,7 +28,8 @@ public interface GlamAccounts {
       "po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY",
       "G1NTsQ36mjPe89HtPYqxKsjY5HmYsDR6CbD2gd2U2pta",
       "G1NTdrBmBpW43msRQmsf7qXSw3MFBNaqJcAkGiRmRq2F",
-      "G1NTkDEUR3pkEqGCKZtmtmVzCUEdYa86pezHkwYbLyde"
+      "G1NTkDEUR3pkEqGCKZtmtmVzCUEdYa86pezHkwYbLyde",
+      PublicKey.NONE.toBase58()
   );
 
   GlamAccounts MAIN_NET_STAGING = createAccounts(
@@ -36,7 +39,8 @@ public interface GlamAccounts {
       "po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY",
       "gstgs9nJgX8PmRHWAAEP9H7xT3ZkaPWSGPYbj3mXdTa",
       "gstgdpMFXKobURsFtStdaMLRSuwdmDUsrndov7kyu9h",
-      "gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq"
+      "gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq",
+      "gstgL6y4uWjsfM3Qjs5euoTDmEcXoUjqx8rkYJhYngG"
   );
 
   static GlamAccounts createAccounts(final PublicKey protocolProgram,
@@ -45,30 +49,35 @@ public interface GlamAccounts {
                                      final PublicKey policyProgram,
                                      final PublicKey splIntegrationProgram,
                                      final PublicKey driftIntegrationProgram,
-                                     final PublicKey kaminoIntegrationProgram) {
+                                     final PublicKey kaminoIntegrationProgram,
+                                     final PublicKey loopscaleIntegrationProgram) {
     final var mintIntegrationAuthority = createRead(GlamMintPDAs.integrationAuthorityPDA(mintProgram).publicKey());
     final var splIntegrationAuthority = createRead(ExtSplPDAs.integrationAuthorityPDA(splIntegrationProgram).publicKey());
     final var driftIntegrationAuthority = createRead(ExtDriftPDAs.integrationAuthorityPDA(driftIntegrationProgram).publicKey());
     final var kaminoIntegrationAuthority = createRead(ExtKaminoPDAs.integrationAuthorityPDA(kaminoIntegrationProgram).publicKey());
+    final var loopscaleIntegrationAuthority = createRead(ExtLoopscalePDAs.integrationAuthorityPDA(loopscaleIntegrationProgram).publicKey());
     final var IntegrationAuthorities = Map.of(
         mintProgram, mintIntegrationAuthority,
         splIntegrationProgram, splIntegrationAuthority,
         driftIntegrationProgram, driftIntegrationAuthority,
-        kaminoIntegrationProgram, kaminoIntegrationAuthority
+        kaminoIntegrationProgram, kaminoIntegrationAuthority,
+        loopscaleIntegrationProgram, loopscaleIntegrationAuthority
     );
     return new GlamAccountsRecord(
-        AccountMeta.createInvoked(protocolProgram),
+        createInvoked(protocolProgram),
         configProgram, GlamConfigPDAs.globalConfigPDA(configProgram),
         policyProgram,
-        AccountMeta.createInvoked(mintProgram),
+        createInvoked(mintProgram),
         mintIntegrationAuthority,
         GlamMintPDAs.eventAuthorityPDA(mintProgram).publicKey(),
-        AccountMeta.createInvoked(splIntegrationProgram),
+        createInvoked(splIntegrationProgram),
         splIntegrationAuthority,
-        AccountMeta.createInvoked(driftIntegrationProgram),
+        createInvoked(driftIntegrationProgram),
         driftIntegrationAuthority,
-        AccountMeta.createInvoked(kaminoIntegrationProgram),
+        createInvoked(kaminoIntegrationProgram),
         kaminoIntegrationAuthority,
+        createInvoked(loopscaleIntegrationProgram),
+        loopscaleIntegrationAuthority,
         IntegrationAuthorities
     );
   }
@@ -79,7 +88,8 @@ public interface GlamAccounts {
                                      final String policyProgram,
                                      final String splIntegrationProgram,
                                      final String driftIntegrationProgram,
-                                     final String kaminoIntegrationProgram) {
+                                     final String kaminoIntegrationProgram,
+                                     final String loopscaleIntegrationProgram) {
     return createAccounts(
         PublicKey.fromBase58Encoded(protocolProgram),
         PublicKey.fromBase58Encoded(configProgram),
@@ -87,7 +97,8 @@ public interface GlamAccounts {
         PublicKey.fromBase58Encoded(policyProgram),
         PublicKey.fromBase58Encoded(splIntegrationProgram),
         PublicKey.fromBase58Encoded(driftIntegrationProgram),
-        PublicKey.fromBase58Encoded(kaminoIntegrationProgram)
+        PublicKey.fromBase58Encoded(kaminoIntegrationProgram),
+        PublicKey.fromBase58Encoded(loopscaleIntegrationProgram)
     );
   }
 
@@ -159,6 +170,14 @@ public interface GlamAccounts {
   }
 
   AccountMeta readKaminoIntegrationAuthority();
+
+  AccountMeta invokedLoopscaleIntegrationProgram();
+
+  default PublicKey loopscaleIntegrationProgram() {
+    return invokedLoopscaleIntegrationProgram().publicKey();
+  }
+
+  AccountMeta readLoopscaleIntegrationAuthority();
 
   Map<PublicKey, AccountMeta> integrationAuthorities();
 }
