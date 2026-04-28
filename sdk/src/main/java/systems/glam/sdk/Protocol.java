@@ -5,6 +5,7 @@ import systems.glam.sdk.idl.programs.glam.kamino.gen.ExtKaminoConstants;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintConstants;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolConstants;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplConstants;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.ExtLoopscaleConstants;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -19,6 +20,7 @@ public enum Protocol {
   KAMINO_LENDING(ExtKaminoConstants.class, ExtKaminoConstants.PROTO_KAMINO_LENDING),
   KAMINO_VAULTS(ExtKaminoConstants.class, ExtKaminoConstants.PROTO_KAMINO_VAULTS),
   KAMINO_FARMS(ExtKaminoConstants.class, ExtKaminoConstants.PROTO_KAMINO_FARMS),
+  LOOPSCALE(ExtLoopscaleConstants.class, ExtLoopscaleConstants.PROTO_LOOPSCALE),
   MINT(GlamMintConstants.class, GlamMintConstants.PROTO_MINT),
   STAKE(GlamProtocolConstants.class, GlamProtocolConstants.PROTO_STAKE),
   SYSTEM(GlamProtocolConstants.class, GlamProtocolConstants.PROTO_SYSTEM),

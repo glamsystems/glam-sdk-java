@@ -23,6 +23,11 @@ final class GlamStagingAccountClientImpl extends GlamAccountClientImpl implement
   }
 
   @Override
+  public GlamEnv glamEnv() {
+    return GlamEnv.STAGING;
+  }
+
+  @Override
   public StateAccountClient createStateAccountClient(final AccountInfo<byte[]> accountInfo) {
     if (accountInfo == null) {
       return null;

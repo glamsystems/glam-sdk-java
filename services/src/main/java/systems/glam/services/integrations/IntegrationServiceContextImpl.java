@@ -165,6 +165,11 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   }
 
   @Override
+  public LoopscaleAccounts loopscaleAccounts() {
+    return loopscaleAccounts;
+  }
+
+  @Override
   public PublicKey loopscaleProgram() {
     return loopscaleAccounts.loopscaleProgram();
   }

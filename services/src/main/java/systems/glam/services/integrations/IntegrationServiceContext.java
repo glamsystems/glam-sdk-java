@@ -109,5 +109,7 @@ public interface IntegrationServiceContext {
 
   PublicKey kVaultsProgram();
 
+  LoopscaleAccounts loopscaleAccounts();
+
   PublicKey loopscaleProgram();
 }

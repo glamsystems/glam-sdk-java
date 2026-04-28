@@ -48,6 +48,8 @@ public interface GlamAccountClient extends SPLAccountClient {
     return false;
   }
 
+  GlamEnv glamEnv();
+
   GlamAccounts glamAccounts();
 
   GlamVaultAccounts vaultAccounts();

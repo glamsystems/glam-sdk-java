@@ -72,6 +72,11 @@ class GlamAccountClientImpl implements GlamAccountClient {
   }
 
   @Override
+  public GlamEnv glamEnv() {
+    return GlamEnv.PRODUCTION;
+  }
+
+  @Override
   public final GlamAccounts glamAccounts() {
     return glamAccounts;
   }
