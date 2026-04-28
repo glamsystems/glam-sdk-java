@@ -9,3 +9,7 @@ tasks.named<Jar>("jar") {
     into("glam/ix-mappings")
   }
 }
+
+//dependencies {
+//  project(":idl-clients:idl-clients-loopscale")
+//}

@@ -148,4 +148,22 @@ public interface GlamAccountClient extends SPLAccountClient {
   Instruction updateState(final StateModel state);
 
   Instruction priceSingleAssetVault(final PublicKey baseAssetTokenAccount, final boolean cpiEmitEvents);
+
+  Instruction priceExternalPositions(final PublicKey solUSDOracleKey,
+                                     final PublicKey baseAssetUsdOracleKey,
+                                     final boolean cpiEmitEvents);
+
+  default Instruction priceExternalPositions(final PublicKey solUSDOracleKey,
+                                             final PublicKey baseAssetUsdOracleKey) {
+    return priceExternalPositions(solUSDOracleKey, baseAssetUsdOracleKey, false);
+  }
+
+  Instruction priceLoopscaleLoans(final PublicKey solUSDOracleKey,
+                                  final PublicKey baseAssetUsdOracleKey,
+                                  final boolean cpiEmitEvents);
+
+  default Instruction priceLoopscaleLoans(final PublicKey solUSDOracleKey,
+                                          final PublicKey baseAssetUsdOracleKey) {
+    return priceLoopscaleLoans(solUSDOracleKey, baseAssetUsdOracleKey, false);
+  }
 }

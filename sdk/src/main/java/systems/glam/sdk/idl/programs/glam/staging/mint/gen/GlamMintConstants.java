@@ -22,6 +22,12 @@ public final class GlamMintConstants {
 
   public static final long PROTO_MINT_PERM_SET_TOKEN_ACCOUNT_STATE = 8;
 
+  public static final long PROTO_MINT_PERM_TOKEN_ACL_APPLY_LIST = 2048;
+
+  public static final long PROTO_MINT_PERM_TOKEN_ACL_FREEZE_THAW = 512;
+
+  public static final long PROTO_MINT_PERM_TOKEN_ACL_MANAGE_LIST = 1024;
+
   private GlamMintConstants() {
   }
 }

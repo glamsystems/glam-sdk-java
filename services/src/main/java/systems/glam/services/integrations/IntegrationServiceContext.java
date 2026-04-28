@@ -5,6 +5,7 @@ import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
+import software.sava.idl.clients.loopscale.LoopscaleAccounts;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.services.ServiceContext;
@@ -33,7 +34,8 @@ public interface IntegrationServiceContext {
                                                  final DriftMarketCache driftMarketCache,
                                                  final DriftUserCache driftUserCache,
                                                  final KaminoAccounts kaminoAccounts,
-                                                 final KaminoCache kaminoCache) {
+                                                 final KaminoCache kaminoCache,
+                                                 final LoopscaleAccounts loopscaleAccounts) {
     return new IntegrationServiceContextImpl(
         serviceContext,
         mintCache,
@@ -42,7 +44,8 @@ public interface IntegrationServiceContext {
         integLookupTableCache,
         accountFetcher,
         driftAccounts, driftMarketCache, driftUserCache,
-        kaminoAccounts, kaminoCache
+        kaminoAccounts, kaminoCache,
+        loopscaleAccounts
     );
   }
 
@@ -105,4 +108,6 @@ public interface IntegrationServiceContext {
   PublicKey kLendProgram();
 
   PublicKey kVaultsProgram();
+
+  PublicKey loopscaleProgram();
 }

@@ -19,7 +19,10 @@ public sealed interface GlamMintError extends ProgramError permits
     GlamMintError.ProtocolFeesNotCrystallized,
     GlamMintError.AmountBelowMinimum,
     GlamMintError.ManagerFeesNotCrystallized,
-    GlamMintError.AmountAboveMaximum {
+    GlamMintError.AmountAboveMaximum,
+    GlamMintError.InsufficientEscrowBalance,
+    GlamMintError.TokenAclManagesFreezeThaw,
+    GlamMintError.InvalidMintState {
 
   static GlamMintError getInstance(final int errorCode) {
     return switch (errorCode) {
@@ -40,6 +43,9 @@ public sealed interface GlamMintError extends ProgramError permits
       case 6014 -> AmountBelowMinimum.INSTANCE;
       case 6015 -> ManagerFeesNotCrystallized.INSTANCE;
       case 6016 -> AmountAboveMaximum.INSTANCE;
+      case 6017 -> InsufficientEscrowBalance.INSTANCE;
+      case 6018 -> TokenAclManagesFreezeThaw.INSTANCE;
+      case 6019 -> InvalidMintState.INSTANCE;
       default -> null;
     };
   }
@@ -160,6 +166,27 @@ public sealed interface GlamMintError extends ProgramError permits
 
     public static final AmountAboveMaximum INSTANCE = new AmountAboveMaximum(
         6016, "Amount exceeds maximum threshold"
+    );
+  }
+
+  record InsufficientEscrowBalance(int code, String msg) implements GlamMintError {
+
+    public static final InsufficientEscrowBalance INSTANCE = new InsufficientEscrowBalance(
+        6017, "Insufficient escrow balance for fee burn"
+    );
+  }
+
+  record TokenAclManagesFreezeThaw(int code, String msg) implements GlamMintError {
+
+    public static final TokenAclManagesFreezeThaw INSTANCE = new TokenAclManagesFreezeThaw(
+        6018, "Token ACL is enabled; freeze/thaw is managed by the Token ACL program"
+    );
+  }
+
+  record InvalidMintState(int code, String msg) implements GlamMintError {
+
+    public static final InvalidMintState INSTANCE = new InvalidMintState(
+        6019, "Invalid mint state"
     );
   }
 }

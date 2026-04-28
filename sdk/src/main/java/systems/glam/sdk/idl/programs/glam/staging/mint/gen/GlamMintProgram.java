@@ -16,12 +16,302 @@ import java.util.List;
 import java.util.OptionalInt;
 
 import static java.util.Objects.requireNonNullElse;
+import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.accounts.meta.AccountMeta.*;
 import static software.sava.core.encoding.ByteUtil.*;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
 public final class GlamMintProgram {
+
+  public static final Discriminator ACL_GATE_ADD_WALLET_DISCRIMINATOR = toDiscriminator(177, 209, 222, 44, 139, 216, 75, 85);
+
+  public static List<AccountMeta> aclGateAddWalletKeys(final SolanaAccounts solanaAccounts,
+                                                       final PublicKey glamStateKey,
+                                                       final PublicKey glamSignerKey,
+                                                       final PublicKey glamMintKey,
+                                                       final PublicKey listConfigKey,
+                                                       final PublicKey walletKey,
+                                                       final PublicKey walletEntryKey,
+                                                       final PublicKey tokenAclGateProgramKey,
+                                                       final PublicKey glamProtocolKey) {
+    return List.of(
+      createRead(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createWrite(glamMintKey),
+      createWrite(listConfigKey),
+      createRead(walletKey),
+      createWrite(walletEntryKey),
+      createRead(tokenAclGateProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createRead(glamProtocolKey)
+    );
+  }
+
+  public static Instruction aclGateAddWallet(final AccountMeta invokedGlamMintProgramMeta,
+                                             final SolanaAccounts solanaAccounts,
+                                             final PublicKey glamStateKey,
+                                             final PublicKey glamSignerKey,
+                                             final PublicKey glamMintKey,
+                                             final PublicKey listConfigKey,
+                                             final PublicKey walletKey,
+                                             final PublicKey walletEntryKey,
+                                             final PublicKey tokenAclGateProgramKey,
+                                             final PublicKey glamProtocolKey) {
+    final var keys = aclGateAddWalletKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamSignerKey,
+      glamMintKey,
+      listConfigKey,
+      walletKey,
+      walletEntryKey,
+      tokenAclGateProgramKey,
+      glamProtocolKey
+    );
+    return aclGateAddWallet(invokedGlamMintProgramMeta, keys);
+  }
+
+  public static Instruction aclGateAddWallet(final AccountMeta invokedGlamMintProgramMeta,
+                                             final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, ACL_GATE_ADD_WALLET_DISCRIMINATOR);
+  }
+
+  public static final Discriminator ACL_GATE_CREATE_LIST_DISCRIMINATOR = toDiscriminator(58, 42, 187, 89, 245, 216, 223, 82);
+
+  public static List<AccountMeta> aclGateCreateListKeys(final SolanaAccounts solanaAccounts,
+                                                        final PublicKey glamStateKey,
+                                                        final PublicKey glamSignerKey,
+                                                        final PublicKey glamMintKey,
+                                                        final PublicKey listConfigKey,
+                                                        final PublicKey tokenAclGateProgramKey,
+                                                        final PublicKey glamProtocolKey) {
+    return List.of(
+      createRead(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createWrite(glamMintKey),
+      createWrite(listConfigKey),
+      createRead(tokenAclGateProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createRead(glamProtocolKey)
+    );
+  }
+
+  public static Instruction aclGateCreateList(final AccountMeta invokedGlamMintProgramMeta,
+                                              final SolanaAccounts solanaAccounts,
+                                              final PublicKey glamStateKey,
+                                              final PublicKey glamSignerKey,
+                                              final PublicKey glamMintKey,
+                                              final PublicKey listConfigKey,
+                                              final PublicKey tokenAclGateProgramKey,
+                                              final PublicKey glamProtocolKey,
+                                              final byte[] seed,
+                                              final int mode) {
+    final var keys = aclGateCreateListKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamSignerKey,
+      glamMintKey,
+      listConfigKey,
+      tokenAclGateProgramKey,
+      glamProtocolKey
+    );
+    return aclGateCreateList(invokedGlamMintProgramMeta, keys, seed, mode);
+  }
+
+  public static Instruction aclGateCreateList(final AccountMeta invokedGlamMintProgramMeta,
+                                              final List<AccountMeta> keys,
+                                              final byte[] seed,
+                                              final int mode) {
+    final byte[] _data = new byte[9 + SerDeUtil.lenArray(seed)];
+    int i = ACL_GATE_CREATE_LIST_DISCRIMINATOR.write(_data, 0);
+    i += SerDeUtil.writeArrayChecked(seed, 32, _data, i);
+    _data[i] = (byte) mode;
+
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
+  }
+
+  public record AclGateCreateListIxData(Discriminator discriminator, byte[] seed, int mode) implements SerDe {  
+
+    public static AclGateCreateListIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int BYTES = 41;
+    public static final int SEED_LEN = 32;
+
+    public static final int SEED_OFFSET = 8;
+    public static final int MODE_OFFSET = 40;
+
+    public static AclGateCreateListIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var seed = new byte[32];
+      i += SerDeUtil.readArray(seed, _data, i);
+      final var mode = _data[i] & 0xFF;
+      return new AclGateCreateListIxData(discriminator, seed, mode);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += SerDeUtil.writeArrayChecked(seed, 32, _data, i);
+      _data[i] = (byte) mode;
+      ++i;
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
+  public static final Discriminator ACL_GATE_DELETE_LIST_DISCRIMINATOR = toDiscriminator(113, 175, 235, 163, 178, 217, 46, 134);
+
+  public static List<AccountMeta> aclGateDeleteListKeys(final SolanaAccounts solanaAccounts,
+                                                        final PublicKey glamStateKey,
+                                                        final PublicKey glamSignerKey,
+                                                        final PublicKey glamMintKey,
+                                                        final PublicKey listConfigKey,
+                                                        final PublicKey tokenAclGateProgramKey,
+                                                        final PublicKey glamProtocolKey) {
+    return List.of(
+      createRead(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createWrite(glamMintKey),
+      createWrite(listConfigKey),
+      createRead(tokenAclGateProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createRead(glamProtocolKey)
+    );
+  }
+
+  public static Instruction aclGateDeleteList(final AccountMeta invokedGlamMintProgramMeta,
+                                              final SolanaAccounts solanaAccounts,
+                                              final PublicKey glamStateKey,
+                                              final PublicKey glamSignerKey,
+                                              final PublicKey glamMintKey,
+                                              final PublicKey listConfigKey,
+                                              final PublicKey tokenAclGateProgramKey,
+                                              final PublicKey glamProtocolKey) {
+    final var keys = aclGateDeleteListKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamSignerKey,
+      glamMintKey,
+      listConfigKey,
+      tokenAclGateProgramKey,
+      glamProtocolKey
+    );
+    return aclGateDeleteList(invokedGlamMintProgramMeta, keys);
+  }
+
+  public static Instruction aclGateDeleteList(final AccountMeta invokedGlamMintProgramMeta,
+                                              final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, ACL_GATE_DELETE_LIST_DISCRIMINATOR);
+  }
+
+  public static final Discriminator ACL_GATE_REMOVE_WALLET_DISCRIMINATOR = toDiscriminator(74, 153, 117, 215, 253, 225, 59, 63);
+
+  public static List<AccountMeta> aclGateRemoveWalletKeys(final SolanaAccounts solanaAccounts,
+                                                          final PublicKey glamStateKey,
+                                                          final PublicKey glamSignerKey,
+                                                          final PublicKey glamMintKey,
+                                                          final PublicKey listConfigKey,
+                                                          final PublicKey walletEntryKey,
+                                                          final PublicKey tokenAclGateProgramKey,
+                                                          final PublicKey glamProtocolKey) {
+    return List.of(
+      createRead(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createWrite(glamMintKey),
+      createWrite(listConfigKey),
+      createWrite(walletEntryKey),
+      createRead(tokenAclGateProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createRead(glamProtocolKey)
+    );
+  }
+
+  public static Instruction aclGateRemoveWallet(final AccountMeta invokedGlamMintProgramMeta,
+                                                final SolanaAccounts solanaAccounts,
+                                                final PublicKey glamStateKey,
+                                                final PublicKey glamSignerKey,
+                                                final PublicKey glamMintKey,
+                                                final PublicKey listConfigKey,
+                                                final PublicKey walletEntryKey,
+                                                final PublicKey tokenAclGateProgramKey,
+                                                final PublicKey glamProtocolKey) {
+    final var keys = aclGateRemoveWalletKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamSignerKey,
+      glamMintKey,
+      listConfigKey,
+      walletEntryKey,
+      tokenAclGateProgramKey,
+      glamProtocolKey
+    );
+    return aclGateRemoveWallet(invokedGlamMintProgramMeta, keys);
+  }
+
+  public static Instruction aclGateRemoveWallet(final AccountMeta invokedGlamMintProgramMeta,
+                                                final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, ACL_GATE_REMOVE_WALLET_DISCRIMINATOR);
+  }
+
+  public static final Discriminator ACL_GATE_SETUP_EXTRA_METAS_DISCRIMINATOR = toDiscriminator(47, 15, 98, 58, 82, 141, 213, 121);
+
+  public static List<AccountMeta> aclGateSetupExtraMetasKeys(final SolanaAccounts solanaAccounts,
+                                                             final PublicKey glamStateKey,
+                                                             final PublicKey glamSignerKey,
+                                                             final PublicKey glamMintKey,
+                                                             final PublicKey mintConfigKey,
+                                                             final PublicKey extraMetasKey,
+                                                             final PublicKey tokenAclGateProgramKey,
+                                                             final PublicKey glamProtocolKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createWrite(glamMintKey),
+      createRead(mintConfigKey),
+      createWrite(extraMetasKey),
+      createRead(tokenAclGateProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createRead(glamProtocolKey)
+    );
+  }
+
+  public static Instruction aclGateSetupExtraMetas(final AccountMeta invokedGlamMintProgramMeta,
+                                                   final SolanaAccounts solanaAccounts,
+                                                   final PublicKey glamStateKey,
+                                                   final PublicKey glamSignerKey,
+                                                   final PublicKey glamMintKey,
+                                                   final PublicKey mintConfigKey,
+                                                   final PublicKey extraMetasKey,
+                                                   final PublicKey tokenAclGateProgramKey,
+                                                   final PublicKey glamProtocolKey) {
+    final var keys = aclGateSetupExtraMetasKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamSignerKey,
+      glamMintKey,
+      mintConfigKey,
+      extraMetasKey,
+      tokenAclGateProgramKey,
+      glamProtocolKey
+    );
+    return aclGateSetupExtraMetas(invokedGlamMintProgramMeta, keys);
+  }
+
+  public static Instruction aclGateSetupExtraMetas(final AccountMeta invokedGlamMintProgramMeta,
+                                                   final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, ACL_GATE_SETUP_EXTRA_METAS_DISCRIMINATOR);
+  }
 
   public static final Discriminator BURN_TOKENS_DISCRIMINATOR = toDiscriminator(76, 15, 51, 254, 229, 215, 121, 66);
 
@@ -499,6 +789,101 @@ public final class GlamMintProgram {
     @Override
     public int l() {
       return BYTES;
+    }
+  }
+
+  public static final Discriminator ENABLE_TOKEN_ACL_DISCRIMINATOR = toDiscriminator(223, 179, 117, 163, 201, 185, 222, 34);
+
+  public static List<AccountMeta> enableTokenAclKeys(final SolanaAccounts solanaAccounts,
+                                                     final PublicKey glamStateKey,
+                                                     final PublicKey glamSignerKey,
+                                                     final PublicKey glamMintKey,
+                                                     final PublicKey mintConfigKey,
+                                                     final PublicKey tokenAclProgramKey,
+                                                     final PublicKey token2022ProgramKey,
+                                                     final PublicKey glamProtocolKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createWrite(glamMintKey),
+      createWrite(mintConfigKey),
+      createRead(tokenAclProgramKey),
+      createRead(token2022ProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createRead(glamProtocolKey)
+    );
+  }
+
+  public static Instruction enableTokenAcl(final AccountMeta invokedGlamMintProgramMeta,
+                                           final SolanaAccounts solanaAccounts,
+                                           final PublicKey glamStateKey,
+                                           final PublicKey glamSignerKey,
+                                           final PublicKey glamMintKey,
+                                           final PublicKey mintConfigKey,
+                                           final PublicKey tokenAclProgramKey,
+                                           final PublicKey token2022ProgramKey,
+                                           final PublicKey glamProtocolKey,
+                                           final PublicKey gatingProgram) {
+    final var keys = enableTokenAclKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamSignerKey,
+      glamMintKey,
+      mintConfigKey,
+      tokenAclProgramKey,
+      token2022ProgramKey,
+      glamProtocolKey
+    );
+    return enableTokenAcl(invokedGlamMintProgramMeta, keys, gatingProgram);
+  }
+
+  public static Instruction enableTokenAcl(final AccountMeta invokedGlamMintProgramMeta,
+                                           final List<AccountMeta> keys,
+                                           final PublicKey gatingProgram) {
+    final byte[] _data = new byte[
+    8
+    + (gatingProgram == null ? 1 : 33)
+    ];
+    int i = ENABLE_TOKEN_ACL_DISCRIMINATOR.write(_data, 0);
+    SerDeUtil.writeOptional(1, gatingProgram, _data, i);
+
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
+  }
+
+  public record EnableTokenAclIxData(Discriminator discriminator, PublicKey gatingProgram) implements SerDe {  
+
+    public static EnableTokenAclIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int GATING_PROGRAM_OFFSET = 9;
+
+    public static EnableTokenAclIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final PublicKey gatingProgram;
+      if (SerDeUtil.isAbsent(1, _data, i)) {
+        gatingProgram = null;
+      } else {
+        ++i;
+        gatingProgram = readPubKey(_data, i);
+      }
+      return new EnableTokenAclIxData(discriminator, gatingProgram);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += SerDeUtil.writeOptional(1, gatingProgram, _data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + (gatingProgram == null ? 1 : (1 + 32));
     }
   }
 
@@ -1268,6 +1653,80 @@ public final class GlamMintProgram {
     }
   }
 
+  public static final Discriminator PRICE_EXTERNAL_POSITIONS_DISCRIMINATOR = toDiscriminator(94, 199, 82, 243, 235, 193, 4, 144);
+
+  /// Price external positions for a vault
+  /// 
+  /// Extra accounts required:
+  /// - Observation state account
+  ///
+  public static List<AccountMeta> priceExternalPositionsKeys(final AccountMeta invokedGlamMintProgramMeta,
+                                                             final PublicKey glamStateKey,
+                                                             final PublicKey glamVaultKey,
+                                                             final PublicKey signerKey,
+                                                             final PublicKey solUsdOracleKey,
+                                                             final PublicKey baseAssetOracleKey,
+                                                             final PublicKey integrationAuthorityKey,
+                                                             final PublicKey glamConfigKey,
+                                                             final PublicKey glamProtocolKey,
+                                                             final PublicKey eventAuthorityKey,
+                                                             final PublicKey eventProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createWritableSigner(signerKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolKey),
+      createRead(requireNonNullElse(eventAuthorityKey, invokedGlamMintProgramMeta.publicKey())),
+      createRead(requireNonNullElse(eventProgramKey, invokedGlamMintProgramMeta.publicKey()))
+    );
+  }
+
+  /// Price external positions for a vault
+  /// 
+  /// Extra accounts required:
+  /// - Observation state account
+  ///
+  public static Instruction priceExternalPositions(final AccountMeta invokedGlamMintProgramMeta,
+                                                   final PublicKey glamStateKey,
+                                                   final PublicKey glamVaultKey,
+                                                   final PublicKey signerKey,
+                                                   final PublicKey solUsdOracleKey,
+                                                   final PublicKey baseAssetOracleKey,
+                                                   final PublicKey integrationAuthorityKey,
+                                                   final PublicKey glamConfigKey,
+                                                   final PublicKey glamProtocolKey,
+                                                   final PublicKey eventAuthorityKey,
+                                                   final PublicKey eventProgramKey) {
+    final var keys = priceExternalPositionsKeys(
+      invokedGlamMintProgramMeta,
+      glamStateKey,
+      glamVaultKey,
+      signerKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolKey,
+      eventAuthorityKey,
+      eventProgramKey
+    );
+    return priceExternalPositions(invokedGlamMintProgramMeta, keys);
+  }
+
+  /// Price external positions for a vault
+  /// 
+  /// Extra accounts required:
+  /// - Observation state account
+  ///
+  public static Instruction priceExternalPositions(final AccountMeta invokedGlamMintProgramMeta,
+                                                   final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_EXTERNAL_POSITIONS_DISCRIMINATOR);
+  }
+
   public static final Discriminator PRICE_KAMINO_OBLIGATIONS_DISCRIMINATOR = toDiscriminator(166, 110, 234, 179, 240, 179, 69, 246);
 
   /// Prices Kamino obligations. Reserves and obligations must be refreshed in the same slot before calling this ix.
@@ -1466,6 +1925,80 @@ public final class GlamMintProgram {
     public int l() {
       return BYTES;
     }
+  }
+
+  public static final Discriminator PRICE_LOOPSCALE_LOANS_DISCRIMINATOR = toDiscriminator(106, 180, 138, 193, 90, 3, 24, 42);
+
+  /// Price LoopScale loans for a vault
+  /// 
+  /// Extra accounts for pricing N loans:
+  /// - N loan accounts
+  ///
+  public static List<AccountMeta> priceLoopscaleLoansKeys(final AccountMeta invokedGlamMintProgramMeta,
+                                                          final PublicKey glamStateKey,
+                                                          final PublicKey glamVaultKey,
+                                                          final PublicKey signerKey,
+                                                          final PublicKey solUsdOracleKey,
+                                                          final PublicKey baseAssetOracleKey,
+                                                          final PublicKey integrationAuthorityKey,
+                                                          final PublicKey glamConfigKey,
+                                                          final PublicKey glamProtocolKey,
+                                                          final PublicKey eventAuthorityKey,
+                                                          final PublicKey eventProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createWritableSigner(signerKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolKey),
+      createRead(requireNonNullElse(eventAuthorityKey, invokedGlamMintProgramMeta.publicKey())),
+      createRead(requireNonNullElse(eventProgramKey, invokedGlamMintProgramMeta.publicKey()))
+    );
+  }
+
+  /// Price LoopScale loans for a vault
+  /// 
+  /// Extra accounts for pricing N loans:
+  /// - N loan accounts
+  ///
+  public static Instruction priceLoopscaleLoans(final AccountMeta invokedGlamMintProgramMeta,
+                                                final PublicKey glamStateKey,
+                                                final PublicKey glamVaultKey,
+                                                final PublicKey signerKey,
+                                                final PublicKey solUsdOracleKey,
+                                                final PublicKey baseAssetOracleKey,
+                                                final PublicKey integrationAuthorityKey,
+                                                final PublicKey glamConfigKey,
+                                                final PublicKey glamProtocolKey,
+                                                final PublicKey eventAuthorityKey,
+                                                final PublicKey eventProgramKey) {
+    final var keys = priceLoopscaleLoansKeys(
+      invokedGlamMintProgramMeta,
+      glamStateKey,
+      glamVaultKey,
+      signerKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolKey,
+      eventAuthorityKey,
+      eventProgramKey
+    );
+    return priceLoopscaleLoans(invokedGlamMintProgramMeta, keys);
+  }
+
+  /// Price LoopScale loans for a vault
+  /// 
+  /// Extra accounts for pricing N loans:
+  /// - N loan accounts
+  ///
+  public static Instruction priceLoopscaleLoans(final AccountMeta invokedGlamMintProgramMeta,
+                                                final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_LOOPSCALE_LOANS_DISCRIMINATOR);
   }
 
   public static final Discriminator PRICE_SINGLE_ASSET_VAULT_DISCRIMINATOR = toDiscriminator(93, 213, 219, 25, 38, 74, 9, 167);
@@ -2253,6 +2786,96 @@ public final class GlamMintProgram {
     public int l() {
       return BYTES;
     }
+  }
+
+  public static final Discriminator TOKEN_ACL_FREEZE_DISCRIMINATOR = toDiscriminator(208, 39, 70, 196, 226, 118, 235, 31);
+
+  public static List<AccountMeta> tokenAclFreezeKeys(final PublicKey glamStateKey,
+                                                     final PublicKey glamSignerKey,
+                                                     final PublicKey glamMintKey,
+                                                     final PublicKey mintConfigKey,
+                                                     final PublicKey tokenAclProgramKey,
+                                                     final PublicKey token2022ProgramKey,
+                                                     final PublicKey glamProtocolKey) {
+    return List.of(
+      createRead(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createWrite(glamMintKey),
+      createRead(mintConfigKey),
+      createRead(tokenAclProgramKey),
+      createRead(token2022ProgramKey),
+      createRead(glamProtocolKey)
+    );
+  }
+
+  public static Instruction tokenAclFreeze(final AccountMeta invokedGlamMintProgramMeta,
+                                           final PublicKey glamStateKey,
+                                           final PublicKey glamSignerKey,
+                                           final PublicKey glamMintKey,
+                                           final PublicKey mintConfigKey,
+                                           final PublicKey tokenAclProgramKey,
+                                           final PublicKey token2022ProgramKey,
+                                           final PublicKey glamProtocolKey) {
+    final var keys = tokenAclFreezeKeys(
+      glamStateKey,
+      glamSignerKey,
+      glamMintKey,
+      mintConfigKey,
+      tokenAclProgramKey,
+      token2022ProgramKey,
+      glamProtocolKey
+    );
+    return tokenAclFreeze(invokedGlamMintProgramMeta, keys);
+  }
+
+  public static Instruction tokenAclFreeze(final AccountMeta invokedGlamMintProgramMeta,
+                                           final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, TOKEN_ACL_FREEZE_DISCRIMINATOR);
+  }
+
+  public static final Discriminator TOKEN_ACL_THAW_DISCRIMINATOR = toDiscriminator(8, 45, 41, 107, 188, 132, 187, 55);
+
+  public static List<AccountMeta> tokenAclThawKeys(final PublicKey glamStateKey,
+                                                   final PublicKey glamSignerKey,
+                                                   final PublicKey glamMintKey,
+                                                   final PublicKey mintConfigKey,
+                                                   final PublicKey tokenAclProgramKey,
+                                                   final PublicKey token2022ProgramKey,
+                                                   final PublicKey glamProtocolKey) {
+    return List.of(
+      createRead(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createWrite(glamMintKey),
+      createRead(mintConfigKey),
+      createRead(tokenAclProgramKey),
+      createRead(token2022ProgramKey),
+      createRead(glamProtocolKey)
+    );
+  }
+
+  public static Instruction tokenAclThaw(final AccountMeta invokedGlamMintProgramMeta,
+                                         final PublicKey glamStateKey,
+                                         final PublicKey glamSignerKey,
+                                         final PublicKey glamMintKey,
+                                         final PublicKey mintConfigKey,
+                                         final PublicKey tokenAclProgramKey,
+                                         final PublicKey token2022ProgramKey,
+                                         final PublicKey glamProtocolKey) {
+    final var keys = tokenAclThawKeys(
+      glamStateKey,
+      glamSignerKey,
+      glamMintKey,
+      mintConfigKey,
+      tokenAclProgramKey,
+      token2022ProgramKey,
+      glamProtocolKey
+    );
+    return tokenAclThaw(invokedGlamMintProgramMeta, keys);
+  }
+
+  public static Instruction tokenAclThaw(final AccountMeta invokedGlamMintProgramMeta,
+                                         final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, TOKEN_ACL_THAW_DISCRIMINATOR);
   }
 
   public static final Discriminator UPDATE_MINT_DISCRIMINATOR = toDiscriminator(212, 203, 57, 78, 75, 245, 222, 5);

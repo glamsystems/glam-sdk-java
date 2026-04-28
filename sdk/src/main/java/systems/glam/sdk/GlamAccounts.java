@@ -13,10 +13,10 @@ import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.ExtLoopscalePDAs
 import systems.glam.sdk.proxy.DynamicGlamAccountFactory;
 
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 
 import static software.sava.core.accounts.meta.AccountMeta.createInvoked;
-import static software.sava.core.accounts.meta.AccountMeta.createRead;
 
 public interface GlamAccounts {
 
@@ -28,8 +28,9 @@ public interface GlamAccounts {
       "po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY",
       "G1NTsQ36mjPe89HtPYqxKsjY5HmYsDR6CbD2gd2U2pta",
       "G1NTdrBmBpW43msRQmsf7qXSw3MFBNaqJcAkGiRmRq2F",
+      null,
       "G1NTkDEUR3pkEqGCKZtmtmVzCUEdYa86pezHkwYbLyde",
-      PublicKey.NONE.toBase58()
+      null
   );
 
   GlamAccounts MAIN_NET_STAGING = createAccounts(
@@ -39,9 +40,18 @@ public interface GlamAccounts {
       "po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY",
       "gstgs9nJgX8PmRHWAAEP9H7xT3ZkaPWSGPYbj3mXdTa",
       "gstgdpMFXKobURsFtStdaMLRSuwdmDUsrndov7kyu9h",
+      "gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX",
       "gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq",
       "gstgL6y4uWjsfM3Qjs5euoTDmEcXoUjqx8rkYJhYngG"
   );
+
+  private static void putIfNotNull(final Map<PublicKey, AccountMeta> map,
+                                   final PublicKey key,
+                                   final PublicKey value) {
+    if (!key.equals(PublicKey.NONE)) {
+      map.put(key, AccountMeta.createRead(value));
+    }
+  }
 
   static GlamAccounts createAccounts(final PublicKey protocolProgram,
                                      final PublicKey configProgram,
@@ -49,37 +59,46 @@ public interface GlamAccounts {
                                      final PublicKey policyProgram,
                                      final PublicKey splIntegrationProgram,
                                      final PublicKey driftIntegrationProgram,
+                                     final PublicKey externalPositionProgram,
                                      final PublicKey kaminoIntegrationProgram,
                                      final PublicKey loopscaleIntegrationProgram) {
-    final var mintIntegrationAuthority = createRead(GlamMintPDAs.integrationAuthorityPDA(mintProgram).publicKey());
-    final var splIntegrationAuthority = createRead(ExtSplPDAs.integrationAuthorityPDA(splIntegrationProgram).publicKey());
-    final var driftIntegrationAuthority = createRead(ExtDriftPDAs.integrationAuthorityPDA(driftIntegrationProgram).publicKey());
-    final var kaminoIntegrationAuthority = createRead(ExtKaminoPDAs.integrationAuthorityPDA(kaminoIntegrationProgram).publicKey());
-    final var loopscaleIntegrationAuthority = createRead(ExtLoopscalePDAs.integrationAuthorityPDA(loopscaleIntegrationProgram).publicKey());
-    final var IntegrationAuthorities = Map.of(
-        mintProgram, mintIntegrationAuthority,
-        splIntegrationProgram, splIntegrationAuthority,
-        driftIntegrationProgram, driftIntegrationAuthority,
-        kaminoIntegrationProgram, kaminoIntegrationAuthority,
-        loopscaleIntegrationProgram, loopscaleIntegrationAuthority
-    );
+    final var mintIntegrationAuthority = GlamMintPDAs.integrationAuthorityPDA(mintProgram).publicKey();
+    final var splIntegrationAuthority = ExtSplPDAs.integrationAuthorityPDA(splIntegrationProgram).publicKey();
+    final var driftIntegrationAuthority = ExtDriftPDAs.integrationAuthorityPDA(driftIntegrationProgram).publicKey();
+    final var externalPositionAuthority = ExtDriftPDAs.integrationAuthorityPDA(externalPositionProgram).publicKey();
+    final var kaminoIntegrationAuthority = ExtKaminoPDAs.integrationAuthorityPDA(kaminoIntegrationProgram).publicKey();
+    final var loopscaleIntegrationAuthority = ExtLoopscalePDAs.integrationAuthorityPDA(loopscaleIntegrationProgram).publicKey();
+    final var map = HashMap.<PublicKey, AccountMeta>newHashMap(6);
+    putIfNotNull(map, mintProgram, mintIntegrationAuthority);
+    putIfNotNull(map, splIntegrationProgram, splIntegrationAuthority);
+    putIfNotNull(map, driftIntegrationProgram, driftIntegrationAuthority);
+    putIfNotNull(map, externalPositionProgram, externalPositionAuthority);
+    putIfNotNull(map, kaminoIntegrationProgram, kaminoIntegrationAuthority);
+    putIfNotNull(map, loopscaleIntegrationProgram, loopscaleIntegrationAuthority);
+    final var integrationAuthorities = Map.copyOf(map);
     return new GlamAccountsRecord(
         createInvoked(protocolProgram),
         configProgram, GlamConfigPDAs.globalConfigPDA(configProgram),
         policyProgram,
         createInvoked(mintProgram),
-        mintIntegrationAuthority,
+        integrationAuthorities.get(mintProgram),
         GlamMintPDAs.eventAuthorityPDA(mintProgram).publicKey(),
         createInvoked(splIntegrationProgram),
-        splIntegrationAuthority,
+        integrationAuthorities.get(splIntegrationProgram),
         createInvoked(driftIntegrationProgram),
-        driftIntegrationAuthority,
+        integrationAuthorities.get(driftIntegrationProgram),
+        createInvoked(externalPositionProgram),
+        integrationAuthorities.get(externalPositionProgram),
         createInvoked(kaminoIntegrationProgram),
-        kaminoIntegrationAuthority,
+        integrationAuthorities.get(kaminoIntegrationProgram),
         createInvoked(loopscaleIntegrationProgram),
-        loopscaleIntegrationAuthority,
-        IntegrationAuthorities
+        integrationAuthorities.get(loopscaleIntegrationProgram),
+        integrationAuthorities
     );
+  }
+
+  private static PublicKey createKey(final String program) {
+    return program == null ? PublicKey.NONE : PublicKey.fromBase58Encoded(program);
   }
 
   static GlamAccounts createAccounts(final String protocolProgram,
@@ -88,6 +107,7 @@ public interface GlamAccounts {
                                      final String policyProgram,
                                      final String splIntegrationProgram,
                                      final String driftIntegrationProgram,
+                                     final String externalPositionProgram,
                                      final String kaminoIntegrationProgram,
                                      final String loopscaleIntegrationProgram) {
     return createAccounts(
@@ -97,8 +117,9 @@ public interface GlamAccounts {
         PublicKey.fromBase58Encoded(policyProgram),
         PublicKey.fromBase58Encoded(splIntegrationProgram),
         PublicKey.fromBase58Encoded(driftIntegrationProgram),
+        createKey(externalPositionProgram),
         PublicKey.fromBase58Encoded(kaminoIntegrationProgram),
-        PublicKey.fromBase58Encoded(loopscaleIntegrationProgram)
+        createKey(loopscaleIntegrationProgram)
     );
   }
 
@@ -180,4 +201,12 @@ public interface GlamAccounts {
   AccountMeta readLoopscaleIntegrationAuthority();
 
   Map<PublicKey, AccountMeta> integrationAuthorities();
+
+  AccountMeta invokedExternalPositionProgram();
+
+  AccountMeta readExternalPositionAuthority();
+
+  default PublicKey externalPositionProgram() {
+    return invokedExternalPositionProgram().publicKey();
+  }
 }

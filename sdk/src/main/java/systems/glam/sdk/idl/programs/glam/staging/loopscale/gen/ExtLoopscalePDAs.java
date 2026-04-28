@@ -9,12 +9,26 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public final class ExtLoopscalePDAs {
 
+  public static ProgramDerivedAddress glamConfigPDA(final PublicKey program) {
+    return PublicKey.findProgramAddress(List.of(
+      "global-config".getBytes(US_ASCII)
+    ), program);
+  }
+
   public static ProgramDerivedAddress glamVaultPDA(final PublicKey glamProtocolProgram,
                                                    final PublicKey glamStateAccount) {
     return PublicKey.findProgramAddress(List.of(
       "vault".getBytes(US_ASCII),
       glamStateAccount.toByteArray()
     ), glamProtocolProgram);
+  }
+
+  public static ProgramDerivedAddress glamVault1PDA(final PublicKey program,
+                                                    final PublicKey glamStateAccount) {
+    return PublicKey.findProgramAddress(List.of(
+      "vault".getBytes(US_ASCII),
+      glamStateAccount.toByteArray()
+    ), program);
   }
 
   public static ProgramDerivedAddress integrationAuthorityPDA(final PublicKey program) {

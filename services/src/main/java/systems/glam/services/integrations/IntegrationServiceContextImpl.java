@@ -4,6 +4,7 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
+import software.sava.idl.clients.loopscale.LoopscaleAccounts;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.execution.BaseServiceContext;
@@ -30,6 +31,7 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   private final DriftUserCache driftUserCache;
   private final KaminoAccounts kaminoAccounts;
   private final KaminoCache kaminoCache;
+  private final LoopscaleAccounts loopscaleAccounts;
 
   IntegrationServiceContextImpl(final ServiceContext serviceContext,
                                 final MintCache mintCache,
@@ -41,7 +43,8 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
                                 final DriftMarketCache driftMarketCache,
                                 final DriftUserCache driftUserCache,
                                 final KaminoAccounts kaminoAccounts,
-                                final KaminoCache kaminoCache) {
+                                final KaminoCache kaminoCache,
+                                final LoopscaleAccounts loopscaleAccounts) {
     super(serviceContext);
     this.mintCache = mintCache;
     this.stakePoolCache = stakePoolCache;
@@ -53,6 +56,7 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
     this.driftUserCache = driftUserCache;
     this.kaminoAccounts = kaminoAccounts;
     this.kaminoCache = kaminoCache;
+    this.loopscaleAccounts = loopscaleAccounts;
   }
 
   @Override
@@ -158,6 +162,11 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   @Override
   public PublicKey kVaultsProgram() {
     return kaminoAccounts.kVaultsProgram();
+  }
+
+  @Override
+  public PublicKey loopscaleProgram() {
+    return loopscaleAccounts.loopscaleProgram();
   }
 
   @Override
