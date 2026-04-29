@@ -60,7 +60,7 @@ public final class ServiceContextImpl implements ServiceContext {
     this.accountsCacheDirectory = cacheDirectory.resolve("accounts");
     this.glamStagingAccounts = glamStagingAccounts;
     this.primaryDatasource = primaryDatasource;
-    this.glamMinStateAccountCacheDirectory = accountsCacheDirectory.resolve("glam/min_state");
+    this.glamMinStateAccountCacheDirectory = accountsCacheDirectory.resolve("glam/min_state_v2");
     this.minCheckStateDelayNanos = minCheckStateDelay.toNanos();
     this.maxCheckStateDelayNanos = maxCheckStateDelay.toNanos();
     this.taskExecutor = taskExecutor;

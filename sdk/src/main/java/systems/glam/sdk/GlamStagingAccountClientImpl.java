@@ -322,7 +322,7 @@ final class GlamStagingAccountClientImpl extends GlamAccountClientImpl implement
                                          final boolean cpiEmitEvents) {
     final var invoked = glamAccounts.invokedMintIntegrationProgram();
     final var mintProgram = invoked.publicKey();
-    return GlamMintProgram.priceExternalPositions(
+    return GlamMintProgram.priceLoopscaleLoans(
         invoked,
         glamVaultAccounts.glamStateKey(),
         glamVaultAccounts.vaultPublicKey(),

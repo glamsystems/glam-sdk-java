@@ -61,7 +61,7 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
     try {
       //noinspection unchecked
       final T[] batch = (T[]) Array.newInstance(componentType, batchSize);
-      int numItems = 0, numInserted;
+      int numItems = 0, numInserted, subBatchSize;
       for (long errorCount = 0, remainingNanos; ; ) {
         if (pending.size() < batchSize) {
           Arrays.fill(batch, null);
@@ -97,9 +97,9 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
                 break;
               }
               batch[numItems] = item;
-              statementPreparer.prepare(ps, item);
-              ps.addBatch();
-              if (++numItems == batchSize) {
+              subBatchSize = statementPreparer.prepare(ps, item);
+              numItems += subBatchSize;
+              if (numItems >= batchSize) {
                 numInserted = batchExecutionCount(ps.executeBatch());
                 connection.commit();
                 logger.log(INFO,
@@ -112,7 +112,11 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
           }
         } catch (final SQLException e) {
           for (int i = numItems - 1; i >= 0; --i) {
-            pending.addFirst(batch[i]);
+            final var item = batch[i];
+            if (item == null) {
+              break;
+            }
+            pending.addFirst(item);
           }
           final var sqlState = e.getSQLState();
           logger.log(ERROR, "Failed {0} times to write {1}: [ state => {2}, errorCode => {3}, cause => {4}, message => {5} ]",
