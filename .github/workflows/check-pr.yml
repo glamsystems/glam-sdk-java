@@ -1,9 +1,8 @@
-name: Gradle Check
+name: PR Check
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
+    types: [ opened, synchronize, reopened ]
 
 jobs:
   check:

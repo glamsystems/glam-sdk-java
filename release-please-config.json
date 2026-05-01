@@ -1,0 +1,12 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "simple",
+  "include-v-in-tag": false,
+  "include-component-in-tag": false,
+  "bootstrap-sha": "6472225856ad2dbb8244fd8827570cf35472b10b",
+  "packages": {
+    ".": {
+      "package-name": "glam-sdk-java"
+    }
+  }
+}
