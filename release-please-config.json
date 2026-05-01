@@ -4,6 +4,7 @@
   "include-v-in-tag": false,
   "include-component-in-tag": false,
   "bootstrap-sha": "6472225856ad2dbb8244fd8827570cf35472b10b",
+  "versioning": "always-bump-patch",
   "packages": {
     ".": {
       "package-name": "glam-sdk-java"
