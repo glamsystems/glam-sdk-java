@@ -1,0 +1,1491 @@
+package systems.glam.sdk.idl.programs.glam.staging.bridge.gen;
+
+import software.sava.core.accounts.PublicKey;
+import software.sava.core.accounts.SolanaAccounts;
+import software.sava.core.accounts.meta.AccountMeta;
+import software.sava.core.programs.Discriminator;
+import software.sava.core.tx.Instruction;
+import software.sava.idl.clients.core.gen.SerDe;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.*;
+
+import java.util.List;
+
+import static software.sava.core.accounts.meta.AccountMeta.*;
+import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
+import static software.sava.core.programs.Discriminator.toDiscriminator;
+
+public final class ExtBridgeProgram {
+
+  public static final Discriminator CLAIM_WORMHOLE_NTT_DISCRIMINATOR = toDiscriminator(254, 13, 185, 155, 32, 242, 165, 137);
+
+  public static List<AccountMeta> claimWormholeNttKeys(final SolanaAccounts solanaAccounts,
+                                                       final PublicKey glamStateKey,
+                                                       final PublicKey glamVaultKey,
+                                                       final PublicKey glamSignerKey,
+                                                       final PublicKey glamProtocolProgramKey,
+                                                       final PublicKey providerProgramKey,
+                                                       final PublicKey providerConfigKey,
+                                                       final PublicKey providerReceiptKey,
+                                                       final PublicKey destinationMintKey,
+                                                       final PublicKey destinationTokenAccountKey,
+                                                       final PublicKey claimRecordKey) {
+    return List.of(
+      createRead(glamStateKey),
+      createRead(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createRead(solanaAccounts.instructionsSysVar()),
+      createRead(providerProgramKey),
+      createRead(providerConfigKey),
+      createRead(providerReceiptKey),
+      createRead(destinationMintKey),
+      createWrite(destinationTokenAccountKey),
+      createWrite(claimRecordKey)
+    );
+  }
+
+  public static Instruction claimWormholeNtt(final AccountMeta invokedExtBridgeProgramMeta,
+                                             final SolanaAccounts solanaAccounts,
+                                             final PublicKey glamStateKey,
+                                             final PublicKey glamVaultKey,
+                                             final PublicKey glamSignerKey,
+                                             final PublicKey glamProtocolProgramKey,
+                                             final PublicKey providerProgramKey,
+                                             final PublicKey providerConfigKey,
+                                             final PublicKey providerReceiptKey,
+                                             final PublicKey destinationMintKey,
+                                             final PublicKey destinationTokenAccountKey,
+                                             final PublicKey claimRecordKey,
+                                             final ClaimWormholeNttArgs args) {
+    final var keys = claimWormholeNttKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      glamProtocolProgramKey,
+      providerProgramKey,
+      providerConfigKey,
+      providerReceiptKey,
+      destinationMintKey,
+      destinationTokenAccountKey,
+      claimRecordKey
+    );
+    return claimWormholeNtt(invokedExtBridgeProgramMeta, keys, args);
+  }
+
+  public static Instruction claimWormholeNtt(final AccountMeta invokedExtBridgeProgramMeta,
+                                             final List<AccountMeta> keys,
+                                             final ClaimWormholeNttArgs args) {
+    final byte[] _data = new byte[8 + args.l()];
+    int i = CLAIM_WORMHOLE_NTT_DISCRIMINATOR.write(_data, 0);
+    args.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record ClaimWormholeNttIxData(Discriminator discriminator, ClaimWormholeNttArgs args) implements SerDe {  
+
+    public static ClaimWormholeNttIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int BYTES = 10;
+
+    public static final int ARGS_OFFSET = 8;
+
+    public static ClaimWormholeNttIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var args = ClaimWormholeNttArgs.read(_data, i);
+      return new ClaimWormholeNttIxData(discriminator, args);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += args.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
+  public static final Discriminator CLAIM_WORMHOLE_WTT_DISCRIMINATOR = toDiscriminator(189, 84, 85, 85, 116, 100, 233, 2);
+
+  public static List<AccountMeta> claimWormholeWttKeys(final SolanaAccounts solanaAccounts,
+                                                       final PublicKey glamStateKey,
+                                                       final PublicKey glamVaultKey,
+                                                       final PublicKey glamSignerKey,
+                                                       final PublicKey glamProtocolProgramKey,
+                                                       final PublicKey providerProgramKey,
+                                                       final PublicKey providerConfigKey,
+                                                       final PublicKey providerReceiptKey,
+                                                       final PublicKey destinationMintKey,
+                                                       final PublicKey destinationTokenAccountKey,
+                                                       final PublicKey claimRecordKey) {
+    return List.of(
+      createRead(glamStateKey),
+      createRead(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createRead(solanaAccounts.instructionsSysVar()),
+      createRead(providerProgramKey),
+      createRead(providerConfigKey),
+      createRead(providerReceiptKey),
+      createRead(destinationMintKey),
+      createWrite(destinationTokenAccountKey),
+      createWrite(claimRecordKey)
+    );
+  }
+
+  public static Instruction claimWormholeWtt(final AccountMeta invokedExtBridgeProgramMeta,
+                                             final SolanaAccounts solanaAccounts,
+                                             final PublicKey glamStateKey,
+                                             final PublicKey glamVaultKey,
+                                             final PublicKey glamSignerKey,
+                                             final PublicKey glamProtocolProgramKey,
+                                             final PublicKey providerProgramKey,
+                                             final PublicKey providerConfigKey,
+                                             final PublicKey providerReceiptKey,
+                                             final PublicKey destinationMintKey,
+                                             final PublicKey destinationTokenAccountKey,
+                                             final PublicKey claimRecordKey,
+                                             final ClaimWormholeWttArgs args) {
+    final var keys = claimWormholeWttKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      glamProtocolProgramKey,
+      providerProgramKey,
+      providerConfigKey,
+      providerReceiptKey,
+      destinationMintKey,
+      destinationTokenAccountKey,
+      claimRecordKey
+    );
+    return claimWormholeWtt(invokedExtBridgeProgramMeta, keys, args);
+  }
+
+  public static Instruction claimWormholeWtt(final AccountMeta invokedExtBridgeProgramMeta,
+                                             final List<AccountMeta> keys,
+                                             final ClaimWormholeWttArgs args) {
+    final byte[] _data = new byte[8 + args.l()];
+    int i = CLAIM_WORMHOLE_WTT_DISCRIMINATOR.write(_data, 0);
+    args.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record ClaimWormholeWttIxData(Discriminator discriminator, ClaimWormholeWttArgs args) implements SerDe {  
+
+    public static ClaimWormholeWttIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int BYTES = 10;
+
+    public static final int ARGS_OFFSET = 8;
+
+    public static ClaimWormholeWttIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var args = ClaimWormholeWttArgs.read(_data, i);
+      return new ClaimWormholeWttIxData(discriminator, args);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += args.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
+  public static final Discriminator CLEANUP_MAYAN_MCTP_BRIDGE_LEDGER_DISCRIMINATOR = toDiscriminator(231, 24, 105, 18, 115, 207, 116, 247);
+
+  public static List<AccountMeta> cleanupMayanMctpBridgeLedgerKeys(final SolanaAccounts solanaAccounts,
+                                                                   final PublicKey glamStateKey,
+                                                                   final PublicKey glamVaultKey,
+                                                                   final PublicKey glamSignerKey,
+                                                                   final PublicKey integrationAuthorityKey,
+                                                                   final PublicKey cpiProgramKey,
+                                                                   final PublicKey glamProtocolProgramKey,
+                                                                   final PublicKey sourceMintKey,
+                                                                   final PublicKey tokenProgramKey,
+                                                                   final PublicKey ledgerAccKey,
+                                                                   final PublicKey traderAccKey,
+                                                                   final PublicKey ledgerKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createRead(sourceMintKey),
+      createRead(tokenProgramKey),
+      createRead(ledgerAccKey),
+      createRead(traderAccKey),
+      createWrite(ledgerKey)
+    );
+  }
+
+  public static Instruction cleanupMayanMctpBridgeLedger(final AccountMeta invokedExtBridgeProgramMeta,
+                                                         final SolanaAccounts solanaAccounts,
+                                                         final PublicKey glamStateKey,
+                                                         final PublicKey glamVaultKey,
+                                                         final PublicKey glamSignerKey,
+                                                         final PublicKey integrationAuthorityKey,
+                                                         final PublicKey cpiProgramKey,
+                                                         final PublicKey glamProtocolProgramKey,
+                                                         final PublicKey sourceMintKey,
+                                                         final PublicKey tokenProgramKey,
+                                                         final PublicKey ledgerAccKey,
+                                                         final PublicKey traderAccKey,
+                                                         final PublicKey ledgerKey,
+                                                         final CleanupMayanMctpBridgeLedgerArgs args) {
+    final var keys = cleanupMayanMctpBridgeLedgerKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      sourceMintKey,
+      tokenProgramKey,
+      ledgerAccKey,
+      traderAccKey,
+      ledgerKey
+    );
+    return cleanupMayanMctpBridgeLedger(invokedExtBridgeProgramMeta, keys, args);
+  }
+
+  public static Instruction cleanupMayanMctpBridgeLedger(final AccountMeta invokedExtBridgeProgramMeta,
+                                                         final List<AccountMeta> keys,
+                                                         final CleanupMayanMctpBridgeLedgerArgs args) {
+    final byte[] _data = new byte[8 + args.l()];
+    int i = CLEANUP_MAYAN_MCTP_BRIDGE_LEDGER_DISCRIMINATOR.write(_data, 0);
+    args.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record CleanupMayanMctpBridgeLedgerIxData(Discriminator discriminator, CleanupMayanMctpBridgeLedgerArgs args) implements SerDe {  
+
+    public static CleanupMayanMctpBridgeLedgerIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int BYTES = 40;
+
+    public static final int ARGS_OFFSET = 8;
+
+    public static CleanupMayanMctpBridgeLedgerIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var args = CleanupMayanMctpBridgeLedgerArgs.read(_data, i);
+      return new CleanupMayanMctpBridgeLedgerIxData(discriminator, args);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += args.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
+  public static final Discriminator CLEANUP_MAYAN_SWIFT_SOURCE_ORDER_DISCRIMINATOR = toDiscriminator(47, 110, 132, 178, 157, 26, 80, 52);
+
+  public static List<AccountMeta> cleanupMayanSwiftSourceOrderKeys(final SolanaAccounts solanaAccounts,
+                                                                   final PublicKey glamStateKey,
+                                                                   final PublicKey glamVaultKey,
+                                                                   final PublicKey glamSignerKey,
+                                                                   final PublicKey integrationAuthorityKey,
+                                                                   final PublicKey cpiProgramKey,
+                                                                   final PublicKey glamProtocolProgramKey,
+                                                                   final PublicKey sourceMintKey,
+                                                                   final PublicKey tokenProgramKey,
+                                                                   final PublicKey stateFromAccKey,
+                                                                   final PublicKey stateKey,
+                                                                   final PublicKey providerConfigKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createRead(sourceMintKey),
+      createRead(tokenProgramKey),
+      createRead(stateFromAccKey),
+      createWrite(stateKey),
+      createRead(providerConfigKey)
+    );
+  }
+
+  public static Instruction cleanupMayanSwiftSourceOrder(final AccountMeta invokedExtBridgeProgramMeta,
+                                                         final SolanaAccounts solanaAccounts,
+                                                         final PublicKey glamStateKey,
+                                                         final PublicKey glamVaultKey,
+                                                         final PublicKey glamSignerKey,
+                                                         final PublicKey integrationAuthorityKey,
+                                                         final PublicKey cpiProgramKey,
+                                                         final PublicKey glamProtocolProgramKey,
+                                                         final PublicKey sourceMintKey,
+                                                         final PublicKey tokenProgramKey,
+                                                         final PublicKey stateFromAccKey,
+                                                         final PublicKey stateKey,
+                                                         final PublicKey providerConfigKey,
+                                                         final CleanupMayanSwiftSourceOrderArgs args) {
+    final var keys = cleanupMayanSwiftSourceOrderKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      sourceMintKey,
+      tokenProgramKey,
+      stateFromAccKey,
+      stateKey,
+      providerConfigKey
+    );
+    return cleanupMayanSwiftSourceOrder(invokedExtBridgeProgramMeta, keys, args);
+  }
+
+  public static Instruction cleanupMayanSwiftSourceOrder(final AccountMeta invokedExtBridgeProgramMeta,
+                                                         final List<AccountMeta> keys,
+                                                         final CleanupMayanSwiftSourceOrderArgs args) {
+    final byte[] _data = new byte[8 + args.l()];
+    int i = CLEANUP_MAYAN_SWIFT_SOURCE_ORDER_DISCRIMINATOR.write(_data, 0);
+    args.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record CleanupMayanSwiftSourceOrderIxData(Discriminator discriminator, CleanupMayanSwiftSourceOrderArgs args) implements SerDe {  
+
+    public static CleanupMayanSwiftSourceOrderIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int ARGS_OFFSET = 8;
+
+    public static CleanupMayanSwiftSourceOrderIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var args = CleanupMayanSwiftSourceOrderArgs.read(_data, i);
+      return new CleanupMayanSwiftSourceOrderIxData(discriminator, args);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += args.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + args.l();
+    }
+  }
+
+  public static final Discriminator CLEANUP_TRANSFER_RECORD_DISCRIMINATOR = toDiscriminator(65, 224, 219, 143, 99, 204, 215, 6);
+
+  public static List<AccountMeta> cleanupTransferRecordKeys(final PublicKey glamStateKey,
+                                                            final PublicKey glamSignerKey,
+                                                            final PublicKey transferRecordKey) {
+    return List.of(
+      createRead(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createWrite(transferRecordKey)
+    );
+  }
+
+  public static Instruction cleanupTransferRecord(final AccountMeta invokedExtBridgeProgramMeta,
+                                                  final PublicKey glamStateKey,
+                                                  final PublicKey glamSignerKey,
+                                                  final PublicKey transferRecordKey) {
+    final var keys = cleanupTransferRecordKeys(
+      glamStateKey,
+      glamSignerKey,
+      transferRecordKey
+    );
+    return cleanupTransferRecord(invokedExtBridgeProgramMeta, keys);
+  }
+
+  public static Instruction cleanupTransferRecord(final AccountMeta invokedExtBridgeProgramMeta,
+                                                  final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, CLEANUP_TRANSFER_RECORD_DISCRIMINATOR);
+  }
+
+  public static final Discriminator COMMIT_BRIDGE_SESSION_DISCRIMINATOR = toDiscriminator(181, 95, 76, 218, 155, 15, 86, 110);
+
+  public static List<AccountMeta> commitBridgeSessionKeys(final SolanaAccounts solanaAccounts,
+                                                          final PublicKey glamStateKey,
+                                                          final PublicKey glamVaultKey,
+                                                          final PublicKey glamSignerKey,
+                                                          final PublicKey integrationAuthorityKey,
+                                                          final PublicKey cpiProgramKey,
+                                                          final PublicKey glamProtocolProgramKey,
+                                                          final PublicKey bridgeRegistryKey,
+                                                          final PublicKey bridgeSessionKey,
+                                                          final PublicKey transferRecordKey,
+                                                          final PublicKey sourceTokenAccountKey,
+                                                          final PublicKey sourceMintKey,
+                                                          final PublicKey providerProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createRead(solanaAccounts.instructionsSysVar()),
+      createWrite(bridgeRegistryKey),
+      createWrite(bridgeSessionKey),
+      createWrite(transferRecordKey),
+      createWrite(sourceTokenAccountKey),
+      createRead(sourceMintKey),
+      createRead(providerProgramKey)
+    );
+  }
+
+  public static Instruction commitBridgeSession(final AccountMeta invokedExtBridgeProgramMeta,
+                                                final SolanaAccounts solanaAccounts,
+                                                final PublicKey glamStateKey,
+                                                final PublicKey glamVaultKey,
+                                                final PublicKey glamSignerKey,
+                                                final PublicKey integrationAuthorityKey,
+                                                final PublicKey cpiProgramKey,
+                                                final PublicKey glamProtocolProgramKey,
+                                                final PublicKey bridgeRegistryKey,
+                                                final PublicKey bridgeSessionKey,
+                                                final PublicKey transferRecordKey,
+                                                final PublicKey sourceTokenAccountKey,
+                                                final PublicKey sourceMintKey,
+                                                final PublicKey providerProgramKey,
+                                                final CommitBridgeSessionArgs args) {
+    final var keys = commitBridgeSessionKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      bridgeRegistryKey,
+      bridgeSessionKey,
+      transferRecordKey,
+      sourceTokenAccountKey,
+      sourceMintKey,
+      providerProgramKey
+    );
+    return commitBridgeSession(invokedExtBridgeProgramMeta, keys, args);
+  }
+
+  public static Instruction commitBridgeSession(final AccountMeta invokedExtBridgeProgramMeta,
+                                                final List<AccountMeta> keys,
+                                                final CommitBridgeSessionArgs args) {
+    final byte[] _data = new byte[8 + args.l()];
+    int i = COMMIT_BRIDGE_SESSION_DISCRIMINATOR.write(_data, 0);
+    args.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record CommitBridgeSessionIxData(Discriminator discriminator, CommitBridgeSessionArgs args) implements SerDe {  
+
+    public static CommitBridgeSessionIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int BYTES = 112;
+
+    public static final int ARGS_OFFSET = 8;
+
+    public static CommitBridgeSessionIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var args = CommitBridgeSessionArgs.read(_data, i);
+      return new CommitBridgeSessionIxData(discriminator, args);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += args.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
+  public static final Discriminator EXECUTE_BRIDGE_CPI_DISCRIMINATOR = toDiscriminator(174, 100, 107, 240, 195, 181, 233, 209);
+
+  /// @param cpiProgramKey The provider program — validated against session.provider_program.
+  ///                      Named `cpi_program` because `impl_cpi_proxy_accounts!` expects this field
+  ///                      for CPI proxy execution.
+  public static List<AccountMeta> executeBridgeCpiKeys(final SolanaAccounts solanaAccounts,
+                                                       final PublicKey glamStateKey,
+                                                       final PublicKey glamVaultKey,
+                                                       final PublicKey glamSignerKey,
+                                                       final PublicKey integrationAuthorityKey,
+                                                       final PublicKey cpiProgramKey,
+                                                       final PublicKey glamProtocolProgramKey,
+                                                       final PublicKey bridgeRegistryKey,
+                                                       final PublicKey bridgeSessionKey,
+                                                       final PublicKey sourceTokenAccountKey,
+                                                       final PublicKey sourceMintKey,
+                                                       final PublicKey transferRecordKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createRead(solanaAccounts.instructionsSysVar()),
+      createWrite(bridgeRegistryKey),
+      createWrite(bridgeSessionKey),
+      createWrite(sourceTokenAccountKey),
+      createRead(sourceMintKey),
+      createWrite(transferRecordKey)
+    );
+  }
+
+  /// @param cpiProgramKey The provider program — validated against session.provider_program.
+  ///                      Named `cpi_program` because `impl_cpi_proxy_accounts!` expects this field
+  ///                      for CPI proxy execution.
+  public static Instruction executeBridgeCpi(final AccountMeta invokedExtBridgeProgramMeta,
+                                             final SolanaAccounts solanaAccounts,
+                                             final PublicKey glamStateKey,
+                                             final PublicKey glamVaultKey,
+                                             final PublicKey glamSignerKey,
+                                             final PublicKey integrationAuthorityKey,
+                                             final PublicKey cpiProgramKey,
+                                             final PublicKey glamProtocolProgramKey,
+                                             final PublicKey bridgeRegistryKey,
+                                             final PublicKey bridgeSessionKey,
+                                             final PublicKey sourceTokenAccountKey,
+                                             final PublicKey sourceMintKey,
+                                             final PublicKey transferRecordKey,
+                                             final ExecuteBridgeCpiArgs args) {
+    final var keys = executeBridgeCpiKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      bridgeRegistryKey,
+      bridgeSessionKey,
+      sourceTokenAccountKey,
+      sourceMintKey,
+      transferRecordKey
+    );
+    return executeBridgeCpi(invokedExtBridgeProgramMeta, keys, args);
+  }
+
+  public static Instruction executeBridgeCpi(final AccountMeta invokedExtBridgeProgramMeta,
+                                             final List<AccountMeta> keys,
+                                             final ExecuteBridgeCpiArgs args) {
+    final byte[] _data = new byte[8 + args.l()];
+    int i = EXECUTE_BRIDGE_CPI_DISCRIMINATOR.write(_data, 0);
+    args.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record ExecuteBridgeCpiIxData(Discriminator discriminator, ExecuteBridgeCpiArgs args) implements SerDe {  
+
+    public static ExecuteBridgeCpiIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int ARGS_OFFSET = 8;
+
+    public static ExecuteBridgeCpiIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var args = ExecuteBridgeCpiArgs.read(_data, i);
+      return new ExecuteBridgeCpiIxData(discriminator, args);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += args.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + args.l();
+    }
+  }
+
+  public static final Discriminator FAIL_OR_CANCEL_MANAGED_TRANSFER_DISCRIMINATOR = toDiscriminator(39, 37, 213, 118, 191, 18, 194, 119);
+
+  public static List<AccountMeta> failOrCancelManagedTransferKeys(final PublicKey glamStateKey,
+                                                                  final PublicKey glamSignerKey,
+                                                                  final PublicKey integrationAuthorityKey,
+                                                                  final PublicKey glamProtocolProgramKey,
+                                                                  final PublicKey bridgeRegistryKey,
+                                                                  final PublicKey transferRecordKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createReadOnlySigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamProtocolProgramKey),
+      createWrite(bridgeRegistryKey),
+      createWrite(transferRecordKey)
+    );
+  }
+
+  public static Instruction failOrCancelManagedTransfer(final AccountMeta invokedExtBridgeProgramMeta,
+                                                        final PublicKey glamStateKey,
+                                                        final PublicKey glamSignerKey,
+                                                        final PublicKey integrationAuthorityKey,
+                                                        final PublicKey glamProtocolProgramKey,
+                                                        final PublicKey bridgeRegistryKey,
+                                                        final PublicKey transferRecordKey,
+                                                        final int failureReason) {
+    final var keys = failOrCancelManagedTransferKeys(
+      glamStateKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      glamProtocolProgramKey,
+      bridgeRegistryKey,
+      transferRecordKey
+    );
+    return failOrCancelManagedTransfer(invokedExtBridgeProgramMeta, keys, failureReason);
+  }
+
+  public static Instruction failOrCancelManagedTransfer(final AccountMeta invokedExtBridgeProgramMeta,
+                                                        final List<AccountMeta> keys,
+                                                        final int failureReason) {
+    final byte[] _data = new byte[9];
+    int i = FAIL_OR_CANCEL_MANAGED_TRANSFER_DISCRIMINATOR.write(_data, 0);
+    _data[i] = (byte) failureReason;
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record FailOrCancelManagedTransferIxData(Discriminator discriminator, int failureReason) implements SerDe {  
+
+    public static FailOrCancelManagedTransferIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int BYTES = 9;
+
+    public static final int FAILURE_REASON_OFFSET = 8;
+
+    public static FailOrCancelManagedTransferIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var failureReason = _data[i] & 0xFF;
+      return new FailOrCancelManagedTransferIxData(discriminator, failureReason);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      _data[i] = (byte) failureReason;
+      ++i;
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
+  public static final Discriminator PREPARE_BRIDGE_CPI_SESSION_DISCRIMINATOR = toDiscriminator(213, 182, 168, 182, 8, 80, 94, 106);
+
+  public static List<AccountMeta> prepareBridgeCpiSessionKeys(final SolanaAccounts solanaAccounts,
+                                                              final PublicKey glamStateKey,
+                                                              final PublicKey glamVaultKey,
+                                                              final PublicKey glamSignerKey,
+                                                              final PublicKey integrationAuthorityKey,
+                                                              final PublicKey glamProtocolProgramKey,
+                                                              final PublicKey bridgeRegistryKey,
+                                                              final PublicKey bridgeSessionKey,
+                                                              final PublicKey sourceTokenAccountKey,
+                                                              final PublicKey sourceMintKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createWrite(bridgeRegistryKey),
+      createWrite(bridgeSessionKey),
+      createRead(sourceTokenAccountKey),
+      createRead(sourceMintKey),
+      createRead(solanaAccounts.instructionsSysVar())
+    );
+  }
+
+  public static Instruction prepareBridgeCpiSession(final AccountMeta invokedExtBridgeProgramMeta,
+                                                    final SolanaAccounts solanaAccounts,
+                                                    final PublicKey glamStateKey,
+                                                    final PublicKey glamVaultKey,
+                                                    final PublicKey glamSignerKey,
+                                                    final PublicKey integrationAuthorityKey,
+                                                    final PublicKey glamProtocolProgramKey,
+                                                    final PublicKey bridgeRegistryKey,
+                                                    final PublicKey bridgeSessionKey,
+                                                    final PublicKey sourceTokenAccountKey,
+                                                    final PublicKey sourceMintKey,
+                                                    final PrepareBridgeCpiSessionArgs args) {
+    final var keys = prepareBridgeCpiSessionKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      glamProtocolProgramKey,
+      bridgeRegistryKey,
+      bridgeSessionKey,
+      sourceTokenAccountKey,
+      sourceMintKey
+    );
+    return prepareBridgeCpiSession(invokedExtBridgeProgramMeta, keys, args);
+  }
+
+  public static Instruction prepareBridgeCpiSession(final AccountMeta invokedExtBridgeProgramMeta,
+                                                    final List<AccountMeta> keys,
+                                                    final PrepareBridgeCpiSessionArgs args) {
+    final byte[] _data = new byte[8 + args.l()];
+    int i = PREPARE_BRIDGE_CPI_SESSION_DISCRIMINATOR.write(_data, 0);
+    args.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record PrepareBridgeCpiSessionIxData(Discriminator discriminator, PrepareBridgeCpiSessionArgs args) implements SerDe {  
+
+    public static PrepareBridgeCpiSessionIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int BYTES = 165;
+
+    public static final int ARGS_OFFSET = 8;
+
+    public static PrepareBridgeCpiSessionIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var args = PrepareBridgeCpiSessionArgs.read(_data, i);
+      return new PrepareBridgeCpiSessionIxData(discriminator, args);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += args.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
+  public static final Discriminator PREPARE_BRIDGE_SESSION_DISCRIMINATOR = toDiscriminator(120, 235, 253, 41, 173, 69, 170, 209);
+
+  public static List<AccountMeta> prepareBridgeSessionKeys(final SolanaAccounts solanaAccounts,
+                                                           final PublicKey glamStateKey,
+                                                           final PublicKey glamVaultKey,
+                                                           final PublicKey glamSignerKey,
+                                                           final PublicKey integrationAuthorityKey,
+                                                           final PublicKey cpiProgramKey,
+                                                           final PublicKey glamProtocolProgramKey,
+                                                           final PublicKey bridgeRegistryKey,
+                                                           final PublicKey bridgeSessionKey,
+                                                           final PublicKey sourceTokenAccountKey,
+                                                           final PublicKey sourceMintKey,
+                                                           final PublicKey providerDelegateKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createWrite(bridgeRegistryKey),
+      createWrite(bridgeSessionKey),
+      createWrite(sourceTokenAccountKey),
+      createRead(sourceMintKey),
+      createRead(providerDelegateKey),
+      createRead(solanaAccounts.instructionsSysVar())
+    );
+  }
+
+  public static Instruction prepareBridgeSession(final AccountMeta invokedExtBridgeProgramMeta,
+                                                 final SolanaAccounts solanaAccounts,
+                                                 final PublicKey glamStateKey,
+                                                 final PublicKey glamVaultKey,
+                                                 final PublicKey glamSignerKey,
+                                                 final PublicKey integrationAuthorityKey,
+                                                 final PublicKey cpiProgramKey,
+                                                 final PublicKey glamProtocolProgramKey,
+                                                 final PublicKey bridgeRegistryKey,
+                                                 final PublicKey bridgeSessionKey,
+                                                 final PublicKey sourceTokenAccountKey,
+                                                 final PublicKey sourceMintKey,
+                                                 final PublicKey providerDelegateKey,
+                                                 final PrepareBridgeSessionArgs args) {
+    final var keys = prepareBridgeSessionKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      bridgeRegistryKey,
+      bridgeSessionKey,
+      sourceTokenAccountKey,
+      sourceMintKey,
+      providerDelegateKey
+    );
+    return prepareBridgeSession(invokedExtBridgeProgramMeta, keys, args);
+  }
+
+  public static Instruction prepareBridgeSession(final AccountMeta invokedExtBridgeProgramMeta,
+                                                 final List<AccountMeta> keys,
+                                                 final PrepareBridgeSessionArgs args) {
+    final byte[] _data = new byte[8 + args.l()];
+    int i = PREPARE_BRIDGE_SESSION_DISCRIMINATOR.write(_data, 0);
+    args.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record PrepareBridgeSessionIxData(Discriminator discriminator, PrepareBridgeSessionArgs args) implements SerDe {  
+
+    public static PrepareBridgeSessionIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int BYTES = 199;
+
+    public static final int ARGS_OFFSET = 8;
+
+    public static PrepareBridgeSessionIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var args = PrepareBridgeSessionArgs.read(_data, i);
+      return new PrepareBridgeSessionIxData(discriminator, args);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += args.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
+  public static final Discriminator RECONCILE_MANAGED_TRANSFER_DISCRIMINATOR = toDiscriminator(137, 31, 188, 80, 28, 252, 192, 50);
+
+  public static List<AccountMeta> reconcileManagedTransferKeys(final PublicKey glamStateKey,
+                                                               final PublicKey glamSignerKey,
+                                                               final PublicKey integrationAuthorityKey,
+                                                               final PublicKey glamProtocolProgramKey,
+                                                               final PublicKey bridgeRegistryKey,
+                                                               final PublicKey transferRecordKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createReadOnlySigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamProtocolProgramKey),
+      createWrite(bridgeRegistryKey),
+      createWrite(transferRecordKey)
+    );
+  }
+
+  public static Instruction reconcileManagedTransfer(final AccountMeta invokedExtBridgeProgramMeta,
+                                                     final PublicKey glamStateKey,
+                                                     final PublicKey glamSignerKey,
+                                                     final PublicKey integrationAuthorityKey,
+                                                     final PublicKey glamProtocolProgramKey,
+                                                     final PublicKey bridgeRegistryKey,
+                                                     final PublicKey transferRecordKey) {
+    final var keys = reconcileManagedTransferKeys(
+      glamStateKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      glamProtocolProgramKey,
+      bridgeRegistryKey,
+      transferRecordKey
+    );
+    return reconcileManagedTransfer(invokedExtBridgeProgramMeta, keys);
+  }
+
+  public static Instruction reconcileManagedTransfer(final AccountMeta invokedExtBridgeProgramMeta,
+                                                     final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, RECONCILE_MANAGED_TRANSFER_DISCRIMINATOR);
+  }
+
+  public static final Discriminator SET_CCTP_BRIDGE_POLICY_DISCRIMINATOR = toDiscriminator(107, 121, 210, 182, 39, 95, 3, 145);
+
+  public static List<AccountMeta> setCctpBridgePolicyKeys(final PublicKey glamStateKey,
+                                                          final PublicKey glamSignerKey,
+                                                          final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  public static Instruction setCctpBridgePolicy(final AccountMeta invokedExtBridgeProgramMeta,
+                                                final PublicKey glamStateKey,
+                                                final PublicKey glamSignerKey,
+                                                final PublicKey glamProtocolProgramKey,
+                                                final CctpBridgePolicy policy) {
+    final var keys = setCctpBridgePolicyKeys(
+      glamStateKey,
+      glamSignerKey,
+      glamProtocolProgramKey
+    );
+    return setCctpBridgePolicy(invokedExtBridgeProgramMeta, keys, policy);
+  }
+
+  public static Instruction setCctpBridgePolicy(final AccountMeta invokedExtBridgeProgramMeta,
+                                                final List<AccountMeta> keys,
+                                                final CctpBridgePolicy policy) {
+    final byte[] _data = new byte[8 + policy.l()];
+    int i = SET_CCTP_BRIDGE_POLICY_DISCRIMINATOR.write(_data, 0);
+    policy.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record SetCctpBridgePolicyIxData(Discriminator discriminator, CctpBridgePolicy policy) implements SerDe {  
+
+    public static SetCctpBridgePolicyIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int POLICY_OFFSET = 8;
+
+    public static SetCctpBridgePolicyIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var policy = CctpBridgePolicy.read(_data, i);
+      return new SetCctpBridgePolicyIxData(discriminator, policy);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += policy.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + policy.l();
+    }
+  }
+
+  public static final Discriminator SET_MAYAN_MCTP_POLICY_DISCRIMINATOR = toDiscriminator(87, 39, 15, 30, 199, 183, 78, 210);
+
+  public static List<AccountMeta> setMayanMctpPolicyKeys(final PublicKey glamStateKey,
+                                                         final PublicKey glamSignerKey,
+                                                         final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  public static Instruction setMayanMctpPolicy(final AccountMeta invokedExtBridgeProgramMeta,
+                                               final PublicKey glamStateKey,
+                                               final PublicKey glamSignerKey,
+                                               final PublicKey glamProtocolProgramKey,
+                                               final MayanMctpPolicy policy) {
+    final var keys = setMayanMctpPolicyKeys(
+      glamStateKey,
+      glamSignerKey,
+      glamProtocolProgramKey
+    );
+    return setMayanMctpPolicy(invokedExtBridgeProgramMeta, keys, policy);
+  }
+
+  public static Instruction setMayanMctpPolicy(final AccountMeta invokedExtBridgeProgramMeta,
+                                               final List<AccountMeta> keys,
+                                               final MayanMctpPolicy policy) {
+    final byte[] _data = new byte[8 + policy.l()];
+    int i = SET_MAYAN_MCTP_POLICY_DISCRIMINATOR.write(_data, 0);
+    policy.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record SetMayanMctpPolicyIxData(Discriminator discriminator, MayanMctpPolicy policy) implements SerDe {  
+
+    public static SetMayanMctpPolicyIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int POLICY_OFFSET = 8;
+
+    public static SetMayanMctpPolicyIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var policy = MayanMctpPolicy.read(_data, i);
+      return new SetMayanMctpPolicyIxData(discriminator, policy);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += policy.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + policy.l();
+    }
+  }
+
+  public static final Discriminator SET_MAYAN_SWIFT_POLICY_DISCRIMINATOR = toDiscriminator(10, 255, 76, 32, 82, 19, 25, 83);
+
+  public static List<AccountMeta> setMayanSwiftPolicyKeys(final PublicKey glamStateKey,
+                                                          final PublicKey glamSignerKey,
+                                                          final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  public static Instruction setMayanSwiftPolicy(final AccountMeta invokedExtBridgeProgramMeta,
+                                                final PublicKey glamStateKey,
+                                                final PublicKey glamSignerKey,
+                                                final PublicKey glamProtocolProgramKey,
+                                                final MayanSwiftPolicy policy) {
+    final var keys = setMayanSwiftPolicyKeys(
+      glamStateKey,
+      glamSignerKey,
+      glamProtocolProgramKey
+    );
+    return setMayanSwiftPolicy(invokedExtBridgeProgramMeta, keys, policy);
+  }
+
+  public static Instruction setMayanSwiftPolicy(final AccountMeta invokedExtBridgeProgramMeta,
+                                                final List<AccountMeta> keys,
+                                                final MayanSwiftPolicy policy) {
+    final byte[] _data = new byte[8 + policy.l()];
+    int i = SET_MAYAN_SWIFT_POLICY_DISCRIMINATOR.write(_data, 0);
+    policy.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record SetMayanSwiftPolicyIxData(Discriminator discriminator, MayanSwiftPolicy policy) implements SerDe {  
+
+    public static SetMayanSwiftPolicyIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int POLICY_OFFSET = 8;
+
+    public static SetMayanSwiftPolicyIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var policy = MayanSwiftPolicy.read(_data, i);
+      return new SetMayanSwiftPolicyIxData(discriminator, policy);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += policy.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + policy.l();
+    }
+  }
+
+  public static final Discriminator SET_RELAY_BRIDGE_POLICY_DISCRIMINATOR = toDiscriminator(14, 95, 129, 82, 195, 80, 158, 151);
+
+  public static List<AccountMeta> setRelayBridgePolicyKeys(final PublicKey glamStateKey,
+                                                           final PublicKey glamSignerKey,
+                                                           final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  public static Instruction setRelayBridgePolicy(final AccountMeta invokedExtBridgeProgramMeta,
+                                                 final PublicKey glamStateKey,
+                                                 final PublicKey glamSignerKey,
+                                                 final PublicKey glamProtocolProgramKey,
+                                                 final RelayBridgePolicy policy) {
+    final var keys = setRelayBridgePolicyKeys(
+      glamStateKey,
+      glamSignerKey,
+      glamProtocolProgramKey
+    );
+    return setRelayBridgePolicy(invokedExtBridgeProgramMeta, keys, policy);
+  }
+
+  public static Instruction setRelayBridgePolicy(final AccountMeta invokedExtBridgeProgramMeta,
+                                                 final List<AccountMeta> keys,
+                                                 final RelayBridgePolicy policy) {
+    final byte[] _data = new byte[8 + policy.l()];
+    int i = SET_RELAY_BRIDGE_POLICY_DISCRIMINATOR.write(_data, 0);
+    policy.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record SetRelayBridgePolicyIxData(Discriminator discriminator, RelayBridgePolicy policy) implements SerDe {  
+
+    public static SetRelayBridgePolicyIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int POLICY_OFFSET = 8;
+
+    public static SetRelayBridgePolicyIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var policy = RelayBridgePolicy.read(_data, i);
+      return new SetRelayBridgePolicyIxData(discriminator, policy);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += policy.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + policy.l();
+    }
+  }
+
+  public static final Discriminator SET_STARGATE_POLICY_DISCRIMINATOR = toDiscriminator(65, 3, 188, 88, 148, 252, 183, 151);
+
+  public static List<AccountMeta> setStargatePolicyKeys(final PublicKey glamStateKey,
+                                                        final PublicKey glamSignerKey,
+                                                        final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  public static Instruction setStargatePolicy(final AccountMeta invokedExtBridgeProgramMeta,
+                                              final PublicKey glamStateKey,
+                                              final PublicKey glamSignerKey,
+                                              final PublicKey glamProtocolProgramKey,
+                                              final StargatePolicy policy) {
+    final var keys = setStargatePolicyKeys(
+      glamStateKey,
+      glamSignerKey,
+      glamProtocolProgramKey
+    );
+    return setStargatePolicy(invokedExtBridgeProgramMeta, keys, policy);
+  }
+
+  public static Instruction setStargatePolicy(final AccountMeta invokedExtBridgeProgramMeta,
+                                              final List<AccountMeta> keys,
+                                              final StargatePolicy policy) {
+    final byte[] _data = new byte[8 + policy.l()];
+    int i = SET_STARGATE_POLICY_DISCRIMINATOR.write(_data, 0);
+    policy.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record SetStargatePolicyIxData(Discriminator discriminator, StargatePolicy policy) implements SerDe {  
+
+    public static SetStargatePolicyIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int POLICY_OFFSET = 8;
+
+    public static SetStargatePolicyIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var policy = StargatePolicy.read(_data, i);
+      return new SetStargatePolicyIxData(discriminator, policy);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += policy.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + policy.l();
+    }
+  }
+
+  public static final Discriminator SET_WORMHOLE_NTT_POLICY_DISCRIMINATOR = toDiscriminator(182, 65, 64, 167, 243, 43, 217, 16);
+
+  public static List<AccountMeta> setWormholeNttPolicyKeys(final PublicKey glamStateKey,
+                                                           final PublicKey glamSignerKey,
+                                                           final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  public static Instruction setWormholeNttPolicy(final AccountMeta invokedExtBridgeProgramMeta,
+                                                 final PublicKey glamStateKey,
+                                                 final PublicKey glamSignerKey,
+                                                 final PublicKey glamProtocolProgramKey,
+                                                 final WormholeNttPolicy policy) {
+    final var keys = setWormholeNttPolicyKeys(
+      glamStateKey,
+      glamSignerKey,
+      glamProtocolProgramKey
+    );
+    return setWormholeNttPolicy(invokedExtBridgeProgramMeta, keys, policy);
+  }
+
+  public static Instruction setWormholeNttPolicy(final AccountMeta invokedExtBridgeProgramMeta,
+                                                 final List<AccountMeta> keys,
+                                                 final WormholeNttPolicy policy) {
+    final byte[] _data = new byte[8 + policy.l()];
+    int i = SET_WORMHOLE_NTT_POLICY_DISCRIMINATOR.write(_data, 0);
+    policy.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record SetWormholeNttPolicyIxData(Discriminator discriminator, WormholeNttPolicy policy) implements SerDe {  
+
+    public static SetWormholeNttPolicyIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int POLICY_OFFSET = 8;
+
+    public static SetWormholeNttPolicyIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var policy = WormholeNttPolicy.read(_data, i);
+      return new SetWormholeNttPolicyIxData(discriminator, policy);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += policy.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + policy.l();
+    }
+  }
+
+  public static final Discriminator SET_WORMHOLE_WTT_POLICY_DISCRIMINATOR = toDiscriminator(121, 172, 197, 27, 239, 202, 153, 255);
+
+  public static List<AccountMeta> setWormholeWttPolicyKeys(final PublicKey glamStateKey,
+                                                           final PublicKey glamSignerKey,
+                                                           final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  public static Instruction setWormholeWttPolicy(final AccountMeta invokedExtBridgeProgramMeta,
+                                                 final PublicKey glamStateKey,
+                                                 final PublicKey glamSignerKey,
+                                                 final PublicKey glamProtocolProgramKey,
+                                                 final WormholeWttPolicy policy) {
+    final var keys = setWormholeWttPolicyKeys(
+      glamStateKey,
+      glamSignerKey,
+      glamProtocolProgramKey
+    );
+    return setWormholeWttPolicy(invokedExtBridgeProgramMeta, keys, policy);
+  }
+
+  public static Instruction setWormholeWttPolicy(final AccountMeta invokedExtBridgeProgramMeta,
+                                                 final List<AccountMeta> keys,
+                                                 final WormholeWttPolicy policy) {
+    final byte[] _data = new byte[8 + policy.l()];
+    int i = SET_WORMHOLE_WTT_POLICY_DISCRIMINATOR.write(_data, 0);
+    policy.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record SetWormholeWttPolicyIxData(Discriminator discriminator, WormholeWttPolicy policy) implements SerDe {  
+
+    public static SetWormholeWttPolicyIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int POLICY_OFFSET = 8;
+
+    public static SetWormholeWttPolicyIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var policy = WormholeWttPolicy.read(_data, i);
+      return new SetWormholeWttPolicyIxData(discriminator, policy);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += policy.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + policy.l();
+    }
+  }
+
+  public static final Discriminator SETTLE_MANAGED_TRANSFER_DISCRIMINATOR = toDiscriminator(197, 87, 37, 239, 24, 244, 152, 135);
+
+  public static List<AccountMeta> settleManagedTransferKeys(final PublicKey glamStateKey,
+                                                            final PublicKey glamSignerKey,
+                                                            final PublicKey transferRecordKey) {
+    return List.of(
+      createRead(glamStateKey),
+      createReadOnlySigner(glamSignerKey),
+      createWrite(transferRecordKey)
+    );
+  }
+
+  public static Instruction settleManagedTransfer(final AccountMeta invokedExtBridgeProgramMeta,
+                                                  final PublicKey glamStateKey,
+                                                  final PublicKey glamSignerKey,
+                                                  final PublicKey transferRecordKey) {
+    final var keys = settleManagedTransferKeys(
+      glamStateKey,
+      glamSignerKey,
+      transferRecordKey
+    );
+    return settleManagedTransfer(invokedExtBridgeProgramMeta, keys);
+  }
+
+  public static Instruction settleManagedTransfer(final AccountMeta invokedExtBridgeProgramMeta,
+                                                  final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, SETTLE_MANAGED_TRANSFER_DISCRIMINATOR);
+  }
+
+  private ExtBridgeProgram() {
+  }
+}

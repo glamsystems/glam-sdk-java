@@ -1,0 +1,16 @@
+package systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types;
+
+import software.sava.idl.clients.core.gen.RustEnum;
+import software.sava.idl.clients.core.gen.SerDeUtil;
+
+public enum BridgeTransferStatus implements RustEnum {
+
+  Committed,
+  Settled,
+  Reconciled,
+  Failed;
+
+  public static BridgeTransferStatus read(final byte[] _data, final int _offset) {
+    return SerDeUtil.read(1, BridgeTransferStatus.values(), _data, _offset);
+  }
+}

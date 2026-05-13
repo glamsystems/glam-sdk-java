@@ -1,0 +1,100 @@
+package systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types;
+
+import software.sava.core.accounts.PublicKey;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
+
+import static software.sava.core.accounts.PublicKey.readPubKey;
+import static software.sava.core.encoding.ByteUtil.*;
+
+public record PrepareBridgeCpiSessionArgs(byte[] transferId,
+                                          int protocol,
+                                          long sourceAmount,
+                                          long quotedOutAmount,
+                                          long quoteExpiresAt,
+                                          int destinationChain,
+                                          PublicKey destinationRecipient,
+                                          PublicKey providerProgram,
+                                          PublicKey providerConfig,
+                                          boolean managed) implements SerDe {
+
+  public static final int BYTES = 157;
+  public static final int TRANSFER_ID_LEN = 32;
+
+  public static final int TRANSFER_ID_OFFSET = 0;
+  public static final int PROTOCOL_OFFSET = 32;
+  public static final int SOURCE_AMOUNT_OFFSET = 34;
+  public static final int QUOTED_OUT_AMOUNT_OFFSET = 42;
+  public static final int QUOTE_EXPIRES_AT_OFFSET = 50;
+  public static final int DESTINATION_CHAIN_OFFSET = 58;
+  public static final int DESTINATION_RECIPIENT_OFFSET = 60;
+  public static final int PROVIDER_PROGRAM_OFFSET = 92;
+  public static final int PROVIDER_CONFIG_OFFSET = 124;
+  public static final int MANAGED_OFFSET = 156;
+
+  public static PrepareBridgeCpiSessionArgs read(final byte[] _data, final int _offset) {
+    if (_data == null || _data.length == 0) {
+      return null;
+    }
+    int i = _offset;
+    final var transferId = new byte[32];
+    i += SerDeUtil.readArray(transferId, _data, i);
+    final var protocol = getInt16LE(_data, i);
+    i += 2;
+    final var sourceAmount = getInt64LE(_data, i);
+    i += 8;
+    final var quotedOutAmount = getInt64LE(_data, i);
+    i += 8;
+    final var quoteExpiresAt = getInt64LE(_data, i);
+    i += 8;
+    final var destinationChain = getInt16LE(_data, i);
+    i += 2;
+    final var destinationRecipient = readPubKey(_data, i);
+    i += 32;
+    final var providerProgram = readPubKey(_data, i);
+    i += 32;
+    final var providerConfig = readPubKey(_data, i);
+    i += 32;
+    final var managed = _data[i] == 1;
+    return new PrepareBridgeCpiSessionArgs(transferId,
+                                           protocol,
+                                           sourceAmount,
+                                           quotedOutAmount,
+                                           quoteExpiresAt,
+                                           destinationChain,
+                                           destinationRecipient,
+                                           providerProgram,
+                                           providerConfig,
+                                           managed);
+  }
+
+  @Override
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
+    i += SerDeUtil.writeArrayChecked(transferId, 32, _data, i);
+    putInt16LE(_data, i, protocol);
+    i += 2;
+    putInt64LE(_data, i, sourceAmount);
+    i += 8;
+    putInt64LE(_data, i, quotedOutAmount);
+    i += 8;
+    putInt64LE(_data, i, quoteExpiresAt);
+    i += 8;
+    putInt16LE(_data, i, destinationChain);
+    i += 2;
+    destinationRecipient.write(_data, i);
+    i += 32;
+    providerProgram.write(_data, i);
+    i += 32;
+    providerConfig.write(_data, i);
+    i += 32;
+    _data[i] = (byte) (managed ? 1 : 0);
+    ++i;
+    return i - _offset;
+  }
+
+  @Override
+  public int l() {
+    return BYTES;
+  }
+}

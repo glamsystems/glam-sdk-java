@@ -1,0 +1,144 @@
+package systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types;
+
+import software.sava.core.accounts.PublicKey;
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
+
+import java.util.OptionalInt;
+import java.util.OptionalLong;
+
+import static software.sava.core.accounts.PublicKey.readPubKey;
+import static software.sava.core.encoding.ByteUtil.*;
+
+public record StargateRoute(PublicKey sourceMint,
+                            int destinationChain,
+                            PublicKey destinationRecipient,
+                            PublicKey providerProgram,
+                            PublicKey providerConfig,
+                            PublicKey providerSender,
+                            RouteManagementMode managementMode,
+                            OptionalInt quoteTtlSeconds,
+                            OptionalInt maxSlippageBps,
+                            PublicKey quoteSigner,
+                            long minAmount,
+                            OptionalLong maxAmount) implements SerDe {
+
+  public static final int SOURCE_MINT_OFFSET = 0;
+  public static final int DESTINATION_CHAIN_OFFSET = 32;
+  public static final int DESTINATION_RECIPIENT_OFFSET = 34;
+  public static final int PROVIDER_PROGRAM_OFFSET = 66;
+  public static final int PROVIDER_CONFIG_OFFSET = 98;
+  public static final int PROVIDER_SENDER_OFFSET = 130;
+  public static final int MANAGEMENT_MODE_OFFSET = 162;
+  public static final int QUOTE_TTL_SECONDS_OFFSET = 164;
+
+  public static StargateRoute read(final byte[] _data, final int _offset) {
+    if (_data == null || _data.length == 0) {
+      return null;
+    }
+    int i = _offset;
+    final var sourceMint = readPubKey(_data, i);
+    i += 32;
+    final var destinationChain = getInt16LE(_data, i);
+    i += 2;
+    final var destinationRecipient = readPubKey(_data, i);
+    i += 32;
+    final var providerProgram = readPubKey(_data, i);
+    i += 32;
+    final var providerConfig = readPubKey(_data, i);
+    i += 32;
+    final var providerSender = readPubKey(_data, i);
+    i += 32;
+    final var managementMode = RouteManagementMode.read(_data, i);
+    i += managementMode.l();
+    final OptionalInt quoteTtlSeconds;
+    if (SerDeUtil.isAbsent(1, _data, i)) {
+      quoteTtlSeconds = OptionalInt.empty();
+      ++i;
+    } else {
+      ++i;
+      quoteTtlSeconds = OptionalInt.of(getInt32LE(_data, i));
+      i += 4;
+    }
+    final OptionalInt maxSlippageBps;
+    if (SerDeUtil.isAbsent(1, _data, i)) {
+      maxSlippageBps = OptionalInt.empty();
+      ++i;
+    } else {
+      ++i;
+      maxSlippageBps = OptionalInt.of(getInt16LE(_data, i));
+      i += 2;
+    }
+    final PublicKey quoteSigner;
+    if (SerDeUtil.isAbsent(1, _data, i)) {
+      quoteSigner = null;
+      ++i;
+    } else {
+      ++i;
+      quoteSigner = readPubKey(_data, i);
+      i += 32;
+    }
+    final var minAmount = getInt64LE(_data, i);
+    i += 8;
+    final OptionalLong maxAmount;
+    if (SerDeUtil.isAbsent(1, _data, i)) {
+      maxAmount = OptionalLong.empty();
+    } else {
+      ++i;
+      maxAmount = OptionalLong.of(getInt64LE(_data, i));
+    }
+    return new StargateRoute(sourceMint,
+                             destinationChain,
+                             destinationRecipient,
+                             providerProgram,
+                             providerConfig,
+                             providerSender,
+                             managementMode,
+                             quoteTtlSeconds,
+                             maxSlippageBps,
+                             quoteSigner,
+                             minAmount,
+                             maxAmount);
+  }
+
+  @Override
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
+    sourceMint.write(_data, i);
+    i += 32;
+    putInt16LE(_data, i, destinationChain);
+    i += 2;
+    destinationRecipient.write(_data, i);
+    i += 32;
+    providerProgram.write(_data, i);
+    i += 32;
+    providerConfig.write(_data, i);
+    i += 32;
+    providerSender.write(_data, i);
+    i += 32;
+    i += managementMode.write(_data, i);
+    i += SerDeUtil.writeOptional(1, quoteTtlSeconds, _data, i);
+    i += SerDeUtil.writeOptionalshort(1, maxSlippageBps, _data, i);
+    i += SerDeUtil.writeOptional(1, quoteSigner, _data, i);
+    putInt64LE(_data, i, minAmount);
+    i += 8;
+    i += SerDeUtil.writeOptional(1, maxAmount, _data, i);
+    return i - _offset;
+  }
+
+  @Override
+  public int l() {
+    return 32
+         + 2
+         + 32
+         + 32
+         + 32
+         + 32
+         + managementMode.l()
+         + (quoteTtlSeconds == null || quoteTtlSeconds.isEmpty() ? 1 : (1 + 4))
+         + (maxSlippageBps == null || maxSlippageBps.isEmpty() ? 1 : (1 + 2))
+         + (quoteSigner == null ? 1 : (1 + 32))
+         + 8
+         + (maxAmount == null || maxAmount.isEmpty() ? 1 : (1 + 8));
+  }
+}

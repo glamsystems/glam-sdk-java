@@ -1,0 +1,66 @@
+package systems.glam.sdk.idl.programs.glam.staging.bridge.gen;
+
+import software.sava.core.accounts.ProgramDerivedAddress;
+import software.sava.core.accounts.PublicKey;
+
+import java.util.List;
+
+import static java.nio.charset.StandardCharsets.US_ASCII;
+
+public final class ExtBridgePDAs {
+
+  public static ProgramDerivedAddress bridgeRegistryPDA(final PublicKey program,
+                                                        final PublicKey glamStateAccount) {
+    return PublicKey.findProgramAddress(List.of(
+      "bridge-registry".getBytes(US_ASCII),
+      glamStateAccount.toByteArray()
+    ), program);
+  }
+
+  public static ProgramDerivedAddress bridgeSessionPDA(final PublicKey program,
+                                                       final PublicKey glamStateAccount,
+                                                       final byte[] argsTransferId) {
+    return PublicKey.findProgramAddress(List.of(
+      "bridge-session".getBytes(US_ASCII),
+      glamStateAccount.toByteArray(),
+      argsTransferId
+    ), program);
+  }
+
+  public static ProgramDerivedAddress claimRecordPDA(final PublicKey program,
+                                                     final PublicKey glamStateAccount,
+                                                     final PublicKey providerReceiptAccount) {
+    return PublicKey.findProgramAddress(List.of(
+      "bridge-claim-record".getBytes(US_ASCII),
+      glamStateAccount.toByteArray(),
+      providerReceiptAccount.toByteArray()
+    ), program);
+  }
+
+  public static ProgramDerivedAddress glamVaultPDA(final PublicKey glamProtocolProgram,
+                                                   final PublicKey glamStateAccount) {
+    return PublicKey.findProgramAddress(List.of(
+      "vault".getBytes(US_ASCII),
+      glamStateAccount.toByteArray()
+    ), glamProtocolProgram);
+  }
+
+  public static ProgramDerivedAddress integrationAuthorityPDA(final PublicKey program) {
+    return PublicKey.findProgramAddress(List.of(
+      "integration-authority".getBytes(US_ASCII)
+    ), program);
+  }
+
+  public static ProgramDerivedAddress transferRecordPDA(final PublicKey program,
+                                                        final PublicKey glamStateAccount,
+                                                        final byte[] argsTransferId) {
+    return PublicKey.findProgramAddress(List.of(
+      "bridge-transfer-record".getBytes(US_ASCII),
+      glamStateAccount.toByteArray(),
+      argsTransferId
+    ), program);
+  }
+
+  private ExtBridgePDAs() {
+  }
+}

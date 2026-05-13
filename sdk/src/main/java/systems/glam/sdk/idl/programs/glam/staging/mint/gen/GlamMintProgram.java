@@ -1365,6 +1365,80 @@ public final class GlamMintProgram {
     }
   }
 
+  public static final Discriminator PRICE_BRIDGE_MANAGED_TRANSFERS_DISCRIMINATOR = toDiscriminator(15, 249, 66, 19, 107, 71, 41, 51);
+
+  /// Price bridge managed transfers.
+  /// 
+  /// Extra accounts:
+  /// - bridge registry account
+  ///
+  public static List<AccountMeta> priceBridgeManagedTransfersKeys(final AccountMeta invokedGlamMintProgramMeta,
+                                                                  final PublicKey glamStateKey,
+                                                                  final PublicKey glamVaultKey,
+                                                                  final PublicKey signerKey,
+                                                                  final PublicKey solUsdOracleKey,
+                                                                  final PublicKey baseAssetOracleKey,
+                                                                  final PublicKey integrationAuthorityKey,
+                                                                  final PublicKey glamConfigKey,
+                                                                  final PublicKey glamProtocolKey,
+                                                                  final PublicKey eventAuthorityKey,
+                                                                  final PublicKey eventProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createWritableSigner(signerKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolKey),
+      createRead(requireNonNullElse(eventAuthorityKey, invokedGlamMintProgramMeta.publicKey())),
+      createRead(requireNonNullElse(eventProgramKey, invokedGlamMintProgramMeta.publicKey()))
+    );
+  }
+
+  /// Price bridge managed transfers.
+  /// 
+  /// Extra accounts:
+  /// - bridge registry account
+  ///
+  public static Instruction priceBridgeManagedTransfers(final AccountMeta invokedGlamMintProgramMeta,
+                                                        final PublicKey glamStateKey,
+                                                        final PublicKey glamVaultKey,
+                                                        final PublicKey signerKey,
+                                                        final PublicKey solUsdOracleKey,
+                                                        final PublicKey baseAssetOracleKey,
+                                                        final PublicKey integrationAuthorityKey,
+                                                        final PublicKey glamConfigKey,
+                                                        final PublicKey glamProtocolKey,
+                                                        final PublicKey eventAuthorityKey,
+                                                        final PublicKey eventProgramKey) {
+    final var keys = priceBridgeManagedTransfersKeys(
+      invokedGlamMintProgramMeta,
+      glamStateKey,
+      glamVaultKey,
+      signerKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolKey,
+      eventAuthorityKey,
+      eventProgramKey
+    );
+    return priceBridgeManagedTransfers(invokedGlamMintProgramMeta, keys);
+  }
+
+  /// Price bridge managed transfers.
+  /// 
+  /// Extra accounts:
+  /// - bridge registry account
+  ///
+  public static Instruction priceBridgeManagedTransfers(final AccountMeta invokedGlamMintProgramMeta,
+                                                        final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_BRIDGE_MANAGED_TRANSFERS_DISCRIMINATOR);
+  }
+
   public static final Discriminator PRICE_DRIFT_USERS_DISCRIMINATOR = toDiscriminator(12, 5, 143, 51, 101, 81, 200, 150);
 
   /// Extra accounts for pricing N drift users under the same user stats:
@@ -1999,6 +2073,101 @@ public final class GlamMintProgram {
   public static Instruction priceLoopscaleLoans(final AccountMeta invokedGlamMintProgramMeta,
                                                 final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_LOOPSCALE_LOANS_DISCRIMINATOR);
+  }
+
+  public static final Discriminator PRICE_PHOENIX_TRADERS_DISCRIMINATOR = toDiscriminator(112, 90, 177, 46, 145, 191, 219, 213);
+
+  /// Price Phoenix trader accounts registered as vault external positions.
+  /// 
+  /// Remaining accounts:
+  /// - Phoenix global configuration
+  /// - Phoenix perp asset map
+  /// - Phoenix trader accounts x N
+  /// - optional USDC oracle when the GLAM base asset is not USDC
+  /// 
+  /// Prices portfolio NAV as collateral plus unrealized PnL from Phoenix's
+  /// cached positions and mark prices. Clients should prepend Phoenix
+  /// `update_trader_state` before this instruction when trader state may be stale.
+  ///
+  public static List<AccountMeta> pricePhoenixTradersKeys(final AccountMeta invokedGlamMintProgramMeta,
+                                                          final PublicKey glamStateKey,
+                                                          final PublicKey glamVaultKey,
+                                                          final PublicKey signerKey,
+                                                          final PublicKey solUsdOracleKey,
+                                                          final PublicKey baseAssetOracleKey,
+                                                          final PublicKey integrationAuthorityKey,
+                                                          final PublicKey glamConfigKey,
+                                                          final PublicKey glamProtocolKey,
+                                                          final PublicKey eventAuthorityKey,
+                                                          final PublicKey eventProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createWritableSigner(signerKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolKey),
+      createRead(requireNonNullElse(eventAuthorityKey, invokedGlamMintProgramMeta.publicKey())),
+      createRead(requireNonNullElse(eventProgramKey, invokedGlamMintProgramMeta.publicKey()))
+    );
+  }
+
+  /// Price Phoenix trader accounts registered as vault external positions.
+  /// 
+  /// Remaining accounts:
+  /// - Phoenix global configuration
+  /// - Phoenix perp asset map
+  /// - Phoenix trader accounts x N
+  /// - optional USDC oracle when the GLAM base asset is not USDC
+  /// 
+  /// Prices portfolio NAV as collateral plus unrealized PnL from Phoenix's
+  /// cached positions and mark prices. Clients should prepend Phoenix
+  /// `update_trader_state` before this instruction when trader state may be stale.
+  ///
+  public static Instruction pricePhoenixTraders(final AccountMeta invokedGlamMintProgramMeta,
+                                                final PublicKey glamStateKey,
+                                                final PublicKey glamVaultKey,
+                                                final PublicKey signerKey,
+                                                final PublicKey solUsdOracleKey,
+                                                final PublicKey baseAssetOracleKey,
+                                                final PublicKey integrationAuthorityKey,
+                                                final PublicKey glamConfigKey,
+                                                final PublicKey glamProtocolKey,
+                                                final PublicKey eventAuthorityKey,
+                                                final PublicKey eventProgramKey) {
+    final var keys = pricePhoenixTradersKeys(
+      invokedGlamMintProgramMeta,
+      glamStateKey,
+      glamVaultKey,
+      signerKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolKey,
+      eventAuthorityKey,
+      eventProgramKey
+    );
+    return pricePhoenixTraders(invokedGlamMintProgramMeta, keys);
+  }
+
+  /// Price Phoenix trader accounts registered as vault external positions.
+  /// 
+  /// Remaining accounts:
+  /// - Phoenix global configuration
+  /// - Phoenix perp asset map
+  /// - Phoenix trader accounts x N
+  /// - optional USDC oracle when the GLAM base asset is not USDC
+  /// 
+  /// Prices portfolio NAV as collateral plus unrealized PnL from Phoenix's
+  /// cached positions and mark prices. Clients should prepend Phoenix
+  /// `update_trader_state` before this instruction when trader state may be stale.
+  ///
+  public static Instruction pricePhoenixTraders(final AccountMeta invokedGlamMintProgramMeta,
+                                                final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_PHOENIX_TRADERS_DISCRIMINATOR);
   }
 
   public static final Discriminator PRICE_SINGLE_ASSET_VAULT_DISCRIMINATOR = toDiscriminator(93, 213, 219, 25, 38, 74, 9, 167);

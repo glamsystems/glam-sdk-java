@@ -1,0 +1,31 @@
+package systems.glam.sdk.idl.programs.glam.staging.bridge.gen;
+
+public final class ExtBridgeConstants {
+
+  public static final long PROTO_BRIDGE_PERM_CLAIM = 4;
+
+  public static final long PROTO_BRIDGE_PERM_RECONCILE = 2;
+
+  public static final long PROTO_BRIDGE_PERM_SEND = 1;
+
+  public static final int PROTO_CCTP_BRIDGE = 256;
+
+  public static final int PROTO_LAYERZERO_STARGATE = 1;
+
+  public static final int PROTO_MANAGED_INFLIGHT = 487;
+
+  public static final int PROTO_MAYAN_MCTP = 128;
+
+  public static final int PROTO_MAYAN_SWIFT = 64;
+
+  public static final int PROTO_RELAY_BRIDGE = 32;
+
+  public static final int PROTO_SUPPORTED_PRODUCTS = 487;
+
+  public static final int PROTO_WORMHOLE_NTT = 4;
+
+  public static final int PROTO_WORMHOLE_WTT = 2;
+
+  private ExtBridgeConstants() {
+  }
+}

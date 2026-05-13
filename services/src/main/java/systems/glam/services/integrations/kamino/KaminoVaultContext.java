@@ -7,10 +7,6 @@ import software.sava.idl.clients.kamino.vaults.gen.types.VaultAllocation;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
 import software.sava.rpc.json.http.response.AccountInfo;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.util.Arrays;
 
 import static systems.glam.services.integrations.kamino.ReserveContext.fixedLengthString;
@@ -24,22 +20,16 @@ public record KaminoVaultContext(long slot,
                                  PublicKey tokenProgram,
                                  AccountMeta readSharesMint,
                                  long sharesMintDecimals,
+                                 long performanceFeeBps,
+                                 long managementFeeBps,
                                  PublicKey[] reserves,
                                  String name,
-                                 PublicKey vaultLookupTable) {
-//                                 PublicKey allocationAdmin,
-//                                 long minDepositAmount,
-//                                 long minWithdrawAmount,
-//                                 long withdrawalPenaltyLamports,
-//                                 long withdrawalPenaltyBps) {
-
-  private static final MathContext PRECISION = new MathContext(40, RoundingMode.HALF_EVEN);
-  private static final int FRACTIONS = 60;
-  private static final BigDecimal MULTIPLIER = BigDecimal.TWO.pow(FRACTIONS);
-
-  private static BigDecimal toDecimal(final BigInteger valueSf) {
-    return new BigDecimal(valueSf).divide(MULTIPLIER, PRECISION).stripTrailingZeros();
-  }
+                                 PublicKey vaultLookupTable,
+                                 PublicKey vaultFarm,
+                                 long minDepositAmount,
+                                 long minWithdrawAmount,
+                                 long withdrawalPenaltyLamports,
+                                 long withdrawalPenaltyBps) {
 
   public PublicKey sharesMint() {
     return readSharesMint.publicKey();
@@ -65,14 +55,17 @@ public record KaminoVaultContext(long slot,
         PublicKey.readPubKey(data, VaultState.TOKEN_PROGRAM_OFFSET),
         AccountMeta.createRead(sharesMintKey),
         ByteUtil.getInt64LE(data, VaultState.SHARES_MINT_DECIMALS_OFFSET),
+        ByteUtil.getInt64LE(data, VaultState.PERFORMANCE_FEE_BPS_OFFSET),
+        ByteUtil.getInt64LE(data, VaultState.MANAGEMENT_FEE_BPS_OFFSET),
         reserveKeys,
         name,
-        createIfNotNull(data, VaultState.VAULT_LOOKUP_TABLE_OFFSET)
+        createIfNotNull(data, VaultState.VAULT_LOOKUP_TABLE_OFFSET),
 //        PublicKey.readPubKey(data, VaultState.ALLOCATION_ADMIN_OFFSET),
-//        ByteUtil.getInt64LE(data, VaultState.MIN_DEPOSIT_AMOUNT_OFFSET),
-//        ByteUtil.getInt64LE(data, VaultState.MIN_WITHDRAW_AMOUNT_OFFSET),
-//        ByteUtil.getInt64LE(data, VaultState.WITHDRAWAL_PENALTY_LAMPORTS_OFFSET),
-//        ByteUtil.getInt64LE(data, VaultState.WITHDRAWAL_PENALTY_BPS_OFFSET)
+        createIfNotNull(data, VaultState.VAULT_FARM_OFFSET),
+        ByteUtil.getInt64LE(data, VaultState.MIN_DEPOSIT_AMOUNT_OFFSET),
+        ByteUtil.getInt64LE(data, VaultState.MIN_WITHDRAW_AMOUNT_OFFSET),
+        ByteUtil.getInt64LE(data, VaultState.WITHDRAWAL_PENALTY_LAMPORTS_OFFSET),
+        ByteUtil.getInt64LE(data, VaultState.WITHDRAWAL_PENALTY_BPS_OFFSET)
     );
   }
 
@@ -130,31 +123,82 @@ public record KaminoVaultContext(long slot,
     }
   }
 
+  private KaminoVaultContext createIfChanged(final long slot,
+                                             final byte[] data,
+                                             final PublicKey[] reserves,
+                                             final long minDepositAmount,
+                                             final long minWithdrawAmount,
+                                             final long withdrawalPenaltyLamports,
+                                             final long withdrawalPenaltyBps) {
+    return new KaminoVaultContext(
+        slot,
+        readVaultState,
+        createIfChanged(this.vaultAdminAuthority, data, VaultState.VAULT_ADMIN_AUTHORITY_OFFSET),
+        createIfChanged(this.baseVaultAuthority, data, VaultState.BASE_VAULT_AUTHORITY_OFFSET),
+        tokenMint, tokenMintDecimals, tokenProgram,
+        readSharesMint, sharesMintDecimals,
+        performanceFeeBps,
+        managementFeeBps,
+        reserves,
+        name,
+        createIfChanged(this.vaultLookupTable, data, VaultState.VAULT_LOOKUP_TABLE_OFFSET),
+        createIfChanged(this.vaultFarm, data, VaultState.VAULT_FARM_OFFSET),
+        minDepositAmount,
+        minWithdrawAmount,
+        withdrawalPenaltyLamports,
+        withdrawalPenaltyBps
+    );
+  }
+
   KaminoVaultContext createIfChanged(final long slot, final byte[] data) {
     final var reserves = parseReserveKeys(data);
     if (Arrays.equals(this.reserves, reserves)
         && noKeyChange(this.vaultLookupTable, data, VaultState.VAULT_LOOKUP_TABLE_OFFSET)
         && noKeyChange(this.vaultAdminAuthority, data, VaultState.VAULT_ADMIN_AUTHORITY_OFFSET)
-        && noKeyChange(this.baseVaultAuthority, data, VaultState.BASE_VAULT_AUTHORITY_OFFSET)) {
-//        && noKeyChange(this.allocationAdmin, data, VaultState.ALLOCATION_ADMIN_OFFSET)) {
-      return this;
-    } else {
-      return new KaminoVaultContext(
+        && noKeyChange(this.baseVaultAuthority, data, VaultState.BASE_VAULT_AUTHORITY_OFFSET)
+        && noKeyChange(this.vaultFarm, data, VaultState.VAULT_FARM_OFFSET)) {
+      final long performanceFeeBps = ByteUtil.getInt64LE(data, VaultState.PERFORMANCE_FEE_BPS_OFFSET);
+      final long managementFeeBps = ByteUtil.getInt64LE(data, VaultState.MANAGEMENT_FEE_BPS_OFFSET);
+      final long minDepositAmount = ByteUtil.getInt64LE(data, VaultState.MIN_DEPOSIT_AMOUNT_OFFSET);
+      final long minWithdrawAmount = ByteUtil.getInt64LE(data, VaultState.MIN_WITHDRAW_AMOUNT_OFFSET);
+      final long withdrawalPenaltyLamports = ByteUtil.getInt64LE(data, VaultState.WITHDRAWAL_PENALTY_LAMPORTS_OFFSET);
+      final long withdrawalPenaltyBps = ByteUtil.getInt64LE(data, VaultState.WITHDRAWAL_PENALTY_BPS_OFFSET);
+      if (this.performanceFeeBps == performanceFeeBps
+          && this.managementFeeBps == managementFeeBps
+          && this.minDepositAmount == minDepositAmount
+          && this.minWithdrawAmount == minWithdrawAmount
+          && this.withdrawalPenaltyLamports == withdrawalPenaltyLamports
+          && this.withdrawalPenaltyBps == withdrawalPenaltyBps) {
+        return this;
+      }
+      return createIfChanged(
           slot,
-          readVaultState,
-          createIfChanged(this.vaultAdminAuthority, data, VaultState.VAULT_ADMIN_AUTHORITY_OFFSET),
-          createIfChanged(this.baseVaultAuthority, data, VaultState.BASE_VAULT_AUTHORITY_OFFSET),
-          tokenMint, tokenMintDecimals, tokenProgram,
-          readSharesMint, sharesMintDecimals,
+          data,
           reserves,
-          name,
-          createIfChanged(this.vaultLookupTable, data, VaultState.VAULT_LOOKUP_TABLE_OFFSET)
-//          createIfChanged(this.allocationAdmin, data, VaultState.ALLOCATION_ADMIN_OFFSET),
-//          ByteUtil.getInt64LE(data, VaultState.MIN_DEPOSIT_AMOUNT_OFFSET),
-//          ByteUtil.getInt64LE(data, VaultState.MIN_WITHDRAW_AMOUNT_OFFSET),
-//          ByteUtil.getInt64LE(data, VaultState.WITHDRAWAL_PENALTY_LAMPORTS_OFFSET),
-//          ByteUtil.getInt64LE(data, VaultState.WITHDRAWAL_PENALTY_BPS_OFFSET)
+          minDepositAmount,
+          minWithdrawAmount,
+          withdrawalPenaltyLamports,
+          withdrawalPenaltyBps
+
       );
     }
+    return new KaminoVaultContext(
+        slot,
+        readVaultState,
+        createIfChanged(this.vaultAdminAuthority, data, VaultState.VAULT_ADMIN_AUTHORITY_OFFSET),
+        createIfChanged(this.baseVaultAuthority, data, VaultState.BASE_VAULT_AUTHORITY_OFFSET),
+        tokenMint, tokenMintDecimals, tokenProgram,
+        readSharesMint, sharesMintDecimals,
+        ByteUtil.getInt64LE(data, VaultState.PERFORMANCE_FEE_BPS_OFFSET),
+        ByteUtil.getInt64LE(data, VaultState.MANAGEMENT_FEE_BPS_OFFSET),
+        reserves,
+        name,
+        createIfChanged(this.vaultLookupTable, data, VaultState.VAULT_LOOKUP_TABLE_OFFSET),
+        createIfChanged(this.vaultFarm, data, VaultState.VAULT_FARM_OFFSET),
+        performanceFeeBps,
+        ByteUtil.getInt64LE(data, VaultState.MIN_WITHDRAW_AMOUNT_OFFSET),
+        ByteUtil.getInt64LE(data, VaultState.WITHDRAWAL_PENALTY_LAMPORTS_OFFSET),
+        ByteUtil.getInt64LE(data, VaultState.WITHDRAWAL_PENALTY_BPS_OFFSET)
+    );
   }
 }
