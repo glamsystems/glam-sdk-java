@@ -39,6 +39,16 @@ public class StagingStateAccountClientImpl extends BaseStateAccountClient {
   }
 
   @Override
+  public PublicKey baseAssetTokenProgram() {
+    return baseAssetTokenProgram(stateAccount.baseAssetTokenProgram());
+  }
+
+  @Override
+  public int baseAssetDecimals() {
+    return stateAccount.baseAssetDecimals();
+  }
+
+  @Override
   public PublicKey[] externalPositions() {
     return stateAccount.externalPositions();
   }

@@ -10,6 +10,15 @@ tasks.named<Jar>("jar") {
   }
 }
 
+//dependencyAnalysis {
+//  issues {
+//    onAny {
+//      severity("ignore")
+//    }
+//  }
+//}
+
 //dependencies {
 //  project(":idl-clients:idl-clients-loopscale")
+//  project(":idl-clients:idl-clients-phoenix")
 //}

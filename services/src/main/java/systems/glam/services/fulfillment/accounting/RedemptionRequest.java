@@ -17,6 +17,12 @@ public interface RedemptionRequest extends Comparable<RedemptionRequest> {
     return new RedemptionRequestRecord(user, createdAt, shares);
   }
 
+  static BigDecimal sumOutstandingShares(final List<RedemptionRequest> redemptionRequests) {
+    return redemptionRequests.stream()
+        .map(RedemptionRequest::shares)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
   static List<RedemptionRequest> collectRedemptionRequests(final RequestQueue requestQueue) {
     return Arrays.stream(requestQueue.data()).<RedemptionRequest>mapMulti((pendingRequest, downstream) -> {
       if (pendingRequest.fulfilledAt() == 0 && pendingRequest.requestType() == RequestType.Redemption) {

@@ -72,6 +72,10 @@ public interface StateAccountClient {
 
   PublicKey baseAssetMint();
 
+  PublicKey baseAssetTokenProgram();
+
+  int baseAssetDecimals();
+
   ProgramDerivedAddress escrowAccount();
 
   PublicKey[] externalPositions();

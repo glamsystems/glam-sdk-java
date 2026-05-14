@@ -64,6 +64,13 @@ public abstract class BaseStateAccountClient implements StateAccountClient {
     return true;
   }
 
+  protected final PublicKey baseAssetTokenProgram(final int tokenProgram) {
+    final var solanaAccounts = accountClient.solanaAccounts();
+    return tokenProgram == 0
+        ? solanaAccounts.tokenProgram()
+        : solanaAccounts.token2022Program();
+  }
+
   protected abstract int protocolBitmask(final PublicKey integrationProgram);
 
   @Override

@@ -16,6 +16,7 @@ module systems.glam.services {
   requires transitive software.sava.idl.clients.loopscale;
   requires transitive software.sava.idl.clients.marinade;
   requires software.sava.idl.clients.oracles;
+  requires software.sava.idl.clients.phoenix;
   requires transitive software.sava.idl.clients.spl;
 
   requires transitive software.sava.kms_core;

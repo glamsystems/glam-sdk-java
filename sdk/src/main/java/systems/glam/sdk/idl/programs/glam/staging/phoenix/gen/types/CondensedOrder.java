@@ -1,0 +1,53 @@
+package systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types;
+
+import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
+
+import java.util.OptionalLong;
+
+import static software.sava.core.encoding.ByteUtil.getInt64LE;
+import static software.sava.core.encoding.ByteUtil.putInt64LE;
+
+public record CondensedOrder(long priceInTicks,
+                             long sizeInBaseLots,
+                             OptionalLong lastValidSlot) implements SerDe {
+
+  public static final int PRICE_IN_TICKS_OFFSET = 0;
+  public static final int SIZE_IN_BASE_LOTS_OFFSET = 8;
+  public static final int LAST_VALID_SLOT_OFFSET = 17;
+
+  public static CondensedOrder read(final byte[] _data, final int _offset) {
+    if (_data == null || _data.length == 0) {
+      return null;
+    }
+    int i = _offset;
+    final var priceInTicks = getInt64LE(_data, i);
+    i += 8;
+    final var sizeInBaseLots = getInt64LE(_data, i);
+    i += 8;
+    final OptionalLong lastValidSlot;
+    if (SerDeUtil.isAbsent(1, _data, i)) {
+      lastValidSlot = OptionalLong.empty();
+    } else {
+      ++i;
+      lastValidSlot = OptionalLong.of(getInt64LE(_data, i));
+    }
+    return new CondensedOrder(priceInTicks, sizeInBaseLots, lastValidSlot);
+  }
+
+  @Override
+  public int write(final byte[] _data, final int _offset) {
+    int i = _offset;
+    putInt64LE(_data, i, priceInTicks);
+    i += 8;
+    putInt64LE(_data, i, sizeInBaseLots);
+    i += 8;
+    i += SerDeUtil.writeOptional(1, lastValidSlot, _data, i);
+    return i - _offset;
+  }
+
+  @Override
+  public int l() {
+    return 8 + 8 + (lastValidSlot == null || lastValidSlot.isEmpty() ? 1 : (1 + 8));
+  }
+}
