@@ -10,13 +10,16 @@ import java.util.Map;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public record GlamAccountsRecord(AccountMeta invokedProtocolProgram,
-                                 PublicKey configProgram, ProgramDerivedAddress globalConfigPDA,
+                                 PublicKey configProgram,
+                                 ProgramDerivedAddress globalConfigPDA,
                                  PublicKey policyProgram,
                                  AccountMeta invokedMintIntegrationProgram,
                                  AccountMeta readMintIntegrationAuthority,
                                  PublicKey mintEventAuthority,
                                  AccountMeta invokedSplIntegrationProgram,
                                  AccountMeta readSplIntegrationAuthority,
+                                 AccountMeta invokedBridgeIntegrationProgram,
+                                 AccountMeta readBridgeIntegrationAuthority,
                                  AccountMeta invokedDriftIntegrationProgram,
                                  AccountMeta readDriftIntegrationAuthority,
                                  AccountMeta invokedExternalPositionProgram,
@@ -25,6 +28,8 @@ public record GlamAccountsRecord(AccountMeta invokedProtocolProgram,
                                  AccountMeta readKaminoIntegrationAuthority,
                                  AccountMeta invokedLoopscaleIntegrationProgram,
                                  AccountMeta readLoopscaleIntegrationAuthority,
+                                 AccountMeta invokedPhoenixIntegrationProgram,
+                                 AccountMeta readPhoenixIntegrationAuthority,
                                  Map<PublicKey, AccountMeta> integrationAuthorities) implements GlamAccounts {
 
   @Override

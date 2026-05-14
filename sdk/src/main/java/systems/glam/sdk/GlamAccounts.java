@@ -9,7 +9,9 @@ import systems.glam.sdk.idl.programs.glam.drift.gen.ExtDriftPDAs;
 import systems.glam.sdk.idl.programs.glam.kamino.gen.ExtKaminoPDAs;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintPDAs;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplPDAs;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.ExtBridgePDAs;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.ExtLoopscalePDAs;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.ExtPhoenixPDAs;
 import systems.glam.sdk.proxy.DynamicGlamAccountFactory;
 
 import java.nio.file.Path;
@@ -27,9 +29,11 @@ public interface GlamAccounts {
       "GM1NtvvnSXUptTrMCqbogAdZJydZSNv98DoU5AZVLmGh",
       "po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY",
       "G1NTsQ36mjPe89HtPYqxKsjY5HmYsDR6CbD2gd2U2pta",
+      null,
       "G1NTdrBmBpW43msRQmsf7qXSw3MFBNaqJcAkGiRmRq2F",
       null,
       "G1NTkDEUR3pkEqGCKZtmtmVzCUEdYa86pezHkwYbLyde",
+      null,
       null
   );
 
@@ -39,10 +43,12 @@ public interface GlamAccounts {
       "gstgm1M39mhgnvgyScGUDRwNn5kNVSd97hTtyow1Et5",
       "po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY",
       "gstgs9nJgX8PmRHWAAEP9H7xT3ZkaPWSGPYbj3mXdTa",
+      "gstgR7qij5XjLxmk8UK5XS1JKUqXz8DHt5JWyowYNvW",
       "gstgdpMFXKobURsFtStdaMLRSuwdmDUsrndov7kyu9h",
       "gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX",
       "gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq",
-      "gstgL6y4uWjsfM3Qjs5euoTDmEcXoUjqx8rkYJhYngG"
+      "gstgL6y4uWjsfM3Qjs5euoTDmEcXoUjqx8rkYJhYngG",
+      "gstgPL7r9aYedDDsXNtLpr4atYtNvY7zubAWWstqS3L"
   );
 
   private static void putIfNotNull(final Map<PublicKey, AccountMeta> map,
@@ -58,23 +64,29 @@ public interface GlamAccounts {
                                      final PublicKey mintProgram,
                                      final PublicKey policyProgram,
                                      final PublicKey splIntegrationProgram,
+                                     final PublicKey bridgeIntegrationProgram,
                                      final PublicKey driftIntegrationProgram,
                                      final PublicKey externalPositionProgram,
                                      final PublicKey kaminoIntegrationProgram,
-                                     final PublicKey loopscaleIntegrationProgram) {
+                                     final PublicKey loopscaleIntegrationProgram,
+                                     final PublicKey phoenixIntegrationProgram) {
     final var mintIntegrationAuthority = GlamMintPDAs.integrationAuthorityPDA(mintProgram).publicKey();
     final var splIntegrationAuthority = ExtSplPDAs.integrationAuthorityPDA(splIntegrationProgram).publicKey();
+    final var bridgeIntegrationAuthority = ExtBridgePDAs.integrationAuthorityPDA(bridgeIntegrationProgram).publicKey();
     final var driftIntegrationAuthority = ExtDriftPDAs.integrationAuthorityPDA(driftIntegrationProgram).publicKey();
     final var externalPositionAuthority = ExtDriftPDAs.integrationAuthorityPDA(externalPositionProgram).publicKey();
     final var kaminoIntegrationAuthority = ExtKaminoPDAs.integrationAuthorityPDA(kaminoIntegrationProgram).publicKey();
     final var loopscaleIntegrationAuthority = ExtLoopscalePDAs.integrationAuthorityPDA(loopscaleIntegrationProgram).publicKey();
-    final var map = HashMap.<PublicKey, AccountMeta>newHashMap(6);
+    final var phoenixIntegrationAuthority = ExtPhoenixPDAs.integrationAuthorityPDA(phoenixIntegrationProgram).publicKey();
+    final var map = HashMap.<PublicKey, AccountMeta>newHashMap(8);
     putIfNotNull(map, mintProgram, mintIntegrationAuthority);
     putIfNotNull(map, splIntegrationProgram, splIntegrationAuthority);
+    putIfNotNull(map, bridgeIntegrationProgram, bridgeIntegrationAuthority);
     putIfNotNull(map, driftIntegrationProgram, driftIntegrationAuthority);
     putIfNotNull(map, externalPositionProgram, externalPositionAuthority);
     putIfNotNull(map, kaminoIntegrationProgram, kaminoIntegrationAuthority);
     putIfNotNull(map, loopscaleIntegrationProgram, loopscaleIntegrationAuthority);
+    putIfNotNull(map, phoenixIntegrationProgram, phoenixIntegrationAuthority);
     final var integrationAuthorities = Map.copyOf(map);
     return new GlamAccountsRecord(
         createInvoked(protocolProgram),
@@ -85,6 +97,8 @@ public interface GlamAccounts {
         GlamMintPDAs.eventAuthorityPDA(mintProgram).publicKey(),
         createInvoked(splIntegrationProgram),
         integrationAuthorities.get(splIntegrationProgram),
+        createInvoked(bridgeIntegrationProgram),
+        integrationAuthorities.get(bridgeIntegrationProgram),
         createInvoked(driftIntegrationProgram),
         integrationAuthorities.get(driftIntegrationProgram),
         createInvoked(externalPositionProgram),
@@ -93,6 +107,8 @@ public interface GlamAccounts {
         integrationAuthorities.get(kaminoIntegrationProgram),
         createInvoked(loopscaleIntegrationProgram),
         integrationAuthorities.get(loopscaleIntegrationProgram),
+        createInvoked(phoenixIntegrationProgram),
+        integrationAuthorities.get(phoenixIntegrationProgram),
         integrationAuthorities
     );
   }
@@ -106,20 +122,24 @@ public interface GlamAccounts {
                                      final String mintProgram,
                                      final String policyProgram,
                                      final String splIntegrationProgram,
+                                     final String bridgeIntegrationProgram,
                                      final String driftIntegrationProgram,
                                      final String externalPositionProgram,
                                      final String kaminoIntegrationProgram,
-                                     final String loopscaleIntegrationProgram) {
+                                     final String loopscaleIntegrationProgram,
+                                     final String phoenixIntegrationProgram) {
     return createAccounts(
         PublicKey.fromBase58Encoded(protocolProgram),
         PublicKey.fromBase58Encoded(configProgram),
         PublicKey.fromBase58Encoded(mintProgram),
         PublicKey.fromBase58Encoded(policyProgram),
         PublicKey.fromBase58Encoded(splIntegrationProgram),
+        createKey(bridgeIntegrationProgram),
         PublicKey.fromBase58Encoded(driftIntegrationProgram),
         createKey(externalPositionProgram),
         PublicKey.fromBase58Encoded(kaminoIntegrationProgram),
-        createKey(loopscaleIntegrationProgram)
+        createKey(loopscaleIntegrationProgram),
+        createKey(phoenixIntegrationProgram)
     );
   }
 
@@ -176,6 +196,14 @@ public interface GlamAccounts {
 
   AccountMeta readSplIntegrationAuthority();
 
+  AccountMeta invokedBridgeIntegrationProgram();
+
+  default PublicKey bridgeIntegrationProgram() {
+    return invokedBridgeIntegrationProgram().publicKey();
+  }
+
+  AccountMeta readBridgeIntegrationAuthority();
+
   AccountMeta invokedDriftIntegrationProgram();
 
   default PublicKey driftIntegrationProgram() {
@@ -199,6 +227,14 @@ public interface GlamAccounts {
   }
 
   AccountMeta readLoopscaleIntegrationAuthority();
+
+  AccountMeta invokedPhoenixIntegrationProgram();
+
+  default PublicKey phoenixIntegrationProgram() {
+    return invokedPhoenixIntegrationProgram().publicKey();
+  }
+
+  AccountMeta readPhoenixIntegrationAuthority();
 
   Map<PublicKey, AccountMeta> integrationAuthorities();
 
