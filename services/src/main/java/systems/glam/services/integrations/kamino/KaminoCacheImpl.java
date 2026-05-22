@@ -1,13 +1,9 @@
 package systems.glam.services.integrations.kamino;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.lend.gen.types.Reserve;
-import software.sava.idl.clients.kamino.lend.gen.types.TokenInfo;
-import software.sava.idl.clients.kamino.scope.entries.*;
-import software.sava.idl.clients.kamino.scope.entries.Deprecated;
+import software.sava.idl.clients.kamino.scope.entries.OracleEntry;
 import software.sava.idl.clients.kamino.scope.gen.types.Configuration;
-import software.sava.idl.clients.kamino.scope.gen.types.EmaType;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleMappings;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
@@ -30,17 +26,19 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 
-import static java.lang.System.Logger.Level.*;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.WARNING;
 import static java.nio.file.StandardOpenOption.*;
 
 final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
 
   static final System.Logger logger = System.getLogger(KaminoCache.class.getName());
+  static final int MIN_CONFIGURATION_LENGTH = Configuration.PADDING_OFFSET;
+  static final int MIN_RESERVE_LENGTH = Reserve.PADDING_OFFSET;
+  static final int MIN_VAULT_STATE_LENGTH = VaultState.PADDING_2_OFFSET;
 
   private final RpcCaller rpcCaller;
   private final AccountFetcher accountFetcher;
@@ -53,19 +51,21 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   private final long pollingDelayNanos;
   private final Path configurationsPath;
   private final Path mappingsPath;
-  private final Path reserveContextsFilePath;
+  private final Path reserveDataFilePath;
   private final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap;
   private final ConcurrentMap<PublicKey, MappingsContext> mappingsContextMap;
   private final ConcurrentMap<PublicKey, ScopeFeedContext> priceFeedContextMap;
   private final ConcurrentMap<PublicKey, KaminoVaultContext> vaultStateContextMap;
   private final ReentrantReadWriteLock.WriteLock writeLock;
   private final Condition reserveScopeChangeCondition;
+  private volatile int numReserveChanges;
   private final ReentrantReadWriteLock.ReadLock readLock;
-  private final AtomicInteger asyncReserveUpdates;
 
-  private final Map<PublicKey, KaminoListener> listeners;
+  private final Map<PublicKey, KaminoListener> scopeListeners;
+  private final Map<PublicKey, KaminoListener> reserveListeners;
   private final Map<PublicKey, Map<PublicKey, KaminoListener>> specificReserveListeners;
-  private final Map<PublicKey, Map<PublicKey, KaminoListener>> vaultListeners;
+  private final Map<PublicKey, KaminoListener> vaultListeners;
+  private final Map<PublicKey, Map<PublicKey, KaminoListener>> specificVaultListeners;
 
   KaminoCacheImpl(final RpcCaller rpcCaller,
                   final AccountFetcher accountFetcher,
@@ -77,7 +77,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
                   final Duration pollingDelay,
                   final Path configurationsPath,
                   final Path mappingsPath,
-                  final Path reserveContextsFilePath,
+                  final Path reserveDataFilePath,
                   final Map<PublicKey, ScopeFeedContext> feedContextMap,
                   final ConcurrentMap<PublicKey, MappingsContext> mappingsContextMap,
                   final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap,
@@ -92,7 +92,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     this.pollingDelayNanos = pollingDelay.toNanos();
     this.configurationsPath = configurationsPath;
     this.mappingsPath = mappingsPath;
-    this.reserveContextsFilePath = reserveContextsFilePath;
+    this.reserveDataFilePath = reserveDataFilePath;
     this.reserveContextMap = reserveContextMap;
     this.mappingsContextMap = mappingsContextMap;
     this.vaultStateContextMap = vaultStateContextMap;
@@ -115,10 +115,11 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     this.writeLock = lock.writeLock();
     this.readLock = lock.readLock();
     this.reserveScopeChangeCondition = writeLock.newCondition();
-    this.asyncReserveUpdates = new AtomicInteger();
-    this.listeners = new ConcurrentHashMap<>();
+    this.scopeListeners = new ConcurrentHashMap<>();
+    this.reserveListeners = new ConcurrentHashMap<>();
     this.specificReserveListeners = new ConcurrentHashMap<>();
     this.vaultListeners = new ConcurrentHashMap<>();
+    this.specificVaultListeners = new ConcurrentHashMap<>();
   }
 
   static void writeScopeConfiguration(final Path configurationsPath,
@@ -132,8 +133,8 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   }
 
   @Override
-  public Path reservesJsonFilePath() {
-    return reserveContextsFilePath;
+  public Path reserveDataFilePath() {
+    return reserveDataFilePath;
   }
 
   @Override
@@ -144,6 +145,11 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   @Override
   public Path configurationsPath() {
     return configurationsPath;
+  }
+
+  @Override
+  public Collection<ReserveContext> reserveContexts() {
+    return reserveContextMap.values();
   }
 
   @Override
@@ -214,7 +220,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     } finally {
       writeLock.unlock();
     }
-    for (final var listener : listeners.values()) {
+    for (final var listener : scopeListeners.values()) {
       listener.onScopeAccountDeleted(deletedAccount, scopeFeedContext);
     }
     if (configurationsPath != null) {
@@ -273,7 +279,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
       } finally {
         writeLock.unlock();
       }
-      for (final var listener : listeners.values()) {
+      for (final var listener : scopeListeners.values()) {
         listener.onNewScopeConfiguration(scopeFeedContext.configurationKey(), scopeFeedContext);
       }
     } else if (!witness.isStaleOrUnchanged(slot, data)) {
@@ -282,7 +288,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
           slot, data,
           configurationKey
       );
-      for (final var listener : listeners.values()) {
+      for (final var listener : scopeListeners.values()) {
         listener.onScopeConfigurationChange(witness, scopeFeedContext);
       }
     }
@@ -323,7 +329,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
         mappingsContextMap.put(mappingsKey, mappingContext);
         final int numChanges = scopeFeedContext.reIndexReserves(reserveContextMap, mappingContext);
         if (numChanges > 0) {
-          asyncReserveUpdates.addAndGet(numChanges);
+          this.numReserveChanges = numChanges;
           reserveScopeChangeCondition.signalAll();
         }
       } else {
@@ -348,7 +354,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     final var key = reserveContext.pubKey();
 
     var witness = reserveContextMap.putIfAbsent(key, reserveContext);
-    if (witness == null) {
+    if (witness == null) { // New Reserve
       writeLock.lock();
       try {
         witness = reserveContextMap.get(key);
@@ -358,8 +364,8 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
             return;
           } else {
             feedContext.indexReserveContext(reserveContext);
-            this.asyncReserveUpdates.incrementAndGet();
-            this.reserveScopeChangeCondition.signal();
+            notifyNewReserve(reserveContext);
+            persistReserve(reserveDataFilePath, reserveContext);
           }
         }
       } finally {
@@ -390,8 +396,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
               feedContext.removePreviousEntry(witness);
               feedContext.indexReserveContext(reserveContext);
               notifyReserveChange(witness, reserveContext, changes);
-              this.asyncReserveUpdates.incrementAndGet();
-              this.reserveScopeChangeCondition.signal();
+              persistReserve(reserveDataFilePath, reserveContext);
             }
           } finally {
             writeLock.unlock();
@@ -403,10 +408,16 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     }
   }
 
+  private void notifyNewReserve(final ReserveContext reserveContext) {
+    for (final var listener : reserveListeners.values()) {
+      listener.onNewReserve(reserveContext);
+    }
+  }
+
   private void notifyReserveChange(final ReserveContext previous,
                                    final ReserveContext reserveContext,
                                    final Set<ReserveChange> changes) {
-    for (final var listener : listeners.values()) {
+    for (final var listener : reserveListeners.values()) {
       listener.onReserveChange(previous, reserveContext, changes);
     }
     final var listeners = this.specificReserveListeners.get(reserveContext.pubKey());
@@ -426,7 +437,6 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
       return;
     }
 
-
     final KaminoVaultContext kaminoVaultContext;
     if (previous == null) {
       kaminoVaultContext = KaminoVaultContext.createContext(
@@ -445,38 +455,71 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
         (a, b) -> Long.compareUnsigned(a.slot(), b.slot()) >= 0 ? a : b
     );
 
-    if (previous != null && !Arrays.equals(previous.reserves(), kaminoVaultContext.reserves())) {
-      final var listeners = vaultListeners.get(sharesMint);
+    if (previous == null) {
+      final var listeners = specificVaultListeners.get(sharesMint);
       if (listeners != null) {
         for (final var listener : listeners.values()) {
-          listener.onKaminoVaultChange(kaminoVaultContext);
+          listener.onNewKaminoVault(kaminoVaultContext);
         }
+      }
+      for (final var listener : vaultListeners.values()) {
+        listener.onNewKaminoVault(kaminoVaultContext);
+      }
+    } else if (!Arrays.equals(previous.reserves(), kaminoVaultContext.reserves())) {
+      final var listeners = specificVaultListeners.get(sharesMint);
+      if (listeners != null) {
+        for (final var listener : listeners.values()) {
+          listener.onKaminoVaultChange(previous, kaminoVaultContext);
+        }
+      }
+      for (final var listener : vaultListeners.values()) {
+        listener.onKaminoVaultChange(previous, kaminoVaultContext);
       }
     }
   }
 
   @Override
+  public void subscribeToVaults(final KaminoListener listener) {
+    vaultListeners.put(listener.key(), listener);
+  }
+
+  @Override
+  public void unsubscribeFromVaults(final KaminoListener listener) {
+    vaultListeners.remove(listener.key());
+  }
+
+  @Override
   public void subscribeToVault(final PublicKey vaultMint, final KaminoListener listener) {
-    final var listeners = vaultListeners.computeIfAbsent(vaultMint, _ -> new ConcurrentHashMap<>());
+    final var listeners = specificVaultListeners.computeIfAbsent(vaultMint, _ -> new ConcurrentHashMap<>());
     listeners.put(listener.key(), listener);
   }
 
   @Override
   public void unSubscribeFromVault(final PublicKey vaultMint, final KaminoListener listener) {
-    final var listeners = vaultListeners.get(vaultMint);
+    final var listeners = specificVaultListeners.get(vaultMint);
     if (listeners != null) {
       listeners.remove(listener.key());
     }
   }
 
   @Override
-  public void subscribe(final KaminoListener listener) {
-    listeners.put(listener.key(), listener);
+  public void subscribeToScope(final KaminoListener listener) {
+    scopeListeners.put(listener.key(), listener);
   }
 
   @Override
-  public void unsubscribe(final KaminoListener listener) {
-    listeners.put(listener.key(), listener);
+  public void unsubscribeFromScope(final KaminoListener listener) {
+    scopeListeners.remove(listener.key());
+  }
+
+  @Override
+  public void subscribeToReserves(final KaminoListener listener) {
+    reserveListeners.put(listener.key(), listener);
+  }
+
+  @Override
+  public void unsubscribeFromReserves(final KaminoListener listener) {
+    reserveListeners.remove(listener.key());
   }
 
   @Override
@@ -611,7 +654,6 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
           accountsNeededList = new ArrayList<>(this.accountsNeededSet);
         }
 
-
         final var kVaultAccounts = kVaultsFuture.join();
         final var reserveAccountsFutures = rpcCaller.courteousCall(
             rpcClient -> rpcClient.getProgramAccounts(reservesRequest),
@@ -622,33 +664,19 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
           handleVaultStateChange(accountInfo);
         }
 
-        readLock.lock();
-        try {
-          if (noReserveChanges()) {
-            logger.log(INFO, "No changes to Scope Configurations.");
-          }
-        } finally {
-          readLock.unlock();
-        }
-
         final var reserveAccounts = reserveAccountsFutures.join();
         for (final var accountInfo : reserveAccounts) {
           final var reserveContext = ReserveContext.createContext(accountInfo, mappingsContextMap);
           updateIfChanged(reserveContext);
         }
 
-        readLock.lock();
-        try {
-          if (noReserveChanges()) {
-            logger.log(INFO, "No changes to Scope Reserves.");
-          }
-        } finally {
-          readLock.unlock();
-        }
-
         writeLock.lock();
         try {
-          for (long remaining = pollingDelayNanos; asyncReserveUpdates.get() == 0; ) {
+          for (long remaining = pollingDelayNanos; ; ) {
+            if (this.numReserveChanges > 0) {
+              this.numReserveChanges = 0;
+              break;
+            }
             remaining = reserveScopeChangeCondition.awaitNanos(remaining);
             if (remaining <= 0) {
               break;
@@ -665,52 +693,15 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     }
   }
 
-  private boolean noReserveChanges() {
-    if (this.asyncReserveUpdates.getAndSet(0) > 0) {
-      final var marketsJson = marketsJson(reserveContextMap);
-      if (reserveContextsFilePath != null) {
-        writeMarketsJSON(reserveContextsFilePath, marketsJson);
-      }
-      for (final var listener : listeners.values()) {
-        listener.onCachedReserveJsonChange(marketsJson);
-      }
-      return false;
-    } else {
-      return true;
-    }
-  }
-
-  private static String marketsJson(final Map<PublicKey, ReserveContext> reserveContextMap) {
-    return reserveContextMap.values().stream()
-        .collect(Collectors.groupingBy(ReserveContext::market))
-        .entrySet().stream()
-        .map(entry -> {
-          final var market = entry.getKey();
-          final var reserveJSON = entry.getValue().stream()
-              .map(ReserveContext::priceChainsToJson)
-              .collect(Collectors.joining(",\n"))
-              .indent(2);
-          return String.format("""
-              {
-                "market": "%s",
-                "reserves": [
-                %s]
-              }""", market, reserveJSON
-          );
-        }).collect(Collectors.joining(",\n", "[", "]"));
-  }
-
-  static void writeReserves(final Path reserveContextsFilePath,
-                            final Map<PublicKey, ReserveContext> reserveContextMap) {
-    final var marketsJson = marketsJson(reserveContextMap);
-    writeMarketsJSON(reserveContextsFilePath, marketsJson);
-  }
-
-  private static void writeMarketsJSON(final Path reserveContextsFilePath, final String marketsJson) {
+  static void persistReserve(final Path reserveContextsFilePath, final ReserveContext reserveContext) {
+    final var marketFilePath = reserveContextsFilePath.resolve(reserveContext.market().toBase58());
     try {
-      Files.writeString(
-          reserveContextsFilePath,
-          marketsJson,
+      if (Files.notExists(marketFilePath)) {
+        Files.createDirectories(marketFilePath);
+      }
+      Files.write(
+          marketFilePath.resolve(reserveContext.pubKey().toBase58() + FileUtils.ACCOUNT_FILE_EXTENSION),
+          reserveContext.data(),
           CREATE, TRUNCATE_EXISTING, WRITE
       );
     } catch (final IOException e) {
@@ -718,318 +709,11 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     }
   }
 
-  private static String toJson(final Set<EmaType> emaTypes) {
-    return emaTypes == null || emaTypes.isEmpty()
-        ? ""
-        : emaTypes.stream().map(EmaType::name).collect(Collectors.joining("\",\"", ",\n  \"emaTypes\": [\"", "\"]"));
-  }
-
-  private static String toJson(final ScopeEntry scopeEntry) {
-    if (scopeEntry == null) {
-      return null;
-    }
-    return switch (scopeEntry) {
-      case CappedFloored cappedFloored -> String.format("""
-              {
-                "type": "%s",
-                "index": %d,
-                "source": %s,
-                "cap": %s,
-                "floor": %s
-              }""",
-          cappedFloored.oracleType().name(),
-          cappedFloored.index(),
-          toJson(cappedFloored.sourceEntry()),
-          toJson(cappedFloored.capEntry()),
-          toJson(cappedFloored.flooredEntry())
-      );
-      case Deprecated e -> String.format("""
-          {
-            "type": "Deprecated",
-            "index": %d
-          }""", e.index()
-      );
-      case DiscountToMaturity discountToMaturity -> String.format("""
-              {
-                "type": "%s",
-                "index": %d,
-                "discountPerYearBps": %d,
-                "maturityTimestamp": %d
-              }""",
-          discountToMaturity.oracleType().name(),
-          discountToMaturity.index(),
-          discountToMaturity.discountPerYearBps(),
-          discountToMaturity.maturityTimestamp()
-      );
-      case FixedPrice fixedPrice -> String.format("""
-              {
-                "type": "%s",
-                "index": %d,
-                "value": %d,
-                "exp": %d,
-                "decimal": "%s"
-              }""",
-          fixedPrice.oracleType().name(),
-          fixedPrice.index(),
-          fixedPrice.value(), fixedPrice.exp(),
-          fixedPrice.decimal().toPlainString()
-      );
-      case MostRecentOf mostRecentOf -> {
-        final var prefix = String.format("""
-                {
-                  "type": "%s",
-                  "index": %d,
-                  "sources": %s,
-                  "maxDivergenceBps": %d,
-                  "sourcesMaxAgeS": %d,""",
-            mostRecentOf.oracleType().name(),
-            mostRecentOf.index(),
-            toJson(mostRecentOf.sources()),
-            mostRecentOf.maxDivergenceBps(),
-            mostRecentOf.sourcesMaxAgeS()
-        );
-        yield switch (mostRecentOf) {
-          case CappedMostRecentOf cappedMostRecentOf -> String.format("""
-                  %s
-                    "cap": %s
-                  }""",
-              prefix,
-              toJson(cappedMostRecentOf.capEntry())
-          );
-          case MostRecentOfEntry mostRecentOfRecord -> String.format("""
-                  %s
-                    "refPrice": %s
-                  }""",
-              prefix,
-              toJson(mostRecentOfRecord.refPrice())
-          );
-        };
-      }
-      case MultiplicationChain multiplicationChain -> String.format("""
-              {
-                "type": "%s",
-                "index": %d,
-                "sourceEntries": %s,
-                "sourcesMaxAgeS": %d
-              }""",
-          multiplicationChain.oracleType().name(),
-          multiplicationChain.index(),
-          toJson(multiplicationChain.sourceEntries()),
-          multiplicationChain.sourcesMaxAgeS()
-      );
-      case NotYetSupported notYetSupported -> String.format("""
-              {
-                "type": "%s",
-                "index": %d,
-                "oracle": "%s",
-                "twapSource": %s,%s
-                "refPrice": %s,
-                "generic": "%s"
-              }""",
-          notYetSupported.oracleType().name(),
-          notYetSupported.index(),
-          notYetSupported.priceAccount(),
-          toJson(notYetSupported.twapSource()),
-          toJson(notYetSupported.emaTypes()),
-          toJson(notYetSupported.refPrice()),
-          Base64.getEncoder().encodeToString(notYetSupported.generic())
-      );
-      case OracleEntry e -> {
-        final var prefix = String.format("""
-                {
-                  "type": "%s",
-                  "index": %d,
-                  "oracle": "%s"%s""",
-            e.oracleType().name(),
-            scopeEntry.index(),
-            e.oracle(),
-            toJson(e.emaTypes())
-        );
-        yield switch (e) {
-          case ReferencesEntry re -> {
-            final var refPrefix = String.format("""
-                    %s,
-                      "refPrice": %s""",
-                prefix,
-                toJson(re.refPrice())
-            );
-            yield switch (re) {
-              case Chainlink chainlink -> String.format("""
-                      %s,
-                        "confidenceFactor": %d
-                      }""",
-                  refPrefix,
-                  chainlink.confidenceFactor()
-              );
-              case PythLazer pythLazer -> String.format("""
-                      %s,
-                        "feedId": %d,
-                        "exponent": %d,
-                        "confidenceFactor": %d
-                      }""",
-                  refPrefix,
-                  pythLazer.feedId(),
-                  pythLazer.exponent(),
-                  pythLazer.confidenceFactor()
-              );
-              default -> refPrefix + "\n}";
-            };
-          }
-          case ChainlinkStatusEntry chainlinkStatusEntry -> String.format("""
-                  %s,
-                    "marketStatusBehavior": "%s"
-                  }""",
-              prefix,
-              chainlinkStatusEntry.marketStatusBehavior()
-          );
-          default -> prefix + "\n}";
-        };
-      }
-      case ScopeTwap scopeTwap -> String.format("""
-              {
-                "type": "%s",
-                "index": %d,
-                "source": %s
-              }""",
-          scopeTwap.oracleType().name(),
-          scopeTwap.index(),
-          toJson(scopeTwap.sourceEntry())
-      );
-      case Unused e -> String.format("""
-          {
-            "type": "Unused",
-            "index": %d
-          }""", e.index()
-      );
-      case FunctionalEntry functionalEntry -> String.format("""
-              {
-                "type": "%s",
-                "index": %d,
-                "priceAccount": "%s"
-              }""",
-          scopeEntry.oracleType().name(),
-          scopeEntry.index(),
-          functionalEntry.priceAccount()
-      );
-    };
-  }
-
-  static String toJson(final ScopeEntry[] priceChain) {
-    return Arrays.stream(priceChain).<String>mapMulti((entry, downstream) -> {
-      if (entry != null) {
-        final var json = toJson(entry);
-        if (json != null) {
-          downstream.accept(json.indent(4).stripTrailing());
-        }
-      }
-    }).collect(Collectors.joining(",\n", "[\n", "\n  ]"));
-  }
-
   private void notifyMappingsChange(final ScopeFeedContext scopeFeedContext,
                                     final MappingsContext witness,
                                     final MappingsContext mappingContext) {
-    for (final var listener : listeners.values()) {
+    for (final var listener : scopeListeners.values()) {
       listener.onMappingChange(scopeFeedContext, witness, mappingContext);
     }
-  }
-
-  static void analyzeMarkets(final Map<PublicKey, ReserveContext> reserveContextMap) {
-    final var byMarket = reserveContextMap.values().stream()
-        .collect(Collectors.groupingBy(ReserveContext::market));
-
-    record MarketOracles(PublicKey market, Set<PublicKey> switchboard, Set<PublicKey> pyth, Set<PublicKey> scope) {
-
-      String toJson() {
-        return String.format("""
-                {
-                 "market": "%s",
-                 "switchboard": [%s],
-                 "pyth": [%s],
-                 "scope": [%s]
-                }""",
-            market.toBase58(),
-            switchboard.isEmpty() ? "" : switchboard.stream().map(PublicKey::toBase58).collect(Collectors.joining("\",\"", "\"", "\"")),
-            pyth.isEmpty() ? "" : pyth.stream().map(PublicKey::toBase58).collect(Collectors.joining("\",\"", "\"", "\"")),
-            scope.isEmpty() ? "" : scope.stream().map(PublicKey::toBase58).collect(Collectors.joining("\",\"", "\"", "\""))
-        );
-      }
-    }
-
-    final class MarketOraclesBuilder {
-
-      Set<PublicKey> switchboard;
-      Set<PublicKey> pyth;
-      Set<PublicKey> scope;
-
-      int addAccounts(final TokenInfo tokenInfo) {
-        int numOracleSources = 0;
-        final var priceFeed = tokenInfo.scopeConfiguration().priceFeed();
-        if (!priceFeed.equals(PublicKey.NONE) && !priceFeed.equals(KaminoAccounts.NULL_KEY)) {
-          if (scope == null) {
-            scope = new HashSet<>();
-          }
-          scope.add(priceFeed);
-          ++numOracleSources;
-        }
-        final var switchboard = tokenInfo.switchboardConfiguration().priceAggregator();
-        if (!switchboard.equals(PublicKey.NONE) && !switchboard.equals(KaminoAccounts.NULL_KEY)) {
-          if (this.switchboard == null) {
-            this.switchboard = new HashSet<>();
-          }
-          this.switchboard.add(switchboard);
-          ++numOracleSources;
-        }
-        final var pyth = tokenInfo.pythConfiguration().price();
-        if (!pyth.equals(PublicKey.NONE) && !pyth.equals(KaminoAccounts.NULL_KEY)) {
-          if (this.pyth == null) {
-            this.pyth = new HashSet<>();
-          }
-          this.pyth.add(pyth);
-          ++numOracleSources;
-        }
-        return numOracleSources;
-      }
-
-      int numAccounts() {
-        int numAccounts = 0;
-        if (switchboard != null) {
-          numAccounts += switchboard.size();
-        }
-        if (pyth != null) {
-          numAccounts += pyth.size();
-        }
-        if (scope != null) {
-          numAccounts += scope.size();
-        }
-        return numAccounts;
-      }
-
-      MarketOracles build(final PublicKey market) {
-        return new MarketOracles(
-            market,
-            switchboard == null ? Set.of() : Set.copyOf(switchboard),
-            pyth == null ? Set.of() : Set.copyOf(pyth),
-            scope == null ? Set.of() : Set.copyOf(scope)
-        );
-      }
-    }
-
-    final var marketOracles = HashMap.<PublicKey, MarketOracles>newHashMap(byMarket.size());
-
-    for (final var entry : byMarket.entrySet()) {
-      final var market = entry.getKey();
-      final var builder = new MarketOraclesBuilder();
-      for (final var reserveContext : entry.getValue()) {
-        final var tokenInfo = reserveContext.tokenInfo();
-        builder.addAccounts(tokenInfo);
-      }
-      marketOracles.put(market, builder.build(market));
-    }
-
-    final var json = marketOracles.values().stream()
-        .map(MarketOracles::toJson)
-        .map(indented -> indented.indent(2).stripTrailing())
-        .collect(Collectors.joining(",\n", "[\n", "\n]"));
-    System.out.println(json);
   }
 }

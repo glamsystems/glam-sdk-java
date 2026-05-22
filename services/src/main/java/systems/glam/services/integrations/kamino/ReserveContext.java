@@ -3,23 +3,19 @@ package systems.glam.services.integrations.kamino;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.encoding.ByteUtil;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.lend.gen.types.*;
 import software.sava.idl.clients.kamino.scope.entries.PriceChains;
-import software.sava.idl.clients.kamino.scope.entries.PriceChainsRecord;
-import software.sava.idl.clients.kamino.scope.entries.ScopeEntry;
-import software.sava.rpc.json.PublicKeyEncoding;
 import software.sava.rpc.json.http.response.AccountInfo;
-import systems.comodal.jsoniter.FieldBufferPredicate;
-import systems.comodal.jsoniter.JsonIterator;
 import systems.glam.services.oracles.scope.MappingsContext;
-import systems.glam.services.oracles.scope.parsers.ScopeEntryParser;
 
 import java.util.*;
 
 import static software.sava.idl.clients.kamino.KaminoAccounts.NULL_KEY;
 
 public record ReserveContext(long slot,
+                             byte[] data,
                              PublicKey pubKey, AccountMeta writeReserve,
                              PublicKey market,
                              String tokenName,
@@ -49,32 +45,8 @@ public record ReserveContext(long slot,
     return writeMarketMeta;
   }
 
-  public static ReserveContext parseContext(final JsonIterator ji,
-                                            final PublicKey market,
-                                            final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed) {
-    final var parser = new Parser();
-    ji.testObject(parser);
-    return parser.createContext(market, mappingsContextByPriceFeed);
-  }
-
-  public static String fixedLengthString(final byte[] data) {
-    return fixedLengthString(data, 0, data.length);
-  }
-
-  public static String fixedLengthString(final byte[] data, final int from, final int to) {
-    int i = to - 1;
-    while (i >= from && (Character.isISOControl(data[i]) || Character.isWhitespace(data[i]))) {
-      --i;
-    }
-    if (i < from) {
-      return null;
-    } else {
-      final var str = new String(data, from, (i - from) + 1);
-      return str.isBlank() ? null : str;
-    }
-  }
-
   private static ReserveContext createContext(final long slot,
+                                              final byte[] data,
                                               final PublicKey reserveKey,
                                               final PublicKey lendingMarketKey,
                                               final PublicKey mintKey,
@@ -82,9 +54,10 @@ public record ReserveContext(long slot,
                                               final TokenInfo tokenInfo,
                                               final PriceChains priceChains) {
     final byte[] name = tokenInfo.name();
-    final var tokenName = fixedLengthString(name);
+    final var tokenName = SerDeUtil.fixedLengthString(name);
     return new ReserveContext(
         slot,
+        data,
         reserveKey, AccountMeta.createWrite(reserveKey),
         lendingMarketKey,
         tokenName,
@@ -109,7 +82,24 @@ public record ReserveContext(long slot,
 
   static ReserveContext createContext(final AccountInfo<byte[]> accountInfo,
                                       final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed) {
-    final byte[] data = accountInfo.data();
+    return createContext(
+        accountInfo.context().slot(),
+        accountInfo.pubKey(),
+        accountInfo.data(),
+        mappingsContextByPriceFeed
+    );
+  }
+
+  static ReserveContext createContext(final PublicKey reserveKey,
+                                      final byte[] data,
+                                      final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed) {
+    return createContext(0L, reserveKey, data, mappingsContextByPriceFeed);
+  }
+
+  private static ReserveContext createContext(final long slot,
+                                              final PublicKey reserveKey,
+                                              final byte[] data,
+                                              final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed) {
     final var lendingMarketKey = PublicKey.readPubKey(data, Reserve.LENDING_MARKET_OFFSET);
     final var mintKey = PublicKey.readPubKey(data, Reserve.LIQUIDITY_OFFSET + ReserveLiquidity.MINT_PUBKEY_OFFSET);
     final var tokenInfo = TokenInfo.read(data, Reserve.CONFIG_OFFSET + ReserveConfig.TOKEN_INFO_OFFSET);
@@ -117,8 +107,9 @@ public record ReserveContext(long slot,
     final var priceChains = readPriceChains(mintKey, scopeConfiguration, mappingsContextByPriceFeed);
     long totalCollateral = ByteUtil.getInt64LE(data, Reserve.COLLATERAL_OFFSET + ReserveCollateral.MINT_TOTAL_SUPPLY_OFFSET);
     return createContext(
-        accountInfo.context().slot(),
-        accountInfo.pubKey(),
+        slot,
+        data,
+        reserveKey,
         lendingMarketKey,
         mintKey,
         totalCollateral,
@@ -130,6 +121,7 @@ public record ReserveContext(long slot,
   public ReserveContext withPriceChains(final PriceChains priceChains) {
     return new ReserveContext(
         slot,
+        data,
         pubKey, writeReserve,
         market,
         tokenName,
@@ -202,172 +194,6 @@ public record ReserveContext(long slot,
     }
   }
 
-  private String jsonTokenName() {
-    if (tokenName == null) {
-      return "null";
-    } else {
-      return '"' + tokenName + '"';
-    }
-  }
-
-  public String keysToJson() {
-    return String.format("""
-            {
-              "market": "%s",
-              "reserve": "%s",
-              "tokenName": %s,
-              "mint": "%s",
-              "totalCollateral": %d
-            }""",
-        market.toBase58(),
-        pubKey.toBase58(),
-        jsonTokenName(),
-        mint,
-        totalCollateral
-    );
-  }
-
-  public String priceChainsToJson() {
-    final byte[] tokenInfo = new byte[TokenInfo.BYTES];
-    this.tokenInfo.write(tokenInfo, 0);
-    final var encodedTokenInfo = Base64.getEncoder().encodeToString(tokenInfo);
-    if (priceChains == null) {
-      return String.format("""
-              {
-                "reserve": "%s",
-                "tokenName": %s,
-                "mint": "%s",
-                "totalCollateral": %d,
-                "priceFeed": "%s",
-                "tokenInfo": "%s"
-              }""",
-          pubKey.toBase58(),
-          jsonTokenName(),
-          mint.toBase58(),
-          totalCollateral,
-          priceFeed().toBase58(),
-          encodedTokenInfo
-      );
-    } else {
-      final var twapChain = priceChains.twapChain();
-      if (twapChain.length == 0) {
-        return String.format("""
-                {
-                  "reserve": "%s",
-                  "tokenName": %s,
-                  "mint": "%s",
-                  "totalCollateral": %d,
-                  "priceFeed": "%s",
-                  "maxAgePriceSeconds": %d,
-                  "priceChain": %s,
-                  "tokenInfo": "%s"
-                }""",
-            pubKey.toBase58(),
-            jsonTokenName(),
-            mint.toBase58(),
-            totalCollateral,
-            priceFeed().toBase58(),
-            maxAgePriceSeconds(),
-            KaminoCacheImpl.toJson(priceChains.priceChain()),
-            encodedTokenInfo
-        );
-      } else {
-        return String.format("""
-                {
-                  "reserve": "%s",
-                  "tokenName": %s,
-                  "mint": "%s",
-                  "totalCollateral": %d,
-                  "priceFeed": "%s",
-                  "maxAgePriceSeconds": %d,
-                  "maxAgeTwapSeconds": %d,
-                  "maxTwapDivergenceBps": %d,
-                  "priceChain": %s,
-                  "twapChain": %s,
-                  "tokenInfo": "%s"
-                }""",
-            pubKey.toBase58(),
-            jsonTokenName(),
-            mint.toBase58(),
-            totalCollateral,
-            priceFeed().toBase58(),
-            maxAgePriceSeconds(),
-            maxAgeTwapSeconds(),
-            maxTwapDivergenceBps(),
-            KaminoCacheImpl.toJson(priceChains.priceChain()),
-            KaminoCacheImpl.toJson(twapChain),
-            encodedTokenInfo
-        );
-      }
-    }
-  }
-
-  public String priceChainsToJsonNoTokenInfo() {
-    if (priceChains == null) {
-      return String.format("""
-              {
-                "reserve": "%s",
-                "tokenName": %s,
-                "mint": "%s",
-                "totalCollateral": %d,
-                "priceFeed": "%s"
-              }""",
-          pubKey.toBase58(),
-          jsonTokenName(),
-          mint.toBase58(),
-          totalCollateral,
-          priceFeed().toBase58()
-      );
-    } else {
-      final var twapChain = priceChains.twapChain();
-      if (twapChain.length == 0) {
-        return String.format("""
-                {
-                  "reserve": "%s",
-                  "tokenName": %s,
-                  "mint": "%s",
-                  "totalCollateral": %d,
-                  "priceFeed": "%s",
-                  "maxAgePriceSeconds": %d,
-                  "priceChain": %s
-                }""",
-            pubKey.toBase58(),
-            jsonTokenName(),
-            mint.toBase58(),
-            totalCollateral,
-            priceFeed().toBase58(),
-            maxAgePriceSeconds(),
-            KaminoCacheImpl.toJson(priceChains.priceChain())
-        );
-      } else {
-        return String.format("""
-                {
-                  "reserve": "%s",
-                  "tokenName": %s,
-                  "mint": "%s",
-                  "totalCollateral": %d,
-                  "priceFeed": "%s",
-                  "maxAgePriceSeconds": %d,
-                  "maxAgeTwapSeconds": %d,
-                  "maxTwapDivergenceBps": %d,
-                  "priceChain": %s,
-                  "twapChain": %s
-                }""",
-            pubKey.toBase58(),
-            jsonTokenName(),
-            mint.toBase58(),
-            totalCollateral,
-            priceFeed().toBase58(),
-            maxAgePriceSeconds(),
-            maxAgeTwapSeconds(),
-            maxTwapDivergenceBps(),
-            KaminoCacheImpl.toJson(priceChains.priceChain()),
-            KaminoCacheImpl.toJson(twapChain)
-        );
-      }
-    }
-  }
-
   static boolean onlyCollateralChanged(final Set<ReserveChange> changes) {
     return changes.size() == 1 && changes.contains(ReserveChange.TOTAL_COLLATERAL);
   }
@@ -424,82 +250,6 @@ public record ReserveContext(long slot,
         }
       }
       return changes;
-    }
-  }
-
-  public static final class Parser implements FieldBufferPredicate {
-
-    private static final ScopeEntry[] EMPTY_CHAIN = new ScopeEntry[0];
-
-    private long slot;
-    private PublicKey reserve;
-    private String tokenName;
-    private PublicKey mint;
-    private long totalCollateral;
-    private ScopeEntry[] priceChain;
-    private ScopeEntry[] twapChain;
-    private TokenInfo tokenInfo;
-
-    private Parser() {
-    }
-
-    private ReserveContext createContext(final PublicKey market,
-                                         final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed) {
-      final PriceChains priceChains;
-      if (mappingsContextByPriceFeed != null) {
-        priceChains = readPriceChains(
-            mint, tokenInfo.scopeConfiguration(), mappingsContextByPriceFeed
-        );
-      } else if (priceChain == null && twapChain == null) {
-        priceChains = null;
-      } else {
-        priceChains = new PriceChainsRecord(
-            priceChain == null ? EMPTY_CHAIN : priceChain,
-            twapChain == null ? EMPTY_CHAIN : twapChain
-        );
-      }
-      return new ReserveContext(
-          slot,
-          reserve, AccountMeta.createWrite(reserve),
-          market,
-          tokenName,
-          mint,
-          totalCollateral,
-          priceChains,
-          tokenInfo
-      );
-    }
-
-    private static ScopeEntry[] parseChain(final JsonIterator ji) {
-      final var priceChain = new ArrayList<ScopeEntry>(ScopeConfiguration.PRICE_CHAIN_LEN);
-      while (ji.readArray()) {
-        priceChain.add(ScopeEntryParser.parseEntry(ji));
-      }
-      return priceChain.isEmpty() ? null : priceChain.toArray(ScopeEntry[]::new);
-    }
-
-    @Override
-    public boolean test(final char[] buf, final int offset, final int len, final JsonIterator ji) {
-      if (JsonIterator.fieldEquals("slot", buf, offset, len)) {
-        this.slot = ji.readLong();
-      } else if (JsonIterator.fieldEquals("reserve", buf, offset, len)) {
-        this.reserve = PublicKeyEncoding.parseBase58Encoded(ji);
-      } else if (JsonIterator.fieldEquals("tokenName", buf, offset, len)) {
-        this.tokenName = ji.readString();
-      } else if (JsonIterator.fieldEquals("mint", buf, offset, len)) {
-        this.mint = PublicKeyEncoding.parseBase58Encoded(ji);
-      } else if (JsonIterator.fieldEquals("totalCollateral", buf, offset, len)) {
-        this.totalCollateral = ji.readLong();
-      } else if (JsonIterator.fieldEquals("priceChain", buf, offset, len)) {
-        this.priceChain = parseChain(ji);
-      } else if (JsonIterator.fieldEquals("twapChain", buf, offset, len)) {
-        this.twapChain = parseChain(ji);
-      } else if (JsonIterator.fieldEquals("tokenInfo", buf, offset, len)) {
-        this.tokenInfo = TokenInfo.read(ji.decodeBase64String(), 0);
-      } else {
-        ji.skip();
-      }
-      return true;
     }
   }
 }

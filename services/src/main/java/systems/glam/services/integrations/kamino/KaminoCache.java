@@ -16,7 +16,6 @@ import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.services.io.FileUtils;
 import systems.glam.services.oracles.scope.MappingsContext;
 import systems.glam.services.oracles.scope.ScopeFeedContext;
-import systems.glam.services.oracles.scope.parsers.KaminoReserveContextsParser;
 import systems.glam.services.rpc.AccountFetcher;
 
 import java.io.IOException;
@@ -32,10 +31,33 @@ import java.util.function.Consumer;
 
 import static java.nio.file.StandardOpenOption.*;
 import static software.sava.core.accounts.PublicKey.PUBLIC_KEY_LENGTH;
-import static systems.glam.services.integrations.kamino.KaminoCacheImpl.writeReserves;
-import static systems.glam.services.integrations.kamino.KaminoCacheImpl.writeScopeConfiguration;
+import static systems.glam.services.integrations.kamino.KaminoCacheImpl.*;
 
 public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<AccountInfo<byte[]>> {
+
+  private static ProgramAccountsRequest<byte[]> scopeConfigurationAccountsRequest(final KaminoAccounts kaminoAccounts) {
+    return ProgramAccountsRequest.build()
+        .filters(List.of(Configuration.SIZE_FILTER, Configuration.DISCRIMINATOR_FILTER))
+        .programId(kaminoAccounts.scopePricesProgram())
+        .dataSliceLength(0, MIN_CONFIGURATION_LENGTH)
+        .createRequest();
+  }
+
+  private static ProgramAccountsRequest<byte[]> reserveAccountsRequest(final KaminoAccounts kaminoAccounts) {
+    return ProgramAccountsRequest.build()
+        .filters(List.of(Reserve.SIZE_FILTER, Reserve.DISCRIMINATOR_FILTER))
+        .programId(kaminoAccounts.kLendProgram())
+        .dataSliceLength(0, MIN_RESERVE_LENGTH)
+        .createRequest();
+  }
+
+  private static ProgramAccountsRequest<byte[]> kVaultAccountsRequest(final KaminoAccounts kaminoAccounts) {
+    return ProgramAccountsRequest.build()
+        .filters(List.of(VaultState.SIZE_FILTER, VaultState.DISCRIMINATOR_FILTER))
+        .programId(kaminoAccounts.kVaultsProgram())
+        .dataSliceLength(0, MIN_VAULT_STATE_LENGTH)
+        .createRequest();
+  }
 
   static CompletableFuture<KaminoCache> initService(final RpcCaller rpcCaller,
                                                     final AccountFetcher accountFetcher,
@@ -47,32 +69,19 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
       final var kVaultsProgram = kaminoAccounts.kVaultsProgram();
 
       // Note: New Configurations will be discovered indirectly via Kamino Lending Reserves.
-      final var configAccountsRequest = ProgramAccountsRequest.build()
-          .filters(List.of(Configuration.SIZE_FILTER, Configuration.DISCRIMINATOR_FILTER))
-          .programId(scopeProgram)
-          .dataSliceLength(0, Configuration.PADDING_OFFSET)
-          .createRequest();
+      final var configAccountsRequest = scopeConfigurationAccountsRequest(kaminoAccounts);
       final var scopeConfigurationsFuture = rpcCaller.courteousCall(
           rpcClient -> rpcClient.getProgramAccounts(configAccountsRequest),
           "Scope Configuration accounts"
       );
 
-      final var KVaultsRequest = ProgramAccountsRequest.build()
-          .filters(List.of(VaultState.SIZE_FILTER, VaultState.DISCRIMINATOR_FILTER))
-          .programId(kVaultsProgram)
-          .dataSliceLength(0, VaultState.VAULT_FARM_OFFSET)
-          .createRequest();
+      final var KVaultsRequest = kVaultAccountsRequest(kaminoAccounts);
       final var vaultStateAccountsFuture = rpcCaller.courteousCall(
           rpcClient -> rpcClient.getProgramAccounts(KVaultsRequest),
           "rpcClient#getKaminoVaultAccounts"
       );
 
-      final var reserveAccountsRequest = ProgramAccountsRequest.build()
-          .filters(List.of(Reserve.SIZE_FILTER, Reserve.DISCRIMINATOR_FILTER))
-          .programId(kLendProgram)
-          .dataSliceLength(0, Reserve.CONFIG_PADDING_OFFSET)
-          .createRequest();
-
+      final var reserveAccountsRequest = reserveAccountsRequest(kaminoAccounts);
       final var reserveAccountsFuture = rpcCaller.courteousCall(
           rpcClient -> rpcClient.getProgramAccounts(reserveAccountsRequest),
           "rpcClient#getKaminoReserves"
@@ -85,7 +94,7 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
       for (final var accountInfo : configAccounts) {
         if (accountInfo != null) {
           final byte[] data = accountInfo.data();
-          if (data.length != Configuration.PADDING_OFFSET || !Configuration.DISCRIMINATOR.equals(data, 0)) {
+          if (data.length != MIN_CONFIGURATION_LENGTH || !Configuration.DISCRIMINATOR.equals(data, 0)) {
             throw new IllegalStateException(String.format(
                 "%s is not a valid Scope Configuration account.", accountInfo.pubKey()
             ));
@@ -149,6 +158,12 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
       final var vaultStateAccounts = vaultStateAccountsFuture.join();
       final var vaultStateMap = new ConcurrentHashMap<PublicKey, KaminoVaultContext>(Integer.highestOneBit(vaultStateAccounts.size()) << 1);
       for (final var accountInfo : vaultStateAccounts) {
+        final byte[] data = accountInfo.data();
+        if (data.length != MIN_VAULT_STATE_LENGTH || !VaultState.DISCRIMINATOR.equals(data, 0)) {
+          throw new IllegalStateException(String.format(
+              "%s is not a valid Kamino Vault account.", accountInfo.pubKey()
+          ));
+        }
         final var vaultStateContext = KaminoVaultContext.createContext(accountInfo);
         vaultStateMap.put(vaultStateContext.sharesMint(), vaultStateContext);
       }
@@ -182,7 +197,7 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
                                                     final Duration pollingDelay) {
     return CompletableFuture.supplyAsync(() -> {
       try {
-        final var reservesJsonFilePath = kaminoAccountsPath.resolve("reserves.json");
+        final var reserveDataFilePath = kaminoAccountsPath.resolve("reserves");
         final var scopeAccountsPath = kaminoAccountsPath.resolve("scope");
         final var configurationsPath = scopeAccountsPath.resolve("configurations");
         final var mappingsPath = scopeAccountsPath.resolve("mappings");
@@ -190,21 +205,13 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
         final var scopeProgram = kaminoAccounts.scopePricesProgram();
         final var kVaultsProgram = kaminoAccounts.kVaultsProgram();
 
-        final var KVaultsRequest = ProgramAccountsRequest.build()
-            .filters(List.of(VaultState.SIZE_FILTER, VaultState.DISCRIMINATOR_FILTER))
-            .programId(kVaultsProgram)
-            .dataSliceLength(0, VaultState.VAULT_FARM_OFFSET)
-            .createRequest();
+        final var KVaultsRequest = kVaultAccountsRequest(kaminoAccounts);
         final var vaultStateAccountsFuture = rpcCaller.courteousCall(
             rpcClient -> rpcClient.getProgramAccounts(KVaultsRequest),
             "rpcClient#getKaminoVaultAccounts"
         );
 
-        final var reserveAccountsRequest = ProgramAccountsRequest.build()
-            .filters(List.of(Reserve.SIZE_FILTER, Reserve.DISCRIMINATOR_FILTER))
-            .programId(kLendProgram)
-            .dataSliceLength(0, Reserve.CONFIG_PADDING_OFFSET)
-            .createRequest();
+        final var reserveAccountsRequest = reserveAccountsRequest(kaminoAccounts);
 
         final int priceFeedKeyFromOffset = Reserve.CONFIG_OFFSET + ReserveConfig.TOKEN_INFO_OFFSET + TokenInfo.SCOPE_CONFIGURATION_OFFSET;
         final int priceFeedKeyToOffset = priceFeedKeyFromOffset + PUBLIC_KEY_LENGTH;
@@ -214,7 +221,7 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
         final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap;
         final List<AccountInfo<byte[]>> reserveAccounts;
         final Set<PublicKey> priceFeedsNeeded;
-        if (Files.exists(reservesJsonFilePath)) {
+        if (Files.exists(reserveDataFilePath)) {
           reserveContextMap = new ConcurrentHashMap<>(512);
           reserveAccounts = List.of();
           priceFeedsNeeded = Set.of();
@@ -227,7 +234,7 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
 
           final var noMappings = Map.<PublicKey, MappingsContext>of();
           priceFeedsNeeded = HashSet.newHashSet(8);
-          ;
+
           for (final var reserveAccountInfo : reserveAccounts) {
             final byte[] data = reserveAccountInfo.data();
             if (Arrays.equals(
@@ -252,11 +259,7 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
         if (feedContextMap.keySet().containsAll(priceFeedsNeeded) && !feedContextMap.isEmpty()) {
           scopeConfigurationsFuture = null;
         } else {
-          final var configAccountsRequest = ProgramAccountsRequest.build()
-              .filters(List.of(Configuration.SIZE_FILTER, Configuration.DISCRIMINATOR_FILTER))
-              .programId(scopeProgram)
-              .dataSliceLength(0, Configuration.PADDING_OFFSET)
-              .createRequest();
+          final var configAccountsRequest = scopeConfigurationAccountsRequest(kaminoAccounts);
           scopeConfigurationsFuture = rpcCaller.courteousCall(
               rpcClient -> rpcClient.getProgramAccounts(configAccountsRequest),
               "Scope Configuration accounts"
@@ -264,11 +267,11 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
         }
 
         if (scopeConfigurationsFuture != null) {
-          final var accounts = scopeConfigurationsFuture.join();
-          for (final var accountInfo : accounts) {
+          final var configurationAccounts = scopeConfigurationsFuture.join();
+          for (final var accountInfo : configurationAccounts) {
             if (accountInfo != null) {
               final byte[] data = accountInfo.data();
-              if (data.length != Configuration.PADDING_OFFSET || !Configuration.DISCRIMINATOR.equals(data, 0)) {
+              if (data.length != MIN_CONFIGURATION_LENGTH || !Configuration.DISCRIMINATOR.equals(data, 0)) {
                 throw new IllegalStateException(String.format(
                     "%s is not a valid Scope Configuration account.", accountInfo.pubKey()
                 ));
@@ -317,25 +320,29 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
         }
 
         if (reserveAccounts.isEmpty()) {
-          loadReserves(reservesJsonFilePath, mappingsContextMap, reserveContextMap);
+          loadReserves(reserveDataFilePath, mappingsContextMap, reserveContextMap);
         } else {
           for (final var reserveAccountInfo : reserveAccounts) {
             if (!reserveContextMap.containsKey(reserveAccountInfo.pubKey())) {
               final var reserveContext = ReserveContext.createContext(reserveAccountInfo, mappingsContextMap);
               reserveContextMap.put(reserveContext.pubKey(), reserveContext);
+              KaminoCacheImpl.persistReserve(reserveDataFilePath, reserveContext);
             }
           }
-          writeReserves(reservesJsonFilePath, reserveContextMap);
         }
 
         final var vaultStateAccounts = vaultStateAccountsFuture.join();
         final var vaultStateMap = new ConcurrentHashMap<PublicKey, KaminoVaultContext>(Integer.highestOneBit(vaultStateAccounts.size()) << 1);
         for (final var accountInfo : vaultStateAccounts) {
+          final byte[] data = accountInfo.data();
+          if (data.length != MIN_VAULT_STATE_LENGTH || !VaultState.DISCRIMINATOR.equals(data, 0)) {
+            throw new IllegalStateException(String.format(
+                "%s is not a valid Kamino Vault account.", accountInfo.pubKey()
+            ));
+          }
           final var vaultStateContext = KaminoVaultContext.createContext(accountInfo);
           vaultStateMap.put(vaultStateContext.sharesMint(), vaultStateContext);
         }
-
-//        analyzeMarkets(reserveContextMap);
 
         final var cache = new KaminoCacheImpl(
             rpcCaller,
@@ -348,7 +355,7 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
             pollingDelay,
             configurationsPath,
             mappingsPath,
-            reservesJsonFilePath,
+            reserveDataFilePath,
             feedContextMap,
             mappingsContextMap,
             reserveContextMap,
@@ -362,13 +369,6 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
     });
   }
 
-  private static void loadReserves(final Path reservesJsonFilePath,
-                                   final Map<PublicKey, MappingsContext> mappingsContextByPriceFeed,
-                                   final Map<PublicKey, ReserveContext> reserveContexts) throws IOException {
-    final byte[] data = Files.readAllBytes(reservesJsonFilePath);
-    KaminoReserveContextsParser.parseReserves(data, mappingsContextByPriceFeed, reserveContexts);
-  }
-
   private static Map<PublicKey, ScopeFeedContext> loadFeedContexts(final Path configurationsPath) throws IOException {
     final var feedContextMap = new HashMap<PublicKey, ScopeFeedContext>();
     if (Files.notExists(configurationsPath)) {
@@ -377,7 +377,7 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
       try (final var paths = Files.list(configurationsPath)) {
         paths.forEach(path -> {
           final var accountData = FileUtils.readAccountData(path);
-          if (accountData.isAccount(Configuration.DISCRIMINATOR, Configuration.PADDING_OFFSET)) {
+          if (accountData.isAccountAtLeast(Configuration.DISCRIMINATOR, MIN_CONFIGURATION_LENGTH)) {
             final var feedContext = accountData.read(ScopeFeedContext::createContext);
             feedContextMap.put(feedContext.configurationKey(), feedContext);
             feedContextMap.put(feedContext.oracleMappings(), feedContext);
@@ -395,6 +395,41 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
     return feedContextMap;
   }
 
+  private static void loadReserves(final Path reserveDataFilePath,
+                                   final Map<PublicKey, MappingsContext> mappingsContextMap,
+                                   final ConcurrentMap<PublicKey, ReserveContext> reserveContextMap) throws IOException {
+    if (Files.notExists(reserveDataFilePath)) {
+      Files.createDirectories(reserveDataFilePath);
+      return;
+    }
+    try (final var marketDirs = Files.list(reserveDataFilePath)) {
+      marketDirs.forEach(marketDir -> {
+        if (!Files.isDirectory(marketDir)) {
+          return;
+        }
+        try (final var reserveFiles = Files.list(marketDir)) {
+          reserveFiles.forEach(reserveFile -> {
+            final var accountData = FileUtils.readAccountData(reserveFile);
+            if (accountData.isAccountAtLeast(Reserve.DISCRIMINATOR, MIN_RESERVE_LENGTH)) {
+              final var reserveContext = ReserveContext.createContext(
+                  accountData.pubKey(), accountData.data(), mappingsContextMap
+              );
+              reserveContextMap.put(reserveContext.pubKey(), reserveContext);
+            } else {
+              try {
+                Files.delete(reserveFile);
+              } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+              }
+            }
+          });
+        } catch (final IOException e) {
+          throw new UncheckedIOException(e);
+        }
+      });
+    }
+  }
+
   private static ConcurrentMap<PublicKey, MappingsContext> loadMappings(final Path mappingsPath,
                                                                         final Map<PublicKey, ScopeFeedContext> feedContextMap) throws IOException {
     final var mappingsContextByPriceFeed = new ConcurrentHashMap<PublicKey, MappingsContext>();
@@ -404,7 +439,7 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
       try (final var paths = Files.list(mappingsPath)) {
         paths.forEach(path -> {
           final var accountData = FileUtils.readAccountData(path);
-          if (accountData.isAccount(OracleMappings.DISCRIMINATOR, OracleMappings.BYTES)) {
+          if (accountData.isAccountExact(OracleMappings.DISCRIMINATOR, OracleMappings.BYTES)) {
             final var mappings = accountData.read(OracleMappings::read);
             final var scopeEntries = ScopeReader.parseEntries(0, mappings);
             final var feedContext = feedContextMap.get(mappings._address());
@@ -412,6 +447,12 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
             final var mappingsContext = new MappingsContext(mappingsKey, accountData.data(), scopeEntries);
             mappingsContextByPriceFeed.put(mappingsKey, mappingsContext);
             mappingsContextByPriceFeed.put(feedContext.priceFeed(), mappingsContext);
+          } else {
+            try {
+              Files.delete(path);
+            } catch (final IOException e) {
+              throw new UncheckedIOException(e);
+            }
           }
         });
       }
@@ -419,11 +460,13 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
     return mappingsContextByPriceFeed;
   }
 
-  Path reservesJsonFilePath();
+  Path reserveDataFilePath();
 
   Path mappingsPath();
 
   Path configurationsPath();
+
+  Collection<ReserveContext> reserveContexts();
 
   ReserveContext reserveContext(final PublicKey pubKey);
 
@@ -435,13 +478,33 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
 
   void subscribe(final SolanaRpcWebsocket websocket);
 
-  void subscribe(final KaminoListener listener);
+  default void subscribeToAll(final KaminoListener listener) {
+    subscribeToScope(listener);
+    subscribeToReserves(listener);
+    subscribeToVaults(listener);
+  }
 
-  void unsubscribe(final KaminoListener listener);
+  default void unsubscribeFromAll(final KaminoListener listener) {
+    unsubscribeFromScope(listener);
+    unsubscribeFromReserves(listener);
+    unsubscribeFromVaults(listener);
+  }
+
+  void subscribeToScope(final KaminoListener listener);
+
+  void unsubscribeFromScope(final KaminoListener listener);
+
+  void subscribeToReserves(final KaminoListener listener);
+
+  void unsubscribeFromReserves(final KaminoListener listener);
 
   void subscribeToReserve(final PublicKey reserveKey, final KaminoListener listener);
 
   void unSubscribeToReserve(final PublicKey reserveKey, final KaminoListener listener);
+
+  void subscribeToVaults(final KaminoListener listener);
+
+  void unsubscribeFromVaults(final KaminoListener listener);
 
   void subscribeToVault(final PublicKey vaultMint, final KaminoListener listener);
 

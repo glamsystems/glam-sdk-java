@@ -49,3 +49,4 @@ Integ.*
 /services/.**
 /.config
 /symlinks/
+/.junie/

@@ -16,13 +16,21 @@ public interface KaminoListener {
 
   }
 
+  default void onNewReserve(final ReserveContext reserveContext) {
+
+  }
+
   default void onMappingChange(final ScopeFeedContext scopeFeedContext,
                                final MappingsContext witness,
                                final MappingsContext mappingContext) {
 
   }
 
-  default void onKaminoVaultChange(final KaminoVaultContext vaultContext) {
+  default void onNewKaminoVault(final KaminoVaultContext vaultContext) {
+
+  }
+
+  default void onKaminoVaultChange(final KaminoVaultContext previous, final KaminoVaultContext vaultContext) {
 
   }
 
@@ -35,10 +43,6 @@ public interface KaminoListener {
   }
 
   default void onScopeConfigurationChange(final ScopeFeedContext witness, final ScopeFeedContext latest) {
-
-  }
-
-  default void onCachedReserveJsonChange(final String marketsReservePriceChainsJSON) {
 
   }
 }

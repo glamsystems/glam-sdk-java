@@ -17,6 +17,7 @@ dependencies {
 //  project(":idl-clients:idl-clients-kamino")
 //  project(":idl-clients:idl-clients-loopscale")
 //  project(":idl-clients:idl-clients-phoenix")
+
 //  project(":ravina:ravina-core")
 //  project(":ravina:ravina-solana")
 }

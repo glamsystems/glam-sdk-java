@@ -3,13 +3,12 @@ package systems.glam.services.integrations.kamino;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.encoding.ByteUtil;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultAllocation;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
 import software.sava.rpc.json.http.response.AccountInfo;
 
 import java.util.Arrays;
-
-import static systems.glam.services.integrations.kamino.ReserveContext.fixedLengthString;
 
 public record KaminoVaultContext(long slot,
                                  AccountMeta readVaultState,
@@ -31,19 +30,15 @@ public record KaminoVaultContext(long slot,
                                  long withdrawalPenaltyLamports,
                                  long withdrawalPenaltyBps) {
 
-  public PublicKey sharesMint() {
-    return readSharesMint.publicKey();
-  }
-
-  public int numReserves() {
-    return reserves.length;
-  }
+  private static final byte[] NULL_KEY_BYTES = PublicKey.NONE.toByteArray();
 
   static KaminoVaultContext createContext(final long slot,
                                           final byte[] data,
                                           final PublicKey vaultKey,
                                           final PublicKey sharesMintKey) {
-    final var name = fixedLengthString(data, VaultState.NAME_OFFSET, VaultState.NAME_OFFSET + VaultState.NAME_LEN);
+    final var name = SerDeUtil.fixedLengthString(
+        data, VaultState.NAME_OFFSET, VaultState.NAME_OFFSET + VaultState.NAME_LEN
+    );
     final var reserveKeys = KaminoVaultContext.parseReserveKeys(data);
     return new KaminoVaultContext(
         slot,
@@ -91,8 +86,6 @@ public record KaminoVaultContext(long slot,
     return reserveKeys;
   }
 
-  private static final byte[] NULL_KEY_BYTES = PublicKey.NONE.toByteArray();
-
   private static boolean isNull(final byte[] data, final int offset) {
     return Arrays.equals(
         NULL_KEY_BYTES, 0, NULL_KEY_BYTES.length,
@@ -121,6 +114,14 @@ public record KaminoVaultContext(long slot,
     } else {
       return createIfNotNull(data, offset);
     }
+  }
+
+  public PublicKey sharesMint() {
+    return readSharesMint.publicKey();
+  }
+
+  public int numReserves() {
+    return reserves.length;
   }
 
   private KaminoVaultContext createIfChanged(final long slot,

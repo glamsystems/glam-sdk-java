@@ -18,8 +18,16 @@ public record AccountData(byte[] data, PublicKey pubKey) {
     return data.length > 0;
   }
 
-  public boolean isAccount(final Discriminator discriminator, final int expectedLength) {
+  public boolean isAccount(final Discriminator discriminator) {
+    return discriminator.equals(data, 0);
+  }
+
+  public boolean isAccountExact(final Discriminator discriminator, final int expectedLength) {
     return data.length == expectedLength && discriminator.equals(data, 0);
+  }
+
+  public boolean isAccountAtLeast(final Discriminator discriminator, final int minLength) {
+    return data.length >= minLength && discriminator.equals(data, 0);
   }
 
   public <A> A read(final BiFunction<PublicKey, byte[], A> parser) {
