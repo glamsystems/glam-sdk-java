@@ -3,7 +3,10 @@ package systems.glam.sdk.idl.programs.glam.protocol.gen.types;
 
 import software.sava.idl.clients.core.gen.SerDe;
 
-import static software.sava.core.encoding.ByteUtil.*;
+import static software.sava.core.encoding.ByteUtil.getInt16LE;
+import static software.sava.core.encoding.ByteUtil.getInt64LE;
+import static software.sava.core.encoding.ByteUtil.putInt16LE;
+import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
 /// Represents a delegate's permissions for a specific protocol
 ///

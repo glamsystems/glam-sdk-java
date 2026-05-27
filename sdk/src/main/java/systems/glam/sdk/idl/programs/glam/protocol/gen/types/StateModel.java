@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.OptionalInt;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt32LE;
 

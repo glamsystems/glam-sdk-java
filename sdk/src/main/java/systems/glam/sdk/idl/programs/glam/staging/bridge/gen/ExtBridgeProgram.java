@@ -7,11 +7,29 @@ import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.core.gen.SerDe;
-import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.*;
+
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.CctpBridgePolicy;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.ClaimWormholeNttArgs;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.ClaimWormholeWttArgs;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.CleanupMayanMctpBridgeLedgerArgs;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.CleanupMayanSwiftSourceOrderArgs;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.CommitBridgeSessionArgs;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.ExecuteBridgeCpiArgs;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.MayanMctpPolicy;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.MayanSwiftPolicy;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.PrepareBridgeCpiSessionArgs;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.PrepareBridgeSessionArgs;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.RelayBridgePolicy;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.StargatePolicy;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.WormholeNttPolicy;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.WormholeWttPolicy;
 
 import java.util.List;
 
-import static software.sava.core.accounts.meta.AccountMeta.*;
+import static software.sava.core.accounts.meta.AccountMeta.createRead;
+import static software.sava.core.accounts.meta.AccountMeta.createReadOnlySigner;
+import static software.sava.core.accounts.meta.AccountMeta.createWritableSigner;
+import static software.sava.core.accounts.meta.AccountMeta.createWrite;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 

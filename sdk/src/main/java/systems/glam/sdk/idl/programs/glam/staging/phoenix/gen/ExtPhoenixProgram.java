@@ -7,11 +7,25 @@ import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.core.gen.SerDe;
-import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.*;
+
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.CancelUpToInstruction;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.DepositFundsInstruction;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.DepositParams;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.MultipleOrderPacket;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.OrderIds;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.OrderPacket;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.PhoenixPolicy;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.RegisterTraderParams;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.TransferCollateralChildToParentInstruction;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.TransferCollateralInstruction;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.WithdrawFundsInstruction;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.WithdrawParams;
 
 import java.util.List;
 
-import static software.sava.core.accounts.meta.AccountMeta.*;
+import static software.sava.core.accounts.meta.AccountMeta.createRead;
+import static software.sava.core.accounts.meta.AccountMeta.createWritableSigner;
+import static software.sava.core.accounts.meta.AccountMeta.createWrite;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 

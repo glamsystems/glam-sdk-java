@@ -5,6 +5,7 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.core.encoding.ByteUtil;
 import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
+
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.FeeStructure;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.NotifyAndSettle;
 
@@ -13,6 +14,7 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt32LE;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;

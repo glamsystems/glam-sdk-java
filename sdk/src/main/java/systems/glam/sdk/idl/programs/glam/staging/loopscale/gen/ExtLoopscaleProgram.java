@@ -8,11 +8,27 @@ import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
-import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.*;
+
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.BorrowPrincipalParams;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.CreateLoanParams;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.CreateStrategyParams;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.DepositCollateralParams;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.LoanUnlockParams;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.LockLoanParams;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.LoopscalePolicy;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.MultiCollateralTermsUpdateParams;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.RefinanceLedgerParams;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.RepayPrincipalParams;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.UpdateStrategyParams;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.UpdateWeightMatrixParams;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.WithdrawCollateralParams;
 
 import java.util.List;
 
-import static software.sava.core.accounts.meta.AccountMeta.*;
+import static software.sava.core.accounts.meta.AccountMeta.createRead;
+import static software.sava.core.accounts.meta.AccountMeta.createReadOnlySigner;
+import static software.sava.core.accounts.meta.AccountMeta.createWritableSigner;
+import static software.sava.core.accounts.meta.AccountMeta.createWrite;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
