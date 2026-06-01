@@ -2,10 +2,10 @@ package systems.glam.services.mints;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.rpc.Filter;
+import software.sava.idl.clients.spl.stakepool.StakePoolState;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.solana.remote.call.RpcCaller;
-import software.sava.solana.programs.stakepool.StakePoolState;
 import systems.glam.services.io.KeyedFlatFile;
 
 import java.time.Duration;

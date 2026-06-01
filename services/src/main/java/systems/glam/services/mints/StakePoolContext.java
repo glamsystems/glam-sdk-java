@@ -3,8 +3,8 @@ package systems.glam.services.mints;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.spl.stakepool.StakePoolState;
 import software.sava.rpc.json.http.response.AccountInfo;
-import software.sava.solana.programs.stakepool.StakePoolState;
 
 public record StakePoolContext(PublicKey program,
                                AccountMeta readState,

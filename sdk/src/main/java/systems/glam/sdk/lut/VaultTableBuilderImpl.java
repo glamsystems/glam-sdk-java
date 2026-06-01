@@ -17,11 +17,11 @@ import software.sava.idl.clients.kamino.lend.gen.types.Reserve;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
 import software.sava.idl.clients.marinade.stake_pool.MarinadeAccounts;
 import software.sava.idl.clients.meteora.MeteoraAccounts;
+import software.sava.idl.clients.spl.compute_budget.gen.ComputeBudgetProgram;
+import software.sava.idl.clients.spl.lut.gen.AddressLookupTableProgram;
 import software.sava.rpc.json.http.SolanaNetwork;
 import software.sava.rpc.json.http.client.SolanaRpcClient;
 import software.sava.rpc.json.http.response.AccountInfo;
-import software.sava.solana.programs.address_lookup_table.AddressLookupTableProgram;
-import software.sava.solana.programs.compute_budget.ComputeBudgetProgram;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.StateAccountClient;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
@@ -34,8 +34,8 @@ import java.util.stream.Collectors;
 
 import static software.sava.core.accounts.lookup.AddressLookupTable.*;
 import static software.sava.core.rpc.Filter.createMemCompFilter;
+import static software.sava.idl.clients.spl.compute_budget.ComputeBudgetUtil.MAX_COMPUTE_BUDGET;
 import static software.sava.rpc.json.http.request.Commitment.CONFIRMED;
-import static software.sava.solana.programs.compute_budget.ComputeBudgetProgram.MAX_COMPUTE_BUDGET;
 
 record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
                              List<PublicKey> tablePrefix,
@@ -156,11 +156,13 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
         if (createTableTask != null) {
           tableTask = new DynamicExtendTable(accountClient, extendAccounts, createTableTask);
         } else {
+          final var solanaAccounts = accountClient.solanaAccounts();
           final var extendTableIx = AddressLookupTableProgram.extendLookupTable(
-              accountClient.solanaAccounts(),
+              solanaAccounts.invokedAddressLookupTableProgram(),
+              solanaAccounts,
               tableKey,
               feePayer, feePayer,
-              extendAccounts
+              extendAccounts.toArray(PublicKey[]::new)
           );
           tableTask = new ExtendTable(tableKey, List.of(extendTableIx));
         }

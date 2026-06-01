@@ -4,11 +4,11 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.rpc.Filter;
 import software.sava.idl.clients.marinade.stake_pool.MarinadeAccounts;
+import software.sava.idl.clients.spl.stakepool.AccountType;
+import software.sava.idl.clients.spl.stakepool.StakePoolAccounts;
+import software.sava.idl.clients.spl.stakepool.StakePoolState;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.solana.remote.call.RpcCaller;
-import software.sava.solana.programs.stakepool.AccountType;
-import software.sava.solana.programs.stakepool.StakePoolAccounts;
-import software.sava.solana.programs.stakepool.StakePoolState;
 import systems.glam.services.io.FileUtils;
 import systems.glam.services.io.KeyedFlatFile;
 

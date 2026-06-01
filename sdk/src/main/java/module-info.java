@@ -35,7 +35,6 @@ module systems.glam.sdk {
   exports systems.glam.sdk;
   requires java.base;
   requires java.net.http;
-  requires software.sava.solana_programs;
   requires systems.comodal.json_iterator;
   requires transitive software.sava.core;
   requires transitive software.sava.idl.clients.core;

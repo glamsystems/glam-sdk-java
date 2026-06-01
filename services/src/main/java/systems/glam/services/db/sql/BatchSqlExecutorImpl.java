@@ -23,6 +23,7 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
   private final Class<T> componentType;
   private final DataSource datasource;
   private final String statement;
+  private final String table;
   private final int batchSize;
   private final StatementPreparer<T> statementPreparer;
   private final long batchDelayNanos;
@@ -44,6 +45,7 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
     this.componentType = componentType;
     this.datasource = datasource;
     this.statement = statement;
+    this.table = parseTableName(statement);
     this.batchSize = batchSize;
     this.statementPreparer = statementPreparer;
     this.batchDelayNanos = batchDelay.toNanos();
@@ -89,8 +91,8 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
                   numInserted = batchExecutionCount(ps.executeBatch());
                   connection.commit();
                   logger.log(INFO,
-                      "Inserted {0} out of {1} {2} rows.",
-                      numInserted, numItems, componentType.getSimpleName()
+                      "Inserted {0} out of {1} {2} rows into {3}.",
+                      numInserted, numItems, componentType.getSimpleName(), table
                   );
                   numItems = 0;
                 }
@@ -103,8 +105,8 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
                 numInserted = batchExecutionCount(ps.executeBatch());
                 connection.commit();
                 logger.log(INFO,
-                    "Inserted {0} out of {1} {2} rows.",
-                    numInserted, numItems, componentType.getSimpleName()
+                    "Inserted {0} out of {1} {2} rows into {3}.",
+                    numInserted, numItems, componentType.getSimpleName(), table
                 );
                 numItems = 0;
               }
@@ -145,6 +147,37 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
         lock.unlock();
       }
     }
+  }
+
+  static String parseTableName(final String statement) {
+    final String normalized = statement.stripLeading();
+    final String upper = normalized.toUpperCase();
+    final int start;
+    if (upper.startsWith("INSERT INTO")) {
+      start = "INSERT INTO".length();
+    } else if (upper.startsWith("UPDATE")) {
+      start = "UPDATE".length();
+    } else if (upper.startsWith("DELETE FROM")) {
+      start = "DELETE FROM".length();
+    } else if (upper.startsWith("MERGE INTO")) {
+      start = "MERGE INTO".length();
+    } else {
+      return normalized;
+    }
+    int i = start;
+    final int len = normalized.length();
+    while (i < len && Character.isWhitespace(normalized.charAt(i))) {
+      ++i;
+    }
+    int end = i;
+    while (end < len) {
+      final char c = normalized.charAt(end);
+      if (Character.isWhitespace(c) || c == '(' || c == ';') {
+        break;
+      }
+      ++end;
+    }
+    return normalized.substring(i, end);
   }
 
   static int batchExecutionCount(final int[] result) throws SQLException {

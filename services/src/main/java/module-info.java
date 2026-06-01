@@ -7,8 +7,6 @@ module systems.glam.services {
 
   requires transitive software.sava.core;
   requires transitive software.sava.rpc;
-  requires transitive software.sava.solana_programs;
-  requires software.sava.solana_web2;
 
   requires transitive software.sava.idl.clients.core;
   requires transitive software.sava.idl.clients.drift;
