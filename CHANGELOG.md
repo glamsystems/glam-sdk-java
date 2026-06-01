@@ -1,5 +1,22 @@
 # Changelog
 
+## [25.12.0](https://github.com/glamsystems/glam-sdk-java/compare/25.11.0...25.12.0) (2026-06-01)
+
+
+### Features
+
+* **sdk, services:** update dependencies and replace solana programs ([70cfebd](https://github.com/glamsystems/glam-sdk-java/commit/70cfebd89a66b03cd97ac96d8360112ca8a7adab))
+
+
+### Bug Fixes
+
+* **ci:** explicitly pass release-please secrets ([71fb2d6](https://github.com/glamsystems/glam-sdk-java/commit/71fb2d6a98b84aa8b54e9b1081b9417c89619e5e))
+
+
+### Miscellaneous Chores
+
+* release 25.12.0 ([c606ef4](https://github.com/glamsystems/glam-sdk-java/commit/c606ef468bc8c4a6a1725c2d75254da076fb2ece))
+
 ## [25.11.0](https://github.com/glamsystems/glam-sdk-java/compare/25.10.1...25.11.0) (2026-05-22)
 
 
