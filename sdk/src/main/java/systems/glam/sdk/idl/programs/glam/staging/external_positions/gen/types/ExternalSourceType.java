@@ -9,7 +9,8 @@ import software.sava.idl.clients.core.gen.SerDeUtil;
 public enum ExternalSourceType implements RustEnum {
 
   Trusted,
-  Native;
+  Native,
+  Wormhole;
 
   public static ExternalSourceType read(final byte[] _data, final int _offset) {
     return SerDeUtil.read(1, ExternalSourceType.values(), _data, _offset);

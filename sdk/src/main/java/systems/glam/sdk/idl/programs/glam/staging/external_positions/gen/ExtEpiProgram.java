@@ -11,16 +11,17 @@ import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.types.ExternalPositionConfig;
 import systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.types.PositionObservationInput;
-
-import java.math.BigInteger;
+import systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.types.WormholeHyperliquidObservationConfigInput;
+import systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.types.WormholeObservationConfigInput;
 
 import java.util.List;
+
+import static java.util.Objects.requireNonNullElse;
 
 import static software.sava.core.accounts.meta.AccountMeta.createRead;
 import static software.sava.core.accounts.meta.AccountMeta.createReadOnlySigner;
 import static software.sava.core.accounts.meta.AccountMeta.createWritableSigner;
 import static software.sava.core.accounts.meta.AccountMeta.createWrite;
-import static software.sava.core.encoding.ByteUtil.getInt128LE;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
@@ -244,6 +245,126 @@ public final class ExtEpiProgram {
     }
   }
 
+  public static final Discriminator SUBMIT_EXTERNAL_OBSERVATION_WORMHOLE_DISCRIMINATOR = toDiscriminator(124, 238, 191, 242, 222, 175, 91, 148);
+
+  /// Submit a Wormhole Guardian-verified external observation.
+  /// The caller only relays a VAA body whose signatures have already been
+  /// posted to the Wormhole Verification Shim.
+  ///
+  public static List<AccountMeta> submitExternalObservationWormholeKeys(final PublicKey glamStateKey,
+                                                                        final PublicKey glamSignerKey,
+                                                                        final PublicKey observationStateKey,
+                                                                        final PublicKey wormholeConfigKey,
+                                                                        final PublicKey guardianSetKey,
+                                                                        final PublicKey guardianSignaturesKey,
+                                                                        final PublicKey wormholeVerifyVaaShimKey) {
+    return List.of(
+      createRead(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createWrite(observationStateKey),
+      createWrite(wormholeConfigKey),
+      createRead(guardianSetKey),
+      createRead(guardianSignaturesKey),
+      createRead(wormholeVerifyVaaShimKey)
+    );
+  }
+
+  /// Submit a Wormhole Guardian-verified external observation.
+  /// The caller only relays a VAA body whose signatures have already been
+  /// posted to the Wormhole Verification Shim.
+  ///
+  public static Instruction submitExternalObservationWormhole(final AccountMeta invokedExtEpiProgramMeta,
+                                                              final PublicKey glamStateKey,
+                                                              final PublicKey glamSignerKey,
+                                                              final PublicKey observationStateKey,
+                                                              final PublicKey wormholeConfigKey,
+                                                              final PublicKey guardianSetKey,
+                                                              final PublicKey guardianSignaturesKey,
+                                                              final PublicKey wormholeVerifyVaaShimKey,
+                                                              final byte[] positionId,
+                                                              final int guardianSetBump,
+                                                              final byte[] vaaBody) {
+    final var keys = submitExternalObservationWormholeKeys(
+      glamStateKey,
+      glamSignerKey,
+      observationStateKey,
+      wormholeConfigKey,
+      guardianSetKey,
+      guardianSignaturesKey,
+      wormholeVerifyVaaShimKey
+    );
+    return submitExternalObservationWormhole(
+      invokedExtEpiProgramMeta,
+      keys,
+      positionId,
+      guardianSetBump,
+      vaaBody
+    );
+  }
+
+  /// Submit a Wormhole Guardian-verified external observation.
+  /// The caller only relays a VAA body whose signatures have already been
+  /// posted to the Wormhole Verification Shim.
+  ///
+  public static Instruction submitExternalObservationWormhole(final AccountMeta invokedExtEpiProgramMeta,
+                                                              final List<AccountMeta> keys,
+                                                              final byte[] positionId,
+                                                              final int guardianSetBump,
+                                                              final byte[] vaaBody) {
+    final byte[] _data = new byte[9 + SerDeUtil.lenArray(positionId) + SerDeUtil.lenVector(4, vaaBody)];
+    int i = SUBMIT_EXTERNAL_OBSERVATION_WORMHOLE_DISCRIMINATOR.write(_data, 0);
+    i += SerDeUtil.writeArrayChecked(positionId, 32, _data, i);
+    _data[i] = (byte) guardianSetBump;
+    ++i;
+    SerDeUtil.writeVector(4, vaaBody, _data, i);
+
+    return Instruction.createInstruction(invokedExtEpiProgramMeta, keys, _data);
+  }
+
+  public record SubmitExternalObservationWormholeIxData(Discriminator discriminator,
+                                                        byte[] positionId,
+                                                        int guardianSetBump,
+                                                        byte[] vaaBody) implements SerDe {  
+
+    public static SubmitExternalObservationWormholeIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int POSITION_ID_LEN = 32;
+    public static final int POSITION_ID_OFFSET = 8;
+    public static final int GUARDIAN_SET_BUMP_OFFSET = 40;
+    public static final int VAA_BODY_OFFSET = 41;
+
+    public static SubmitExternalObservationWormholeIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var positionId = new byte[32];
+      i += SerDeUtil.readArray(positionId, _data, i);
+      final var guardianSetBump = _data[i] & 0xFF;
+      ++i;
+      final var vaaBody = SerDeUtil.readbyteVector(4, _data, i);
+      return new SubmitExternalObservationWormholeIxData(discriminator, positionId, guardianSetBump, vaaBody);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += SerDeUtil.writeArrayChecked(positionId, 32, _data, i);
+      _data[i] = (byte) guardianSetBump;
+      ++i;
+      i += SerDeUtil.writeVector(4, vaaBody, _data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + SerDeUtil.lenArray(positionId) + 1 + SerDeUtil.lenVector(4, vaaBody);
+    }
+  }
+
   public static final Discriminator UPSERT_EXTERNAL_POSITION_DISCRIMINATOR = toDiscriminator(199, 33, 239, 150, 200, 123, 43, 70);
 
   /// Create or update an external position configuration.
@@ -335,24 +456,202 @@ public final class ExtEpiProgram {
     }
   }
 
+  public static final Discriminator UPSERT_EXTERNAL_POSITION_WORMHOLE_CONFIG_DISCRIMINATOR = toDiscriminator(173, 64, 201, 39, 54, 49, 192, 89);
+
+  /// Create or update Wormhole verification config for a Wormhole-sourced
+  /// external position.
+  ///
+  public static List<AccountMeta> upsertExternalPositionWormholeConfigKeys(final SolanaAccounts solanaAccounts,
+                                                                           final PublicKey glamStateKey,
+                                                                           final PublicKey glamSignerKey,
+                                                                           final PublicKey wormholeConfigKey) {
+    return List.of(
+      createRead(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createWrite(wormholeConfigKey),
+      createRead(solanaAccounts.systemProgram())
+    );
+  }
+
+  /// Create or update Wormhole verification config for a Wormhole-sourced
+  /// external position.
+  ///
+  public static Instruction upsertExternalPositionWormholeConfig(final AccountMeta invokedExtEpiProgramMeta,
+                                                                 final SolanaAccounts solanaAccounts,
+                                                                 final PublicKey glamStateKey,
+                                                                 final PublicKey glamSignerKey,
+                                                                 final PublicKey wormholeConfigKey,
+                                                                 final WormholeObservationConfigInput input) {
+    final var keys = upsertExternalPositionWormholeConfigKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamSignerKey,
+      wormholeConfigKey
+    );
+    return upsertExternalPositionWormholeConfig(invokedExtEpiProgramMeta, keys, input);
+  }
+
+  /// Create or update Wormhole verification config for a Wormhole-sourced
+  /// external position.
+  ///
+  public static Instruction upsertExternalPositionWormholeConfig(final AccountMeta invokedExtEpiProgramMeta,
+                                                                 final List<AccountMeta> keys,
+                                                                 final WormholeObservationConfigInput input) {
+    final byte[] _data = new byte[8 + input.l()];
+    int i = UPSERT_EXTERNAL_POSITION_WORMHOLE_CONFIG_DISCRIMINATOR.write(_data, 0);
+    input.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtEpiProgramMeta, keys, _data);
+  }
+
+  public record UpsertExternalPositionWormholeConfigIxData(Discriminator discriminator, WormholeObservationConfigInput input) implements SerDe {  
+
+    public static UpsertExternalPositionWormholeConfigIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int BYTES = 80;
+
+    public static final int INPUT_OFFSET = 8;
+
+    public static UpsertExternalPositionWormholeConfigIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var input = WormholeObservationConfigInput.read(_data, i);
+      return new UpsertExternalPositionWormholeConfigIxData(discriminator, input);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += input.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
+  public static final Discriminator UPSERT_EXTERNAL_POSITION_WORMHOLE_HYPERLIQUID_CONFIG_DISCRIMINATOR = toDiscriminator(42, 13, 175, 7, 34, 137, 176, 108);
+
+  /// Create or update Hyperliquid-specific payload config for a
+  /// Wormhole-sourced external position.
+  ///
+  public static List<AccountMeta> upsertExternalPositionWormholeHyperliquidConfigKeys(final SolanaAccounts solanaAccounts,
+                                                                                      final PublicKey glamStateKey,
+                                                                                      final PublicKey glamSignerKey,
+                                                                                      final PublicKey wormholeConfigKey,
+                                                                                      final PublicKey hyperliquidConfigKey) {
+    return List.of(
+      createRead(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createRead(wormholeConfigKey),
+      createWrite(hyperliquidConfigKey),
+      createRead(solanaAccounts.systemProgram())
+    );
+  }
+
+  /// Create or update Hyperliquid-specific payload config for a
+  /// Wormhole-sourced external position.
+  ///
+  public static Instruction upsertExternalPositionWormholeHyperliquidConfig(final AccountMeta invokedExtEpiProgramMeta,
+                                                                            final SolanaAccounts solanaAccounts,
+                                                                            final PublicKey glamStateKey,
+                                                                            final PublicKey glamSignerKey,
+                                                                            final PublicKey wormholeConfigKey,
+                                                                            final PublicKey hyperliquidConfigKey,
+                                                                            final WormholeHyperliquidObservationConfigInput input) {
+    final var keys = upsertExternalPositionWormholeHyperliquidConfigKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamSignerKey,
+      wormholeConfigKey,
+      hyperliquidConfigKey
+    );
+    return upsertExternalPositionWormholeHyperliquidConfig(invokedExtEpiProgramMeta, keys, input);
+  }
+
+  /// Create or update Hyperliquid-specific payload config for a
+  /// Wormhole-sourced external position.
+  ///
+  public static Instruction upsertExternalPositionWormholeHyperliquidConfig(final AccountMeta invokedExtEpiProgramMeta,
+                                                                            final List<AccountMeta> keys,
+                                                                            final WormholeHyperliquidObservationConfigInput input) {
+    final byte[] _data = new byte[8 + input.l()];
+    int i = UPSERT_EXTERNAL_POSITION_WORMHOLE_HYPERLIQUID_CONFIG_DISCRIMINATOR.write(_data, 0);
+    input.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtEpiProgramMeta, keys, _data);
+  }
+
+  public record UpsertExternalPositionWormholeHyperliquidConfigIxData(Discriminator discriminator, WormholeHyperliquidObservationConfigInput input) implements SerDe {  
+
+    public static UpsertExternalPositionWormholeHyperliquidConfigIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int BYTES = 112;
+
+    public static final int INPUT_OFFSET = 8;
+
+    public static UpsertExternalPositionWormholeHyperliquidConfigIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var input = WormholeHyperliquidObservationConfigInput.read(_data, i);
+      return new UpsertExternalPositionWormholeHyperliquidConfigIxData(discriminator, input);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += input.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
   public static final Discriminator VALIDATE_EXTERNAL_OBSERVATION_DISCRIMINATOR = toDiscriminator(88, 144, 219, 126, 79, 29, 43, 188);
 
   /// Validate a pending observation, promote to active, and publish
   /// the full aggregate priced protocol for ext_epi.
   /// 
-  /// All position observations are stored in the single observation state PDA,
-  /// so no remaining_accounts are needed.
+  /// Remaining accounts:
+  /// - `remaining_accounts0` is required when the pending observation
+  /// denomination is a non-base mint; it must be the observed mint oracle
+  /// account used for price normalization.
   ///
-  public static List<AccountMeta> validateExternalObservationKeys(final PublicKey glamStateKey,
+  /// @param glamConfigKey and its discriminator is checked by AssetMetasRef before use.
+  /// @param solUsdOracleKey against GLAM global oracle metadata before price use.
+  /// @param baseAssetOracleKey GLAM global oracle metadata before price use.
+  public static List<AccountMeta> validateExternalObservationKeys(final AccountMeta invokedExtEpiProgramMeta,
+                                                                  final PublicKey glamStateKey,
                                                                   final PublicKey glamSignerKey,
                                                                   final PublicKey observationStateKey,
                                                                   final PublicKey integrationAuthorityKey,
+                                                                  final PublicKey glamConfigKey,
+                                                                  final PublicKey solUsdOracleKey,
+                                                                  final PublicKey baseAssetOracleKey,
                                                                   final PublicKey glamProtocolProgramKey) {
     return List.of(
       createWrite(glamStateKey),
       createReadOnlySigner(glamSignerKey),
       createWrite(observationStateKey),
       createRead(integrationAuthorityKey),
+      createRead(requireNonNullElse(glamConfigKey, invokedExtEpiProgramMeta.publicKey())),
+      createRead(requireNonNullElse(solUsdOracleKey, invokedExtEpiProgramMeta.publicKey())),
+      createRead(requireNonNullElse(baseAssetOracleKey, invokedExtEpiProgramMeta.publicKey())),
       createRead(glamProtocolProgramKey)
     );
   }
@@ -360,57 +659,66 @@ public final class ExtEpiProgram {
   /// Validate a pending observation, promote to active, and publish
   /// the full aggregate priced protocol for ext_epi.
   /// 
-  /// All position observations are stored in the single observation state PDA,
-  /// so no remaining_accounts are needed.
+  /// Remaining accounts:
+  /// - `remaining_accounts0` is required when the pending observation
+  /// denomination is a non-base mint; it must be the observed mint oracle
+  /// account used for price normalization.
   ///
+  /// @param glamConfigKey and its discriminator is checked by AssetMetasRef before use.
+  /// @param solUsdOracleKey against GLAM global oracle metadata before price use.
+  /// @param baseAssetOracleKey GLAM global oracle metadata before price use.
   public static Instruction validateExternalObservation(final AccountMeta invokedExtEpiProgramMeta,
                                                         final PublicKey glamStateKey,
                                                         final PublicKey glamSignerKey,
                                                         final PublicKey observationStateKey,
                                                         final PublicKey integrationAuthorityKey,
+                                                        final PublicKey glamConfigKey,
+                                                        final PublicKey solUsdOracleKey,
+                                                        final PublicKey baseAssetOracleKey,
                                                         final PublicKey glamProtocolProgramKey,
-                                                        final byte[] positionId,
-                                                        final BigInteger normalizedBaseAssetAmount) {
+                                                        final byte[] positionId) {
     final var keys = validateExternalObservationKeys(
+      invokedExtEpiProgramMeta,
       glamStateKey,
       glamSignerKey,
       observationStateKey,
       integrationAuthorityKey,
+      glamConfigKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
       glamProtocolProgramKey
     );
-    return validateExternalObservation(invokedExtEpiProgramMeta, keys, positionId, normalizedBaseAssetAmount);
+    return validateExternalObservation(invokedExtEpiProgramMeta, keys, positionId);
   }
 
   /// Validate a pending observation, promote to active, and publish
   /// the full aggregate priced protocol for ext_epi.
   /// 
-  /// All position observations are stored in the single observation state PDA,
-  /// so no remaining_accounts are needed.
+  /// Remaining accounts:
+  /// - `remaining_accounts0` is required when the pending observation
+  /// denomination is a non-base mint; it must be the observed mint oracle
+  /// account used for price normalization.
   ///
   public static Instruction validateExternalObservation(final AccountMeta invokedExtEpiProgramMeta,
                                                         final List<AccountMeta> keys,
-                                                        final byte[] positionId,
-                                                        final BigInteger normalizedBaseAssetAmount) {
-    final byte[] _data = new byte[
-    8 + SerDeUtil.lenArray(positionId)
-    + (normalizedBaseAssetAmount == null ? 1 : 17)
-    ];
+                                                        final byte[] positionId) {
+    final byte[] _data = new byte[8 + SerDeUtil.lenArray(positionId)];
     int i = VALIDATE_EXTERNAL_OBSERVATION_DISCRIMINATOR.write(_data, 0);
-    i += SerDeUtil.writeArrayChecked(positionId, 32, _data, i);
-    SerDeUtil.write128Optional(1, normalizedBaseAssetAmount, _data, i);
+    SerDeUtil.writeArrayChecked(positionId, 32, _data, i);
 
     return Instruction.createInstruction(invokedExtEpiProgramMeta, keys, _data);
   }
 
-  public record ValidateExternalObservationIxData(Discriminator discriminator, byte[] positionId, BigInteger normalizedBaseAssetAmount) implements SerDe {  
+  public record ValidateExternalObservationIxData(Discriminator discriminator, byte[] positionId) implements SerDe {  
 
     public static ValidateExternalObservationIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
 
+    public static final int BYTES = 40;
     public static final int POSITION_ID_LEN = 32;
+
     public static final int POSITION_ID_OFFSET = 8;
-    public static final int NORMALIZED_BASE_ASSET_AMOUNT_OFFSET = 41;
 
     public static ValidateExternalObservationIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
@@ -419,28 +727,20 @@ public final class ExtEpiProgram {
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
       final var positionId = new byte[32];
-      i += SerDeUtil.readArray(positionId, _data, i);
-      final BigInteger normalizedBaseAssetAmount;
-      if (SerDeUtil.isAbsent(1, _data, i)) {
-        normalizedBaseAssetAmount = null;
-      } else {
-        ++i;
-        normalizedBaseAssetAmount = getInt128LE(_data, i);
-      }
-      return new ValidateExternalObservationIxData(discriminator, positionId, normalizedBaseAssetAmount);
+      SerDeUtil.readArray(positionId, _data, i);
+      return new ValidateExternalObservationIxData(discriminator, positionId);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
       i += SerDeUtil.writeArrayChecked(positionId, 32, _data, i);
-      i += SerDeUtil.write128Optional(1, normalizedBaseAssetAmount, _data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + SerDeUtil.lenArray(positionId) + (normalizedBaseAssetAmount == null ? 1 : (1 + 16));
+      return BYTES;
     }
   }
 

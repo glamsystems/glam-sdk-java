@@ -10,12 +10,28 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public final class ExtEpiPDAs {
 
+  public static ProgramDerivedAddress glamConfigPDA(final PublicKey program) {
+    return PublicKey.findProgramAddress(List.of(
+      "global-config".getBytes(US_ASCII)
+    ), program);
+  }
+
   public static ProgramDerivedAddress glamVaultPDA(final PublicKey glamProtocolProgram,
                                                    final PublicKey glamStateAccount) {
     return PublicKey.findProgramAddress(List.of(
       "vault".getBytes(US_ASCII),
       glamStateAccount.toByteArray()
     ), glamProtocolProgram);
+  }
+
+  public static ProgramDerivedAddress hyperliquidConfigPDA(final PublicKey program,
+                                                           final PublicKey glamStateAccount,
+                                                           final byte[] inputPositionId) {
+    return PublicKey.findProgramAddress(List.of(
+      "wormhole-hl-observation-config".getBytes(US_ASCII),
+      glamStateAccount.toByteArray(),
+      inputPositionId
+    ), program);
   }
 
   public static ProgramDerivedAddress integrationAuthorityPDA(final PublicKey program) {
@@ -29,6 +45,26 @@ public final class ExtEpiPDAs {
     return PublicKey.findProgramAddress(List.of(
       "observation-state".getBytes(US_ASCII),
       glamStateAccount.toByteArray()
+    ), program);
+  }
+
+  public static ProgramDerivedAddress wormholeConfigPDA(final PublicKey program,
+                                                        final PublicKey glamStateAccount,
+                                                        final byte[] positionId) {
+    return PublicKey.findProgramAddress(List.of(
+      "wormhole-observation-config".getBytes(US_ASCII),
+      glamStateAccount.toByteArray(),
+      positionId
+    ), program);
+  }
+
+  public static ProgramDerivedAddress wormholeConfig1PDA(final PublicKey program,
+                                                         final PublicKey glamStateAccount,
+                                                         final byte[] inputPositionId) {
+    return PublicKey.findProgramAddress(List.of(
+      "wormhole-observation-config".getBytes(US_ASCII),
+      glamStateAccount.toByteArray(),
+      inputPositionId
     ), program);
   }
 
