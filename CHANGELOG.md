@@ -1,5 +1,12 @@
 # Changelog
 
+## [25.12.2](https://github.com/glamsystems/glam-sdk-java/compare/25.12.1...25.12.2) (2026-06-08)
+
+
+### Features
+
+* **sdk:** add generated Phoenix SDK types and program methods ([9eb390e](https://github.com/glamsystems/glam-sdk-java/commit/9eb390efa86ad543119ee4aee1967a839992ac6d))
+
 ## [25.12.1](https://github.com/glamsystems/glam-sdk-java/compare/25.12.0...25.12.1) (2026-06-08)
 
 
