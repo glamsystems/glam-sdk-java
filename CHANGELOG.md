@@ -1,5 +1,15 @@
 # Changelog
 
+## [25.12.1](https://github.com/glamsystems/glam-sdk-java/compare/25.12.0...25.12.1) (2026-06-08)
+
+
+### Features
+
+* **sdk:** add Wormhole and Hyperliquid observation config types ([7c379e6](https://github.com/glamsystems/glam-sdk-java/commit/7c379e6da4205a1e5181132b6f456baabd757aa0))
+* **sdk:** refactor policy types and update Loopscale program integration ([1d11acb](https://github.com/glamsystems/glam-sdk-java/commit/1d11acb810d58c4b6046b5ff3c952fa0dc66c31c))
+* **sdk:** replace refinance ledger params and add new config types ([f4b62b3](https://github.com/glamsystems/glam-sdk-java/commit/f4b62b3d8b0866139c8e7fac97bc611da71c5ad4))
+* **services, build:** enhance account fetching and GitHub package publishing ([1d64ade](https://github.com/glamsystems/glam-sdk-java/commit/1d64aded17d86bc08f72fc50dfafb2b139568f20))
+
 ## [25.12.0](https://github.com/glamsystems/glam-sdk-java/compare/25.11.0...25.12.0) (2026-06-01)
 
 
