@@ -15,6 +15,10 @@ public abstract class BaseDelegateService implements DelegateService {
     this.glamAccountClient = glamAccountClient;
   }
 
+  public final GlamAccountClient glamAccountClient() {
+    return glamAccountClient;
+  }
+
   protected final StateAccount stateAccount(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap) {
     return StateAccount.read(accountsNeededMap.get(key()));
   }

@@ -4,6 +4,7 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.lookup.AddressLookupTable;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
+import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
 
 import java.io.IOException;
@@ -21,7 +22,7 @@ import static systems.glam.services.integrations.IntegLookupTableCacheImpl.logge
 import static systems.glam.services.integrations.IntegLookupTableCacheImpl.writeTableData;
 import static systems.glam.services.io.FileUtils.ACCOUNT_FILE_EXTENSION;
 
-public interface IntegLookupTableCache extends Runnable {
+public interface IntegLookupTableCache extends Runnable, AccountConsumer {
 
   static CompletableFuture<IntegLookupTableCache> initCache(final Duration fetchDelay,
                                                             final Path integrationTablesDirectory,

@@ -1,11 +1,14 @@
 package systems.glam.services.rpc;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.accounts.SolanaAccounts;
+import software.sava.core.encoding.ByteUtil;
 import software.sava.rpc.json.http.client.SolanaRpcClient;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +36,7 @@ final class AccountFetcherImpl implements AccountFetcher {
   private final Set<AccountConsumer> alwaysCall;
 
   private volatile Set<PublicKey> currentBatchKeys;
+  private volatile StampedSlot recentSlot;
 
   AccountFetcherImpl(final Duration fetchDelay,
                      final boolean reactive,
@@ -51,6 +55,11 @@ final class AccountFetcherImpl implements AccountFetcher {
     this.currentBatch = new ConcurrentLinkedDeque<>();
     this.currentBatchKeys = this.alwaysFetch;
     this.alwaysCall = ConcurrentHashMap.newKeySet(32);
+  }
+
+  @Override
+  public StampedSlot recentSlot() {
+    return recentSlot;
   }
 
   @Override
@@ -281,12 +290,33 @@ final class AccountFetcherImpl implements AccountFetcher {
       for (; ; ) {
         final var keys = createBatch();
 
+        final long requestedAt = System.currentTimeMillis();
         final var accounts = rpcCaller.courteousGet(
             rpcClient -> rpcClient.getAccounts(keys),
             "rpcClient#getAccountsBatch"
         );
+        final long receivedAt = System.currentTimeMillis();
 
         final var accountsMap = toMap(keys, accounts);
+        final var clockSysVar = accountsMap.get(SolanaAccounts.MAIN_NET.clockSysVar());
+        if (clockSysVar == null) {
+          for (final var accountInfo : accounts) {
+            if (accountInfo != null) {
+              final var context = accountInfo.context();
+              if (context != null) {
+                final long slot = context.slot();
+                if (slot != 0) {
+                  final long estimatedSlotTime = requestedAt + ((receivedAt - requestedAt) / 2);
+                  this.recentSlot = new StampedSlot(slot, Instant.ofEpochMilli(estimatedSlotTime));
+                }
+              }
+            }
+          }
+        } else {
+          final long epochSeconds = ByteUtil.getInt64LE(clockSysVar.data(), 32);
+          this.recentSlot = new StampedSlot(clockSysVar.context().slot(), Instant.ofEpochSecond(epochSeconds));
+        }
+
         for (final var accountConsumer : alwaysCall) {
           accountConsumer.accept(accounts, accountsMap);
         }

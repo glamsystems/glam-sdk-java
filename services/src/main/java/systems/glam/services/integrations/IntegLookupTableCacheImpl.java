@@ -5,7 +5,6 @@ import software.sava.core.accounts.lookup.AddressLookupTable;
 import software.sava.core.encoding.ByteUtil;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.services.io.FileUtils;
-import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
 
 import java.io.IOException;
@@ -18,7 +17,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import static java.lang.System.Logger.Level.WARNING;
 
-final class IntegLookupTableCacheImpl implements IntegLookupTableCache, AccountConsumer {
+final class IntegLookupTableCacheImpl implements IntegLookupTableCache {
 
   static final System.Logger logger = System.getLogger(IntegLookupTableCache.class.getName());
 

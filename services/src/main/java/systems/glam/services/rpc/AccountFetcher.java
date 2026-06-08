@@ -27,6 +27,8 @@ public interface AccountFetcher extends Runnable {
     return new AccountFetcherImpl(fetchDelay, reactive, rpcCaller, alwaysFetch);
   }
 
+  StampedSlot recentSlot();
+
   void listenToAll(final AccountConsumer accountConsumer);
 
   void stopListening(final AccountConsumer accountConsumer);
