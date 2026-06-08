@@ -1,5 +1,12 @@
 # Changelog
 
+## [25.12.3](https://github.com/glamsystems/glam-sdk-java/compare/25.12.2...25.12.3) (2026-06-08)
+
+
+### Miscellaneous Chores
+
+* release 25.12.3 ([4765494](https://github.com/glamsystems/glam-sdk-java/commit/47654944ba0126be88353ba4fca51ce90339f869))
+
 ## [25.12.2](https://github.com/glamsystems/glam-sdk-java/compare/25.12.1...25.12.2) (2026-06-08)
 
 
