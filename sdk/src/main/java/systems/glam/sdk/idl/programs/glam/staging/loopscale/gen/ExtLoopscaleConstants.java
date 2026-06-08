@@ -3,29 +3,39 @@ package systems.glam.sdk.idl.programs.glam.staging.loopscale.gen;
 
 public final class ExtLoopscaleConstants {
 
-  public static final int PROTO_LOOPSCALE = 1;
+  public static final int PROTO_LOOPSCALE_BORROW = 1;
 
-  public static final long PROTO_LOOPSCALE_PERM_BORROW_PRINCIPAL = 8;
+  public static final long PROTO_LOOPSCALE_BORROW_PERM_BORROW_PRINCIPAL = 32;
 
-  public static final long PROTO_LOOPSCALE_PERM_CLOSE_STRATEGY = 32768;
+  public static final long PROTO_LOOPSCALE_BORROW_PERM_CLOSE_LOAN = 2;
 
-  public static final long PROTO_LOOPSCALE_PERM_CREATE_STRATEGY = 2048;
+  public static final long PROTO_LOOPSCALE_BORROW_PERM_CREATE_LOAN = 1;
 
-  public static final long PROTO_LOOPSCALE_PERM_DEPOSIT_COLLATERAL = 2;
+  public static final long PROTO_LOOPSCALE_BORROW_PERM_DEPOSIT_COLLATERAL = 8;
 
-  public static final long PROTO_LOOPSCALE_PERM_DEPOSIT_STRATEGY = 8192;
+  public static final long PROTO_LOOPSCALE_BORROW_PERM_REPAY_PRINCIPAL = 64;
 
-  public static final long PROTO_LOOPSCALE_PERM_MANAGE_LOAN = 1;
+  public static final long PROTO_LOOPSCALE_BORROW_PERM_SET_POLICY = 128;
 
-  public static final long PROTO_LOOPSCALE_PERM_REPAY_PRINCIPAL = 16;
+  public static final long PROTO_LOOPSCALE_BORROW_PERM_UPDATE_LOAN = 4;
 
-  public static final long PROTO_LOOPSCALE_PERM_SELL_LEDGER = 65536;
+  public static final long PROTO_LOOPSCALE_BORROW_PERM_WITHDRAW_COLLATERAL = 16;
 
-  public static final long PROTO_LOOPSCALE_PERM_UPDATE_STRATEGY = 4096;
+  public static final int PROTO_LOOPSCALE_LENDING = 2;
 
-  public static final long PROTO_LOOPSCALE_PERM_WITHDRAW_COLLATERAL = 4;
+  public static final long PROTO_LOOPSCALE_LENDING_PERM_CLOSE_STRATEGY = 16;
 
-  public static final long PROTO_LOOPSCALE_PERM_WITHDRAW_STRATEGY = 16384;
+  public static final long PROTO_LOOPSCALE_LENDING_PERM_CREATE_STRATEGY = 1;
+
+  public static final long PROTO_LOOPSCALE_LENDING_PERM_DEPOSIT_STRATEGY = 4;
+
+  public static final long PROTO_LOOPSCALE_LENDING_PERM_SELL_LEDGER = 32;
+
+  public static final long PROTO_LOOPSCALE_LENDING_PERM_SET_POLICY = 64;
+
+  public static final long PROTO_LOOPSCALE_LENDING_PERM_UPDATE_STRATEGY = 2;
+
+  public static final long PROTO_LOOPSCALE_LENDING_PERM_WITHDRAW_STRATEGY = 8;
 
   private ExtLoopscaleConstants() {
   }

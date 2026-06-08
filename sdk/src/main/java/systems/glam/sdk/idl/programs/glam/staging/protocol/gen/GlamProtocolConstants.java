@@ -25,6 +25,8 @@ public final class GlamProtocolConstants {
 
   public static final int PROTO_SYSTEM = 1;
 
+  public static final long PROTO_SYSTEM_PERM_EMERGENCY_UPDATE = 4;
+
   public static final long PROTO_SYSTEM_PERM_TRANSFER = 2;
 
   public static final long PROTO_SYSTEM_PERM_WSOL = 1;

@@ -9,13 +9,12 @@ import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.BorrowPolicy;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.BorrowPrincipalParams;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.CreateLoanParams;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.CreateStrategyParams;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.DepositCollateralParams;
-import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.LoanUnlockParams;
-import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.LockLoanParams;
-import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.LoopscalePolicy;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.LendingPolicy;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.MultiCollateralTermsUpdateParams;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.RepayPrincipalParams;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.SellLedgerParams;
@@ -40,10 +39,11 @@ public final class ExtLoopscaleProgram {
 
   /// Borrow principal against a locked loan.
   /// 
-  /// - Permission: `BorrowPrincipal`.
-  /// - Policy
-  /// - `principal_mint` must be present in `LoopscalePolicy::borrow_allowlist`.
-  /// - `market_information` must be present in `LoopscalePolicy::market_allowlist`.
+  /// - Permission: `BorrowPermissions::BorrowPrincipal`.
+  /// - Policy:
+  /// - `principal_mint` must be present in `BorrowPolicy::principal_allowlist`.
+  /// - If `market_information` has a `BorrowPolicy::market_policies` entry,
+  /// advanced per-market borrow limits are enforced.
   ///
   public static List<AccountMeta> borrowPrincipalKeys(final SolanaAccounts solanaAccounts,
                                                       final PublicKey glamStateKey,
@@ -59,7 +59,6 @@ public final class ExtLoopscaleProgram {
                                                       final PublicKey principalMintKey,
                                                       final PublicKey borrowerTaKey,
                                                       final PublicKey strategyTaKey,
-                                                      final PublicKey associatedTokenProgramKey,
                                                       final PublicKey tokenProgramKey,
                                                       final PublicKey protocolAdminStateKey,
                                                       final PublicKey eventAuthorityKey) {
@@ -78,7 +77,7 @@ public final class ExtLoopscaleProgram {
       createRead(principalMintKey),
       createWrite(borrowerTaKey),
       createWrite(strategyTaKey),
-      createRead(associatedTokenProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram()),
       createRead(tokenProgramKey),
       createRead(protocolAdminStateKey),
       createRead(eventAuthorityKey)
@@ -87,10 +86,11 @@ public final class ExtLoopscaleProgram {
 
   /// Borrow principal against a locked loan.
   /// 
-  /// - Permission: `BorrowPrincipal`.
-  /// - Policy
-  /// - `principal_mint` must be present in `LoopscalePolicy::borrow_allowlist`.
-  /// - `market_information` must be present in `LoopscalePolicy::market_allowlist`.
+  /// - Permission: `BorrowPermissions::BorrowPrincipal`.
+  /// - Policy:
+  /// - `principal_mint` must be present in `BorrowPolicy::principal_allowlist`.
+  /// - If `market_information` has a `BorrowPolicy::market_policies` entry,
+  /// advanced per-market borrow limits are enforced.
   ///
   public static Instruction borrowPrincipal(final AccountMeta invokedExtLoopscaleProgramMeta,
                                             final SolanaAccounts solanaAccounts,
@@ -107,7 +107,6 @@ public final class ExtLoopscaleProgram {
                                             final PublicKey principalMintKey,
                                             final PublicKey borrowerTaKey,
                                             final PublicKey strategyTaKey,
-                                            final PublicKey associatedTokenProgramKey,
                                             final PublicKey tokenProgramKey,
                                             final PublicKey protocolAdminStateKey,
                                             final PublicKey eventAuthorityKey,
@@ -127,7 +126,6 @@ public final class ExtLoopscaleProgram {
       principalMintKey,
       borrowerTaKey,
       strategyTaKey,
-      associatedTokenProgramKey,
       tokenProgramKey,
       protocolAdminStateKey,
       eventAuthorityKey
@@ -137,10 +135,11 @@ public final class ExtLoopscaleProgram {
 
   /// Borrow principal against a locked loan.
   /// 
-  /// - Permission: `BorrowPrincipal`.
-  /// - Policy
-  /// - `principal_mint` must be present in `LoopscalePolicy::borrow_allowlist`.
-  /// - `market_information` must be present in `LoopscalePolicy::market_allowlist`.
+  /// - Permission: `BorrowPermissions::BorrowPrincipal`.
+  /// - Policy:
+  /// - `principal_mint` must be present in `BorrowPolicy::principal_allowlist`.
+  /// - If `market_information` has a `BorrowPolicy::market_policies` entry,
+  /// advanced per-market borrow limits are enforced.
   ///
   public static Instruction borrowPrincipal(final AccountMeta invokedExtLoopscaleProgramMeta,
                                             final List<AccountMeta> keys,
@@ -187,7 +186,7 @@ public final class ExtLoopscaleProgram {
 
   /// Close an existing Loopscale loan PDA.
   /// 
-  /// - Permission: `ManageLoan`.
+  /// - Permission: `BorrowPermissions::CloseLoan`.
   ///
   public static List<AccountMeta> closeLoanKeys(final SolanaAccounts solanaAccounts,
                                                 final PublicKey glamStateKey,
@@ -217,7 +216,7 @@ public final class ExtLoopscaleProgram {
 
   /// Close an existing Loopscale loan PDA.
   /// 
-  /// - Permission: `ManageLoan`.
+  /// - Permission: `BorrowPermissions::CloseLoan`.
   ///
   public static Instruction closeLoan(final AccountMeta invokedExtLoopscaleProgramMeta,
                                       final SolanaAccounts solanaAccounts,
@@ -249,7 +248,7 @@ public final class ExtLoopscaleProgram {
 
   /// Close an existing Loopscale loan PDA.
   /// 
-  /// - Permission: `ManageLoan`.
+  /// - Permission: `BorrowPermissions::CloseLoan`.
   ///
   public static Instruction closeLoan(final AccountMeta invokedExtLoopscaleProgramMeta,
                                       final List<AccountMeta> keys) {
@@ -260,7 +259,7 @@ public final class ExtLoopscaleProgram {
 
   /// Close a Loopscale lender strategy account.
   /// 
-  /// - Permission: `CloseStrategy`.
+  /// - Permission: `LendingPermissions::CloseStrategy`.
   ///
   public static List<AccountMeta> closeStrategyKeys(final SolanaAccounts solanaAccounts,
                                                     final PublicKey glamStateKey,
@@ -273,7 +272,6 @@ public final class ExtLoopscaleProgram {
                                                     final PublicKey strategyKey,
                                                     final PublicKey principalMintKey,
                                                     final PublicKey tokenProgramKey,
-                                                    final PublicKey associatedTokenProgramKey,
                                                     final PublicKey protocolAdminStateKey,
                                                     final PublicKey eventAuthorityKey) {
     return List.of(
@@ -288,7 +286,7 @@ public final class ExtLoopscaleProgram {
       createWrite(strategyKey),
       createRead(principalMintKey),
       createRead(tokenProgramKey),
-      createRead(associatedTokenProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram()),
       createRead(protocolAdminStateKey),
       createRead(eventAuthorityKey)
     );
@@ -296,7 +294,7 @@ public final class ExtLoopscaleProgram {
 
   /// Close a Loopscale lender strategy account.
   /// 
-  /// - Permission: `CloseStrategy`.
+  /// - Permission: `LendingPermissions::CloseStrategy`.
   ///
   public static Instruction closeStrategy(final AccountMeta invokedExtLoopscaleProgramMeta,
                                           final SolanaAccounts solanaAccounts,
@@ -310,7 +308,6 @@ public final class ExtLoopscaleProgram {
                                           final PublicKey strategyKey,
                                           final PublicKey principalMintKey,
                                           final PublicKey tokenProgramKey,
-                                          final PublicKey associatedTokenProgramKey,
                                           final PublicKey protocolAdminStateKey,
                                           final PublicKey eventAuthorityKey) {
     final var keys = closeStrategyKeys(
@@ -325,7 +322,6 @@ public final class ExtLoopscaleProgram {
       strategyKey,
       principalMintKey,
       tokenProgramKey,
-      associatedTokenProgramKey,
       protocolAdminStateKey,
       eventAuthorityKey
     );
@@ -334,7 +330,7 @@ public final class ExtLoopscaleProgram {
 
   /// Close a Loopscale lender strategy account.
   /// 
-  /// - Permission: `CloseStrategy`.
+  /// - Permission: `LendingPermissions::CloseStrategy`.
   ///
   public static Instruction closeStrategy(final AccountMeta invokedExtLoopscaleProgramMeta,
                                           final List<AccountMeta> keys) {
@@ -345,7 +341,7 @@ public final class ExtLoopscaleProgram {
 
   /// Create a new Loopscale loan PDA owned by the GLAM vault.
   /// 
-  /// - Permission: `ManageLoan`.
+  /// - Permission: `BorrowPermissions::CreateLoan`.
   ///
   public static List<AccountMeta> createLoanKeys(final SolanaAccounts solanaAccounts,
                                                  final PublicKey glamStateKey,
@@ -375,7 +371,7 @@ public final class ExtLoopscaleProgram {
 
   /// Create a new Loopscale loan PDA owned by the GLAM vault.
   /// 
-  /// - Permission: `ManageLoan`.
+  /// - Permission: `BorrowPermissions::CreateLoan`.
   ///
   public static Instruction createLoan(final AccountMeta invokedExtLoopscaleProgramMeta,
                                        final SolanaAccounts solanaAccounts,
@@ -408,7 +404,7 @@ public final class ExtLoopscaleProgram {
 
   /// Create a new Loopscale loan PDA owned by the GLAM vault.
   /// 
-  /// - Permission: `ManageLoan`.
+  /// - Permission: `BorrowPermissions::CreateLoan`.
   ///
   public static Instruction createLoan(final AccountMeta invokedExtLoopscaleProgramMeta,
                                        final List<AccountMeta> keys,
@@ -457,7 +453,11 @@ public final class ExtLoopscaleProgram {
 
   /// Create a new Loopscale lender strategy owned by the GLAM vault.
   /// 
-  /// - Permission: `CreateStrategy`.
+  /// - Permission: `LendingPermissions::CreateStrategy`.
+  /// - Policy:
+  /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
+  /// - If `market_information` has a `LendingPolicy::market_policies` entry,
+  /// advanced per-market lending limits are enforced.
   /// - `params.lender` must equal the GLAM vault.
   ///
   public static List<AccountMeta> createStrategyKeys(final SolanaAccounts solanaAccounts,
@@ -494,7 +494,11 @@ public final class ExtLoopscaleProgram {
 
   /// Create a new Loopscale lender strategy owned by the GLAM vault.
   /// 
-  /// - Permission: `CreateStrategy`.
+  /// - Permission: `LendingPermissions::CreateStrategy`.
+  /// - Policy:
+  /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
+  /// - If `market_information` has a `LendingPolicy::market_policies` entry,
+  /// advanced per-market lending limits are enforced.
   /// - `params.lender` must equal the GLAM vault.
   ///
   public static Instruction createStrategy(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -534,7 +538,11 @@ public final class ExtLoopscaleProgram {
 
   /// Create a new Loopscale lender strategy owned by the GLAM vault.
   /// 
-  /// - Permission: `CreateStrategy`.
+  /// - Permission: `LendingPermissions::CreateStrategy`.
+  /// - Policy:
+  /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
+  /// - If `market_information` has a `LendingPolicy::market_policies` entry,
+  /// advanced per-market lending limits are enforced.
   /// - `params.lender` must equal the GLAM vault.
   ///
   public static Instruction createStrategy(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -582,8 +590,9 @@ public final class ExtLoopscaleProgram {
 
   /// Deposit collateral into a Loopscale loan.
   /// 
-  /// - Permission: `DepositCollateral`.
-  /// - Policy: `deposit_mint` must be present in `LoopscalePolicy::deposit_allowlist`.
+  /// - Permission: `BorrowPermissions::DepositCollateral`.
+  /// - Policy:
+  /// - `deposit_mint` must be present in `BorrowPolicy::collateral_allowlist`.
   ///
   public static List<AccountMeta> depositCollateralKeys(final SolanaAccounts solanaAccounts,
                                                         final PublicKey glamStateKey,
@@ -599,7 +608,6 @@ public final class ExtLoopscaleProgram {
                                                         final PublicKey depositMintKey,
                                                         final PublicKey assetIdentifierKey,
                                                         final PublicKey tokenProgramKey,
-                                                        final PublicKey associatedTokenProgramKey,
                                                         final PublicKey protocolAdminStateKey,
                                                         final PublicKey eventAuthorityKey) {
     return List.of(
@@ -617,7 +625,7 @@ public final class ExtLoopscaleProgram {
       createRead(depositMintKey),
       createRead(assetIdentifierKey),
       createRead(tokenProgramKey),
-      createRead(associatedTokenProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram()),
       createRead(protocolAdminStateKey),
       createRead(eventAuthorityKey)
     );
@@ -625,8 +633,9 @@ public final class ExtLoopscaleProgram {
 
   /// Deposit collateral into a Loopscale loan.
   /// 
-  /// - Permission: `DepositCollateral`.
-  /// - Policy: `deposit_mint` must be present in `LoopscalePolicy::deposit_allowlist`.
+  /// - Permission: `BorrowPermissions::DepositCollateral`.
+  /// - Policy:
+  /// - `deposit_mint` must be present in `BorrowPolicy::collateral_allowlist`.
   ///
   public static Instruction depositCollateral(final AccountMeta invokedExtLoopscaleProgramMeta,
                                               final SolanaAccounts solanaAccounts,
@@ -643,7 +652,6 @@ public final class ExtLoopscaleProgram {
                                               final PublicKey depositMintKey,
                                               final PublicKey assetIdentifierKey,
                                               final PublicKey tokenProgramKey,
-                                              final PublicKey associatedTokenProgramKey,
                                               final PublicKey protocolAdminStateKey,
                                               final PublicKey eventAuthorityKey,
                                               final DepositCollateralParams params) {
@@ -662,7 +670,6 @@ public final class ExtLoopscaleProgram {
       depositMintKey,
       assetIdentifierKey,
       tokenProgramKey,
-      associatedTokenProgramKey,
       protocolAdminStateKey,
       eventAuthorityKey
     );
@@ -671,8 +678,9 @@ public final class ExtLoopscaleProgram {
 
   /// Deposit collateral into a Loopscale loan.
   /// 
-  /// - Permission: `DepositCollateral`.
-  /// - Policy: `deposit_mint` must be present in `LoopscalePolicy::deposit_allowlist`.
+  /// - Permission: `BorrowPermissions::DepositCollateral`.
+  /// - Policy:
+  /// - `deposit_mint` must be present in `BorrowPolicy::collateral_allowlist`.
   ///
   public static Instruction depositCollateral(final AccountMeta invokedExtLoopscaleProgramMeta,
                                               final List<AccountMeta> keys,
@@ -719,7 +727,11 @@ public final class ExtLoopscaleProgram {
 
   /// Deposit principal liquidity into a Loopscale lender strategy.
   /// 
-  /// - Permission: `DepositStrategy`.
+  /// - Permission: `LendingPermissions::DepositStrategy`.
+  /// - Policy:
+  /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
+  /// - If `market_information` has a `LendingPolicy::market_policies` entry,
+  /// advanced per-market lending limits are enforced.
   ///
   public static List<AccountMeta> depositStrategyKeys(final SolanaAccounts solanaAccounts,
                                                       final PublicKey glamStateKey,
@@ -735,7 +747,6 @@ public final class ExtLoopscaleProgram {
                                                       final PublicKey lenderTaKey,
                                                       final PublicKey strategyTaKey,
                                                       final PublicKey tokenProgramKey,
-                                                      final PublicKey associatedTokenProgramKey,
                                                       final PublicKey protocolAdminStateKey,
                                                       final PublicKey eventAuthorityKey) {
     return List.of(
@@ -753,7 +764,7 @@ public final class ExtLoopscaleProgram {
       createWrite(lenderTaKey),
       createWrite(strategyTaKey),
       createRead(tokenProgramKey),
-      createRead(associatedTokenProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram()),
       createRead(protocolAdminStateKey),
       createRead(eventAuthorityKey)
     );
@@ -761,7 +772,11 @@ public final class ExtLoopscaleProgram {
 
   /// Deposit principal liquidity into a Loopscale lender strategy.
   /// 
-  /// - Permission: `DepositStrategy`.
+  /// - Permission: `LendingPermissions::DepositStrategy`.
+  /// - Policy:
+  /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
+  /// - If `market_information` has a `LendingPolicy::market_policies` entry,
+  /// advanced per-market lending limits are enforced.
   ///
   public static Instruction depositStrategy(final AccountMeta invokedExtLoopscaleProgramMeta,
                                             final SolanaAccounts solanaAccounts,
@@ -778,7 +793,6 @@ public final class ExtLoopscaleProgram {
                                             final PublicKey lenderTaKey,
                                             final PublicKey strategyTaKey,
                                             final PublicKey tokenProgramKey,
-                                            final PublicKey associatedTokenProgramKey,
                                             final PublicKey protocolAdminStateKey,
                                             final PublicKey eventAuthorityKey,
                                             final long amount) {
@@ -797,7 +811,6 @@ public final class ExtLoopscaleProgram {
       lenderTaKey,
       strategyTaKey,
       tokenProgramKey,
-      associatedTokenProgramKey,
       protocolAdminStateKey,
       eventAuthorityKey
     );
@@ -806,7 +819,11 @@ public final class ExtLoopscaleProgram {
 
   /// Deposit principal liquidity into a Loopscale lender strategy.
   /// 
-  /// - Permission: `DepositStrategy`.
+  /// - Permission: `LendingPermissions::DepositStrategy`.
+  /// - Policy:
+  /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
+  /// - If `market_information` has a `LendingPolicy::market_policies` entry,
+  /// advanced per-market lending limits are enforced.
   ///
   public static Instruction depositStrategy(final AccountMeta invokedExtLoopscaleProgramMeta,
                                             final List<AccountMeta> keys,
@@ -852,120 +869,11 @@ public final class ExtLoopscaleProgram {
     }
   }
 
-  public static final Discriminator LOCK_LOAN_DISCRIMINATOR = toDiscriminator(28, 101, 52, 240, 146, 230, 95, 22);
-
-  /// Lock a loan to commit borrowed principal and collateral.
-  /// 
-  /// - Permission: `ManageLoan`.
-  ///
-  public static List<AccountMeta> lockLoanKeys(final SolanaAccounts solanaAccounts,
-                                               final PublicKey glamStateKey,
-                                               final PublicKey glamVaultKey,
-                                               final PublicKey glamSignerKey,
-                                               final PublicKey integrationAuthorityKey,
-                                               final PublicKey cpiProgramKey,
-                                               final PublicKey glamProtocolProgramKey,
-                                               final PublicKey bsAuthKey,
-                                               final PublicKey loanKey,
-                                               final PublicKey protocolAdminStateKey) {
-    return List.of(
-      createWrite(glamStateKey),
-      createWrite(glamVaultKey),
-      createWritableSigner(glamSignerKey),
-      createRead(integrationAuthorityKey),
-      createRead(cpiProgramKey),
-      createRead(glamProtocolProgramKey),
-      createRead(solanaAccounts.systemProgram()),
-      createReadOnlySigner(bsAuthKey),
-      createWrite(loanKey),
-      createRead(solanaAccounts.instructionsSysVar()),
-      createRead(protocolAdminStateKey)
-    );
-  }
-
-  /// Lock a loan to commit borrowed principal and collateral.
-  /// 
-  /// - Permission: `ManageLoan`.
-  ///
-  public static Instruction lockLoan(final AccountMeta invokedExtLoopscaleProgramMeta,
-                                     final SolanaAccounts solanaAccounts,
-                                     final PublicKey glamStateKey,
-                                     final PublicKey glamVaultKey,
-                                     final PublicKey glamSignerKey,
-                                     final PublicKey integrationAuthorityKey,
-                                     final PublicKey cpiProgramKey,
-                                     final PublicKey glamProtocolProgramKey,
-                                     final PublicKey bsAuthKey,
-                                     final PublicKey loanKey,
-                                     final PublicKey protocolAdminStateKey,
-                                     final LockLoanParams params) {
-    final var keys = lockLoanKeys(
-      solanaAccounts,
-      glamStateKey,
-      glamVaultKey,
-      glamSignerKey,
-      integrationAuthorityKey,
-      cpiProgramKey,
-      glamProtocolProgramKey,
-      bsAuthKey,
-      loanKey,
-      protocolAdminStateKey
-    );
-    return lockLoan(invokedExtLoopscaleProgramMeta, keys, params);
-  }
-
-  /// Lock a loan to commit borrowed principal and collateral.
-  /// 
-  /// - Permission: `ManageLoan`.
-  ///
-  public static Instruction lockLoan(final AccountMeta invokedExtLoopscaleProgramMeta,
-                                     final List<AccountMeta> keys,
-                                     final LockLoanParams params) {
-    final byte[] _data = new byte[8 + params.l()];
-    int i = LOCK_LOAN_DISCRIMINATOR.write(_data, 0);
-    params.write(_data, i);
-
-    return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
-  }
-
-  public record LockLoanIxData(Discriminator discriminator, LockLoanParams params) implements SerDe {  
-
-    public static LockLoanIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
-    }
-
-    public static final int BYTES = 9;
-
-    public static final int PARAMS_OFFSET = 8;
-
-    public static LockLoanIxData read(final byte[] _data, final int _offset) {
-      if (_data == null || _data.length == 0) {
-        return null;
-      }
-      final var discriminator = createAnchorDiscriminator(_data, _offset);
-      int i = _offset + discriminator.length();
-      final var params = LockLoanParams.read(_data, i);
-      return new LockLoanIxData(discriminator, params);
-    }
-
-    @Override
-    public int write(final byte[] _data, final int _offset) {
-      int i = _offset + discriminator.write(_data, _offset);
-      i += params.write(_data, i);
-      return i - _offset;
-    }
-
-    @Override
-    public int l() {
-      return BYTES;
-    }
-  }
-
   public static final Discriminator REPAY_PRINCIPAL_DISCRIMINATOR = toDiscriminator(229, 67, 83, 65, 77, 84, 80, 141);
 
   /// Repay principal on a Loopscale loan.
   /// 
-  /// - Permission: `RepayPrincipal`.
+  /// - Permission: `BorrowPermissions::RepayPrincipal`.
   ///
   public static List<AccountMeta> repayPrincipalKeys(final SolanaAccounts solanaAccounts,
                                                      final PublicKey glamStateKey,
@@ -981,7 +889,6 @@ public final class ExtLoopscaleProgram {
                                                      final PublicKey principalMintKey,
                                                      final PublicKey borrowerTaKey,
                                                      final PublicKey strategyTaKey,
-                                                     final PublicKey associatedTokenProgramKey,
                                                      final PublicKey tokenProgramKey,
                                                      final PublicKey protocolAdminStateKey,
                                                      final PublicKey eventAuthorityKey) {
@@ -1000,7 +907,7 @@ public final class ExtLoopscaleProgram {
       createRead(principalMintKey),
       createWrite(borrowerTaKey),
       createWrite(strategyTaKey),
-      createRead(associatedTokenProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram()),
       createRead(tokenProgramKey),
       createRead(protocolAdminStateKey),
       createRead(eventAuthorityKey)
@@ -1009,7 +916,7 @@ public final class ExtLoopscaleProgram {
 
   /// Repay principal on a Loopscale loan.
   /// 
-  /// - Permission: `RepayPrincipal`.
+  /// - Permission: `BorrowPermissions::RepayPrincipal`.
   ///
   public static Instruction repayPrincipal(final AccountMeta invokedExtLoopscaleProgramMeta,
                                            final SolanaAccounts solanaAccounts,
@@ -1026,7 +933,6 @@ public final class ExtLoopscaleProgram {
                                            final PublicKey principalMintKey,
                                            final PublicKey borrowerTaKey,
                                            final PublicKey strategyTaKey,
-                                           final PublicKey associatedTokenProgramKey,
                                            final PublicKey tokenProgramKey,
                                            final PublicKey protocolAdminStateKey,
                                            final PublicKey eventAuthorityKey,
@@ -1046,7 +952,6 @@ public final class ExtLoopscaleProgram {
       principalMintKey,
       borrowerTaKey,
       strategyTaKey,
-      associatedTokenProgramKey,
       tokenProgramKey,
       protocolAdminStateKey,
       eventAuthorityKey
@@ -1056,7 +961,7 @@ public final class ExtLoopscaleProgram {
 
   /// Repay principal on a Loopscale loan.
   /// 
-  /// - Permission: `RepayPrincipal`.
+  /// - Permission: `BorrowPermissions::RepayPrincipal`.
   ///
   public static Instruction repayPrincipal(final AccountMeta invokedExtLoopscaleProgramMeta,
                                            final List<AccountMeta> keys,
@@ -1105,7 +1010,11 @@ public final class ExtLoopscaleProgram {
 
   /// Sell a loan ledger from one strategy to another.
   /// 
-  /// - Permission: `SellLedger`.
+  /// - Permission: `LendingPermissions::SellLedger`.
+  /// - Policy:
+  /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
+  /// - If the new strategy market account has a `LendingPolicy::market_policies` entry,
+  /// advanced exposure limits are enforced.
   ///
   public static List<AccountMeta> sellLedgerKeys(final SolanaAccounts solanaAccounts,
                                                  final PublicKey glamStateKey,
@@ -1124,7 +1033,6 @@ public final class ExtLoopscaleProgram {
                                                  final PublicKey newStrategyMarketInformationKey,
                                                  final PublicKey principalMintKey,
                                                  final PublicKey tokenProgramKey,
-                                                 final PublicKey associatedTokenProgramKey,
                                                  final PublicKey userVaultKey,
                                                  final PublicKey oldStrategyTaKey,
                                                  final PublicKey protocolAdminStateKey,
@@ -1147,7 +1055,7 @@ public final class ExtLoopscaleProgram {
       createWrite(newStrategyMarketInformationKey),
       createRead(principalMintKey),
       createRead(tokenProgramKey),
-      createRead(associatedTokenProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram()),
       createRead(userVaultKey),
       createRead(oldStrategyTaKey),
       createRead(protocolAdminStateKey),
@@ -1157,7 +1065,11 @@ public final class ExtLoopscaleProgram {
 
   /// Sell a loan ledger from one strategy to another.
   /// 
-  /// - Permission: `SellLedger`.
+  /// - Permission: `LendingPermissions::SellLedger`.
+  /// - Policy:
+  /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
+  /// - If the new strategy market account has a `LendingPolicy::market_policies` entry,
+  /// advanced exposure limits are enforced.
   ///
   public static Instruction sellLedger(final AccountMeta invokedExtLoopscaleProgramMeta,
                                        final SolanaAccounts solanaAccounts,
@@ -1177,7 +1089,6 @@ public final class ExtLoopscaleProgram {
                                        final PublicKey newStrategyMarketInformationKey,
                                        final PublicKey principalMintKey,
                                        final PublicKey tokenProgramKey,
-                                       final PublicKey associatedTokenProgramKey,
                                        final PublicKey userVaultKey,
                                        final PublicKey oldStrategyTaKey,
                                        final PublicKey protocolAdminStateKey,
@@ -1201,7 +1112,6 @@ public final class ExtLoopscaleProgram {
       newStrategyMarketInformationKey,
       principalMintKey,
       tokenProgramKey,
-      associatedTokenProgramKey,
       userVaultKey,
       oldStrategyTaKey,
       protocolAdminStateKey,
@@ -1212,7 +1122,11 @@ public final class ExtLoopscaleProgram {
 
   /// Sell a loan ledger from one strategy to another.
   /// 
-  /// - Permission: `SellLedger`.
+  /// - Permission: `LendingPermissions::SellLedger`.
+  /// - Policy:
+  /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
+  /// - If the new strategy market account has a `LendingPolicy::market_policies` entry,
+  /// advanced exposure limits are enforced.
   ///
   public static Instruction sellLedger(final AccountMeta invokedExtLoopscaleProgramMeta,
                                        final List<AccountMeta> keys,
@@ -1255,63 +1169,77 @@ public final class ExtLoopscaleProgram {
     }
   }
 
-  public static final Discriminator SET_LOOPSCALE_POLICY_DISCRIMINATOR = toDiscriminator(216, 84, 180, 148, 164, 253, 148, 173);
+  public static final Discriminator SET_BORROW_POLICY_DISCRIMINATOR = toDiscriminator(199, 94, 106, 205, 150, 227, 206, 68);
 
-  /// Set the `LoopscalePolicy` (deposit, borrow, and market allowlists) on the GLAM state.
+  /// Set the Loopscale borrow policy (collateral allowlist and market policies).
+  /// 
+  /// - Permission: `BorrowPermissions::SetPolicy`.
   ///
-  public static List<AccountMeta> setLoopscalePolicyKeys(final PublicKey glamStateKey,
-                                                         final PublicKey glamSignerKey,
-                                                         final PublicKey glamProtocolProgramKey) {
+  public static List<AccountMeta> setBorrowPolicyKeys(final PublicKey glamStateKey,
+                                                      final PublicKey glamSignerKey,
+                                                      final PublicKey glamProtocolProgramKey,
+                                                      final PublicKey integrationProgramKey,
+                                                      final PublicKey integrationAuthorityKey) {
     return List.of(
       createWrite(glamStateKey),
       createWritableSigner(glamSignerKey),
-      createRead(glamProtocolProgramKey)
+      createRead(glamProtocolProgramKey),
+      createRead(integrationProgramKey),
+      createRead(integrationAuthorityKey)
     );
   }
 
-  /// Set the `LoopscalePolicy` (deposit, borrow, and market allowlists) on the GLAM state.
+  /// Set the Loopscale borrow policy (collateral allowlist and market policies).
+  /// 
+  /// - Permission: `BorrowPermissions::SetPolicy`.
   ///
-  public static Instruction setLoopscalePolicy(final AccountMeta invokedExtLoopscaleProgramMeta,
-                                               final PublicKey glamStateKey,
-                                               final PublicKey glamSignerKey,
-                                               final PublicKey glamProtocolProgramKey,
-                                               final LoopscalePolicy policy) {
-    final var keys = setLoopscalePolicyKeys(
+  public static Instruction setBorrowPolicy(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                            final PublicKey glamStateKey,
+                                            final PublicKey glamSignerKey,
+                                            final PublicKey glamProtocolProgramKey,
+                                            final PublicKey integrationProgramKey,
+                                            final PublicKey integrationAuthorityKey,
+                                            final BorrowPolicy policy) {
+    final var keys = setBorrowPolicyKeys(
       glamStateKey,
       glamSignerKey,
-      glamProtocolProgramKey
+      glamProtocolProgramKey,
+      integrationProgramKey,
+      integrationAuthorityKey
     );
-    return setLoopscalePolicy(invokedExtLoopscaleProgramMeta, keys, policy);
+    return setBorrowPolicy(invokedExtLoopscaleProgramMeta, keys, policy);
   }
 
-  /// Set the `LoopscalePolicy` (deposit, borrow, and market allowlists) on the GLAM state.
+  /// Set the Loopscale borrow policy (collateral allowlist and market policies).
+  /// 
+  /// - Permission: `BorrowPermissions::SetPolicy`.
   ///
-  public static Instruction setLoopscalePolicy(final AccountMeta invokedExtLoopscaleProgramMeta,
-                                               final List<AccountMeta> keys,
-                                               final LoopscalePolicy policy) {
+  public static Instruction setBorrowPolicy(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                            final List<AccountMeta> keys,
+                                            final BorrowPolicy policy) {
     final byte[] _data = new byte[8 + policy.l()];
-    int i = SET_LOOPSCALE_POLICY_DISCRIMINATOR.write(_data, 0);
+    int i = SET_BORROW_POLICY_DISCRIMINATOR.write(_data, 0);
     policy.write(_data, i);
 
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record SetLoopscalePolicyIxData(Discriminator discriminator, LoopscalePolicy policy) implements SerDe {  
+  public record SetBorrowPolicyIxData(Discriminator discriminator, BorrowPolicy policy) implements SerDe {  
 
-    public static SetLoopscalePolicyIxData read(final Instruction instruction) {
+    public static SetBorrowPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
 
     public static final int POLICY_OFFSET = 8;
 
-    public static SetLoopscalePolicyIxData read(final byte[] _data, final int _offset) {
+    public static SetBorrowPolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var policy = LoopscalePolicy.read(_data, i);
-      return new SetLoopscalePolicyIxData(discriminator, policy);
+      final var policy = BorrowPolicy.read(_data, i);
+      return new SetBorrowPolicyIxData(discriminator, policy);
     }
 
     @Override
@@ -1327,109 +1255,89 @@ public final class ExtLoopscaleProgram {
     }
   }
 
-  public static final Discriminator UNLOCK_LOAN_DISCRIMINATOR = toDiscriminator(121, 226, 178, 98, 215, 209, 240, 38);
+  public static final Discriminator SET_LENDING_POLICY_DISCRIMINATOR = toDiscriminator(226, 185, 23, 3, 113, 88, 118, 176);
 
-  /// Unlock a previously locked loan.
+  /// Set the Loopscale lending policy (allowlists, market policies, and sell-ledger limits).
   /// 
-  /// - Permission: `ManageLoan`.
+  /// - Permission: `LendingPermissions::SetPolicy`.
   ///
-  public static List<AccountMeta> unlockLoanKeys(final SolanaAccounts solanaAccounts,
-                                                 final PublicKey glamStateKey,
-                                                 final PublicKey glamVaultKey,
-                                                 final PublicKey glamSignerKey,
-                                                 final PublicKey integrationAuthorityKey,
-                                                 final PublicKey cpiProgramKey,
-                                                 final PublicKey glamProtocolProgramKey,
-                                                 final PublicKey bsAuthKey,
-                                                 final PublicKey loanKey,
-                                                 final PublicKey protocolAdminStateKey) {
+  public static List<AccountMeta> setLendingPolicyKeys(final PublicKey glamStateKey,
+                                                       final PublicKey glamSignerKey,
+                                                       final PublicKey glamProtocolProgramKey,
+                                                       final PublicKey integrationProgramKey,
+                                                       final PublicKey integrationAuthorityKey) {
     return List.of(
       createWrite(glamStateKey),
-      createWrite(glamVaultKey),
       createWritableSigner(glamSignerKey),
-      createRead(integrationAuthorityKey),
-      createRead(cpiProgramKey),
       createRead(glamProtocolProgramKey),
-      createRead(solanaAccounts.systemProgram()),
-      createReadOnlySigner(bsAuthKey),
-      createWrite(loanKey),
-      createRead(protocolAdminStateKey)
+      createRead(integrationProgramKey),
+      createRead(integrationAuthorityKey)
     );
   }
 
-  /// Unlock a previously locked loan.
+  /// Set the Loopscale lending policy (allowlists, market policies, and sell-ledger limits).
   /// 
-  /// - Permission: `ManageLoan`.
+  /// - Permission: `LendingPermissions::SetPolicy`.
   ///
-  public static Instruction unlockLoan(final AccountMeta invokedExtLoopscaleProgramMeta,
-                                       final SolanaAccounts solanaAccounts,
-                                       final PublicKey glamStateKey,
-                                       final PublicKey glamVaultKey,
-                                       final PublicKey glamSignerKey,
-                                       final PublicKey integrationAuthorityKey,
-                                       final PublicKey cpiProgramKey,
-                                       final PublicKey glamProtocolProgramKey,
-                                       final PublicKey bsAuthKey,
-                                       final PublicKey loanKey,
-                                       final PublicKey protocolAdminStateKey,
-                                       final LoanUnlockParams params) {
-    final var keys = unlockLoanKeys(
-      solanaAccounts,
+  public static Instruction setLendingPolicy(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                             final PublicKey glamStateKey,
+                                             final PublicKey glamSignerKey,
+                                             final PublicKey glamProtocolProgramKey,
+                                             final PublicKey integrationProgramKey,
+                                             final PublicKey integrationAuthorityKey,
+                                             final LendingPolicy policy) {
+    final var keys = setLendingPolicyKeys(
       glamStateKey,
-      glamVaultKey,
       glamSignerKey,
-      integrationAuthorityKey,
-      cpiProgramKey,
       glamProtocolProgramKey,
-      bsAuthKey,
-      loanKey,
-      protocolAdminStateKey
+      integrationProgramKey,
+      integrationAuthorityKey
     );
-    return unlockLoan(invokedExtLoopscaleProgramMeta, keys, params);
+    return setLendingPolicy(invokedExtLoopscaleProgramMeta, keys, policy);
   }
 
-  /// Unlock a previously locked loan.
+  /// Set the Loopscale lending policy (allowlists, market policies, and sell-ledger limits).
   /// 
-  /// - Permission: `ManageLoan`.
+  /// - Permission: `LendingPermissions::SetPolicy`.
   ///
-  public static Instruction unlockLoan(final AccountMeta invokedExtLoopscaleProgramMeta,
-                                       final List<AccountMeta> keys,
-                                       final LoanUnlockParams params) {
-    final byte[] _data = new byte[8 + params.l()];
-    int i = UNLOCK_LOAN_DISCRIMINATOR.write(_data, 0);
-    params.write(_data, i);
+  public static Instruction setLendingPolicy(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                             final List<AccountMeta> keys,
+                                             final LendingPolicy policy) {
+    final byte[] _data = new byte[8 + policy.l()];
+    int i = SET_LENDING_POLICY_DISCRIMINATOR.write(_data, 0);
+    policy.write(_data, i);
 
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record UnlockLoanIxData(Discriminator discriminator, LoanUnlockParams params) implements SerDe {  
+  public record SetLendingPolicyIxData(Discriminator discriminator, LendingPolicy policy) implements SerDe {  
 
-    public static UnlockLoanIxData read(final Instruction instruction) {
+    public static SetLendingPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
     }
 
-    public static final int PARAMS_OFFSET = 8;
+    public static final int POLICY_OFFSET = 8;
 
-    public static UnlockLoanIxData read(final byte[] _data, final int _offset) {
+    public static SetLendingPolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var params = LoanUnlockParams.read(_data, i);
-      return new UnlockLoanIxData(discriminator, params);
+      final var policy = LendingPolicy.read(_data, i);
+      return new SetLendingPolicyIxData(discriminator, policy);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += params.write(_data, i);
+      i += policy.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + params.l();
+      return 8 + policy.l();
     }
   }
 
@@ -1437,7 +1345,14 @@ public final class ExtLoopscaleProgram {
 
   /// Update a Loopscale lender strategy's terms, caps, and collateral terms.
   /// 
-  /// - Permission: `UpdateStrategy`.
+  /// - Permission: `LendingPermissions::UpdateStrategy`.
+  /// - Policy:
+  /// - The strategy market account must be passed as the first remaining account.
+  /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
+  /// - Collateral term asset identifiers must be present in
+  /// `LendingPolicy::collateral_allowlist`.
+  /// - If the strategy market account has a `LendingPolicy::market_policies` entry,
+  /// advanced per-market lending limits are enforced.
   ///
   public static List<AccountMeta> updateStrategyKeys(final SolanaAccounts solanaAccounts,
                                                      final PublicKey glamStateKey,
@@ -1450,7 +1365,6 @@ public final class ExtLoopscaleProgram {
                                                      final PublicKey strategyKey,
                                                      final PublicKey principalMintKey,
                                                      final PublicKey strategyTaKey,
-                                                     final PublicKey associatedTokenProgramKey,
                                                      final PublicKey tokenProgramKey,
                                                      final PublicKey protocolAdminStateKey,
                                                      final PublicKey eventAuthorityKey) {
@@ -1466,7 +1380,7 @@ public final class ExtLoopscaleProgram {
       createWrite(strategyKey),
       createRead(principalMintKey),
       createWrite(strategyTaKey),
-      createRead(associatedTokenProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram()),
       createRead(tokenProgramKey),
       createRead(protocolAdminStateKey),
       createRead(eventAuthorityKey)
@@ -1475,7 +1389,14 @@ public final class ExtLoopscaleProgram {
 
   /// Update a Loopscale lender strategy's terms, caps, and collateral terms.
   /// 
-  /// - Permission: `UpdateStrategy`.
+  /// - Permission: `LendingPermissions::UpdateStrategy`.
+  /// - Policy:
+  /// - The strategy market account must be passed as the first remaining account.
+  /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
+  /// - Collateral term asset identifiers must be present in
+  /// `LendingPolicy::collateral_allowlist`.
+  /// - If the strategy market account has a `LendingPolicy::market_policies` entry,
+  /// advanced per-market lending limits are enforced.
   ///
   public static Instruction updateStrategy(final AccountMeta invokedExtLoopscaleProgramMeta,
                                            final SolanaAccounts solanaAccounts,
@@ -1489,7 +1410,6 @@ public final class ExtLoopscaleProgram {
                                            final PublicKey strategyKey,
                                            final PublicKey principalMintKey,
                                            final PublicKey strategyTaKey,
-                                           final PublicKey associatedTokenProgramKey,
                                            final PublicKey tokenProgramKey,
                                            final PublicKey protocolAdminStateKey,
                                            final PublicKey eventAuthorityKey,
@@ -1507,7 +1427,6 @@ public final class ExtLoopscaleProgram {
       strategyKey,
       principalMintKey,
       strategyTaKey,
-      associatedTokenProgramKey,
       tokenProgramKey,
       protocolAdminStateKey,
       eventAuthorityKey
@@ -1517,7 +1436,14 @@ public final class ExtLoopscaleProgram {
 
   /// Update a Loopscale lender strategy's terms, caps, and collateral terms.
   /// 
-  /// - Permission: `UpdateStrategy`.
+  /// - Permission: `LendingPermissions::UpdateStrategy`.
+  /// - Policy:
+  /// - The strategy market account must be passed as the first remaining account.
+  /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
+  /// - Collateral term asset identifiers must be present in
+  /// `LendingPolicy::collateral_allowlist`.
+  /// - If the strategy market account has a `LendingPolicy::market_policies` entry,
+  /// advanced per-market lending limits are enforced.
   ///
   public static Instruction updateStrategy(final AccountMeta invokedExtLoopscaleProgramMeta,
                                            final List<AccountMeta> keys,
@@ -1578,7 +1504,7 @@ public final class ExtLoopscaleProgram {
 
   /// Update the collateral weight matrix on a loan.
   /// 
-  /// - Permission: `ManageLoan`.
+  /// - Permission: `BorrowPermissions::UpdateLoan`.
   ///
   public static List<AccountMeta> updateWeightMatrixKeys(final SolanaAccounts solanaAccounts,
                                                          final PublicKey glamStateKey,
@@ -1606,7 +1532,7 @@ public final class ExtLoopscaleProgram {
 
   /// Update the collateral weight matrix on a loan.
   /// 
-  /// - Permission: `ManageLoan`.
+  /// - Permission: `BorrowPermissions::UpdateLoan`.
   ///
   public static Instruction updateWeightMatrix(final AccountMeta invokedExtLoopscaleProgramMeta,
                                                final SolanaAccounts solanaAccounts,
@@ -1637,7 +1563,7 @@ public final class ExtLoopscaleProgram {
 
   /// Update the collateral weight matrix on a loan.
   /// 
-  /// - Permission: `ManageLoan`.
+  /// - Permission: `BorrowPermissions::UpdateLoan`.
   ///
   public static Instruction updateWeightMatrix(final AccountMeta invokedExtLoopscaleProgramMeta,
                                                final List<AccountMeta> keys,
@@ -1684,7 +1610,7 @@ public final class ExtLoopscaleProgram {
 
   /// Withdraw collateral from a Loopscale loan.
   /// 
-  /// - Permission: `WithdrawCollateral`.
+  /// - Permission: `BorrowPermissions::WithdrawCollateral`.
   ///
   public static List<AccountMeta> withdrawCollateralKeys(final SolanaAccounts solanaAccounts,
                                                          final PublicKey glamStateKey,
@@ -1699,7 +1625,6 @@ public final class ExtLoopscaleProgram {
                                                          final PublicKey loanTaKey,
                                                          final PublicKey assetMintKey,
                                                          final PublicKey tokenProgramKey,
-                                                         final PublicKey associatedTokenProgramKey,
                                                          final PublicKey protocolAdminStateKey,
                                                          final PublicKey eventAuthorityKey) {
     return List.of(
@@ -1716,7 +1641,7 @@ public final class ExtLoopscaleProgram {
       createWrite(loanTaKey),
       createRead(assetMintKey),
       createRead(tokenProgramKey),
-      createRead(associatedTokenProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram()),
       createRead(protocolAdminStateKey),
       createRead(eventAuthorityKey)
     );
@@ -1724,7 +1649,7 @@ public final class ExtLoopscaleProgram {
 
   /// Withdraw collateral from a Loopscale loan.
   /// 
-  /// - Permission: `WithdrawCollateral`.
+  /// - Permission: `BorrowPermissions::WithdrawCollateral`.
   ///
   public static Instruction withdrawCollateral(final AccountMeta invokedExtLoopscaleProgramMeta,
                                                final SolanaAccounts solanaAccounts,
@@ -1740,7 +1665,6 @@ public final class ExtLoopscaleProgram {
                                                final PublicKey loanTaKey,
                                                final PublicKey assetMintKey,
                                                final PublicKey tokenProgramKey,
-                                               final PublicKey associatedTokenProgramKey,
                                                final PublicKey protocolAdminStateKey,
                                                final PublicKey eventAuthorityKey,
                                                final WithdrawCollateralParams params) {
@@ -1758,7 +1682,6 @@ public final class ExtLoopscaleProgram {
       loanTaKey,
       assetMintKey,
       tokenProgramKey,
-      associatedTokenProgramKey,
       protocolAdminStateKey,
       eventAuthorityKey
     );
@@ -1767,7 +1690,7 @@ public final class ExtLoopscaleProgram {
 
   /// Withdraw collateral from a Loopscale loan.
   /// 
-  /// - Permission: `WithdrawCollateral`.
+  /// - Permission: `BorrowPermissions::WithdrawCollateral`.
   ///
   public static Instruction withdrawCollateral(final AccountMeta invokedExtLoopscaleProgramMeta,
                                                final List<AccountMeta> keys,
@@ -1814,7 +1737,7 @@ public final class ExtLoopscaleProgram {
 
   /// Withdraw undeployed principal from a Loopscale lender strategy.
   /// 
-  /// - Permission: `WithdrawStrategy`.
+  /// - Permission: `LendingPermissions::WithdrawStrategy`.
   ///
   public static List<AccountMeta> withdrawStrategyKeys(final SolanaAccounts solanaAccounts,
                                                        final PublicKey glamStateKey,
@@ -1829,7 +1752,6 @@ public final class ExtLoopscaleProgram {
                                                        final PublicKey marketInformationKey,
                                                        final PublicKey lenderTaKey,
                                                        final PublicKey strategyTaKey,
-                                                       final PublicKey associatedTokenProgramKey,
                                                        final PublicKey tokenProgramKey,
                                                        final PublicKey protocolAdminStateKey,
                                                        final PublicKey eventAuthorityKey) {
@@ -1847,7 +1769,7 @@ public final class ExtLoopscaleProgram {
       createRead(marketInformationKey),
       createWrite(lenderTaKey),
       createWrite(strategyTaKey),
-      createRead(associatedTokenProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram()),
       createRead(tokenProgramKey),
       createRead(protocolAdminStateKey),
       createRead(eventAuthorityKey)
@@ -1856,7 +1778,7 @@ public final class ExtLoopscaleProgram {
 
   /// Withdraw undeployed principal from a Loopscale lender strategy.
   /// 
-  /// - Permission: `WithdrawStrategy`.
+  /// - Permission: `LendingPermissions::WithdrawStrategy`.
   ///
   public static Instruction withdrawStrategy(final AccountMeta invokedExtLoopscaleProgramMeta,
                                              final SolanaAccounts solanaAccounts,
@@ -1872,7 +1794,6 @@ public final class ExtLoopscaleProgram {
                                              final PublicKey marketInformationKey,
                                              final PublicKey lenderTaKey,
                                              final PublicKey strategyTaKey,
-                                             final PublicKey associatedTokenProgramKey,
                                              final PublicKey tokenProgramKey,
                                              final PublicKey protocolAdminStateKey,
                                              final PublicKey eventAuthorityKey,
@@ -1892,7 +1813,6 @@ public final class ExtLoopscaleProgram {
       marketInformationKey,
       lenderTaKey,
       strategyTaKey,
-      associatedTokenProgramKey,
       tokenProgramKey,
       protocolAdminStateKey,
       eventAuthorityKey
@@ -1902,7 +1822,7 @@ public final class ExtLoopscaleProgram {
 
   /// Withdraw undeployed principal from a Loopscale lender strategy.
   /// 
-  /// - Permission: `WithdrawStrategy`.
+  /// - Permission: `LendingPermissions::WithdrawStrategy`.
   ///
   public static Instruction withdrawStrategy(final AccountMeta invokedExtLoopscaleProgramMeta,
                                              final List<AccountMeta> keys,

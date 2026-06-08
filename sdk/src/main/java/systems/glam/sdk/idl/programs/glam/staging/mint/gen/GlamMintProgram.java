@@ -2016,6 +2016,7 @@ public final class GlamMintProgram {
   /// 
   /// Extra accounts for pricing N loans:
   /// - N loan accounts
+  /// - M oracle accounts (one per unique mint used by the loans)
   ///
   public static List<AccountMeta> priceLoopscaleLoansKeys(final AccountMeta invokedGlamMintProgramMeta,
                                                           final PublicKey glamStateKey,
@@ -2046,6 +2047,7 @@ public final class GlamMintProgram {
   /// 
   /// Extra accounts for pricing N loans:
   /// - N loan accounts
+  /// - M oracle accounts (one per unique mint used by the loans)
   ///
   public static Instruction priceLoopscaleLoans(final AccountMeta invokedGlamMintProgramMeta,
                                                 final PublicKey glamStateKey,
@@ -2078,10 +2080,88 @@ public final class GlamMintProgram {
   /// 
   /// Extra accounts for pricing N loans:
   /// - N loan accounts
+  /// - M oracle accounts (one per unique mint used by the loans)
   ///
   public static Instruction priceLoopscaleLoans(final AccountMeta invokedGlamMintProgramMeta,
                                                 final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_LOOPSCALE_LOANS_DISCRIMINATOR);
+  }
+
+  public static final Discriminator PRICE_LOOPSCALE_STRATEGIES_DISCRIMINATOR = toDiscriminator(169, 52, 25, 11, 96, 138, 10, 174);
+
+  /// Price LoopScale strategy accounts for a vault
+  /// 
+  /// Extra accounts for pricing N strategies:
+  /// - N strategy accounts
+  /// - M oracle accounts (one per unique principal mint used by the strategies)
+  ///
+  public static List<AccountMeta> priceLoopscaleStrategiesKeys(final AccountMeta invokedGlamMintProgramMeta,
+                                                               final PublicKey glamStateKey,
+                                                               final PublicKey glamVaultKey,
+                                                               final PublicKey signerKey,
+                                                               final PublicKey solUsdOracleKey,
+                                                               final PublicKey baseAssetOracleKey,
+                                                               final PublicKey integrationAuthorityKey,
+                                                               final PublicKey glamConfigKey,
+                                                               final PublicKey glamProtocolKey,
+                                                               final PublicKey eventAuthorityKey,
+                                                               final PublicKey eventProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createWritableSigner(signerKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolKey),
+      createRead(requireNonNullElse(eventAuthorityKey, invokedGlamMintProgramMeta.publicKey())),
+      createRead(requireNonNullElse(eventProgramKey, invokedGlamMintProgramMeta.publicKey()))
+    );
+  }
+
+  /// Price LoopScale strategy accounts for a vault
+  /// 
+  /// Extra accounts for pricing N strategies:
+  /// - N strategy accounts
+  /// - M oracle accounts (one per unique principal mint used by the strategies)
+  ///
+  public static Instruction priceLoopscaleStrategies(final AccountMeta invokedGlamMintProgramMeta,
+                                                     final PublicKey glamStateKey,
+                                                     final PublicKey glamVaultKey,
+                                                     final PublicKey signerKey,
+                                                     final PublicKey solUsdOracleKey,
+                                                     final PublicKey baseAssetOracleKey,
+                                                     final PublicKey integrationAuthorityKey,
+                                                     final PublicKey glamConfigKey,
+                                                     final PublicKey glamProtocolKey,
+                                                     final PublicKey eventAuthorityKey,
+                                                     final PublicKey eventProgramKey) {
+    final var keys = priceLoopscaleStrategiesKeys(
+      invokedGlamMintProgramMeta,
+      glamStateKey,
+      glamVaultKey,
+      signerKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolKey,
+      eventAuthorityKey,
+      eventProgramKey
+    );
+    return priceLoopscaleStrategies(invokedGlamMintProgramMeta, keys);
+  }
+
+  /// Price LoopScale strategy accounts for a vault
+  /// 
+  /// Extra accounts for pricing N strategies:
+  /// - N strategy accounts
+  /// - M oracle accounts (one per unique principal mint used by the strategies)
+  ///
+  public static Instruction priceLoopscaleStrategies(final AccountMeta invokedGlamMintProgramMeta,
+                                                     final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_LOOPSCALE_STRATEGIES_DISCRIMINATOR);
   }
 
   public static final Discriminator PRICE_ORCA_WHIRLPOOL_POSITIONS_DISCRIMINATOR = toDiscriminator(3, 81, 117, 34, 5, 238, 158, 232);

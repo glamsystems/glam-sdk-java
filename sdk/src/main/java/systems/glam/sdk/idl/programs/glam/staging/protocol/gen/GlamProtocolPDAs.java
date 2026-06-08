@@ -34,6 +34,12 @@ public final class GlamProtocolPDAs {
     ), program);
   }
 
+  public static ProgramDerivedAddress integrationAuthorityPDA(final PublicKey integrationProgram) {
+    return PublicKey.findProgramAddress(List.of(
+      "integration-authority".getBytes(US_ASCII)
+    ), integrationProgram);
+  }
+
   private GlamProtocolPDAs() {
   }
 }

@@ -33,6 +33,11 @@ public sealed interface GlamProtocolError extends ProgramError permits
     GlamProtocolError.InvalidBaseAsset,
     GlamProtocolError.InvalidProtocolBitflag,
     GlamProtocolError.StaleDriftInterest,
+    GlamProtocolError.AssetBalanceNotZero,
+    GlamProtocolError.CannotDeleteBaseAsset,
+    GlamProtocolError.IntegrationAclLimitExceeded,
+    GlamProtocolError.DelegateAclLimitExceeded,
+    GlamProtocolError.InvalidFeeStructure,
     GlamProtocolError.WithdrawDenied,
     GlamProtocolError.InvalidAssetForSwap,
     GlamProtocolError.UnsupportedSwapIx,
@@ -101,6 +106,11 @@ public sealed interface GlamProtocolError extends ProgramError permits
       case 49014 -> InvalidBaseAsset.INSTANCE;
       case 49015 -> InvalidProtocolBitflag.INSTANCE;
       case 49016 -> StaleDriftInterest.INSTANCE;
+      case 49017 -> AssetBalanceNotZero.INSTANCE;
+      case 49018 -> CannotDeleteBaseAsset.INSTANCE;
+      case 49019 -> IntegrationAclLimitExceeded.INSTANCE;
+      case 49020 -> DelegateAclLimitExceeded.INSTANCE;
+      case 49021 -> InvalidFeeStructure.INSTANCE;
       case 50000 -> WithdrawDenied.INSTANCE;
       case 50001 -> InvalidAssetForSwap.INSTANCE;
       case 50002 -> UnsupportedSwapIx.INSTANCE;
@@ -341,6 +351,41 @@ public sealed interface GlamProtocolError extends ProgramError permits
 
     public static final StaleDriftInterest INSTANCE = new StaleDriftInterest(
         49016, "Drift spot market cumulative interest is stale"
+    );
+  }
+
+  record AssetBalanceNotZero(int code, String msg) implements GlamProtocolError {
+
+    public static final AssetBalanceNotZero INSTANCE = new AssetBalanceNotZero(
+        49017, "Cannot delete asset: vault token account balance is not zero"
+    );
+  }
+
+  record CannotDeleteBaseAsset(int code, String msg) implements GlamProtocolError {
+
+    public static final CannotDeleteBaseAsset INSTANCE = new CannotDeleteBaseAsset(
+        49018, "Cannot delete base asset from allowlist"
+    );
+  }
+
+  record IntegrationAclLimitExceeded(int code, String msg) implements GlamProtocolError {
+
+    public static final IntegrationAclLimitExceeded INSTANCE = new IntegrationAclLimitExceeded(
+        49019, "Integration ACL limit exceeded"
+    );
+  }
+
+  record DelegateAclLimitExceeded(int code, String msg) implements GlamProtocolError {
+
+    public static final DelegateAclLimitExceeded INSTANCE = new DelegateAclLimitExceeded(
+        49020, "Delegate ACL limit exceeded"
+    );
+  }
+
+  record InvalidFeeStructure(int code, String msg) implements GlamProtocolError {
+
+    public static final InvalidFeeStructure INSTANCE = new InvalidFeeStructure(
+        49021, "Invalid fee structure"
     );
   }
 

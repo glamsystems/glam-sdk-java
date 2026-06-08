@@ -37,6 +37,31 @@ import static software.sava.core.programs.Discriminator.toDiscriminator;
 
 public final class GlamProtocolProgram {
 
+  public static final Discriminator ADD_ASSETS_DISCRIMINATOR = toDiscriminator(221, 232, 106, 164, 156, 75, 127, 106);
+
+  public static List<AccountMeta> addAssetsKeys(final PublicKey glamStateKey,
+                                                final PublicKey glamSignerKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey)
+    );
+  }
+
+  public static Instruction addAssets(final AccountMeta invokedGlamProtocolProgramMeta,
+                                      final PublicKey glamStateKey,
+                                      final PublicKey glamSignerKey) {
+    final var keys = addAssetsKeys(
+      glamStateKey,
+      glamSignerKey
+    );
+    return addAssets(invokedGlamProtocolProgramMeta, keys);
+  }
+
+  public static Instruction addAssets(final AccountMeta invokedGlamProtocolProgramMeta,
+                                      final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, ADD_ASSETS_DISCRIMINATOR);
+  }
+
   public static final Discriminator CANCEL_TIMELOCK_DISCRIMINATOR = toDiscriminator(158, 180, 47, 81, 133, 231, 168, 238);
 
   public static List<AccountMeta> cancelTimelockKeys(final PublicKey glamStateKey,
@@ -183,6 +208,31 @@ public final class GlamProtocolProgram {
     public int l() {
       return 8 + SerDeUtil.lenVector(4, data) + SerDeUtil.lenVector(4, extraParams);
     }
+  }
+
+  public static final Discriminator DELETE_ASSETS_DISCRIMINATOR = toDiscriminator(85, 141, 142, 118, 39, 152, 168, 188);
+
+  public static List<AccountMeta> deleteAssetsKeys(final PublicKey glamStateKey,
+                                                   final PublicKey glamSignerKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey)
+    );
+  }
+
+  public static Instruction deleteAssets(final AccountMeta invokedGlamProtocolProgramMeta,
+                                         final PublicKey glamStateKey,
+                                         final PublicKey glamSignerKey) {
+    final var keys = deleteAssetsKeys(
+      glamStateKey,
+      glamSignerKey
+    );
+    return deleteAssets(invokedGlamProtocolProgramMeta, keys);
+  }
+
+  public static Instruction deleteAssets(final AccountMeta invokedGlamProtocolProgramMeta,
+                                         final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, DELETE_ASSETS_DISCRIMINATOR);
   }
 
   public static final Discriminator EMERGENCY_ACCESS_UPDATE_DISCRIMINATOR = toDiscriminator(207, 247, 157, 14, 87, 132, 230, 0);
@@ -1055,6 +1105,81 @@ public final class GlamProtocolProgram {
     @Override
     public int l() {
       return 8 + 32 + 2 + SerDeUtil.lenVector(4, data);
+    }
+  }
+
+  public static final Discriminator SET_PROTOCOL_POLICY_BY_INTEGRATION_AUTHORITY_DISCRIMINATOR = toDiscriminator(225, 50, 176, 197, 142, 211, 77, 101);
+
+  public static List<AccountMeta> setProtocolPolicyByIntegrationAuthorityKeys(final PublicKey glamStateKey,
+                                                                              final PublicKey integrationProgramKey,
+                                                                              final PublicKey integrationAuthorityKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(integrationProgramKey),
+      createReadOnlySigner(integrationAuthorityKey)
+    );
+  }
+
+  public static Instruction setProtocolPolicyByIntegrationAuthority(final AccountMeta invokedGlamProtocolProgramMeta,
+                                                                    final PublicKey glamStateKey,
+                                                                    final PublicKey integrationProgramKey,
+                                                                    final PublicKey integrationAuthorityKey,
+                                                                    final int protocolBitflag,
+                                                                    final byte[] data) {
+    final var keys = setProtocolPolicyByIntegrationAuthorityKeys(
+      glamStateKey,
+      integrationProgramKey,
+      integrationAuthorityKey
+    );
+    return setProtocolPolicyByIntegrationAuthority(invokedGlamProtocolProgramMeta, keys, protocolBitflag, data);
+  }
+
+  public static Instruction setProtocolPolicyByIntegrationAuthority(final AccountMeta invokedGlamProtocolProgramMeta,
+                                                                    final List<AccountMeta> keys,
+                                                                    final int protocolBitflag,
+                                                                    final byte[] data) {
+    final byte[] _data = new byte[10 + SerDeUtil.lenVector(4, data)];
+    int i = SET_PROTOCOL_POLICY_BY_INTEGRATION_AUTHORITY_DISCRIMINATOR.write(_data, 0);
+    putInt16LE(_data, i, protocolBitflag);
+    i += 2;
+    SerDeUtil.writeVector(4, data, _data, i);
+
+    return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
+  }
+
+  public record SetProtocolPolicyByIntegrationAuthorityIxData(Discriminator discriminator, int protocolBitflag, byte[] data) implements SerDe {  
+
+    public static SetProtocolPolicyByIntegrationAuthorityIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int PROTOCOL_BITFLAG_OFFSET = 8;
+    public static final int DATA_OFFSET = 10;
+
+    public static SetProtocolPolicyByIntegrationAuthorityIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var protocolBitflag = getInt16LE(_data, i);
+      i += 2;
+      final var data = SerDeUtil.readbyteVector(4, _data, i);
+      return new SetProtocolPolicyByIntegrationAuthorityIxData(discriminator, protocolBitflag, data);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      putInt16LE(_data, i, protocolBitflag);
+      i += 2;
+      i += SerDeUtil.writeVector(4, data, _data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + 2 + SerDeUtil.lenVector(4, data);
     }
   }
 
