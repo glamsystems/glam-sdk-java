@@ -42,7 +42,7 @@ final class DriftMarketCacheTests {
 
     try (final var files = Files.list(resourceDir)) {
       final var marketFiles = files
-          .filter(p -> p.getFileName().toString().endsWith(".dat.zip"))
+          .filter(p -> p.getFileName().toString().endsWith(".dat.gz"))
           .sorted()
           .toList();
 

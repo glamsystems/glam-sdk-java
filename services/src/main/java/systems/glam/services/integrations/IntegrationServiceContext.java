@@ -8,6 +8,7 @@ import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.idl.clients.loopscale.LoopscaleAccounts;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
+import systems.glam.sdk.GlamEnv;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.integrations.drift.DriftMarketCache;
 import systems.glam.services.integrations.drift.DriftUserCache;
@@ -61,11 +62,11 @@ public interface IntegrationServiceContext {
 
   StakePoolContext stakePoolContextForMint(final PublicKey mintKey);
 
-  Path resolveGlamStateFilePath(final PublicKey glamStateKey);
+  Path resolveGlamStateFilePath(final GlamEnv glamEnv, final PublicKey glamStateKey);
 
   AccountFetcher accountFetcher();
 
-  void queue(final Collection<PublicKey> accounts, final AccountConsumer callback);
+  void queueUnique(final Collection<PublicKey> accounts, final AccountConsumer callback);
 
   void executeTask(final Runnable task);
 

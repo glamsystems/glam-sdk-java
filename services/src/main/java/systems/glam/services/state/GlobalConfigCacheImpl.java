@@ -13,9 +13,7 @@ import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -24,8 +22,11 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
+import java.util.zip.GZIPOutputStream;
 
 import static java.lang.System.Logger.Level.*;
+import static java.nio.file.Files.newOutputStream;
+import static java.nio.file.StandardOpenOption.*;
 
 final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<AccountInfo<byte[]>>, AccountConsumer {
 
@@ -98,6 +99,17 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
       }
     } finally {
       readLock.unlock();
+    }
+  }
+
+  @Override
+  public void removeMintWatcher(final PublicKey stateAccount) {
+    final var iterator = stateAccountsThatNeedAssetMeta.entrySet().iterator();
+    while (iterator.hasNext()) {
+      final var stateAccounts = iterator.next().getValue();
+      if (stateAccounts.remove(stateAccount) && stateAccounts.isEmpty()) {
+        iterator.remove();
+      }
     }
   }
 
@@ -663,6 +675,11 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   }
 
   @Override
+  public void mutableKeysExceededMaxSize() {
+
+  }
+
+  @Override
   public void accept(final AccountInfo<byte[]> accountInfo) {
     if (this.assetMetaMap == null || this.globalConfigUpdate == null) {
       return;
@@ -746,13 +763,9 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     }
   }
 
-  static void persistGlobalConfig(final Path globalConfigFilePath, final byte[] data) {
-    try {
-      Files.write(
-          globalConfigFilePath,
-          data,
-          StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING
-      );
+  static void persistGlobalConfig(final Path filePath, final byte[] data) {
+    try (final var out = new GZIPOutputStream(newOutputStream(filePath, CREATE, TRUNCATE_EXISTING, WRITE))) {
+      out.write(data);
     } catch (final IOException e) {
       logger.log(WARNING, "Failed to write GlobalConfig to file", e);
     }

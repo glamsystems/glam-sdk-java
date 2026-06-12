@@ -8,6 +8,7 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamAccounts;
+import systems.glam.sdk.GlamEnv;
 import systems.glam.services.io.FileUtils;
 
 import javax.sql.DataSource;
@@ -23,10 +24,10 @@ public interface ServiceContext {
 
   Path accountsCacheDirectory();
 
-  Path resolveGlamStateFilePath(final PublicKey glamStateKey);
+  Path resolveGlamStateFilePath(final GlamEnv glamEnv, final PublicKey glamStateKey);
 
   default Path globalConfigCacheFile() {
-    return FileUtils.resolveAccountPath(
+    return FileUtils.resolveCompressedAccountPath(
         accountsCacheDirectory().resolve("glam/global/"),
         glamAccounts().globalConfigPDA().publicKey()
     );
@@ -70,7 +71,7 @@ public interface ServiceContext {
 
   RpcCaller rpcCaller();
 
-  Path glamMinStateAccountCacheDirectory();
+  Path glamStateAccountCacheDirectory();
 
   Clock clock(final Map<PublicKey, AccountInfo<byte[]>> accountsNeededMap);
 }

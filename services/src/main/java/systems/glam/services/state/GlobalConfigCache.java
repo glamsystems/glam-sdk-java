@@ -5,6 +5,7 @@ import software.sava.core.accounts.SolanaAccounts;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.GlobalConfig;
+import systems.glam.services.io.FileUtils;
 import systems.glam.services.mints.AssetMetaContext;
 import systems.glam.services.mints.MintCache;
 import systems.glam.services.mints.MintContext;
@@ -34,25 +35,21 @@ public interface GlobalConfigCache extends Runnable {
                                                         final AccountFetcher accountFetcher,
                                                         final Duration fetchDelay) {
     if (Files.exists(globalConfigFilePath)) {
-      try {
-        final byte[] data = Files.readAllBytes(globalConfigFilePath);
-        final var globalConfig = GlobalConfig.read(globalConfigKey, data);
-        final var assetMetaContexts = AssetMetaContext.mapAssetMetas(globalConfig);
-        final var assetMetaMap = createMap(assetMetaContexts);
-        final var globalConfigUpdate = new GlobalConfigUpdate(0, assetMetaContexts, data);
-        final var cache = new GlobalConfigCacheImpl(
-            globalConfigFilePath,
-            configProgram, globalConfigKey,
-            solanaAccounts,
-            mintCache,
-            accountFetcher,
-            fetchDelay,
-            globalConfigUpdate, assetMetaMap
-        );
-        return CompletableFuture.completedFuture(cache);
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
-      }
+      final byte[] data = FileUtils.readAccountData(globalConfigFilePath).data();
+      final var globalConfig = GlobalConfig.read(globalConfigKey, data);
+      final var assetMetaContexts = AssetMetaContext.mapAssetMetas(globalConfig);
+      final var assetMetaMap = createMap(assetMetaContexts);
+      final var globalConfigUpdate = new GlobalConfigUpdate(0, assetMetaContexts, data);
+      final var cache = new GlobalConfigCacheImpl(
+          globalConfigFilePath,
+          configProgram, globalConfigKey,
+          solanaAccounts,
+          mintCache,
+          accountFetcher,
+          fetchDelay,
+          globalConfigUpdate, assetMetaMap
+      );
+      return CompletableFuture.completedFuture(cache);
     } else {
       try {
         Files.createDirectories(globalConfigFilePath.getParent());
@@ -125,6 +122,12 @@ public interface GlobalConfigCache extends Runnable {
   GlobalConfigUpdate globalConfig();
 
   AssetMetaContext watchForMint(final PublicKey mint, final PublicKey stateAccount);
+
+  /**
+   * Removes the state account from all mint watch lists registered via
+   * {@link #watchForMint(PublicKey, PublicKey)}.
+   */
+  void removeMintWatcher(final PublicKey stateAccount);
 
   /**
    * Returns a set of state accounts that previously could not be priced

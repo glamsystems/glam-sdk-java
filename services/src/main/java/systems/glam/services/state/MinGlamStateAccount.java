@@ -13,17 +13,16 @@ import java.util.Arrays;
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
 
 public record MinGlamStateAccount(long slot,
+                                  byte[] data,
                                   GlamEnv glamEnv,
                                   AccountType accountType,
                                   boolean enabled,
                                   int baseAssetIndex,
                                   int baseAssetDecimals,
                                   int baseAssetTokenProgram,
-                                  byte[] assetBytes,
                                   PublicKey[] assets,
-                                  byte[] protocolIntegrationBytes,
                                   ProtocolIntegration[] protocolIntegrations,
-                                  byte[] externalPositionsBytes,
+                                  PublicKey[] delegates,
                                   PublicKey[] externalPositions) {
 
   public boolean disabled() {
@@ -53,67 +52,15 @@ public record MinGlamStateAccount(long slot,
   }
 
   public byte[] serialize() {
-    final int len = Long.BYTES + 1 + 1 + 1 + 1 + 1 + 1
-        + 1 + assetBytes.length + 1 + protocolIntegrationBytes.length + 1 + externalPositionsBytes.length;
-    final byte[] data = new byte[len];
-    ByteUtil.putInt64LE(data, 0, slot);
-    int i = Long.BYTES;
-    data[i++] = (byte) glamEnv.ordinal();
-    data[i++] = (byte) accountType.ordinal();
-    data[i++] = (byte) (enabled ? 1 : 0);
-    data[i++] = (byte) baseAssetIndex;
-    data[i++] = (byte) baseAssetDecimals;
-    data[i++] = (byte) baseAssetTokenProgram;
-    data[i++] = (byte) assets.length;
-    System.arraycopy(assetBytes, 0, data, i, assetBytes.length);
-    i += assetBytes.length;
-    data[i++] = (byte) protocolIntegrations.length;
-    System.arraycopy(protocolIntegrationBytes, 0, data, i, protocolIntegrationBytes.length);
-    i += protocolIntegrationBytes.length;
-    data[i++] = (byte) externalPositions.length;
-    System.arraycopy(externalPositionsBytes, 0, data, i, externalPositionsBytes.length);
-    return data;
+    final byte[] withSlot = new byte[data.length + 8];
+    System.arraycopy(data, 0, withSlot, 0, data.length);
+    ByteUtil.putInt64LE(withSlot, data.length, slot);
+    return withSlot;
   }
 
-  public static MinGlamStateAccount deserialize(final byte[] data) {
-    final long slot = ByteUtil.getInt64LE(data, 0);
-    int i = Long.BYTES;
-    final var glamEnv = GlamEnv.values()[data[i++]];
-    final var accountType = AccountType.values()[data[i++]];
-    final boolean enabled = data[i++] == 1;
-    final var baseAssetMintIndex = data[i++] & 0xFF;
-    final int baseAssetDecimals = data[i++] & 0xFF;
-    final int baseAssetTokenProgram = data[i++] & 0xFF;
-
-    final var assets = SerDeUtil.readPublicKeyVector(1, data, i++);
-    Arrays.sort(assets);
-    final int to = i + (assets.length * PublicKey.PUBLIC_KEY_LENGTH);
-    final byte[] assetBytes = Arrays.copyOfRange(data, i, to);
-    i = to;
-
-    final var protocolIntegrations = new ProtocolIntegration[data[i++] & 0xFF];
-    final var protocolIntegrationBytes = readIntegrationAcls(data, i, protocolIntegrations);
-    i += protocolIntegrationBytes.length;
-
-    final var externalPositions = SerDeUtil.readPublicKeyVector(1, data, i++);
-    Arrays.sort(externalPositions);
-    final byte[] externalPositionsBytes = Arrays.copyOfRange(data, i, data.length);
-
-    return new MinGlamStateAccount(
-        slot,
-        glamEnv,
-        accountType,
-        enabled,
-        baseAssetMintIndex, baseAssetDecimals, baseAssetTokenProgram,
-        assetBytes, assets,
-        protocolIntegrationBytes, protocolIntegrations,
-        externalPositionsBytes, externalPositions
-    );
-  }
-
-  private static byte[] readIntegrationAcls(final byte[] data,
-                                            int i,
-                                            final ProtocolIntegration[] protocolIntegrations) {
+  private static int readIntegrationAcls(final byte[] data,
+                                         int i,
+                                         final ProtocolIntegration[] protocolIntegrations) {
     final int from = i;
     for (int j = 0; j < protocolIntegrations.length; j++) {
       final var integrationProgram = PublicKey.readPubKey(data, i);
@@ -130,7 +77,7 @@ public record MinGlamStateAccount(long slot,
       }
     }
     Arrays.sort(protocolIntegrations);
-    return Arrays.copyOfRange(data, from, i);
+    return i - from;
   }
 
   private static int delegateAclsOffset(final byte[] data, int i) {
@@ -145,6 +92,23 @@ public record MinGlamStateAccount(long slot,
         i += SerDeUtil.val(4, data, i);
         i += 4;
       }
+    }
+    return i;
+  }
+
+  private static int readDelegateAcls(final byte[] data, int i, final PublicKey[] delegates) {
+    for (int j = 0; j < delegates.length; ++j) {
+      delegates[j] = PublicKey.readPubKey(data, i);
+      i += DelegateAcl.INTEGRATION_PERMISSIONS_OFFSET;
+      final int numIntegrationPermissions = SerDeUtil.val(4, data, i);
+      i += 4; // IntegrationPermissions
+      for (int k = 0; k < numIntegrationPermissions; ++k) {
+        i += IntegrationPermissions.PROTOCOL_PERMISSIONS_OFFSET;
+        final int numPermissions = SerDeUtil.val(4, data, i);
+        i += 4;
+        i += numPermissions * ProtocolPermissions.BYTES;
+      }
+      i += Long.BYTES; // expiresAt
     }
     return i;
   }
@@ -170,25 +134,34 @@ public record MinGlamStateAccount(long slot,
     return i;
   }
 
+  public static MinGlamStateAccount deserialize(final GlamEnv env, final byte[] data) {
+    final long slot = ByteUtil.getInt64LE(data, data.length - 8);
+    return createRecord(env, data, slot);
+  }
+
   public static MinGlamStateAccount createRecord(final AccountInfo<byte[]> accountInfo) {
-    final byte[] data = accountInfo.data();
+    return createRecord(GlamEnv.from(accountInfo.owner()), accountInfo.data(), accountInfo.context().slot());
+  }
+
+  public static MinGlamStateAccount createRecord(final GlamEnv env, final byte[] data, final long slot) {
     final var assets = SerDeUtil.readPublicKeyVector(4, data, StateAccount.ASSETS_OFFSET);
     Arrays.sort(assets);
 
     int i = StateAccount.ASSETS_OFFSET + SerDeUtil.lenVector(4, assets);
-    final byte[] assetBytes = Arrays.copyOfRange(data, StateAccount.ASSETS_OFFSET + 4, i);
 
     final int numIntegrations = SerDeUtil.val(4, data, i);
     i += 4;
     final var protocolIntegrations = new ProtocolIntegration[numIntegrations];
     final var protocolIntegrationBytes = readIntegrationAcls(data, i, protocolIntegrations);
-    i += protocolIntegrationBytes.length;
+    i += protocolIntegrationBytes;
 
-    i = externalPositionsOffset(data, i);
+    final int numDelegates = SerDeUtil.val(4, data, i);
+    i += 4;
+    final var delegates = new PublicKey[numDelegates];
+    i = readDelegateAcls(data, i, delegates);
+
     final var externalPositions = SerDeUtil.readPublicKeyVector(4, data, i);
     Arrays.sort(externalPositions);
-    i += 4; // 1295
-    final byte[] externalPositionsBytes = Arrays.copyOfRange(data, i, i + (externalPositions.length * PublicKey.PUBLIC_KEY_LENGTH));
 
     final var accountType = AccountType.values()[data[StateAccount.ACCOUNT_TYPE_OFFSET] & 0xFF];
     final boolean enabled = data[StateAccount.ENABLED_OFFSET] == 1;
@@ -198,14 +171,16 @@ public record MinGlamStateAccount(long slot,
     final int baseAssetTokenProgram = data[StateAccount.BASE_ASSET_TOKEN_PROGRAM_OFFSET] & 0xFF;
 
     return new MinGlamStateAccount(
-        accountInfo.context().slot(),
-        GlamEnv.from(accountInfo.owner()),
+        slot,
+        data,
+        env,
         accountType,
         enabled,
         baseAssetIndex, baseAssetDecimals, baseAssetTokenProgram,
-        assetBytes, assets,
-        protocolIntegrationBytes, protocolIntegrations,
-        externalPositionsBytes, externalPositions
+        assets,
+        protocolIntegrations,
+        delegates,
+        externalPositions
     );
   }
 
@@ -229,108 +204,133 @@ public record MinGlamStateAccount(long slot,
 
     final int numAssets = SerDeUtil.val(4, data, StateAccount.ASSETS_OFFSET);
     final int fromAssetsOffset = StateAccount.ASSETS_OFFSET + 4;
-    final int toAssetsOffset = fromAssetsOffset + (numAssets * PublicKey.PUBLIC_KEY_LENGTH);
+    final int oToAssetsOffset = fromAssetsOffset + (numAssets * PublicKey.PUBLIC_KEY_LENGTH);
 
-    final int toProtocolIntegrationBytes = delegateAclsOffset(data, toAssetsOffset);
+    final int oToProtocolIntegrationBytes = delegateAclsOffset(data, oToAssetsOffset);
 
-    int fromExternalPositionOffset = externalPositionsOffset(data, toProtocolIntegrationBytes);
-    final int numExternalPositions = SerDeUtil.val(4, data, fromExternalPositionOffset);
-    fromExternalPositionOffset += 4; // 1295
-    final int toExternalPositionOffset = fromExternalPositionOffset + (numExternalPositions * PublicKey.PUBLIC_KEY_LENGTH);
+    final int oToDelegatesOffset = externalPositionsOffset(data, oToProtocolIntegrationBytes);
+    final int numExternalPositions = SerDeUtil.val(4, data, oToDelegatesOffset);
+    final int oFromExternalPositionOffset = oToDelegatesOffset + 4;
+    final int oToExternalPositionOffset = oFromExternalPositionOffset + (numExternalPositions * PublicKey.PUBLIC_KEY_LENGTH);
 
-    final boolean assetsChanged = numAssets != this.assets.length || !Arrays.equals(
-        this.assetBytes, 0, this.assetBytes.length,
-        data, fromAssetsOffset, toAssetsOffset
+    final int toAssetsOffset = fromAssetsOffset + (this.assets.length * PublicKey.PUBLIC_KEY_LENGTH);
+    final boolean sameAssets = numAssets == this.assets.length && Arrays.equals(
+        this.data, fromAssetsOffset, toAssetsOffset,
+        data, fromAssetsOffset, oToAssetsOffset
     );
-    final boolean protocolIntegrationsChanged = !Arrays.equals(
-        this.protocolIntegrationBytes, 0, this.protocolIntegrationBytes.length,
-        data, toAssetsOffset + 4, toProtocolIntegrationBytes
+
+    final int toProtocolIntegrationBytes = delegateAclsOffset(this.data, toAssetsOffset);
+    final boolean sameProtocolIntegrations = Arrays.equals(
+        this.data, toAssetsOffset, toProtocolIntegrationBytes,
+        data, oToAssetsOffset, oToProtocolIntegrationBytes
     );
-    final boolean externalPositionsChanged = numExternalPositions != this.externalPositions.length || !Arrays.equals(
-        this.externalPositionsBytes, 0, this.externalPositionsBytes.length,
-        data, fromExternalPositionOffset, toExternalPositionOffset
+
+    final int toDelegatesOffset = externalPositionsOffset(this.data, toProtocolIntegrationBytes);
+    final boolean sameDelegates = Arrays.equals(
+        this.data, toProtocolIntegrationBytes, toDelegatesOffset,
+        data, oToProtocolIntegrationBytes, oToDelegatesOffset
     );
+
+    final boolean sameExternalPositions;
+    if (numExternalPositions == this.externalPositions.length) {
+      final int fromExternalPositionOffset = toDelegatesOffset + 4;
+      final int toExternalPositionOffset = fromExternalPositionOffset + (this.externalPositions.length * PublicKey.PUBLIC_KEY_LENGTH);
+      sameExternalPositions = Arrays.equals(
+          this.data, fromExternalPositionOffset, toExternalPositionOffset,
+          data, oFromExternalPositionOffset, oToExternalPositionOffset
+      );
+    } else {
+      sameExternalPositions = false;
+    }
 
     final boolean enabled = data[StateAccount.ENABLED_OFFSET] == 1;
 
-    if (!assetsChanged
-        && !protocolIntegrationsChanged
-        && !externalPositionsChanged
+    if (sameAssets
+        && sameProtocolIntegrations
+        && sameDelegates
+        && sameExternalPositions
         && (this.enabled == enabled)) {
       return null;
     }
 
     final int baseAssetIndex;
-    final byte[] assetBytes;
     final PublicKey[] assets;
-    if (assetsChanged) {
+    if (sameAssets) {
+      baseAssetIndex = this.baseAssetIndex;
+      assets = this.assets;
+    } else {
       assets = new PublicKey[numAssets];
       SerDeUtil.readArray(assets, data, fromAssetsOffset);
       Arrays.sort(assets);
       baseAssetIndex = Arrays.binarySearch(assets, this.baseAssetMint());
-      assetBytes = Arrays.copyOfRange(data, fromAssetsOffset, toAssetsOffset);
-    } else {
-      baseAssetIndex = this.baseAssetIndex;
-      assetBytes = this.assetBytes;
-      assets = this.assets;
     }
 
-    final byte[] protocolIntegrationBytes;
     final ProtocolIntegration[] protocolIntegrations;
-    if (protocolIntegrationsChanged) {
-      final int numIntegrations = SerDeUtil.val(4, data, toAssetsOffset);
-      protocolIntegrations = new ProtocolIntegration[numIntegrations];
-      protocolIntegrationBytes = readIntegrationAcls(data, toAssetsOffset + 4, protocolIntegrations);
-    } else {
-      protocolIntegrationBytes = this.protocolIntegrationBytes;
+    if (sameProtocolIntegrations) {
       protocolIntegrations = this.protocolIntegrations;
+    } else {
+      final int numIntegrations = SerDeUtil.val(4, data, oToAssetsOffset);
+      protocolIntegrations = new ProtocolIntegration[numIntegrations];
+      readIntegrationAcls(data, oToAssetsOffset + 4, protocolIntegrations);
     }
 
-    final byte[] externalPositionsBytes;
-    final PublicKey[] externalPositions;
-    if (externalPositionsChanged) {
-      externalPositions = new PublicKey[numExternalPositions];
-      SerDeUtil.readArray(externalPositions, data, fromExternalPositionOffset);
-      Arrays.sort(externalPositions);
-      externalPositionsBytes = Arrays.copyOfRange(data, fromExternalPositionOffset, toExternalPositionOffset);
+    final PublicKey[] delegates;
+    if (sameDelegates) {
+      delegates = this.delegates;
     } else {
-      externalPositionsBytes = this.externalPositionsBytes;
+      final int numDelegates = SerDeUtil.val(4, data, oToProtocolIntegrationBytes);
+      delegates = new PublicKey[numDelegates];
+      readDelegateAcls(data, oToProtocolIntegrationBytes + 4, delegates);
+    }
+
+    final PublicKey[] externalPositions;
+    if (sameExternalPositions) {
       externalPositions = this.externalPositions;
+    } else {
+      externalPositions = new PublicKey[numExternalPositions];
+      SerDeUtil.readArray(externalPositions, data, oFromExternalPositionOffset);
+      Arrays.sort(externalPositions);
     }
 
     return new MinGlamStateAccount(
         slot,
-        GlamEnv.from(accountInfo.owner()),
+        data,
+        this.glamEnv,
         this.accountType,
         enabled,
         baseAssetIndex, this.baseAssetDecimals, this.baseAssetTokenProgram,
-        assetBytes, assets,
-        protocolIntegrationBytes, protocolIntegrations,
-        externalPositionsBytes, externalPositions
+        assets,
+        protocolIntegrations,
+        delegates,
+        externalPositions
     );
   }
 
   @Override
   public boolean equals(final Object o) {
     if (!(o instanceof MinGlamStateAccount(
-        _,
+        _, _,
         GlamEnv oGlamEnv,
-        AccountType type,
+        AccountType oAccountType,
         boolean oEnabled,
-        int assetIndex, int assetDecimals, int assetTokenProgram,
-        byte[] bytes, _,
-        byte[] integrationBytes, _,
-        byte[] positionsBytes, _
+        int oBaseAssetIndex,
+        int oBaseAssetDecimals,
+        int oBaseAssetTokenProgram,
+        PublicKey[] oAssets,
+        ProtocolIntegration[] oProtocolIntegrations,
+        PublicKey[] oDelegates,
+        PublicKey[] oExternalPositions
     ))) return false;
-    return accountType == type
+    return accountType == oAccountType
         && glamEnv == oGlamEnv
         && enabled == oEnabled
-        && baseAssetIndex == assetIndex
-        && baseAssetDecimals == assetDecimals
-        && baseAssetTokenProgram == assetTokenProgram
-        && Arrays.equals(assetBytes, bytes)
-        && Arrays.equals(protocolIntegrationBytes, integrationBytes)
-        && Arrays.equals(externalPositionsBytes, positionsBytes);
+        && baseAssetIndex == oBaseAssetIndex
+        && baseAssetDecimals == oBaseAssetDecimals
+        && baseAssetTokenProgram == oBaseAssetTokenProgram
+        && Arrays.equals(this.assets, oAssets)
+        && Arrays.equals(this.protocolIntegrations, oProtocolIntegrations)
+        && Arrays.equals(this.delegates, oDelegates)
+        && Arrays.equals(this.externalPositions, oExternalPositions);
   }
 
   @Override
@@ -341,9 +341,10 @@ public record MinGlamStateAccount(long slot,
     result = 31 * result + baseAssetIndex;
     result = 31 * result + baseAssetDecimals;
     result = 31 * result + baseAssetTokenProgram;
-    result = 31 * result + Arrays.hashCode(assetBytes);
-    result = 31 * result + Arrays.hashCode(protocolIntegrationBytes);
-    result = 31 * result + Arrays.hashCode(externalPositionsBytes);
+    result = 31 * result + Arrays.hashCode(assets);
+    result = 31 * result + Arrays.hashCode(protocolIntegrations);
+    result = 31 * result + Arrays.hashCode(delegates);
+    result = 31 * result + Arrays.hashCode(externalPositions);
     return result;
   }
 }

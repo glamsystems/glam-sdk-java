@@ -9,6 +9,7 @@ import systems.glam.sdk.GlamAccounts;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.GlobalConfig;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.OracleSource;
+import systems.glam.services.io.FileUtils;
 import systems.glam.services.mints.AssetMetaContext;
 import systems.glam.services.mints.MintCache;
 import systems.glam.services.mints.MintContext;
@@ -16,7 +17,6 @@ import systems.glam.services.tests.ResourceUtil;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
@@ -59,13 +59,13 @@ final class GlobalConfigCacheTests {
   @BeforeAll
   static void beforeAll() throws IOException {
     Logger.getLogger(GlobalConfigCache.class.getName()).setLevel(Level.OFF);
-    globalConfigData = ResourceUtil.readResource("accounts/glam/global/" + GLOBAL_CONFIG_KEY + ".zip");
+    globalConfigData = ResourceUtil.readResource("accounts/glam/global/" + GLOBAL_CONFIG_KEY + ".json.gz");
   }
 
   private static GlobalConfigCacheImpl createCache(final Path tempDir) {
-    final var globalConfigFile = tempDir.resolve("global_config.bin");
+    final var globalConfigFile = FileUtils.resolveCompressedAccountPath(tempDir, GLOBAL_CONFIG_KEY);
     try {
-      Files.write(globalConfigFile, globalConfigData);
+      FileUtils.writeCompressedAccountData(tempDir, GLOBAL_CONFIG_KEY, globalConfigData);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }

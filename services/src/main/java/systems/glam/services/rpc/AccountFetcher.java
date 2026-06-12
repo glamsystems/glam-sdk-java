@@ -43,7 +43,11 @@ public interface AccountFetcher extends Runnable {
     priorityQueue(List.of(account), callback);
   }
 
+  void queueUnique(final Collection<PublicKey> accounts, final AccountConsumer callback);
+
   CompletableFuture<AccountResult> priorityQueue(final Collection<PublicKey> accounts);
+
+  void priorityQueueUnique(final Collection<PublicKey> accounts, final AccountConsumer callback);
 
   void queue(final Collection<PublicKey> accounts, final AccountConsumer callback);
 

@@ -178,6 +178,10 @@ public interface DriftMarketCache extends Runnable {
 
   DriftAccounts driftAccounts();
 
+  PublicKey spotMarketKey(final int marketIndex);
+
+  PublicKey perpMarketKey(final int marketIndex);
+
   DriftSpotMarketContext spotMarket(final int marketIndex);
 
   DriftPerpMarketContext perpMarket(final int marketIndex);
@@ -206,5 +210,5 @@ public interface DriftMarketCache extends Runnable {
 
   void unSubscribeToCriticalSpotMarketChanges(final int marketIndex, final DriftListener listener);
 
-  void subscribe(SolanaRpcWebsocket websocket);
+  void subscribe(final SolanaRpcWebsocket websocket);
 }

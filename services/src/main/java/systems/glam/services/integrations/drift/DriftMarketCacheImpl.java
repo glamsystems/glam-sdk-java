@@ -93,7 +93,8 @@ final class DriftMarketCacheImpl implements DriftMarketCache, AccountConsumer, C
     }
   }
 
-  private PublicKey spotMarketKey(final int marketIndex) {
+  @Override
+  public PublicKey spotMarketKey(final int marketIndex) {
     final var marketContext = spotMarkets.get(marketIndex);
     return marketContext == null
         ? DriftPDAs.deriveSpotMarketAccount(driftAccounts, marketIndex).publicKey()
@@ -105,7 +106,8 @@ final class DriftMarketCacheImpl implements DriftMarketCache, AccountConsumer, C
     queueAccount(spotMarketKey(marketIndex));
   }
 
-  private PublicKey perpMarketKey(final int marketIndex) {
+  @Override
+  public PublicKey perpMarketKey(final int marketIndex) {
     final var marketContext = perpMarkets.get(marketIndex);
     return marketContext == null
         ? DriftPDAs.derivePerpMarketAccount(driftAccounts, marketIndex).publicKey()
@@ -211,6 +213,11 @@ final class DriftMarketCacheImpl implements DriftMarketCache, AccountConsumer, C
         accept(accountInfo);
       }
     }
+  }
+
+  @Override
+  public void mutableKeysExceededMaxSize() {
+
   }
 
   @Override

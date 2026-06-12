@@ -9,4 +9,6 @@ import java.util.Map;
 public interface AccountConsumer {
 
   void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap);
+
+  void mutableKeysExceededMaxSize();
 }

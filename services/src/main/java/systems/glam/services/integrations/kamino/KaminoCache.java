@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
-import static java.nio.file.StandardOpenOption.*;
 import static software.sava.core.accounts.PublicKey.PUBLIC_KEY_LENGTH;
 import static systems.glam.services.integrations.kamino.KaminoCacheImpl.*;
 
@@ -314,8 +313,7 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
             final var mappingsContext = MappingsContext.createContext(accountInfo);
             mappingsContextMap.put(priceFeedContext.priceFeed(), mappingsContext);
             mappingsContextMap.put(mappingsKey, mappingsContext);
-            final var path = FileUtils.resolveAccountPath(mappingsPath, mappingsKey);
-            Files.write(path, mappingsContext.data(), CREATE, TRUNCATE_EXISTING, WRITE);
+            FileUtils.writeCompressedAccountData(mappingsPath, mappingsKey, mappingsContext.data());
           }
         }
 
@@ -382,6 +380,7 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
             feedContextMap.put(feedContext.configurationKey(), feedContext);
             feedContextMap.put(feedContext.oracleMappings(), feedContext);
             feedContextMap.put(feedContext.priceFeed(), feedContext);
+            FileUtils.compressIfNeeded(configurationsPath, path, accountData);
           } else {
             try {
               Files.delete(path);
@@ -408,13 +407,14 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
           return;
         }
         try (final var reserveFiles = Files.list(marketDir)) {
-          reserveFiles.forEach(reserveFile -> {
+          reserveFiles.parallel().forEach(reserveFile -> {
             final var accountData = FileUtils.readAccountData(reserveFile);
             if (accountData.isAccountAtLeast(Reserve.DISCRIMINATOR, MIN_RESERVE_LENGTH)) {
               final var reserveContext = ReserveContext.createContext(
                   accountData.pubKey(), accountData.data(), mappingsContextMap
               );
               reserveContextMap.put(reserveContext.pubKey(), reserveContext);
+              FileUtils.compressIfNeeded(marketDir, reserveFile, accountData);
             } else {
               try {
                 Files.delete(reserveFile);
@@ -447,6 +447,7 @@ public interface KaminoCache extends ScopeAggregateIndexes, Runnable, Consumer<A
             final var mappingsContext = new MappingsContext(mappingsKey, accountData.data(), scopeEntries);
             mappingsContextByPriceFeed.put(mappingsKey, mappingsContext);
             mappingsContextByPriceFeed.put(feedContext.priceFeed(), mappingsContext);
+            FileUtils.compressIfNeeded(mappingsPath, path, accountData);
           } else {
             try {
               Files.delete(path);

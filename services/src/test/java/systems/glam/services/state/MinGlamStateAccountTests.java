@@ -5,7 +5,9 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.Context;
 import systems.glam.sdk.GlamAccounts;
+import systems.glam.sdk.GlamEnv;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.AccountType;
+import systems.glam.sdk.idl.programs.glam.protocol.gen.types.DelegateAcl;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 
 import java.math.BigInteger;
@@ -52,16 +54,22 @@ final class MinGlamStateAccountTests {
     Arrays.sort(sortedExternalPositions);
     assertArrayEquals(sortedExternalPositions, minStateAccount.externalPositions());
 
+    final var expectedDelegates = Arrays.stream(stateAccount.delegateAcls())
+        .map(DelegateAcl::pubkey)
+        .toArray(PublicKey[]::new);
+    assertArrayEquals(expectedDelegates, minStateAccount.delegates());
+
     final byte[] serialized = minStateAccount.serialize();
-    final var deserialized = MinGlamStateAccount.deserialize(serialized);
+    final var deserialized = MinGlamStateAccount.deserialize(GlamEnv.PRODUCTION, serialized);
     assertEquals(minStateAccount, deserialized);
 
     assertEquals(slot, deserialized.slot());
     validateBaseNotChanged(minStateAccount, deserialized);
     assertArrayEquals(minStateAccount.assets(), deserialized.assets());
-    assertArrayEquals(minStateAccount.assetBytes(), deserialized.assetBytes());
+//    assertArrayEquals(minStateAccount.assetBytes(), deserialized.assetBytes());
+    assertArrayEquals(minStateAccount.delegates(), deserialized.delegates());
     assertArrayEquals(minStateAccount.externalPositions(), deserialized.externalPositions());
-    assertArrayEquals(minStateAccount.externalPositionsBytes(), deserialized.externalPositionsBytes());
+//    assertArrayEquals(minStateAccount.externalPositionsBytes(), deserialized.externalPositionsBytes());
 
     accountInfo = new AccountInfo<>(
         STATE_ACCOUNT_KEY,
@@ -74,6 +82,7 @@ final class MinGlamStateAccountTests {
         null
     );
     assertNull(minStateAccount.createIfChanged(accountInfo));
+
     accountInfo = new AccountInfo<>(
         STATE_ACCOUNT_KEY,
         new Context(slot + 1, null),
@@ -130,8 +139,9 @@ final class MinGlamStateAccountTests {
     validateBaseNotChanged(minStateAccount, deserialized);
     Arrays.sort(changedAssets);
     assertArrayEquals(changedAssets, changed.assets());
+    assertArrayEquals(minStateAccount.delegates(), changed.delegates());
     assertArrayEquals(minStateAccount.externalPositions(), changed.externalPositions());
-    assertArrayEquals(minStateAccount.externalPositionsBytes(), changed.externalPositionsBytes());
+//    assertArrayEquals(minStateAccount.externalPositionsBytes(), changed.externalPositionsBytes());
 
     final var changedExternalPositions = stateAccount.externalPositions().clone();
     changedExternalPositions[0] = PublicKey.fromBase58Encoded("11111111111111111111111111111111");
@@ -176,9 +186,63 @@ final class MinGlamStateAccountTests {
     assertEquals(slot, changed.slot());
     validateBaseNotChanged(minStateAccount, deserialized);
     assertArrayEquals(minStateAccount.assets(), changed.assets());
-    assertArrayEquals(minStateAccount.assetBytes(), changed.assetBytes());
+//    assertArrayEquals(minStateAccount.assetBytes(), changed.assetBytes());
+    assertArrayEquals(minStateAccount.delegates(), changed.delegates());
     Arrays.sort(changedExternalPositions);
     assertArrayEquals(changedExternalPositions, changed.externalPositions());
+
+    final var changedDelegateAcls = stateAccount.delegateAcls().clone();
+    changedDelegateAcls[0] = new DelegateAcl(
+        PublicKey.fromBase58Encoded("11111111111111111111111111111111"),
+        changedDelegateAcls[0].integrationPermissions(),
+        changedDelegateAcls[0].expiresAt()
+    );
+    final var stateAccountWithChangedDelegates = new StateAccount(
+        stateAccount._address(),
+        stateAccount.discriminator(),
+        stateAccount.accountType(),
+        stateAccount.enabled(),
+        stateAccount.vault(),
+        stateAccount.owner(),
+        stateAccount.portfolioManagerName(),
+        stateAccount.created(),
+        stateAccount.baseAssetMint(),
+        stateAccount.baseAssetDecimals(),
+        stateAccount.baseAssetTokenProgram(),
+        stateAccount.name(),
+        stateAccount.timelockDuration(),
+        stateAccount.timelockExpiresAt(),
+        stateAccount.mint(),
+        stateAccount.assets(),
+        stateAccount.integrationAcls(),
+        changedDelegateAcls,
+        stateAccount.externalPositions(),
+        stateAccount.pricedProtocols(),
+        stateAccount.params()
+    );
+
+    data = stateAccountWithChangedDelegates.write();
+    ++slot;
+    accountInfo = new AccountInfo<>(
+        STATE_ACCOUNT_KEY,
+        new Context(slot, null),
+        false,
+        0,
+        GlamAccounts.MAIN_NET.protocolProgram(),
+        BigInteger.ZERO,
+        0,
+        data
+    );
+    changed = minStateAccount.createIfChanged(accountInfo);
+    assertNotNull(changed);
+    assertEquals(slot, changed.slot());
+    validateBaseNotChanged(minStateAccount, deserialized);
+    assertArrayEquals(minStateAccount.assets(), changed.assets());
+    assertArrayEquals(minStateAccount.externalPositions(), changed.externalPositions());
+    final var changedDelegates = Arrays.stream(changedDelegateAcls)
+        .map(DelegateAcl::pubkey)
+        .toArray(PublicKey[]::new);
+    assertArrayEquals(changedDelegates, changed.delegates());
   }
 
   private static String trimmedAscii(final byte[] bytes) {
@@ -268,7 +332,8 @@ final class MinGlamStateAccountTests {
     assertEquals(0L, delegateAcls[0].expiresAt());
     assertEquals(1, delegateAcls[0].integrationPermissions().length);
     assertEquals(PublicKey.fromBase58Encoded("gstgm1M39mhgnvgyScGUDRwNn5kNVSd97hTtyow1Et5"),
-        delegateAcls[0].integrationPermissions()[0].integrationProgram());
+        delegateAcls[0].integrationPermissions()[0].integrationProgram()
+    );
     assertEquals(1, delegateAcls[0].integrationPermissions()[0].protocolPermissions().length);
     assertEquals(1, delegateAcls[0].integrationPermissions()[0].protocolPermissions()[0].protocolBitflag());
     assertEquals(32L, delegateAcls[0].integrationPermissions()[0].protocolPermissions()[0].permissionsBitmask());

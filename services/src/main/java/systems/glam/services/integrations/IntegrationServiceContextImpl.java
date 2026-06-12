@@ -110,8 +110,8 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   }
 
   @Override
-  public void queue(final Collection<PublicKey> accounts, final AccountConsumer callback) {
-    accountFetcher.queue(accounts, callback);
+  public void queueUnique(final Collection<PublicKey> accounts, final AccountConsumer callback) {
+    accountFetcher.queueUnique(accounts, callback);
   }
 
   @Override

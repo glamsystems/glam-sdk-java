@@ -31,6 +31,7 @@ final class AccountFetcherImpl implements AccountFetcher {
   private final LinkedHashSet<PublicKey> batch;
   private final ReentrantLock lock;
   private final Condition newBatch;
+  private final Set<AccountConsumer> pendingUniqueConsumers;
   private final ConcurrentLinkedDeque<AccountBatch> queue;
   private final ConcurrentLinkedDeque<AccountBatch> currentBatch;
   private final Set<AccountConsumer> alwaysCall;
@@ -51,6 +52,7 @@ final class AccountFetcherImpl implements AccountFetcher {
     this.batch.addAll(alwaysFetch);
     this.lock = new ReentrantLock();
     this.newBatch = lock.newCondition();
+    this.pendingUniqueConsumers = ConcurrentHashMap.newKeySet(128);
     this.queue = new ConcurrentLinkedDeque<>();
     this.currentBatch = new ConcurrentLinkedDeque<>();
     this.currentBatchKeys = this.alwaysFetch;
@@ -72,21 +74,40 @@ final class AccountFetcherImpl implements AccountFetcher {
     this.alwaysCall.remove(accountConsumer);
   }
 
+  private void lockedQueue(final boolean priority, final AccountBatch accountBatch) {
+    if (currentBatchKeys.containsAll(accountBatch.keys())) {
+      currentBatch.addLast(accountBatch);
+    } else {
+      if (priority) {
+        queue.addFirst(accountBatch);
+      } else {
+        queue.addLast(accountBatch);
+      }
+      if (reactive) {
+        newBatch.signal();
+      }
+    }
+  }
+
+  private void queueUnique(final boolean priority,
+                           final Collection<PublicKey> accounts,
+                           final AccountConsumer callback) {
+    if (validBatch(accounts)) {
+      lock.lock();
+      try {
+        if (pendingUniqueConsumers.add(callback)) {
+          lockedQueue(priority, new UniqueAccountBatchRecord(accounts, callback));
+        }
+      } finally {
+        lock.unlock();
+      }
+    }
+  }
+
   private void queue(final boolean priority, final AccountBatch accountBatch) {
     lock.lock();
     try {
-      if (currentBatchKeys.containsAll(accountBatch.keys())) {
-        currentBatch.addLast(accountBatch);
-      } else {
-        if (priority) {
-          queue.addFirst(accountBatch);
-        } else {
-          queue.addLast(accountBatch);
-        }
-        if (reactive) {
-          newBatch.signal();
-        }
-      }
+      lockedQueue(priority, accountBatch);
     } finally {
       lock.unlock();
     }
@@ -143,8 +164,18 @@ final class AccountFetcherImpl implements AccountFetcher {
   }
 
   @Override
+  public void priorityQueueUnique(final Collection<PublicKey> accounts, final AccountConsumer callback) {
+    queueUnique(true, accounts, callback);
+  }
+
+  @Override
   public void queue(final Collection<PublicKey> accounts, final AccountConsumer callback) {
     queue(false, accounts, callback);
+  }
+
+  @Override
+  public void queueUnique(final Collection<PublicKey> accounts, final AccountConsumer callback) {
+    queueUnique(false, accounts, callback);
   }
 
   private static final CompletableFuture<AccountResult> EMPTY = CompletableFuture.completedFuture(new AccountResult(List.of(), Map.of()));
@@ -208,6 +239,7 @@ final class AccountFetcherImpl implements AccountFetcher {
               // Should never happen because an exception is thrown on any attempt to add a batch that exceeds this limit.
               logger.log(WARNING, "Ignoring batch because it exceeds the RPC limit of " + SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS);
               iterator.remove();
+              accountBatch.mutableKeysExceededMaxSize();
               clearBatch();
               continue;
             } else {
@@ -333,6 +365,9 @@ final class AccountFetcherImpl implements AccountFetcher {
             } finally {
               lock.unlock();
             }
+          } else if (accountBatch instanceof UniqueAccountBatchRecord(_, final AccountConsumer accountConsumer)) {
+            pendingUniqueConsumers.remove(accountConsumer);
+            accountConsumer.accept(accounts, accountsMap);
           } else {
             accountBatch.accept(accounts, accountsMap);
           }
@@ -364,26 +399,51 @@ final class AccountFetcherImpl implements AccountFetcher {
     return Collections.unmodifiableMap(accountsMap);
   }
 
-  interface AccountBatch extends AccountConsumer {
+  private interface AccountBatch extends AccountConsumer {
 
     Collection<PublicKey> keys();
   }
 
-  record AccountBatchRecord(Collection<PublicKey> keys, AccountConsumer accountConsumer) implements AccountBatch {
+  private record UniqueAccountBatchRecord(Collection<PublicKey> keys,
+                                          AccountConsumer accountConsumer) implements AccountBatch {
 
     @Override
     public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
       accountConsumer.accept(accounts, accountMap);
     }
+
+    @Override
+    public void mutableKeysExceededMaxSize() {
+      accountConsumer.mutableKeysExceededMaxSize();
+    }
   }
 
-  record CompletableAccountBatch(Collection<PublicKey> keys, CompletableFuture<AccountResult> future) implements
-      AccountBatch {
+  private record AccountBatchRecord(Collection<PublicKey> keys,
+                                    AccountConsumer accountConsumer) implements AccountBatch {
+
+    @Override
+    public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
+      accountConsumer.accept(accounts, accountMap);
+    }
+
+    @Override
+    public void mutableKeysExceededMaxSize() {
+      accountConsumer.mutableKeysExceededMaxSize();
+    }
+  }
+
+  private record CompletableAccountBatch(Collection<PublicKey> keys,
+                                         CompletableFuture<AccountResult> future) implements AccountBatch {
 
     @Override
     public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
       final var result = new AccountResult(accounts, accountMap);
       future.complete(result);
+    }
+
+    @Override
+    public void mutableKeysExceededMaxSize() {
+      future.completeExceptionally(new IllegalStateException("Mutable Keys Exceeded Max Size"));
     }
   }
 }

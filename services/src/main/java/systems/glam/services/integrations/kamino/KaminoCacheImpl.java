@@ -8,6 +8,7 @@ import software.sava.idl.clients.kamino.scope.gen.types.OracleMappings;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
 import software.sava.rpc.json.http.client.ProgramAccountsRequest;
+import software.sava.rpc.json.http.client.SolanaRpcClient;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.solana.remote.call.RpcCaller;
@@ -31,7 +32,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.WARNING;
-import static java.nio.file.StandardOpenOption.*;
 
 final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
 
@@ -124,11 +124,8 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
 
   static void writeScopeConfiguration(final Path configurationsPath,
                                       final ScopeFeedContext scopeFeedContext) throws IOException {
-    final var filePath = FileUtils.resolveAccountPath(configurationsPath, scopeFeedContext.configurationKey());
-    Files.write(
-        filePath,
-        scopeFeedContext.configurationData(),
-        CREATE, TRUNCATE_EXISTING, WRITE
+    FileUtils.writeCompressedAccountData(
+        configurationsPath, scopeFeedContext.configurationKey(), scopeFeedContext.configurationData()
     );
   }
 
@@ -296,9 +293,10 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
 
   private void persistMappings(final MappingsContext mappingContext) {
     if (mappingsPath != null) {
-      final var mappingsPath = FileUtils.resolveAccountPath(this.mappingsPath, mappingContext.publicKey());
       try {
-        Files.write(mappingsPath, mappingContext.data(), CREATE, TRUNCATE_EXISTING, WRITE);
+        FileUtils.writeCompressedAccountData(
+            this.mappingsPath, mappingContext.publicKey(), mappingContext.data()
+        );
       } catch (final IOException e) {
         logger.log(WARNING, "Failed to persist mappings.", e);
       }
@@ -545,7 +543,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
         accountsNeeded.add(vaultContext.readVaultState().publicKey());
       }
     }
-    accountFetcher.priorityQueue(accountsNeeded, this);
+    accountFetcher.priorityQueueBatchable(accountsNeeded, this);
   }
 
   @Override
@@ -618,6 +616,11 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   }
 
   @Override
+  public void mutableKeysExceededMaxSize() {
+
+  }
+
+  @Override
   public void run() {
     try {
       var accountsNeededList = new ArrayList<>(this.accountsNeededSet);
@@ -627,29 +630,36 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
             "rpcClient#getKaminoVaultAccounts"
         );
 
-        final var accountInfoListFuture = accountFetcher.priorityQueue(accountsNeededList);
-
         int accountsDeleted = 0;
-        int i = 0;
-        final var accountMap = accountInfoListFuture.join().accountMap();
-        for (final var accountNeeded : accountsNeededList) {
-          final var accountInfo = accountMap.get(accountNeeded);
-          if (accountInfo == null) {
-            ++accountsDeleted;
-            final var key = accountsNeededList.get(i);
-            this.accountsNeededSet.remove(key);
-            final var feedContext = priceFeedContextMap.remove(key);
-            if (feedContext != null) {
-              deleteScopeConfiguration(key, feedContext);
+        final int numAccounts = accountsNeededList.size();
+        for (int from = 0, to; ; from = to) {
+          to = Math.min(from + SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS, numAccounts);
+          final var subList = accountsNeededList.subList(from, to);
+          final var accountInfoListFuture = accountFetcher.priorityQueue(subList);
+
+          final var accountMap = accountInfoListFuture.join().accountMap();
+          for (final var accountNeeded : subList) {
+            final var accountInfo = accountMap.get(accountNeeded);
+            if (AccountFetcher.isNull(accountInfo)) {
+              ++accountsDeleted;
+              this.accountsNeededSet.remove(accountNeeded);
+              final var feedContext = priceFeedContextMap.remove(accountNeeded);
+              if (feedContext != null) {
+                deleteScopeConfiguration(accountNeeded, feedContext);
+              } else {
+                this.mappingsContextMap.remove(accountNeeded);
+                logger.log(WARNING, "Scope OracleMappings account has been deleted " + accountNeeded);
+              }
             } else {
-              this.mappingsContextMap.remove(key);
-              logger.log(WARNING, "Scope OracleMappings account has been deleted " + key);
+              accept(accountInfo);
             }
-          } else {
-            accept(accountInfo);
           }
-          ++i;
+
+          if (to == numAccounts) {
+            break;
+          }
         }
+
         if (accountsDeleted > 0) {
           accountsNeededList = new ArrayList<>(this.accountsNeededSet);
         }
@@ -699,10 +709,8 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
       if (Files.notExists(marketFilePath)) {
         Files.createDirectories(marketFilePath);
       }
-      Files.write(
-          marketFilePath.resolve(reserveContext.pubKey().toBase58() + FileUtils.ACCOUNT_FILE_EXTENSION),
-          reserveContext.data(),
-          CREATE, TRUNCATE_EXISTING, WRITE
+      FileUtils.writeCompressedAccountData(
+          marketFilePath, reserveContext.pubKey(), reserveContext.data()
       );
     } catch (final IOException e) {
       logger.log(ERROR, "Failed to write Kamino Markets Reserve Scope Price Chains.", e);

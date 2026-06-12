@@ -12,6 +12,7 @@ import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.core.remote.call.Backoff;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamAccounts;
+import systems.glam.sdk.GlamEnv;
 import systems.glam.services.io.FileUtils;
 
 import javax.sql.DataSource;
@@ -60,7 +61,7 @@ public final class ServiceContextImpl implements ServiceContext {
     this.accountsCacheDirectory = cacheDirectory.resolve("accounts");
     this.glamStagingAccounts = glamStagingAccounts;
     this.primaryDatasource = primaryDatasource;
-    this.glamMinStateAccountCacheDirectory = accountsCacheDirectory.resolve("glam/min_state_v3");
+    this.glamMinStateAccountCacheDirectory = accountsCacheDirectory.resolve("glam/state");
     this.minCheckStateDelayNanos = minCheckStateDelay.toNanos();
     this.maxCheckStateDelayNanos = maxCheckStateDelay.toNanos();
     this.taskExecutor = taskExecutor;
@@ -249,12 +250,14 @@ public final class ServiceContextImpl implements ServiceContext {
   }
 
   @Override
-  public Path resolveGlamStateFilePath(final PublicKey glamStateKey) {
-    return FileUtils.resolveAccountPath(glamMinStateAccountCacheDirectory, glamStateKey);
+  public Path resolveGlamStateFilePath(final GlamEnv glamEnv, final PublicKey glamStateKey) {
+    return FileUtils.resolveCompressedAccountPath(
+        glamMinStateAccountCacheDirectory.resolve(glamEnv.name()), glamStateKey
+    );
   }
 
   @Override
-  public Path glamMinStateAccountCacheDirectory() {
+  public Path glamStateAccountCacheDirectory() {
     return glamMinStateAccountCacheDirectory;
   }
 

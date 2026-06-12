@@ -117,6 +117,11 @@ final class IntegLookupTableCacheImpl implements IntegLookupTableCache {
     }
   }
 
+  @Override
+  public void mutableKeysExceededMaxSize() {
+
+  }
+
   static void writeTableData(final Path directory, final AccountInfo<byte[]> accountInfo) {
     final var fileName = FileUtils.resolveAccountPath(directory, accountInfo.pubKey());
     try {
