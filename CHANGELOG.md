@@ -1,5 +1,12 @@
 # Changelog
 
+## [25.12.4](https://github.com/glamsystems/glam-sdk-java/compare/25.12.3...25.12.4) (2026-06-12)
+
+
+### Features
+
+* **services:** refactor state account serialization and add delegate ACL support ([d5e2167](https://github.com/glamsystems/glam-sdk-java/commit/d5e21677d19f4802978ff4ef486141a5414e7da5))
+
 ## [25.12.3](https://github.com/glamsystems/glam-sdk-java/compare/25.12.2...25.12.3) (2026-06-08)
 
 
