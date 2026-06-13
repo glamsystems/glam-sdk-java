@@ -1,5 +1,12 @@
 # Changelog
 
+## [25.12.7](https://github.com/glamsystems/glam-sdk-java/compare/25.12.6...25.12.7) (2026-06-13)
+
+
+### Bug Fixes
+
+* **services:** resolve null check and data comparison issues in `GlobalConfigCacheImpl` ([466a362](https://github.com/glamsystems/glam-sdk-java/commit/466a362028a8babc4176d5a908767ba0ba66b7b9))
+
 ## [25.12.6](https://github.com/glamsystems/glam-sdk-java/compare/25.12.5...25.12.6) (2026-06-13)
 
 
