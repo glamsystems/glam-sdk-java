@@ -1,5 +1,12 @@
 # Changelog
 
+## [25.12.6](https://github.com/glamsystems/glam-sdk-java/compare/25.12.5...25.12.6) (2026-06-13)
+
+
+### Bug Fixes
+
+* **services/sdk:** fix integ authority for pricing loopscale strats and vaults. ([1b8a99f](https://github.com/glamsystems/glam-sdk-java/commit/1b8a99f8333058b706564721eebe4cbd89b70646))
+
 ## [25.12.5](https://github.com/glamsystems/glam-sdk-java/compare/25.12.4...25.12.5) (2026-06-13)
 
 
