@@ -89,9 +89,6 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
       final var assetMetaEntries = assetMetaMap.get(mint);
       if (assetMetaEntries == null) {
         final var stateAccounts = stateAccountsThatNeedAssetMeta.computeIfAbsent(mint, _ -> new ConcurrentSkipListSet<>());
-        if (stateAccounts.isEmpty()) {
-          logger.log(WARNING, "No asset meta found for mint " + mint);
-        }
         stateAccounts.add(stateAccount);
         return null;
       } else {

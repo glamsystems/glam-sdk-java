@@ -58,6 +58,11 @@ public record MinGlamStateAccount(long slot,
     return withSlot;
   }
 
+  public static MinGlamStateAccount deserialize(final GlamEnv env, final byte[] data) {
+    final long slot = ByteUtil.getInt64LE(data, data.length - 8);
+    return createRecord(env, data, slot);
+  }
+
   private static int readIntegrationAcls(final byte[] data,
                                          int i,
                                          final ProtocolIntegration[] protocolIntegrations) {
@@ -132,11 +137,6 @@ public record MinGlamStateAccount(long slot,
     }
 
     return i;
-  }
-
-  public static MinGlamStateAccount deserialize(final GlamEnv env, final byte[] data) {
-    final long slot = ByteUtil.getInt64LE(data, data.length - 8);
-    return createRecord(env, data, slot);
   }
 
   public static MinGlamStateAccount createRecord(final AccountInfo<byte[]> accountInfo) {
