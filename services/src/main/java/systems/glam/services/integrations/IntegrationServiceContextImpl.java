@@ -105,11 +105,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   }
 
   @Override
-  public AssetMetaContext watchForMint(final PublicKey mint, final PublicKey stateAccount) {
-    return globalConfigCache.watchForMint(mint, stateAccount);
-  }
-
-  @Override
   public void queueUnique(final Collection<PublicKey> accounts, final AccountConsumer callback) {
     accountFetcher.queueUnique(accounts, callback);
   }

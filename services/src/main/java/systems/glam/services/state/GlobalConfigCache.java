@@ -19,7 +19,6 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static systems.glam.services.state.GlobalConfigCacheImpl.*;
@@ -121,21 +120,8 @@ public interface GlobalConfigCache extends Runnable {
 
   GlobalConfigUpdate globalConfig();
 
-  AssetMetaContext watchForMint(final PublicKey mint, final PublicKey stateAccount);
-
-  /**
-   * Removes the state account from all mint watch lists registered via
-   * {@link #watchForMint(PublicKey, PublicKey)}.
-   */
-  void removeMintWatcher(final PublicKey stateAccount);
-
-  /**
-   * Returns a set of state accounts that previously could not be priced
-   * because it contained an asset with no Global Config Asset Meta.
-   */
-  Set<PublicKey> retryStateAccounts();
-
-  void awaitNewAssetMeta(final long awaitNanos) throws InterruptedException;
+  GlobalConfigUpdate awaitNewGlobalConfig(final GlobalConfigUpdate globalConfigUpdate,
+                                          final long awaitNanos) throws InterruptedException;
 
   AssetMetaContext getByIndex(final int index);
 

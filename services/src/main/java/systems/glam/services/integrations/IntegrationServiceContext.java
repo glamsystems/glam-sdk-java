@@ -86,8 +86,6 @@ public interface IntegrationServiceContext {
 
   AssetMetaContext globalConfigAssetMeta(final PublicKey mint);
 
-  AssetMetaContext watchForMint(final PublicKey mint, final PublicKey stateAccount);
-
   FeedIndexes scopeAggregateIndexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType);
 
   IntegLookupTableCache integTableCache();
