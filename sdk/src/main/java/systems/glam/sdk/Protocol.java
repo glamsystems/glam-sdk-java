@@ -22,6 +22,7 @@ public enum Protocol {
   KAMINO_FARMS(ExtKaminoConstants.class, ExtKaminoConstants.PROTO_KAMINO_FARMS),
   LOOPSCALE_BORROW(ExtLoopscaleConstants.class, ExtLoopscaleConstants.PROTO_LOOPSCALE_BORROW),
   LOOPSCALE_LENDING(ExtLoopscaleConstants.class, ExtLoopscaleConstants.PROTO_LOOPSCALE_LENDING),
+  LOOPSCALE_VAULTS(ExtLoopscaleConstants.class, ExtLoopscaleConstants.PROTO_LOOPSCALE_VAULT),
   MINT(GlamMintConstants.class, GlamMintConstants.PROTO_MINT),
   STAKE(GlamProtocolConstants.class, GlamProtocolConstants.PROTO_STAKE),
   SYSTEM(GlamProtocolConstants.class, GlamProtocolConstants.PROTO_SYSTEM),

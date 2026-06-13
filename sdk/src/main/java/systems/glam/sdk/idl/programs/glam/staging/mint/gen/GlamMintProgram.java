@@ -2164,6 +2164,126 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_LOOPSCALE_STRATEGIES_DISCRIMINATOR);
   }
 
+  public static final Discriminator PRICE_LOOPSCALE_VAULT_POSITIONS_DISCRIMINATOR = toDiscriminator(98, 229, 99, 154, 94, 139, 124, 220);
+
+  /// Price LoopScale vault LP positions registered to a GLAM vault.
+  /// 
+  /// Extra accounts for pricing N Loopscale vaults with tracked LP or stake positions:
+  /// - (loopscale_vault, loopscale_vault_strategy, glam_vault_lp_ata) x N
+  /// - M VaultStake accounts registered as external positions
+  /// - oracle accounts (one per unique vault principal mint)
+  ///
+  public static List<AccountMeta> priceLoopscaleVaultPositionsKeys(final AccountMeta invokedGlamMintProgramMeta,
+                                                                   final PublicKey glamStateKey,
+                                                                   final PublicKey glamVaultKey,
+                                                                   final PublicKey signerKey,
+                                                                   final PublicKey solUsdOracleKey,
+                                                                   final PublicKey baseAssetOracleKey,
+                                                                   final PublicKey integrationAuthorityKey,
+                                                                   final PublicKey glamConfigKey,
+                                                                   final PublicKey glamProtocolKey,
+                                                                   final PublicKey eventAuthorityKey,
+                                                                   final PublicKey eventProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createWritableSigner(signerKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolKey),
+      createRead(requireNonNullElse(eventAuthorityKey, invokedGlamMintProgramMeta.publicKey())),
+      createRead(requireNonNullElse(eventProgramKey, invokedGlamMintProgramMeta.publicKey()))
+    );
+  }
+
+  /// Price LoopScale vault LP positions registered to a GLAM vault.
+  /// 
+  /// Extra accounts for pricing N Loopscale vaults with tracked LP or stake positions:
+  /// - (loopscale_vault, loopscale_vault_strategy, glam_vault_lp_ata) x N
+  /// - M VaultStake accounts registered as external positions
+  /// - oracle accounts (one per unique vault principal mint)
+  ///
+  public static Instruction priceLoopscaleVaultPositions(final AccountMeta invokedGlamMintProgramMeta,
+                                                         final PublicKey glamStateKey,
+                                                         final PublicKey glamVaultKey,
+                                                         final PublicKey signerKey,
+                                                         final PublicKey solUsdOracleKey,
+                                                         final PublicKey baseAssetOracleKey,
+                                                         final PublicKey integrationAuthorityKey,
+                                                         final PublicKey glamConfigKey,
+                                                         final PublicKey glamProtocolKey,
+                                                         final PublicKey eventAuthorityKey,
+                                                         final PublicKey eventProgramKey,
+                                                         final int numVaults) {
+    final var keys = priceLoopscaleVaultPositionsKeys(
+      invokedGlamMintProgramMeta,
+      glamStateKey,
+      glamVaultKey,
+      signerKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolKey,
+      eventAuthorityKey,
+      eventProgramKey
+    );
+    return priceLoopscaleVaultPositions(invokedGlamMintProgramMeta, keys, numVaults);
+  }
+
+  /// Price LoopScale vault LP positions registered to a GLAM vault.
+  /// 
+  /// Extra accounts for pricing N Loopscale vaults with tracked LP or stake positions:
+  /// - (loopscale_vault, loopscale_vault_strategy, glam_vault_lp_ata) x N
+  /// - M VaultStake accounts registered as external positions
+  /// - oracle accounts (one per unique vault principal mint)
+  ///
+  public static Instruction priceLoopscaleVaultPositions(final AccountMeta invokedGlamMintProgramMeta,
+                                                         final List<AccountMeta> keys,
+                                                         final int numVaults) {
+    final byte[] _data = new byte[9];
+    int i = PRICE_LOOPSCALE_VAULT_POSITIONS_DISCRIMINATOR.write(_data, 0);
+    _data[i] = (byte) numVaults;
+
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
+  }
+
+  public record PriceLoopscaleVaultPositionsIxData(Discriminator discriminator, int numVaults) implements SerDe {  
+
+    public static PriceLoopscaleVaultPositionsIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int BYTES = 9;
+
+    public static final int NUM_VAULTS_OFFSET = 8;
+
+    public static PriceLoopscaleVaultPositionsIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var numVaults = _data[i] & 0xFF;
+      return new PriceLoopscaleVaultPositionsIxData(discriminator, numVaults);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      _data[i] = (byte) numVaults;
+      ++i;
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
   public static final Discriminator PRICE_ORCA_WHIRLPOOL_POSITIONS_DISCRIMINATOR = toDiscriminator(3, 81, 117, 34, 5, 238, 158, 232);
 
   /// Prices Orca Whirlpools positions registered as vault external positions.

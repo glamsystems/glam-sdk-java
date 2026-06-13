@@ -336,4 +336,48 @@ final class GlamStagingAccountClientImpl extends GlamAccountClientImpl implement
         mintProgram
     );
   }
+
+  @Override
+  public Instruction priceLoopscaleStrategies(final PublicKey solUSDOracleKey,
+                                              final PublicKey baseAssetUsdOracleKey,
+                                              final boolean cpiEmitEvents) {
+    final var invoked = glamAccounts.invokedMintIntegrationProgram();
+    final var mintProgram = invoked.publicKey();
+    return GlamMintProgram.priceLoopscaleStrategies(
+        invoked,
+        glamVaultAccounts.glamStateKey(),
+        glamVaultAccounts.vaultPublicKey(),
+        feePayer.publicKey(),
+        solUSDOracleKey,
+        baseAssetUsdOracleKey,
+        glamAccounts.readLoopscaleIntegrationAuthority().publicKey(),
+        globalConfigKey,
+        invokedProtocolProgram.publicKey(),
+        cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
+        mintProgram
+    );
+  }
+
+  @Override
+  public Instruction priceLoopscaleVaultPositions(final PublicKey solUSDOracleKey,
+                                                  final PublicKey baseAssetUsdOracleKey,
+                                                  final int numVaults,
+                                                  final boolean cpiEmitEvents) {
+    final var invoked = glamAccounts.invokedMintIntegrationProgram();
+    final var mintProgram = invoked.publicKey();
+    return GlamMintProgram.priceLoopscaleVaultPositions(
+        invoked,
+        glamVaultAccounts.glamStateKey(),
+        glamVaultAccounts.vaultPublicKey(),
+        feePayer.publicKey(),
+        solUSDOracleKey,
+        baseAssetUsdOracleKey,
+        glamAccounts.readLoopscaleIntegrationAuthority().publicKey(),
+        globalConfigKey,
+        invokedProtocolProgram.publicKey(),
+        cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
+        mintProgram,
+        numVaults
+    );
+  }
 }

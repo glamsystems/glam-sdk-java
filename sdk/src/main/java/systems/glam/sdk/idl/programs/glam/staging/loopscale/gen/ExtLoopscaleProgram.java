@@ -15,11 +15,15 @@ import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.CreateLoan
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.CreateStrategyParams;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.DepositCollateralParams;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.LendingPolicy;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.LpParams;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.MultiCollateralTermsUpdateParams;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.RepayPrincipalParams;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.SellLedgerParams;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.UpdateStrategyParams;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.UpdateWeightMatrixParams;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.VaultPolicy;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.VaultStakeParams;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.VaultUnstakeParams;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types.WithdrawCollateralParams;
 
 import java.util.List;
@@ -179,6 +183,132 @@ public final class ExtLoopscaleProgram {
     @Override
     public int l() {
       return 8 + params.l();
+    }
+  }
+
+  public static final Discriminator CLAIM_VAULT_REWARDS_DISCRIMINATOR = toDiscriminator(0, 152, 75, 29, 195, 223, 12, 101);
+
+  /// Claim rewards accrued by a Loopscale VaultStake account.
+  /// 
+  /// - Permission: `VaultPermissions::ClaimVaultRewards`.
+  /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
+  ///
+  public static List<AccountMeta> claimVaultRewardsKeys(final SolanaAccounts solanaAccounts,
+                                                        final PublicKey glamStateKey,
+                                                        final PublicKey glamVaultKey,
+                                                        final PublicKey glamSignerKey,
+                                                        final PublicKey integrationAuthorityKey,
+                                                        final PublicKey cpiProgramKey,
+                                                        final PublicKey glamProtocolProgramKey,
+                                                        final PublicKey bsAuthKey,
+                                                        final PublicKey vaultKey,
+                                                        final PublicKey vaultRewardsInfoKey,
+                                                        final PublicKey userRewardsInfoKey,
+                                                        final PublicKey stakeAccountKey,
+                                                        final PublicKey protocolAdminStateKey,
+                                                        final PublicKey eventAuthorityKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createReadOnlySigner(bsAuthKey),
+      createRead(vaultKey),
+      createWrite(vaultRewardsInfoKey),
+      createWrite(userRewardsInfoKey),
+      createWrite(stakeAccountKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram()),
+      createRead(protocolAdminStateKey),
+      createRead(eventAuthorityKey)
+    );
+  }
+
+  /// Claim rewards accrued by a Loopscale VaultStake account.
+  /// 
+  /// - Permission: `VaultPermissions::ClaimVaultRewards`.
+  /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
+  ///
+  public static Instruction claimVaultRewards(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                              final SolanaAccounts solanaAccounts,
+                                              final PublicKey glamStateKey,
+                                              final PublicKey glamVaultKey,
+                                              final PublicKey glamSignerKey,
+                                              final PublicKey integrationAuthorityKey,
+                                              final PublicKey cpiProgramKey,
+                                              final PublicKey glamProtocolProgramKey,
+                                              final PublicKey bsAuthKey,
+                                              final PublicKey vaultKey,
+                                              final PublicKey vaultRewardsInfoKey,
+                                              final PublicKey userRewardsInfoKey,
+                                              final PublicKey stakeAccountKey,
+                                              final PublicKey protocolAdminStateKey,
+                                              final PublicKey eventAuthorityKey,
+                                              final PublicKey[] mints) {
+    final var keys = claimVaultRewardsKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      bsAuthKey,
+      vaultKey,
+      vaultRewardsInfoKey,
+      userRewardsInfoKey,
+      stakeAccountKey,
+      protocolAdminStateKey,
+      eventAuthorityKey
+    );
+    return claimVaultRewards(invokedExtLoopscaleProgramMeta, keys, mints);
+  }
+
+  /// Claim rewards accrued by a Loopscale VaultStake account.
+  /// 
+  /// - Permission: `VaultPermissions::ClaimVaultRewards`.
+  /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
+  ///
+  public static Instruction claimVaultRewards(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                              final List<AccountMeta> keys,
+                                              final PublicKey[] mints) {
+    final byte[] _data = new byte[8 + SerDeUtil.lenVector(4, mints)];
+    int i = CLAIM_VAULT_REWARDS_DISCRIMINATOR.write(_data, 0);
+    SerDeUtil.writeVector(4, mints, _data, i);
+
+    return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
+  }
+
+  public record ClaimVaultRewardsIxData(Discriminator discriminator, PublicKey[] mints) implements SerDe {  
+
+    public static ClaimVaultRewardsIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int MINTS_OFFSET = 8;
+
+    public static ClaimVaultRewardsIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var mints = SerDeUtil.readPublicKeyVector(4, _data, i);
+      return new ClaimVaultRewardsIxData(discriminator, mints);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += SerDeUtil.writeVector(4, mints, _data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + SerDeUtil.lenVector(4, mints);
     }
   }
 
@@ -869,6 +999,156 @@ public final class ExtLoopscaleProgram {
     }
   }
 
+  public static final Discriminator DEPOSIT_USER_VAULT_DISCRIMINATOR = toDiscriminator(204, 190, 182, 224, 15, 219, 247, 121);
+
+  /// Deposit principal into a Loopscale user vault and receive Token-2022 LP tokens.
+  /// 
+  /// - Permission: `VaultPermissions::DepositUserVault`.
+  /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
+  ///
+  public static List<AccountMeta> depositUserVaultKeys(final SolanaAccounts solanaAccounts,
+                                                       final PublicKey glamStateKey,
+                                                       final PublicKey glamVaultKey,
+                                                       final PublicKey glamSignerKey,
+                                                       final PublicKey integrationAuthorityKey,
+                                                       final PublicKey cpiProgramKey,
+                                                       final PublicKey glamProtocolProgramKey,
+                                                       final PublicKey bsAuthKey,
+                                                       final PublicKey vaultKey,
+                                                       final PublicKey strategyKey,
+                                                       final PublicKey marketInformationKey,
+                                                       final PublicKey lpMintKey,
+                                                       final PublicKey userLpTaKey,
+                                                       final PublicKey userPrincipalTaKey,
+                                                       final PublicKey strategyPrincipalTaKey,
+                                                       final PublicKey principalMintKey,
+                                                       final PublicKey principalTokenProgramKey,
+                                                       final PublicKey token2022ProgramKey,
+                                                       final PublicKey protocolAdminStateKey,
+                                                       final PublicKey eventAuthorityKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createReadOnlySigner(bsAuthKey),
+      createWrite(vaultKey),
+      createWrite(strategyKey),
+      createRead(marketInformationKey),
+      createWrite(lpMintKey),
+      createWrite(userLpTaKey),
+      createWrite(userPrincipalTaKey),
+      createWrite(strategyPrincipalTaKey),
+      createRead(principalMintKey),
+      createRead(principalTokenProgramKey),
+      createRead(token2022ProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram()),
+      createRead(protocolAdminStateKey),
+      createRead(eventAuthorityKey)
+    );
+  }
+
+  /// Deposit principal into a Loopscale user vault and receive Token-2022 LP tokens.
+  /// 
+  /// - Permission: `VaultPermissions::DepositUserVault`.
+  /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
+  ///
+  public static Instruction depositUserVault(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                             final SolanaAccounts solanaAccounts,
+                                             final PublicKey glamStateKey,
+                                             final PublicKey glamVaultKey,
+                                             final PublicKey glamSignerKey,
+                                             final PublicKey integrationAuthorityKey,
+                                             final PublicKey cpiProgramKey,
+                                             final PublicKey glamProtocolProgramKey,
+                                             final PublicKey bsAuthKey,
+                                             final PublicKey vaultKey,
+                                             final PublicKey strategyKey,
+                                             final PublicKey marketInformationKey,
+                                             final PublicKey lpMintKey,
+                                             final PublicKey userLpTaKey,
+                                             final PublicKey userPrincipalTaKey,
+                                             final PublicKey strategyPrincipalTaKey,
+                                             final PublicKey principalMintKey,
+                                             final PublicKey principalTokenProgramKey,
+                                             final PublicKey token2022ProgramKey,
+                                             final PublicKey protocolAdminStateKey,
+                                             final PublicKey eventAuthorityKey,
+                                             final LpParams params) {
+    final var keys = depositUserVaultKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      bsAuthKey,
+      vaultKey,
+      strategyKey,
+      marketInformationKey,
+      lpMintKey,
+      userLpTaKey,
+      userPrincipalTaKey,
+      strategyPrincipalTaKey,
+      principalMintKey,
+      principalTokenProgramKey,
+      token2022ProgramKey,
+      protocolAdminStateKey,
+      eventAuthorityKey
+    );
+    return depositUserVault(invokedExtLoopscaleProgramMeta, keys, params);
+  }
+
+  /// Deposit principal into a Loopscale user vault and receive Token-2022 LP tokens.
+  /// 
+  /// - Permission: `VaultPermissions::DepositUserVault`.
+  /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
+  ///
+  public static Instruction depositUserVault(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                             final List<AccountMeta> keys,
+                                             final LpParams params) {
+    final byte[] _data = new byte[8 + params.l()];
+    int i = DEPOSIT_USER_VAULT_DISCRIMINATOR.write(_data, 0);
+    params.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
+  }
+
+  public record DepositUserVaultIxData(Discriminator discriminator, LpParams params) implements SerDe {  
+
+    public static DepositUserVaultIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int PARAMS_OFFSET = 8;
+
+    public static DepositUserVaultIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var params = LpParams.read(_data, i);
+      return new DepositUserVaultIxData(discriminator, params);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += params.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + params.l();
+    }
+  }
+
   public static final Discriminator REPAY_PRINCIPAL_DISCRIMINATOR = toDiscriminator(229, 67, 83, 65, 77, 84, 80, 141);
 
   /// Repay principal on a Loopscale loan.
@@ -1338,6 +1618,382 @@ public final class ExtLoopscaleProgram {
     @Override
     public int l() {
       return 8 + policy.l();
+    }
+  }
+
+  public static final Discriminator SET_VAULT_POLICY_DISCRIMINATOR = toDiscriminator(184, 31, 142, 18, 106, 143, 184, 158);
+
+  /// Set the Loopscale vault policy (vault allowlist).
+  /// 
+  /// - Permission: `VaultPermissions::SetPolicy`.
+  ///
+  public static List<AccountMeta> setVaultPolicyKeys(final PublicKey glamStateKey,
+                                                     final PublicKey glamSignerKey,
+                                                     final PublicKey glamProtocolProgramKey,
+                                                     final PublicKey integrationProgramKey,
+                                                     final PublicKey integrationAuthorityKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createRead(glamProtocolProgramKey),
+      createRead(integrationProgramKey),
+      createRead(integrationAuthorityKey)
+    );
+  }
+
+  /// Set the Loopscale vault policy (vault allowlist).
+  /// 
+  /// - Permission: `VaultPermissions::SetPolicy`.
+  ///
+  public static Instruction setVaultPolicy(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                           final PublicKey glamStateKey,
+                                           final PublicKey glamSignerKey,
+                                           final PublicKey glamProtocolProgramKey,
+                                           final PublicKey integrationProgramKey,
+                                           final PublicKey integrationAuthorityKey,
+                                           final VaultPolicy policy) {
+    final var keys = setVaultPolicyKeys(
+      glamStateKey,
+      glamSignerKey,
+      glamProtocolProgramKey,
+      integrationProgramKey,
+      integrationAuthorityKey
+    );
+    return setVaultPolicy(invokedExtLoopscaleProgramMeta, keys, policy);
+  }
+
+  /// Set the Loopscale vault policy (vault allowlist).
+  /// 
+  /// - Permission: `VaultPermissions::SetPolicy`.
+  ///
+  public static Instruction setVaultPolicy(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                           final List<AccountMeta> keys,
+                                           final VaultPolicy policy) {
+    final byte[] _data = new byte[8 + policy.l()];
+    int i = SET_VAULT_POLICY_DISCRIMINATOR.write(_data, 0);
+    policy.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
+  }
+
+  public record SetVaultPolicyIxData(Discriminator discriminator, VaultPolicy policy) implements SerDe {  
+
+    public static SetVaultPolicyIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int POLICY_OFFSET = 8;
+
+    public static SetVaultPolicyIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var policy = VaultPolicy.read(_data, i);
+      return new SetVaultPolicyIxData(discriminator, policy);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += policy.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + policy.l();
+    }
+  }
+
+  public static final Discriminator STAKE_USER_VAULT_LP_DISCRIMINATOR = toDiscriminator(114, 132, 194, 209, 208, 149, 43, 136);
+
+  /// Stake Loopscale user vault LP tokens into a VaultStake account.
+  /// 
+  /// - Permission: `VaultPermissions::StakeUserVaultLp`.
+  /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
+  ///
+  public static List<AccountMeta> stakeUserVaultLpKeys(final SolanaAccounts solanaAccounts,
+                                                       final PublicKey glamStateKey,
+                                                       final PublicKey glamVaultKey,
+                                                       final PublicKey glamSignerKey,
+                                                       final PublicKey integrationAuthorityKey,
+                                                       final PublicKey cpiProgramKey,
+                                                       final PublicKey glamProtocolProgramKey,
+                                                       final PublicKey bsAuthKey,
+                                                       final PublicKey nonceKey,
+                                                       final PublicKey vaultKey,
+                                                       final PublicKey vaultStakeKey,
+                                                       final PublicKey lpMintKey,
+                                                       final PublicKey userLpTaKey,
+                                                       final PublicKey vaultStakeLpTaKey,
+                                                       final PublicKey vaultRewardsInfoKey,
+                                                       final PublicKey userRewardsInfoKey,
+                                                       final PublicKey tokenProgramKey,
+                                                       final PublicKey protocolAdminStateKey,
+                                                       final PublicKey eventAuthorityKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createReadOnlySigner(bsAuthKey),
+      createReadOnlySigner(nonceKey),
+      createWrite(vaultKey),
+      createWrite(vaultStakeKey),
+      createRead(lpMintKey),
+      createWrite(userLpTaKey),
+      createWrite(vaultStakeLpTaKey),
+      createWrite(vaultRewardsInfoKey),
+      createWrite(userRewardsInfoKey),
+      createRead(tokenProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram()),
+      createRead(protocolAdminStateKey),
+      createRead(eventAuthorityKey)
+    );
+  }
+
+  /// Stake Loopscale user vault LP tokens into a VaultStake account.
+  /// 
+  /// - Permission: `VaultPermissions::StakeUserVaultLp`.
+  /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
+  ///
+  public static Instruction stakeUserVaultLp(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                             final SolanaAccounts solanaAccounts,
+                                             final PublicKey glamStateKey,
+                                             final PublicKey glamVaultKey,
+                                             final PublicKey glamSignerKey,
+                                             final PublicKey integrationAuthorityKey,
+                                             final PublicKey cpiProgramKey,
+                                             final PublicKey glamProtocolProgramKey,
+                                             final PublicKey bsAuthKey,
+                                             final PublicKey nonceKey,
+                                             final PublicKey vaultKey,
+                                             final PublicKey vaultStakeKey,
+                                             final PublicKey lpMintKey,
+                                             final PublicKey userLpTaKey,
+                                             final PublicKey vaultStakeLpTaKey,
+                                             final PublicKey vaultRewardsInfoKey,
+                                             final PublicKey userRewardsInfoKey,
+                                             final PublicKey tokenProgramKey,
+                                             final PublicKey protocolAdminStateKey,
+                                             final PublicKey eventAuthorityKey,
+                                             final VaultStakeParams params) {
+    final var keys = stakeUserVaultLpKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      bsAuthKey,
+      nonceKey,
+      vaultKey,
+      vaultStakeKey,
+      lpMintKey,
+      userLpTaKey,
+      vaultStakeLpTaKey,
+      vaultRewardsInfoKey,
+      userRewardsInfoKey,
+      tokenProgramKey,
+      protocolAdminStateKey,
+      eventAuthorityKey
+    );
+    return stakeUserVaultLp(invokedExtLoopscaleProgramMeta, keys, params);
+  }
+
+  /// Stake Loopscale user vault LP tokens into a VaultStake account.
+  /// 
+  /// - Permission: `VaultPermissions::StakeUserVaultLp`.
+  /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
+  ///
+  public static Instruction stakeUserVaultLp(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                             final List<AccountMeta> keys,
+                                             final VaultStakeParams params) {
+    final byte[] _data = new byte[8 + params.l()];
+    int i = STAKE_USER_VAULT_LP_DISCRIMINATOR.write(_data, 0);
+    params.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
+  }
+
+  public record StakeUserVaultLpIxData(Discriminator discriminator, VaultStakeParams params) implements SerDe {  
+
+    public static StakeUserVaultLpIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int PARAMS_OFFSET = 8;
+
+    public static StakeUserVaultLpIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var params = VaultStakeParams.read(_data, i);
+      return new StakeUserVaultLpIxData(discriminator, params);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += params.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + params.l();
+    }
+  }
+
+  public static final Discriminator UNSTAKE_USER_VAULT_LP_DISCRIMINATOR = toDiscriminator(83, 78, 230, 123, 226, 40, 158, 97);
+
+  /// Unstake Loopscale user vault LP tokens from a VaultStake account.
+  /// 
+  /// - Permission: `VaultPermissions::UnstakeUserVaultLp`.
+  /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
+  ///
+  public static List<AccountMeta> unstakeUserVaultLpKeys(final SolanaAccounts solanaAccounts,
+                                                         final PublicKey glamStateKey,
+                                                         final PublicKey glamVaultKey,
+                                                         final PublicKey glamSignerKey,
+                                                         final PublicKey integrationAuthorityKey,
+                                                         final PublicKey cpiProgramKey,
+                                                         final PublicKey glamProtocolProgramKey,
+                                                         final PublicKey bsAuthKey,
+                                                         final PublicKey vaultKey,
+                                                         final PublicKey lpMintKey,
+                                                         final PublicKey vaultStakeKey,
+                                                         final PublicKey userLpTaKey,
+                                                         final PublicKey vaultStakeLpTaKey,
+                                                         final PublicKey vaultRewardsInfoKey,
+                                                         final PublicKey userRewardsInfoKey,
+                                                         final PublicKey tokenProgramKey,
+                                                         final PublicKey protocolAdminStateKey,
+                                                         final PublicKey eventAuthorityKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createReadOnlySigner(bsAuthKey),
+      createWrite(vaultKey),
+      createWrite(lpMintKey),
+      createWrite(vaultStakeKey),
+      createWrite(userLpTaKey),
+      createWrite(vaultStakeLpTaKey),
+      createWrite(vaultRewardsInfoKey),
+      createWrite(userRewardsInfoKey),
+      createRead(tokenProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram()),
+      createRead(protocolAdminStateKey),
+      createRead(eventAuthorityKey)
+    );
+  }
+
+  /// Unstake Loopscale user vault LP tokens from a VaultStake account.
+  /// 
+  /// - Permission: `VaultPermissions::UnstakeUserVaultLp`.
+  /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
+  ///
+  public static Instruction unstakeUserVaultLp(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                               final SolanaAccounts solanaAccounts,
+                                               final PublicKey glamStateKey,
+                                               final PublicKey glamVaultKey,
+                                               final PublicKey glamSignerKey,
+                                               final PublicKey integrationAuthorityKey,
+                                               final PublicKey cpiProgramKey,
+                                               final PublicKey glamProtocolProgramKey,
+                                               final PublicKey bsAuthKey,
+                                               final PublicKey vaultKey,
+                                               final PublicKey lpMintKey,
+                                               final PublicKey vaultStakeKey,
+                                               final PublicKey userLpTaKey,
+                                               final PublicKey vaultStakeLpTaKey,
+                                               final PublicKey vaultRewardsInfoKey,
+                                               final PublicKey userRewardsInfoKey,
+                                               final PublicKey tokenProgramKey,
+                                               final PublicKey protocolAdminStateKey,
+                                               final PublicKey eventAuthorityKey,
+                                               final VaultUnstakeParams params) {
+    final var keys = unstakeUserVaultLpKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      bsAuthKey,
+      vaultKey,
+      lpMintKey,
+      vaultStakeKey,
+      userLpTaKey,
+      vaultStakeLpTaKey,
+      vaultRewardsInfoKey,
+      userRewardsInfoKey,
+      tokenProgramKey,
+      protocolAdminStateKey,
+      eventAuthorityKey
+    );
+    return unstakeUserVaultLp(invokedExtLoopscaleProgramMeta, keys, params);
+  }
+
+  /// Unstake Loopscale user vault LP tokens from a VaultStake account.
+  /// 
+  /// - Permission: `VaultPermissions::UnstakeUserVaultLp`.
+  /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
+  ///
+  public static Instruction unstakeUserVaultLp(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                               final List<AccountMeta> keys,
+                                               final VaultUnstakeParams params) {
+    final byte[] _data = new byte[8 + params.l()];
+    int i = UNSTAKE_USER_VAULT_LP_DISCRIMINATOR.write(_data, 0);
+    params.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
+  }
+
+  public record UnstakeUserVaultLpIxData(Discriminator discriminator, VaultUnstakeParams params) implements SerDe {  
+
+    public static UnstakeUserVaultLpIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int BYTES = 17;
+
+    public static final int PARAMS_OFFSET = 8;
+
+    public static UnstakeUserVaultLpIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var params = VaultUnstakeParams.read(_data, i);
+      return new UnstakeUserVaultLpIxData(discriminator, params);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += params.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
     }
   }
 
@@ -1873,6 +2529,156 @@ public final class ExtLoopscaleProgram {
     @Override
     public int l() {
       return BYTES;
+    }
+  }
+
+  public static final Discriminator WITHDRAW_USER_VAULT_DISCRIMINATOR = toDiscriminator(9, 80, 134, 138, 212, 20, 61, 42);
+
+  /// Withdraw principal from a Loopscale user vault by burning Token-2022 LP tokens.
+  /// 
+  /// - Permission: `VaultPermissions::WithdrawUserVault`.
+  /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
+  ///
+  public static List<AccountMeta> withdrawUserVaultKeys(final SolanaAccounts solanaAccounts,
+                                                        final PublicKey glamStateKey,
+                                                        final PublicKey glamVaultKey,
+                                                        final PublicKey glamSignerKey,
+                                                        final PublicKey integrationAuthorityKey,
+                                                        final PublicKey cpiProgramKey,
+                                                        final PublicKey glamProtocolProgramKey,
+                                                        final PublicKey bsAuthKey,
+                                                        final PublicKey vaultKey,
+                                                        final PublicKey strategyKey,
+                                                        final PublicKey marketInformationKey,
+                                                        final PublicKey lpMintKey,
+                                                        final PublicKey userLpTaKey,
+                                                        final PublicKey userPrincipalTaKey,
+                                                        final PublicKey strategyPrincipalTaKey,
+                                                        final PublicKey principalMintKey,
+                                                        final PublicKey principalTokenProgramKey,
+                                                        final PublicKey token2022ProgramKey,
+                                                        final PublicKey protocolAdminStateKey,
+                                                        final PublicKey eventAuthorityKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createReadOnlySigner(bsAuthKey),
+      createWrite(vaultKey),
+      createWrite(strategyKey),
+      createRead(marketInformationKey),
+      createWrite(lpMintKey),
+      createWrite(userLpTaKey),
+      createWrite(userPrincipalTaKey),
+      createWrite(strategyPrincipalTaKey),
+      createRead(principalMintKey),
+      createRead(principalTokenProgramKey),
+      createRead(token2022ProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram()),
+      createRead(protocolAdminStateKey),
+      createRead(eventAuthorityKey)
+    );
+  }
+
+  /// Withdraw principal from a Loopscale user vault by burning Token-2022 LP tokens.
+  /// 
+  /// - Permission: `VaultPermissions::WithdrawUserVault`.
+  /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
+  ///
+  public static Instruction withdrawUserVault(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                              final SolanaAccounts solanaAccounts,
+                                              final PublicKey glamStateKey,
+                                              final PublicKey glamVaultKey,
+                                              final PublicKey glamSignerKey,
+                                              final PublicKey integrationAuthorityKey,
+                                              final PublicKey cpiProgramKey,
+                                              final PublicKey glamProtocolProgramKey,
+                                              final PublicKey bsAuthKey,
+                                              final PublicKey vaultKey,
+                                              final PublicKey strategyKey,
+                                              final PublicKey marketInformationKey,
+                                              final PublicKey lpMintKey,
+                                              final PublicKey userLpTaKey,
+                                              final PublicKey userPrincipalTaKey,
+                                              final PublicKey strategyPrincipalTaKey,
+                                              final PublicKey principalMintKey,
+                                              final PublicKey principalTokenProgramKey,
+                                              final PublicKey token2022ProgramKey,
+                                              final PublicKey protocolAdminStateKey,
+                                              final PublicKey eventAuthorityKey,
+                                              final LpParams params) {
+    final var keys = withdrawUserVaultKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      bsAuthKey,
+      vaultKey,
+      strategyKey,
+      marketInformationKey,
+      lpMintKey,
+      userLpTaKey,
+      userPrincipalTaKey,
+      strategyPrincipalTaKey,
+      principalMintKey,
+      principalTokenProgramKey,
+      token2022ProgramKey,
+      protocolAdminStateKey,
+      eventAuthorityKey
+    );
+    return withdrawUserVault(invokedExtLoopscaleProgramMeta, keys, params);
+  }
+
+  /// Withdraw principal from a Loopscale user vault by burning Token-2022 LP tokens.
+  /// 
+  /// - Permission: `VaultPermissions::WithdrawUserVault`.
+  /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
+  ///
+  public static Instruction withdrawUserVault(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                              final List<AccountMeta> keys,
+                                              final LpParams params) {
+    final byte[] _data = new byte[8 + params.l()];
+    int i = WITHDRAW_USER_VAULT_DISCRIMINATOR.write(_data, 0);
+    params.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
+  }
+
+  public record WithdrawUserVaultIxData(Discriminator discriminator, LpParams params) implements SerDe {  
+
+    public static WithdrawUserVaultIxData read(final Instruction instruction) {
+      return read(instruction.data(), instruction.offset());
+    }
+
+    public static final int PARAMS_OFFSET = 8;
+
+    public static WithdrawUserVaultIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var params = LpParams.read(_data, i);
+      return new WithdrawUserVaultIxData(discriminator, params);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += params.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + params.l();
     }
   }
 

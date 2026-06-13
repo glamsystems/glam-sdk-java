@@ -168,4 +168,24 @@ public interface GlamAccountClient extends SPLAccountClient {
                                           final PublicKey baseAssetUsdOracleKey) {
     return priceLoopscaleLoans(solUSDOracleKey, baseAssetUsdOracleKey, false);
   }
+
+  Instruction priceLoopscaleStrategies(final PublicKey solUSDOracleKey,
+                                       final PublicKey baseAssetUsdOracleKey,
+                                       final boolean cpiEmitEvents);
+
+  default Instruction priceLoopscaleStrategies(final PublicKey solUSDOracleKey,
+                                               final PublicKey baseAssetUsdOracleKey) {
+    return priceLoopscaleStrategies(solUSDOracleKey, baseAssetUsdOracleKey, false);
+  }
+
+  Instruction priceLoopscaleVaultPositions(final PublicKey solUSDOracleKey,
+                                           final PublicKey baseAssetUsdOracleKey,
+                                           final int numVaults,
+                                           final boolean cpiEmitEvents);
+
+  default Instruction priceLoopscaleVaultPositions(final PublicKey solUSDOracleKey,
+                                                   final PublicKey baseAssetUsdOracleKey,
+                                                   final int numVaults) {
+    return priceLoopscaleVaultPositions(solUSDOracleKey, baseAssetUsdOracleKey, numVaults, false);
+  }
 }

@@ -10,30 +10,5 @@ concurrency:
 
 jobs:
   check:
-    if: >
-      github.event.pull_request.user.login != 'sava-release-please[bot]' &&
-      github.event.pull_request.user.login != 'dependabot[bot]'
-    runs-on: ubuntu-latest
-
-    steps:
-      - id: setup
-        uses: sava-software/sava-build@main
-        with:
-          default-java-version: ${{ vars.JAVA_VERSION }}
-          jdk-src: ${{ vars.JDK_SRC }}
-          gradle-java-version: ${{ vars.GRADLE_JAVA_VERSION }}
-
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
-        name: Checkout IDL Source Generator
-        with:
-          repository: sava-software/idl-src-gen
-          token: ${{ secrets.READ_SAVA_SRC_GEN }}
-          path: idl-src-gen
-
-      - name: Generate Source & Check
-        run: |
-          ./idl-src-gen/genSrc.sh --config="../main_net_programs.json" --rpc="${{ secrets.RPC_URL }}"
-          ./gradlew --stacktrace -PjavaVersion=${{ steps.setup.outputs.java-version }} check
-        env:
-          ORG_GRADLE_PROJECT_savaGithubPackagesUsername: ${{ github.actor }}
-          ORG_GRADLE_PROJECT_savaGithubPackagesPassword: ${{ secrets.READ_SAVA_PACKAGES }}
+    uses: sava-software/sava-build/.github/workflows/check-pr.yml@main
+    secrets: inherit

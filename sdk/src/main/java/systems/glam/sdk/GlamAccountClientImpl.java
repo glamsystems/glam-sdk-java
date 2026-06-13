@@ -438,4 +438,19 @@ class GlamAccountClientImpl implements GlamAccountClient {
                                          final boolean cpiEmitEvents) {
     throw throwStagingOnly();
   }
+
+  @Override
+  public Instruction priceLoopscaleStrategies(final PublicKey solUSDOracleKey,
+                                              final PublicKey baseAssetUsdOracleKey,
+                                              final boolean cpiEmitEvents) {
+    throw throwStagingOnly();
+  }
+
+  @Override
+  public Instruction priceLoopscaleVaultPositions(final PublicKey solUSDOracleKey,
+                                                  final PublicKey baseAssetUsdOracleKey,
+                                                  final int numVaults,
+                                                  final boolean cpiEmitEvents) {
+    throw throwStagingOnly();
+  }
 }

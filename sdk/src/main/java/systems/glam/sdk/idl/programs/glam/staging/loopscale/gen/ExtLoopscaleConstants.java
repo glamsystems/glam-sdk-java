@@ -37,6 +37,20 @@ public final class ExtLoopscaleConstants {
 
   public static final long PROTO_LOOPSCALE_LENDING_PERM_WITHDRAW_STRATEGY = 8;
 
+  public static final int PROTO_LOOPSCALE_VAULT = 4;
+
+  public static final long PROTO_LOOPSCALE_VAULT_PERM_CLAIM_VAULT_REWARDS = 16;
+
+  public static final long PROTO_LOOPSCALE_VAULT_PERM_DEPOSIT_USER_VAULT = 1;
+
+  public static final long PROTO_LOOPSCALE_VAULT_PERM_SET_POLICY = 32;
+
+  public static final long PROTO_LOOPSCALE_VAULT_PERM_STAKE_USER_VAULT_LP = 4;
+
+  public static final long PROTO_LOOPSCALE_VAULT_PERM_UNSTAKE_USER_VAULT_LP = 8;
+
+  public static final long PROTO_LOOPSCALE_VAULT_PERM_WITHDRAW_USER_VAULT = 2;
+
   private ExtLoopscaleConstants() {
   }
 }
