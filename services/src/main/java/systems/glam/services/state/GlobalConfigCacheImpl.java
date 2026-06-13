@@ -627,15 +627,20 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
 
   @Override
   public void accept(final AccountInfo<byte[]> accountInfo) {
-    if (this.assetMetaMap == null || this.globalConfigUpdate == null) {
+    var globalConfigUpdate = this.globalConfigUpdate;
+    if (globalConfigUpdate == null) {
+      return;
+    }
+    final byte[] data = accountInfo.data();
+    if (Arrays.equals(data, globalConfigUpdate.data())) {
       return;
     }
     writeLock.lock();
     try {
-      if (this.assetMetaMap == null || this.globalConfigUpdate == null) {
+      globalConfigUpdate = this.globalConfigUpdate;
+      if (globalConfigUpdate == null || Arrays.equals(data, globalConfigUpdate.data())) {
         return;
       }
-      final byte[] data = accountInfo.data();
       final long slot = accountInfo.context().slot();
       if (checkAccount(configProgram, accountInfo.owner(), slot, accountInfo.pubKey(), data)) {
         final var previousConfigUpdate = this.globalConfigUpdate;
@@ -656,8 +661,8 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
             this.listeners
         );
         if (assetMetaMap == null) {
-          this.assetMetaMap = null;
           this.globalConfigUpdate = null;
+          this.assetMetaMap = null;
           this.invalidGlobalConfig.signalAll();
         } else {
           this.assetMetaMap = assetMetaMap;
