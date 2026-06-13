@@ -1,5 +1,12 @@
 # Changelog
 
+## [25.12.5](https://github.com/glamsystems/glam-sdk-java/compare/25.12.4...25.12.5) (2026-06-13)
+
+
+### Features
+
+* **sdk:** add Loopscale vault and LP token integration types ([868ac44](https://github.com/glamsystems/glam-sdk-java/commit/868ac4483bdbe6f82d8c325236f71f4570013550))
+
 ## [25.12.4](https://github.com/glamsystems/glam-sdk-java/compare/25.12.3...25.12.4) (2026-06-12)
 
 
