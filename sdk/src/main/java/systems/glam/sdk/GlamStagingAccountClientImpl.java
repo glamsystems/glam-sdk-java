@@ -380,4 +380,90 @@ final class GlamStagingAccountClientImpl extends GlamAccountClientImpl implement
         numVaults
     );
   }
+
+  @Override
+  public Instruction priceOrcaWhirlpoolPositions(final PublicKey solUSDOracleKey,
+                                                 final PublicKey baseAssetUsdOracleKey,
+                                                 final int numPositions,
+                                                 final boolean cpiEmitEvents) {
+    final var invoked = glamAccounts.invokedMintIntegrationProgram();
+    final var mintProgram = invoked.publicKey();
+    return GlamMintProgram.priceOrcaWhirlpoolPositions(
+        invoked,
+        glamVaultAccounts.glamStateKey(),
+        glamVaultAccounts.vaultPublicKey(),
+        feePayer.publicKey(),
+        solUSDOracleKey,
+        baseAssetUsdOracleKey,
+        glamAccounts.readMintIntegrationAuthority().publicKey(),
+        globalConfigKey,
+        invokedProtocolProgram.publicKey(),
+        cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
+        mintProgram,
+        numPositions
+    );
+  }
+
+  @Override
+  public Instruction priceStakeAccounts(final PublicKey solUSDOracleKey,
+                                        final PublicKey baseAssetUsdOracleKey,
+                                        final boolean cpiEmitEvents) {
+    final var invoked = glamAccounts.invokedMintIntegrationProgram();
+    final var mintProgram = invoked.publicKey();
+    return GlamMintProgram.priceStakeAccounts(
+        invoked,
+        glamVaultAccounts.glamStateKey(),
+        glamVaultAccounts.vaultPublicKey(),
+        feePayer.publicKey(),
+        solUSDOracleKey,
+        baseAssetUsdOracleKey,
+        glamAccounts.readMintIntegrationAuthority().publicKey(),
+        globalConfigKey,
+        invokedProtocolProgram.publicKey(),
+        cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
+        mintProgram
+    );
+  }
+
+  @Override
+  public Instruction pricePhoenixTraders(final PublicKey solUSDOracleKey,
+                                         final PublicKey baseAssetUsdOracleKey,
+                                         final boolean cpiEmitEvents) {
+    final var invoked = glamAccounts.invokedMintIntegrationProgram();
+    final var mintProgram = invoked.publicKey();
+    return GlamMintProgram.pricePhoenixTraders(
+        invoked,
+        glamVaultAccounts.glamStateKey(),
+        glamVaultAccounts.vaultPublicKey(),
+        feePayer.publicKey(),
+        solUSDOracleKey,
+        baseAssetUsdOracleKey,
+        glamAccounts.readMintIntegrationAuthority().publicKey(),
+        globalConfigKey,
+        invokedProtocolProgram.publicKey(),
+        cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
+        mintProgram
+    );
+  }
+
+  @Override
+  public Instruction priceBridgeManagedTransfers(final PublicKey solUSDOracleKey,
+                                                 final PublicKey baseAssetUsdOracleKey,
+                                                 final boolean cpiEmitEvents) {
+    final var invoked = glamAccounts.invokedMintIntegrationProgram();
+    final var mintProgram = invoked.publicKey();
+    return GlamMintProgram.priceBridgeManagedTransfers(
+        invoked,
+        glamVaultAccounts.glamStateKey(),
+        glamVaultAccounts.vaultPublicKey(),
+        feePayer.publicKey(),
+        solUSDOracleKey,
+        baseAssetUsdOracleKey,
+        glamAccounts.readMintIntegrationAuthority().publicKey(),
+        globalConfigKey,
+        invokedProtocolProgram.publicKey(),
+        cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
+        mintProgram
+    );
+  }
 }

@@ -188,4 +188,42 @@ public interface GlamAccountClient extends SPLAccountClient {
                                                    final int numVaults) {
     return priceLoopscaleVaultPositions(solUSDOracleKey, baseAssetUsdOracleKey, numVaults, false);
   }
+
+  Instruction priceOrcaWhirlpoolPositions(final PublicKey solUSDOracleKey,
+                                          final PublicKey baseAssetUsdOracleKey,
+                                          final int numPositions,
+                                          final boolean cpiEmitEvents);
+
+  default Instruction priceOrcaWhirlpoolPositions(final PublicKey solUSDOracleKey,
+                                                  final PublicKey baseAssetUsdOracleKey,
+                                                  final int numPositions) {
+    return priceOrcaWhirlpoolPositions(solUSDOracleKey, baseAssetUsdOracleKey, numPositions, false);
+  }
+
+  Instruction priceStakeAccounts(final PublicKey solUSDOracleKey,
+                                 final PublicKey baseAssetUsdOracleKey,
+                                 final boolean cpiEmitEvents);
+
+  default Instruction priceStakeAccounts(final PublicKey solUSDOracleKey,
+                                         final PublicKey baseAssetUsdOracleKey) {
+    return priceStakeAccounts(solUSDOracleKey, baseAssetUsdOracleKey, false);
+  }
+
+  Instruction pricePhoenixTraders(final PublicKey solUSDOracleKey,
+                                  final PublicKey baseAssetUsdOracleKey,
+                                  final boolean cpiEmitEvents);
+
+  default Instruction pricePhoenixTraders(final PublicKey solUSDOracleKey,
+                                          final PublicKey baseAssetUsdOracleKey) {
+    return pricePhoenixTraders(solUSDOracleKey, baseAssetUsdOracleKey, false);
+  }
+
+  Instruction priceBridgeManagedTransfers(final PublicKey solUSDOracleKey,
+                                          final PublicKey baseAssetUsdOracleKey,
+                                          final boolean cpiEmitEvents);
+
+  default Instruction priceBridgeManagedTransfers(final PublicKey solUSDOracleKey,
+                                                  final PublicKey baseAssetUsdOracleKey) {
+    return priceBridgeManagedTransfers(solUSDOracleKey, baseAssetUsdOracleKey, false);
+  }
 }
