@@ -137,6 +137,8 @@ public interface GlobalConfigCache extends Runnable {
 
   CompletableFuture<Void> initCache();
 
+  void forceCacheRefresh();
+
   void subscribe(final SolanaRpcWebsocket websocket);
 
   void subscribe(final GlobalConfigListener listener);

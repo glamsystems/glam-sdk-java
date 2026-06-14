@@ -188,6 +188,25 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
         .thenAcceptAsync(result -> this.accept(result.accounts(), result.accountMap()));
   }
 
+  private volatile boolean forceRefresh;
+
+  @Override
+  public void forceCacheRefresh() {
+    if (forceRefresh) {
+      return;
+    }
+    writeLock.lock();
+    try {
+      if (forceRefresh) {
+        return;
+      }
+      forceRefresh = true;
+      invalidGlobalConfig.signal();
+    } finally {
+      writeLock.unlock();
+    }
+  }
+
   @Override
   public void run() {
     try {
@@ -195,11 +214,12 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
         accountFetcher.priorityQueue(globalConfigKey, this);
         writeLock.lock();
         try {
+          forceRefresh = false;
           for (remainingNanos = fetchDelayNanos; ; ) {
             remainingNanos = invalidGlobalConfig.awaitNanos(remainingNanos);
             if (this.globalConfigUpdate == null || this.assetMetaMap == null) {
               return;
-            } else if (remainingNanos <= 0) {
+            } else if (remainingNanos <= 0 || forceRefresh) {
               break;
             }
           }
