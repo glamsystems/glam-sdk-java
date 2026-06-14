@@ -1,5 +1,12 @@
 # Changelog
 
+## [25.12.8](https://github.com/glamsystems/glam-sdk-java/compare/25.12.7...25.12.8) (2026-06-14)
+
+
+### Features
+
+* **services:** add `forceCacheRefresh` method to `GlobalConfigCache` ([b734928](https://github.com/glamsystems/glam-sdk-java/commit/b7349283ed59c682cccd307b8abca8bf4006f034))
+
 ## [25.12.7](https://github.com/glamsystems/glam-sdk-java/compare/25.12.6...25.12.7) (2026-06-13)
 
 
