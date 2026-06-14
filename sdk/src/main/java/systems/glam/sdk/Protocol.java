@@ -6,6 +6,8 @@ import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintConstants;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolConstants;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplConstants;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.ExtLoopscaleConstants;
+import systems.glam.sdk.idl.programs.glam.staging.orca.gen.ExtOrcaConstants;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.ExtPhoenixConstants;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -23,6 +25,8 @@ public enum Protocol {
   LOOPSCALE_BORROW(ExtLoopscaleConstants.class, ExtLoopscaleConstants.PROTO_LOOPSCALE_BORROW),
   LOOPSCALE_LENDING(ExtLoopscaleConstants.class, ExtLoopscaleConstants.PROTO_LOOPSCALE_LENDING),
   LOOPSCALE_VAULTS(ExtLoopscaleConstants.class, ExtLoopscaleConstants.PROTO_LOOPSCALE_VAULT),
+  ORCA_WHIRLPOOLS(GlamMintConstants.class, ExtOrcaConstants.PROTO_ORCA_WHIRLPOOLS),
+  PHOENIX(GlamMintConstants.class, ExtPhoenixConstants.PROTO_PHOENIX),
   MINT(GlamMintConstants.class, GlamMintConstants.PROTO_MINT),
   STAKE(GlamProtocolConstants.class, GlamProtocolConstants.PROTO_STAKE),
   SYSTEM(GlamProtocolConstants.class, GlamProtocolConstants.PROTO_SYSTEM),

@@ -25,6 +25,8 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.staging.mint.gen.events;
   exports systems.glam.sdk.idl.programs.glam.staging.mint.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.mint.gen;
+  exports systems.glam.sdk.idl.programs.glam.staging.orca.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.staging.orca.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.phoenix.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.protocol.gen.types;
