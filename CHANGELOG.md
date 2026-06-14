@@ -1,5 +1,12 @@
 # Changelog
 
+## [25.12.9](https://github.com/glamsystems/glam-sdk-java/compare/25.12.8...25.12.9) (2026-06-14)
+
+
+### Features
+
+* **sdk:** add support for pricing multiple integration strategies ([3eec4f1](https://github.com/glamsystems/glam-sdk-java/commit/3eec4f14365e1dfec5026ab3d06b2f7453ccd913))
+
 ## [25.12.8](https://github.com/glamsystems/glam-sdk-java/compare/25.12.7...25.12.8) (2026-06-14)
 
 
