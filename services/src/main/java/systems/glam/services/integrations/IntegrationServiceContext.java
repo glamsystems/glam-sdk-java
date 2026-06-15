@@ -6,6 +6,8 @@ import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.idl.clients.loopscale.LoopscaleAccounts;
+import software.sava.idl.clients.orca.OrcaAccounts;
+import software.sava.idl.clients.phoenix.PhoenixAccounts;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamEnv;
@@ -36,7 +38,9 @@ public interface IntegrationServiceContext {
                                                  final DriftUserCache driftUserCache,
                                                  final KaminoAccounts kaminoAccounts,
                                                  final KaminoCache kaminoCache,
-                                                 final LoopscaleAccounts loopscaleAccounts) {
+                                                 final LoopscaleAccounts loopscaleAccounts,
+                                                 final OrcaAccounts orcaAccounts,
+                                                 final PhoenixAccounts phoenixAccounts) {
     return new IntegrationServiceContextImpl(
         serviceContext,
         mintCache,
@@ -46,7 +50,9 @@ public interface IntegrationServiceContext {
         accountFetcher,
         driftAccounts, driftMarketCache, driftUserCache,
         kaminoAccounts, kaminoCache,
-        loopscaleAccounts
+        loopscaleAccounts,
+        orcaAccounts,
+        phoenixAccounts
     );
   }
 
@@ -87,6 +93,16 @@ public interface IntegrationServiceContext {
   AssetMetaContext globalConfigAssetMeta(final PublicKey mint);
 
   FeedIndexes scopeAggregateIndexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType);
+
+  OrcaAccounts orcaAccounts();
+
+  PublicKey orcaWhirlpoolProgram();
+
+  PhoenixAccounts phoenixAccounts();
+
+  PublicKey phoenixEternalProgram();
+
+  PublicKey phoenixEmberProgram();
 
   IntegLookupTableCache integTableCache();
 

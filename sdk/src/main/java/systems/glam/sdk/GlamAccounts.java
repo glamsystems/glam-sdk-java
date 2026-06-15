@@ -10,7 +10,9 @@ import systems.glam.sdk.idl.programs.glam.kamino.gen.ExtKaminoPDAs;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintPDAs;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.ExtBridgePDAs;
+import systems.glam.sdk.idl.programs.glam.staging.jupiter.gen.ExtJupiterPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.ExtLoopscalePDAs;
+import systems.glam.sdk.idl.programs.glam.staging.orca.gen.ExtOrcaPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.ExtPhoenixPDAs;
 import systems.glam.sdk.proxy.DynamicGlamAccountFactory;
 
@@ -34,6 +36,8 @@ public interface GlamAccounts {
       null,
       "G1NTkDEUR3pkEqGCKZtmtmVzCUEdYa86pezHkwYbLyde",
       null,
+      null,
+      null,
       null
   );
 
@@ -48,7 +52,9 @@ public interface GlamAccounts {
       "gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX",
       "gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq",
       "gstgL6y4uWjsfM3Qjs5euoTDmEcXoUjqx8rkYJhYngG",
-      "gstgPL7r9aYedDDsXNtLpr4atYtNvY7zubAWWstqS3L"
+      "gstgPL7r9aYedDDsXNtLpr4atYtNvY7zubAWWstqS3L",
+      "gstgJbGqoE3p1SdFA2dET9tcaCzNqGcdD8wpbGctnU9",
+      "gstgo1EgmTp2PbLSaL6Qg57P7uADx3aiRZrMsewEdSy"
   );
 
   private static void putIfNotNull(final Map<PublicKey, AccountMeta> map,
@@ -69,7 +75,9 @@ public interface GlamAccounts {
                                      final PublicKey externalPositionProgram,
                                      final PublicKey kaminoIntegrationProgram,
                                      final PublicKey loopscaleIntegrationProgram,
-                                     final PublicKey phoenixIntegrationProgram) {
+                                     final PublicKey phoenixIntegrationProgram,
+                                     final PublicKey jupiterIntegrationProgram,
+                                     final PublicKey orcaIntegrationProgram) {
     final var mintIntegrationAuthority = GlamMintPDAs.integrationAuthorityPDA(mintProgram).publicKey();
     final var splIntegrationAuthority = ExtSplPDAs.integrationAuthorityPDA(splIntegrationProgram).publicKey();
     final var bridgeIntegrationAuthority = ExtBridgePDAs.integrationAuthorityPDA(bridgeIntegrationProgram).publicKey();
@@ -78,7 +86,9 @@ public interface GlamAccounts {
     final var kaminoIntegrationAuthority = ExtKaminoPDAs.integrationAuthorityPDA(kaminoIntegrationProgram).publicKey();
     final var loopscaleIntegrationAuthority = ExtLoopscalePDAs.integrationAuthorityPDA(loopscaleIntegrationProgram).publicKey();
     final var phoenixIntegrationAuthority = ExtPhoenixPDAs.integrationAuthorityPDA(phoenixIntegrationProgram).publicKey();
-    final var map = HashMap.<PublicKey, AccountMeta>newHashMap(8);
+    final var jupiterIntegrationAuthority = ExtJupiterPDAs.integrationAuthorityPDA(jupiterIntegrationProgram).publicKey();
+    final var orcaIntegrationAuthority = ExtOrcaPDAs.integrationAuthorityPDA(orcaIntegrationProgram).publicKey();
+    final var map = HashMap.<PublicKey, AccountMeta>newHashMap(10);
     putIfNotNull(map, mintProgram, mintIntegrationAuthority);
     putIfNotNull(map, splIntegrationProgram, splIntegrationAuthority);
     putIfNotNull(map, bridgeIntegrationProgram, bridgeIntegrationAuthority);
@@ -87,6 +97,8 @@ public interface GlamAccounts {
     putIfNotNull(map, kaminoIntegrationProgram, kaminoIntegrationAuthority);
     putIfNotNull(map, loopscaleIntegrationProgram, loopscaleIntegrationAuthority);
     putIfNotNull(map, phoenixIntegrationProgram, phoenixIntegrationAuthority);
+    putIfNotNull(map, jupiterIntegrationProgram, jupiterIntegrationAuthority);
+    putIfNotNull(map, orcaIntegrationProgram, orcaIntegrationAuthority);
     final var integrationAuthorities = Map.copyOf(map);
     return new GlamAccountsRecord(
         createInvoked(protocolProgram),
@@ -109,6 +121,10 @@ public interface GlamAccounts {
         integrationAuthorities.get(loopscaleIntegrationProgram),
         createInvoked(phoenixIntegrationProgram),
         integrationAuthorities.get(phoenixIntegrationProgram),
+        createInvoked(jupiterIntegrationProgram),
+        integrationAuthorities.get(jupiterIntegrationProgram),
+        createInvoked(orcaIntegrationProgram),
+        integrationAuthorities.get(orcaIntegrationProgram),
         integrationAuthorities
     );
   }
@@ -127,7 +143,9 @@ public interface GlamAccounts {
                                      final String externalPositionProgram,
                                      final String kaminoIntegrationProgram,
                                      final String loopscaleIntegrationProgram,
-                                     final String phoenixIntegrationProgram) {
+                                     final String phoenixIntegrationProgram,
+                                     final String jupiterIntegrationProgram,
+                                     final String orcaIntegrationProgram) {
     return createAccounts(
         PublicKey.fromBase58Encoded(protocolProgram),
         PublicKey.fromBase58Encoded(configProgram),
@@ -139,7 +157,9 @@ public interface GlamAccounts {
         createKey(externalPositionProgram),
         PublicKey.fromBase58Encoded(kaminoIntegrationProgram),
         createKey(loopscaleIntegrationProgram),
-        createKey(phoenixIntegrationProgram)
+        createKey(phoenixIntegrationProgram),
+        createKey(jupiterIntegrationProgram),
+        createKey(orcaIntegrationProgram)
     );
   }
 
@@ -235,6 +255,22 @@ public interface GlamAccounts {
   }
 
   AccountMeta readPhoenixIntegrationAuthority();
+
+  AccountMeta invokedJupiterIntegrationProgram();
+
+  default PublicKey jupiterIntegrationProgram() {
+    return invokedJupiterIntegrationProgram().publicKey();
+  }
+
+  AccountMeta readJupiterIntegrationAuthority();
+
+  AccountMeta invokedOrcaIntegrationProgram();
+
+  default PublicKey orcaIntegrationProgram() {
+    return invokedOrcaIntegrationProgram().publicKey();
+  }
+
+  AccountMeta readOrcaIntegrationAuthority();
 
   Map<PublicKey, AccountMeta> integrationAuthorities();
 

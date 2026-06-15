@@ -30,6 +30,10 @@ public record GlamAccountsRecord(AccountMeta invokedProtocolProgram,
                                  AccountMeta readLoopscaleIntegrationAuthority,
                                  AccountMeta invokedPhoenixIntegrationProgram,
                                  AccountMeta readPhoenixIntegrationAuthority,
+                                 AccountMeta invokedJupiterIntegrationProgram,
+                                 AccountMeta readJupiterIntegrationAuthority,
+                                 AccountMeta invokedOrcaIntegrationProgram,
+                                 AccountMeta readOrcaIntegrationAuthority,
                                  Map<PublicKey, AccountMeta> integrationAuthorities) implements GlamAccounts {
 
   @Override

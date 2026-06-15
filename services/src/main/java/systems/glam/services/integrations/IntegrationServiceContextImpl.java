@@ -5,6 +5,8 @@ import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.idl.clients.loopscale.LoopscaleAccounts;
+import software.sava.idl.clients.orca.OrcaAccounts;
+import software.sava.idl.clients.phoenix.PhoenixAccounts;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.execution.BaseServiceContext;
@@ -32,6 +34,8 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   private final KaminoAccounts kaminoAccounts;
   private final KaminoCache kaminoCache;
   private final LoopscaleAccounts loopscaleAccounts;
+  private final OrcaAccounts orcaAccounts;
+  private final PhoenixAccounts phoenixAccounts;
 
   IntegrationServiceContextImpl(final ServiceContext serviceContext,
                                 final MintCache mintCache,
@@ -44,7 +48,9 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
                                 final DriftUserCache driftUserCache,
                                 final KaminoAccounts kaminoAccounts,
                                 final KaminoCache kaminoCache,
-                                final LoopscaleAccounts loopscaleAccounts) {
+                                final LoopscaleAccounts loopscaleAccounts,
+                                final OrcaAccounts orcaAccounts,
+                                final PhoenixAccounts phoenixAccounts) {
     super(serviceContext);
     this.mintCache = mintCache;
     this.stakePoolCache = stakePoolCache;
@@ -57,6 +63,8 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
     this.kaminoAccounts = kaminoAccounts;
     this.kaminoCache = kaminoCache;
     this.loopscaleAccounts = loopscaleAccounts;
+    this.orcaAccounts = orcaAccounts;
+    this.phoenixAccounts = phoenixAccounts;
   }
 
   @Override
@@ -167,6 +175,31 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   @Override
   public PublicKey loopscaleProgram() {
     return loopscaleAccounts.loopscaleProgram();
+  }
+
+  @Override
+  public OrcaAccounts orcaAccounts() {
+    return orcaAccounts;
+  }
+
+  @Override
+  public PublicKey orcaWhirlpoolProgram() {
+    return orcaAccounts.invokedWhirlpoolProgram().publicKey();
+  }
+
+  @Override
+  public PhoenixAccounts phoenixAccounts() {
+    return phoenixAccounts;
+  }
+
+  @Override
+  public PublicKey phoenixEternalProgram() {
+    return phoenixAccounts.invokedEternalProgram().publicKey();
+  }
+
+  @Override
+  public PublicKey phoenixEmberProgram() {
+    return phoenixAccounts.invokedEmberProgram().publicKey();
   }
 
   @Override
