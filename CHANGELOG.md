@@ -1,5 +1,20 @@
 # Changelog
 
+## [25.13.0](https://github.com/glamsystems/glam-sdk-java/compare/25.12.9...25.13.0) (2026-06-16)
+
+
+### Features
+
+* **sdk/services:** enhance SDK and services with Orca and Jupiter integration support ([615c4f9](https://github.com/glamsystems/glam-sdk-java/commit/615c4f9f129cf4408ac5a660d74ea33e69c26a9b))
+* **sdk:** Add cctp, marinade, NT and stake pool staging programs ([a99daa5](https://github.com/glamsystems/glam-sdk-java/commit/a99daa51c1598cb1adebd9406766ae2dabe906fe))
+* **sdk:** add generated ExtJupiter program, constants, PDAs, and types ([728bfab](https://github.com/glamsystems/glam-sdk-java/commit/728bfab9f7517ed0720ebb2ce1294e51251ba264))
+* **sdk:** add generated ExtOrca program, constants, PDAs, and types ([aef42cc](https://github.com/glamsystems/glam-sdk-java/commit/aef42cc832068988045cea5166143d3cb34d2a91))
+
+
+### Miscellaneous Chores
+
+* release 25.13.0 ([f732061](https://github.com/glamsystems/glam-sdk-java/commit/f732061bcb0a6e48e6c71f94c25ddbd4e1d0149c))
+
 ## [25.12.9](https://github.com/glamsystems/glam-sdk-java/compare/25.12.8...25.12.9) (2026-06-14)
 
 
