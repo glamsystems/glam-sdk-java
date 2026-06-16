@@ -16,6 +16,8 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.spl.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.bridge.gen;
+  exports systems.glam.sdk.idl.programs.glam.staging.cctp.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.staging.cctp.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.external_positions.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.jupiter.gen.types;
@@ -24,9 +26,13 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.staging.kamino.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.loopscale.gen;
+  exports systems.glam.sdk.idl.programs.glam.staging.marinade.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.staging.marinade.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.mint.gen.events;
   exports systems.glam.sdk.idl.programs.glam.staging.mint.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.mint.gen;
+  exports systems.glam.sdk.idl.programs.glam.staging.nt.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.staging.nt.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.orca.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.orca.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types;
@@ -34,6 +40,8 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.staging.protocol.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.protocol.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.spl.gen;
+  exports systems.glam.sdk.idl.programs.glam.staging.stake_pool.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.staging.stake_pool.gen;
   exports systems.glam.sdk.lut;
   exports systems.glam.sdk.proxy;
   exports systems.glam.sdk;

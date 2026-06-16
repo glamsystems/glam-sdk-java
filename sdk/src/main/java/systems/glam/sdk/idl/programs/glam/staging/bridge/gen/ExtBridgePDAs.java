@@ -28,13 +28,9 @@ public final class ExtBridgePDAs {
     ), program);
   }
 
-  public static ProgramDerivedAddress claimRecordPDA(final PublicKey program,
-                                                     final PublicKey glamStateAccount,
-                                                     final PublicKey providerReceiptAccount) {
+  public static ProgramDerivedAddress glamConfigPDA(final PublicKey program) {
     return PublicKey.findProgramAddress(List.of(
-      "bridge-claim-record".getBytes(US_ASCII),
-      glamStateAccount.toByteArray(),
-      providerReceiptAccount.toByteArray()
+      "global-config".getBytes(US_ASCII)
     ), program);
   }
 
@@ -49,16 +45,6 @@ public final class ExtBridgePDAs {
   public static ProgramDerivedAddress integrationAuthorityPDA(final PublicKey program) {
     return PublicKey.findProgramAddress(List.of(
       "integration-authority".getBytes(US_ASCII)
-    ), program);
-  }
-
-  public static ProgramDerivedAddress transferRecordPDA(final PublicKey program,
-                                                        final PublicKey glamStateAccount,
-                                                        final byte[] argsTransferId) {
-    return PublicKey.findProgramAddress(List.of(
-      "bridge-transfer-record".getBytes(US_ASCII),
-      glamStateAccount.toByteArray(),
-      argsTransferId
     ), program);
   }
 

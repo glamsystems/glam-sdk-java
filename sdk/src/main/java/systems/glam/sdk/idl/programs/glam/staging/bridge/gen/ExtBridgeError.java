@@ -6,77 +6,57 @@ import software.sava.idl.clients.core.gen.ProgramError;
 public sealed interface ExtBridgeError extends ProgramError permits
     ExtBridgeError.UnsupportedProtocol,
     ExtBridgeError.PolicyNotFound,
-    ExtBridgeError.QuoteExpired,
-    ExtBridgeError.QuoteTtlExceeded,
     ExtBridgeError.AmountTooSmall,
     ExtBridgeError.AmountTooLarge,
-    ExtBridgeError.SlippageExceeded,
-    ExtBridgeError.ManagedRouteNotAllowed,
-    ExtBridgeError.InvalidManagedQuote,
     ExtBridgeError.InvalidProviderProgram,
-    ExtBridgeError.InvalidProviderConfig,
     ExtBridgeError.InvalidSourceTokenAccount,
-    ExtBridgeError.InvalidDestinationTokenAccount,
     ExtBridgeError.InvalidSourceBalance,
     ExtBridgeError.InvalidProviderReceipt,
-    ExtBridgeError.InvalidProviderInstructionSet,
     ExtBridgeError.InvalidTransferStatus,
     ExtBridgeError.TransferNotManaged,
     ExtBridgeError.MathOverflow,
     ExtBridgeError.InvalidTransferRecord,
-    ExtBridgeError.InvalidClaimRecord,
-    ExtBridgeError.MissingCommitInstruction,
-    ExtBridgeError.MissingClaimInstruction,
-    ExtBridgeError.ReceiptVerificationRequired,
-    ExtBridgeError.MissingQuoteAttestation,
-    ExtBridgeError.InvalidQuoteAttestation,
-    ExtBridgeError.QuoteSignerNotConfigured,
     ExtBridgeError.TooManyProviderInstructions,
-    ExtBridgeError.UnsupportedProviderTokenProgram,
     ExtBridgeError.DuplicateBridgeRoute,
+    ExtBridgeError.BridgeRouteNotFound,
     ExtBridgeError.AmbiguousBridgeRoute,
-    ExtBridgeError.CpiNotExecuted,
-    ExtBridgeError.InvalidExecutionMode,
-    ExtBridgeError.ProtocolRequiresCpiExecution,
-    ExtBridgeError.ProviderCleanupAccountNotEmpty {
+    ExtBridgeError.InvalidOftAuxiliaryTokenAccount,
+    ExtBridgeError.OftAuxiliaryTokenAccountAlreadyExists,
+    ExtBridgeError.MissingEndOftInstruction,
+    ExtBridgeError.InvalidOftInstructionSet,
+    ExtBridgeError.InvalidOftAuxiliaryBalance,
+    ExtBridgeError.InvalidRemainingAccounts,
+    ExtBridgeError.DuplicateTransferRecord,
+    ExtBridgeError.TooManyManagedTransfers,
+    ExtBridgeError.InvalidBridgeRegistry {
 
   static ExtBridgeError getInstance(final int errorCode) {
     return switch (errorCode) {
       case 6000 -> UnsupportedProtocol.INSTANCE;
       case 6001 -> PolicyNotFound.INSTANCE;
-      case 6002 -> QuoteExpired.INSTANCE;
-      case 6003 -> QuoteTtlExceeded.INSTANCE;
-      case 6004 -> AmountTooSmall.INSTANCE;
-      case 6005 -> AmountTooLarge.INSTANCE;
-      case 6006 -> SlippageExceeded.INSTANCE;
-      case 6007 -> ManagedRouteNotAllowed.INSTANCE;
-      case 6008 -> InvalidManagedQuote.INSTANCE;
-      case 6009 -> InvalidProviderProgram.INSTANCE;
-      case 6010 -> InvalidProviderConfig.INSTANCE;
-      case 6011 -> InvalidSourceTokenAccount.INSTANCE;
-      case 6012 -> InvalidDestinationTokenAccount.INSTANCE;
-      case 6013 -> InvalidSourceBalance.INSTANCE;
-      case 6014 -> InvalidProviderReceipt.INSTANCE;
-      case 6015 -> InvalidProviderInstructionSet.INSTANCE;
-      case 6016 -> InvalidTransferStatus.INSTANCE;
-      case 6017 -> TransferNotManaged.INSTANCE;
-      case 6018 -> MathOverflow.INSTANCE;
-      case 6019 -> InvalidTransferRecord.INSTANCE;
-      case 6020 -> InvalidClaimRecord.INSTANCE;
-      case 6021 -> MissingCommitInstruction.INSTANCE;
-      case 6022 -> MissingClaimInstruction.INSTANCE;
-      case 6023 -> ReceiptVerificationRequired.INSTANCE;
-      case 6024 -> MissingQuoteAttestation.INSTANCE;
-      case 6025 -> InvalidQuoteAttestation.INSTANCE;
-      case 6026 -> QuoteSignerNotConfigured.INSTANCE;
-      case 6027 -> TooManyProviderInstructions.INSTANCE;
-      case 6028 -> UnsupportedProviderTokenProgram.INSTANCE;
-      case 6029 -> DuplicateBridgeRoute.INSTANCE;
-      case 6030 -> AmbiguousBridgeRoute.INSTANCE;
-      case 6031 -> CpiNotExecuted.INSTANCE;
-      case 6032 -> InvalidExecutionMode.INSTANCE;
-      case 6033 -> ProtocolRequiresCpiExecution.INSTANCE;
-      case 6034 -> ProviderCleanupAccountNotEmpty.INSTANCE;
+      case 6002 -> AmountTooSmall.INSTANCE;
+      case 6003 -> AmountTooLarge.INSTANCE;
+      case 6004 -> InvalidProviderProgram.INSTANCE;
+      case 6005 -> InvalidSourceTokenAccount.INSTANCE;
+      case 6006 -> InvalidSourceBalance.INSTANCE;
+      case 6007 -> InvalidProviderReceipt.INSTANCE;
+      case 6008 -> InvalidTransferStatus.INSTANCE;
+      case 6009 -> TransferNotManaged.INSTANCE;
+      case 6010 -> MathOverflow.INSTANCE;
+      case 6011 -> InvalidTransferRecord.INSTANCE;
+      case 6012 -> TooManyProviderInstructions.INSTANCE;
+      case 6013 -> DuplicateBridgeRoute.INSTANCE;
+      case 6014 -> BridgeRouteNotFound.INSTANCE;
+      case 6015 -> AmbiguousBridgeRoute.INSTANCE;
+      case 6016 -> InvalidOftAuxiliaryTokenAccount.INSTANCE;
+      case 6017 -> OftAuxiliaryTokenAccountAlreadyExists.INSTANCE;
+      case 6018 -> MissingEndOftInstruction.INSTANCE;
+      case 6019 -> InvalidOftInstructionSet.INSTANCE;
+      case 6020 -> InvalidOftAuxiliaryBalance.INSTANCE;
+      case 6021 -> InvalidRemainingAccounts.INSTANCE;
+      case 6022 -> DuplicateTransferRecord.INSTANCE;
+      case 6023 -> TooManyManagedTransfers.INSTANCE;
+      case 6024 -> InvalidBridgeRegistry.INSTANCE;
       default -> null;
     };
   }
@@ -95,234 +75,164 @@ public sealed interface ExtBridgeError extends ProgramError permits
     );
   }
 
-  record QuoteExpired(int code, String msg) implements ExtBridgeError {
-
-    public static final QuoteExpired INSTANCE = new QuoteExpired(
-        6002, "The bridge quote has expired"
-    );
-  }
-
-  record QuoteTtlExceeded(int code, String msg) implements ExtBridgeError {
-
-    public static final QuoteTtlExceeded INSTANCE = new QuoteTtlExceeded(
-        6003, "The bridge quote TTL exceeds the allowed policy window"
-    );
-  }
-
   record AmountTooSmall(int code, String msg) implements ExtBridgeError {
 
     public static final AmountTooSmall INSTANCE = new AmountTooSmall(
-        6004, "Bridge amount is below the policy minimum"
+        6002, "Bridge amount is below the policy minimum"
     );
   }
 
   record AmountTooLarge(int code, String msg) implements ExtBridgeError {
 
     public static final AmountTooLarge INSTANCE = new AmountTooLarge(
-        6005, "Bridge amount exceeds the policy maximum"
-    );
-  }
-
-  record SlippageExceeded(int code, String msg) implements ExtBridgeError {
-
-    public static final SlippageExceeded INSTANCE = new SlippageExceeded(
-        6006, "The quoted output exceeds the allowed slippage"
-    );
-  }
-
-  record ManagedRouteNotAllowed(int code, String msg) implements ExtBridgeError {
-
-    public static final ManagedRouteNotAllowed INSTANCE = new ManagedRouteNotAllowed(
-        6007, "Managed routing is not allowed for this destination"
-    );
-  }
-
-  record InvalidManagedQuote(int code, String msg) implements ExtBridgeError {
-
-    public static final InvalidManagedQuote INSTANCE = new InvalidManagedQuote(
-        6008, "The managed quote metadata is invalid"
+        6003, "Bridge amount exceeds the policy maximum"
     );
   }
 
   record InvalidProviderProgram(int code, String msg) implements ExtBridgeError {
 
     public static final InvalidProviderProgram INSTANCE = new InvalidProviderProgram(
-        6009, "The provider program does not match the approved policy"
-    );
-  }
-
-  record InvalidProviderConfig(int code, String msg) implements ExtBridgeError {
-
-    public static final InvalidProviderConfig INSTANCE = new InvalidProviderConfig(
-        6010, "The provider config does not match the approved policy"
+        6004, "The provider program does not match the approved policy"
     );
   }
 
   record InvalidSourceTokenAccount(int code, String msg) implements ExtBridgeError {
 
     public static final InvalidSourceTokenAccount INSTANCE = new InvalidSourceTokenAccount(
-        6011, "The source token account is invalid"
-    );
-  }
-
-  record InvalidDestinationTokenAccount(int code, String msg) implements ExtBridgeError {
-
-    public static final InvalidDestinationTokenAccount INSTANCE = new InvalidDestinationTokenAccount(
-        6012, "The destination token account is invalid"
+        6005, "The source token account is invalid"
     );
   }
 
   record InvalidSourceBalance(int code, String msg) implements ExtBridgeError {
 
     public static final InvalidSourceBalance INSTANCE = new InvalidSourceBalance(
-        6013, "The source token balance did not change as expected"
+        6006, "The source token balance did not change as expected"
     );
   }
 
   record InvalidProviderReceipt(int code, String msg) implements ExtBridgeError {
 
     public static final InvalidProviderReceipt INSTANCE = new InvalidProviderReceipt(
-        6014, "The bridge receipt metadata is invalid"
-    );
-  }
-
-  record InvalidProviderInstructionSet(int code, String msg) implements ExtBridgeError {
-
-    public static final InvalidProviderInstructionSet INSTANCE = new InvalidProviderInstructionSet(
-        6015, "The provider instruction set is invalid"
+        6007, "The bridge receipt metadata is invalid"
     );
   }
 
   record InvalidTransferStatus(int code, String msg) implements ExtBridgeError {
 
     public static final InvalidTransferStatus INSTANCE = new InvalidTransferStatus(
-        6016, "The bridge transfer status does not allow this action"
+        6008, "The bridge transfer status does not allow this action"
     );
   }
 
   record TransferNotManaged(int code, String msg) implements ExtBridgeError {
 
     public static final TransferNotManaged INSTANCE = new TransferNotManaged(
-        6017, "Only managed transfers can use this instruction"
+        6009, "Only managed transfers can use this instruction"
     );
   }
 
   record MathOverflow(int code, String msg) implements ExtBridgeError {
 
     public static final MathOverflow INSTANCE = new MathOverflow(
-        6018, "Arithmetic overflow"
+        6010, "Arithmetic overflow"
     );
   }
 
   record InvalidTransferRecord(int code, String msg) implements ExtBridgeError {
 
     public static final InvalidTransferRecord INSTANCE = new InvalidTransferRecord(
-        6019, "The transfer record does not belong to this vault"
-    );
-  }
-
-  record InvalidClaimRecord(int code, String msg) implements ExtBridgeError {
-
-    public static final InvalidClaimRecord INSTANCE = new InvalidClaimRecord(
-        6020, "InvalidClaimRecord: claim already exists for this vault"
-    );
-  }
-
-  record MissingCommitInstruction(int code, String msg) implements ExtBridgeError {
-
-    public static final MissingCommitInstruction INSTANCE = new MissingCommitInstruction(
-        6021, "Transaction must include a matching commit_bridge_session instruction"
-    );
-  }
-
-  record MissingClaimInstruction(int code, String msg) implements ExtBridgeError {
-
-    public static final MissingClaimInstruction INSTANCE = new MissingClaimInstruction(
-        6022, "Transaction must include matching bridge claim instructions"
-    );
-  }
-
-  record ReceiptVerificationRequired(int code, String msg) implements ExtBridgeError {
-
-    public static final ReceiptVerificationRequired INSTANCE = new ReceiptVerificationRequired(
-        6023, "Bridge transfers require a verified provider receipt"
-    );
-  }
-
-  record MissingQuoteAttestation(int code, String msg) implements ExtBridgeError {
-
-    public static final MissingQuoteAttestation INSTANCE = new MissingQuoteAttestation(
-        6024, "Bridge slippage protection requires an onchain quote attestation"
-    );
-  }
-
-  record InvalidQuoteAttestation(int code, String msg) implements ExtBridgeError {
-
-    public static final InvalidQuoteAttestation INSTANCE = new InvalidQuoteAttestation(
-        6025, "The bridge quote attestation did not match the prepared route"
-    );
-  }
-
-  record QuoteSignerNotConfigured(int code, String msg) implements ExtBridgeError {
-
-    public static final QuoteSignerNotConfigured INSTANCE = new QuoteSignerNotConfigured(
-        6026, "Bridge policy sets max_slippage_bps but no quote signer is configured"
+        6011, "The transfer record does not belong to this vault"
     );
   }
 
   record TooManyProviderInstructions(int code, String msg) implements ExtBridgeError {
 
     public static final TooManyProviderInstructions INSTANCE = new TooManyProviderInstructions(
-        6027, "Too many provider instructions were supplied"
-    );
-  }
-
-  record UnsupportedProviderTokenProgram(int code, String msg) implements ExtBridgeError {
-
-    public static final UnsupportedProviderTokenProgram INSTANCE = new UnsupportedProviderTokenProgram(
-        6028, "This provider currently requires a legacy SPL Token mint (Tokenkeg) and does not support Token-2022 source mints"
+        6012, "Too many provider instructions were supplied"
     );
   }
 
   record DuplicateBridgeRoute(int code, String msg) implements ExtBridgeError {
 
     public static final DuplicateBridgeRoute INSTANCE = new DuplicateBridgeRoute(
-        6029, "Bridge policy contains overlapping duplicate routes"
+        6013, "Bridge policy contains overlapping duplicate routes"
+    );
+  }
+
+  record BridgeRouteNotFound(int code, String msg) implements ExtBridgeError {
+
+    public static final BridgeRouteNotFound INSTANCE = new BridgeRouteNotFound(
+        6014, "The bridge route was not found in the existing policy"
     );
   }
 
   record AmbiguousBridgeRoute(int code, String msg) implements ExtBridgeError {
 
     public static final AmbiguousBridgeRoute INSTANCE = new AmbiguousBridgeRoute(
-        6030, "Multiple bridge routes matched; disambiguate the provider identity"
+        6015, "Multiple bridge routes matched; disambiguate the provider identity"
     );
   }
 
-  record CpiNotExecuted(int code, String msg) implements ExtBridgeError {
+  record InvalidOftAuxiliaryTokenAccount(int code, String msg) implements ExtBridgeError {
 
-    public static final CpiNotExecuted INSTANCE = new CpiNotExecuted(
-        6031, "CPI execution was not completed for this session"
+    public static final InvalidOftAuxiliaryTokenAccount INSTANCE = new InvalidOftAuxiliaryTokenAccount(
+        6016, "The OFT auxiliary token account is invalid"
     );
   }
 
-  record InvalidExecutionMode(int code, String msg) implements ExtBridgeError {
+  record OftAuxiliaryTokenAccountAlreadyExists(int code, String msg) implements ExtBridgeError {
 
-    public static final InvalidExecutionMode INSTANCE = new InvalidExecutionMode(
-        6032, "Session execution mode does not match the instruction"
+    public static final OftAuxiliaryTokenAccountAlreadyExists INSTANCE = new OftAuxiliaryTokenAccountAlreadyExists(
+        6017, "The OFT auxiliary token account already exists"
     );
   }
 
-  record ProtocolRequiresCpiExecution(int code, String msg) implements ExtBridgeError {
+  record MissingEndOftInstruction(int code, String msg) implements ExtBridgeError {
 
-    public static final ProtocolRequiresCpiExecution INSTANCE = new ProtocolRequiresCpiExecution(
-        6033, "This bridge protocol is only supported through execute_bridge_cpi and cannot use the raw session flow"
+    public static final MissingEndOftInstruction INSTANCE = new MissingEndOftInstruction(
+        6018, "Transaction must include a matching commit_oft_transfer instruction"
     );
   }
 
-  record ProviderCleanupAccountNotEmpty(int code, String msg) implements ExtBridgeError {
+  record InvalidOftInstructionSet(int code, String msg) implements ExtBridgeError {
 
-    public static final ProviderCleanupAccountNotEmpty INSTANCE = new ProviderCleanupAccountNotEmpty(
-        6034, "Provider cleanup would close state while the provider temp token account still holds assets"
+    public static final InvalidOftInstructionSet INSTANCE = new InvalidOftInstructionSet(
+        6019, "The OFT middle instruction set is invalid"
+    );
+  }
+
+  record InvalidOftAuxiliaryBalance(int code, String msg) implements ExtBridgeError {
+
+    public static final InvalidOftAuxiliaryBalance INSTANCE = new InvalidOftAuxiliaryBalance(
+        6020, "The OFT auxiliary token balance did not change as expected"
+    );
+  }
+
+  record InvalidRemainingAccounts(int code, String msg) implements ExtBridgeError {
+
+    public static final InvalidRemainingAccounts INSTANCE = new InvalidRemainingAccounts(
+        6021, "The remaining accounts are invalid"
+    );
+  }
+
+  record DuplicateTransferRecord(int code, String msg) implements ExtBridgeError {
+
+    public static final DuplicateTransferRecord INSTANCE = new DuplicateTransferRecord(
+        6022, "Duplicate transfer record found"
+    );
+  }
+
+  record TooManyManagedTransfers(int code, String msg) implements ExtBridgeError {
+
+    public static final TooManyManagedTransfers INSTANCE = new TooManyManagedTransfers(
+        6023, "Too many managed transfers are inflight for this vault"
+    );
+  }
+
+  record InvalidBridgeRegistry(int code, String msg) implements ExtBridgeError {
+
+    public static final InvalidBridgeRegistry INSTANCE = new InvalidBridgeRegistry(
+        6024, "The bridge registry does not belong to this vault"
     );
   }
 }

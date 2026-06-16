@@ -22,10 +22,11 @@ public record BridgeSession(PublicKey _address,
                             Discriminator discriminator,
                             PublicKey glamState,
                             PublicKey signer,
-                            byte[] transferId,
+                            PublicKey transferId,
                             int protocol,
                             boolean managed,
                             PublicKey sourceMint,
+                            int sourceDecimals,
                             PublicKey sourceTokenAccount,
                             PublicKey providerProgram,
                             PublicKey providerConfig,
@@ -42,12 +43,9 @@ public record BridgeSession(PublicKey _address,
                             PublicKey destinationRecipient,
                             long quoteExpiresAt,
                             long preparedSlot,
-                            int executionMode,
-                            boolean cpiExecuted,
                             int bump) implements SerDe {
 
-  public static final int BYTES = 450;
-  public static final int TRANSFER_ID_LEN = 32;
+  public static final int BYTES = 449;
   public static final int PROVIDER_INSTRUCTION_HASH_LEN = 32;
   public static final Filter SIZE_FILTER = Filter.createDataSizeFilter(BYTES);
 
@@ -60,25 +58,24 @@ public record BridgeSession(PublicKey _address,
   public static final int PROTOCOL_OFFSET = 104;
   public static final int MANAGED_OFFSET = 106;
   public static final int SOURCE_MINT_OFFSET = 107;
-  public static final int SOURCE_TOKEN_ACCOUNT_OFFSET = 139;
-  public static final int PROVIDER_PROGRAM_OFFSET = 171;
-  public static final int PROVIDER_CONFIG_OFFSET = 203;
-  public static final int PROVIDER_SENDER_OFFSET = 235;
-  public static final int PROVIDER_DELEGATE_OFFSET = 267;
-  public static final int PROVIDER_RECEIPT_OFFSET = 299;
-  public static final int PROVIDER_INSTRUCTION_HASH_OFFSET = 331;
-  public static final int PROVIDER_INSTRUCTION_COUNT_OFFSET = 363;
-  public static final int SOURCE_AMOUNT_OFFSET = 365;
-  public static final int QUOTED_OUT_AMOUNT_OFFSET = 373;
-  public static final int INITIAL_SOURCE_BALANCE_OFFSET = 381;
-  public static final int INITIAL_PROVIDER_SEQUENCE_OFFSET = 389;
-  public static final int DESTINATION_CHAIN_OFFSET = 397;
-  public static final int DESTINATION_RECIPIENT_OFFSET = 399;
-  public static final int QUOTE_EXPIRES_AT_OFFSET = 431;
-  public static final int PREPARED_SLOT_OFFSET = 439;
-  public static final int EXECUTION_MODE_OFFSET = 447;
-  public static final int CPI_EXECUTED_OFFSET = 448;
-  public static final int BUMP_OFFSET = 449;
+  public static final int SOURCE_DECIMALS_OFFSET = 139;
+  public static final int SOURCE_TOKEN_ACCOUNT_OFFSET = 140;
+  public static final int PROVIDER_PROGRAM_OFFSET = 172;
+  public static final int PROVIDER_CONFIG_OFFSET = 204;
+  public static final int PROVIDER_SENDER_OFFSET = 236;
+  public static final int PROVIDER_DELEGATE_OFFSET = 268;
+  public static final int PROVIDER_RECEIPT_OFFSET = 300;
+  public static final int PROVIDER_INSTRUCTION_HASH_OFFSET = 332;
+  public static final int PROVIDER_INSTRUCTION_COUNT_OFFSET = 364;
+  public static final int SOURCE_AMOUNT_OFFSET = 366;
+  public static final int QUOTED_OUT_AMOUNT_OFFSET = 374;
+  public static final int INITIAL_SOURCE_BALANCE_OFFSET = 382;
+  public static final int INITIAL_PROVIDER_SEQUENCE_OFFSET = 390;
+  public static final int DESTINATION_CHAIN_OFFSET = 398;
+  public static final int DESTINATION_RECIPIENT_OFFSET = 400;
+  public static final int QUOTE_EXPIRES_AT_OFFSET = 432;
+  public static final int PREPARED_SLOT_OFFSET = 440;
+  public static final int BUMP_OFFSET = 448;
 
   public static Filter createGlamStateFilter(final PublicKey glamState) {
     return Filter.createMemCompFilter(GLAM_STATE_OFFSET, glamState);
@@ -86,6 +83,10 @@ public record BridgeSession(PublicKey _address,
 
   public static Filter createSignerFilter(final PublicKey signer) {
     return Filter.createMemCompFilter(SIGNER_OFFSET, signer);
+  }
+
+  public static Filter createTransferIdFilter(final PublicKey transferId) {
+    return Filter.createMemCompFilter(TRANSFER_ID_OFFSET, transferId);
   }
 
   public static Filter createProtocolFilter(final int protocol) {
@@ -100,6 +101,10 @@ public record BridgeSession(PublicKey _address,
 
   public static Filter createSourceMintFilter(final PublicKey sourceMint) {
     return Filter.createMemCompFilter(SOURCE_MINT_OFFSET, sourceMint);
+  }
+
+  public static Filter createSourceDecimalsFilter(final int sourceDecimals) {
+    return Filter.createMemCompFilter(SOURCE_DECIMALS_OFFSET, new byte[]{(byte) sourceDecimals});
   }
 
   public static Filter createSourceTokenAccountFilter(final PublicKey sourceTokenAccount) {
@@ -178,14 +183,6 @@ public record BridgeSession(PublicKey _address,
     return Filter.createMemCompFilter(PREPARED_SLOT_OFFSET, _data);
   }
 
-  public static Filter createExecutionModeFilter(final int executionMode) {
-    return Filter.createMemCompFilter(EXECUTION_MODE_OFFSET, new byte[]{(byte) executionMode});
-  }
-
-  public static Filter createCpiExecutedFilter(final boolean cpiExecuted) {
-    return Filter.createMemCompFilter(CPI_EXECUTED_OFFSET, new byte[]{(byte) (cpiExecuted ? 1 : 0)});
-  }
-
   public static Filter createBumpFilter(final int bump) {
     return Filter.createMemCompFilter(BUMP_OFFSET, new byte[]{(byte) bump});
   }
@@ -214,14 +211,16 @@ public record BridgeSession(PublicKey _address,
     i += 32;
     final var signer = readPubKey(_data, i);
     i += 32;
-    final var transferId = new byte[32];
-    i += SerDeUtil.readArray(transferId, _data, i);
+    final var transferId = readPubKey(_data, i);
+    i += 32;
     final var protocol = getInt16LE(_data, i);
     i += 2;
     final var managed = _data[i] == 1;
     ++i;
     final var sourceMint = readPubKey(_data, i);
     i += 32;
+    final var sourceDecimals = _data[i] & 0xFF;
+    ++i;
     final var sourceTokenAccount = readPubKey(_data, i);
     i += 32;
     final var providerProgram = readPubKey(_data, i);
@@ -254,10 +253,6 @@ public record BridgeSession(PublicKey _address,
     i += 8;
     final var preparedSlot = getInt64LE(_data, i);
     i += 8;
-    final var executionMode = _data[i] & 0xFF;
-    ++i;
-    final var cpiExecuted = _data[i] == 1;
-    ++i;
     final var bump = _data[i] & 0xFF;
     return new BridgeSession(_address,
                              discriminator,
@@ -267,6 +262,7 @@ public record BridgeSession(PublicKey _address,
                              protocol,
                              managed,
                              sourceMint,
+                             sourceDecimals,
                              sourceTokenAccount,
                              providerProgram,
                              providerConfig,
@@ -283,8 +279,6 @@ public record BridgeSession(PublicKey _address,
                              destinationRecipient,
                              quoteExpiresAt,
                              preparedSlot,
-                             executionMode,
-                             cpiExecuted,
                              bump);
   }
 
@@ -295,13 +289,16 @@ public record BridgeSession(PublicKey _address,
     i += 32;
     signer.write(_data, i);
     i += 32;
-    i += SerDeUtil.writeArrayChecked(transferId, 32, _data, i);
+    transferId.write(_data, i);
+    i += 32;
     putInt16LE(_data, i, protocol);
     i += 2;
     _data[i] = (byte) (managed ? 1 : 0);
     ++i;
     sourceMint.write(_data, i);
     i += 32;
+    _data[i] = (byte) sourceDecimals;
+    ++i;
     sourceTokenAccount.write(_data, i);
     i += 32;
     providerProgram.write(_data, i);
@@ -333,10 +330,6 @@ public record BridgeSession(PublicKey _address,
     i += 8;
     putInt64LE(_data, i, preparedSlot);
     i += 8;
-    _data[i] = (byte) executionMode;
-    ++i;
-    _data[i] = (byte) (cpiExecuted ? 1 : 0);
-    ++i;
     _data[i] = (byte) bump;
     ++i;
     return i - _offset;

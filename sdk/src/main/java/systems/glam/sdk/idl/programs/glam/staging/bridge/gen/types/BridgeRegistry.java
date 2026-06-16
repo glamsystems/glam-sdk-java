@@ -5,23 +5,25 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.core.programs.Discriminator;
 import software.sava.core.rpc.Filter;
 import software.sava.idl.clients.core.gen.SerDe;
+import software.sava.idl.clients.core.gen.SerDeUtil;
 import software.sava.rpc.json.http.response.AccountInfo;
 
 import java.util.function.BiFunction;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
-import static software.sava.core.encoding.ByteUtil.getInt64LE;
-import static software.sava.core.encoding.ByteUtil.putInt64LE;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
 public record BridgeRegistry(PublicKey _address,
                              Discriminator discriminator,
                              PublicKey glamState,
-                             long managedTransferCount,
-                             int bump) implements SerDe {
+                             int managedTransferCount,
+                             byte[] reserved,
+                             BridgeManagedTransfer[] transfers) implements SerDe {
 
-  public static final int BYTES = 49;
+  public static final int BYTES = 3760;
+  public static final int RESERVED_LEN = 7;
+  public static final int TRANSFERS_LEN = 16;
   public static final Filter SIZE_FILTER = Filter.createDataSizeFilter(BYTES);
 
   public static final Discriminator DISCRIMINATOR = toDiscriminator(178, 207, 65, 53, 51, 157, 148, 202);
@@ -29,20 +31,15 @@ public record BridgeRegistry(PublicKey _address,
 
   public static final int GLAM_STATE_OFFSET = 8;
   public static final int MANAGED_TRANSFER_COUNT_OFFSET = 40;
-  public static final int BUMP_OFFSET = 48;
+  public static final int RESERVED_OFFSET = 41;
+  public static final int TRANSFERS_OFFSET = 48;
 
   public static Filter createGlamStateFilter(final PublicKey glamState) {
     return Filter.createMemCompFilter(GLAM_STATE_OFFSET, glamState);
   }
 
-  public static Filter createManagedTransferCountFilter(final long managedTransferCount) {
-    final byte[] _data = new byte[8];
-    putInt64LE(_data, 0, managedTransferCount);
-    return Filter.createMemCompFilter(MANAGED_TRANSFER_COUNT_OFFSET, _data);
-  }
-
-  public static Filter createBumpFilter(final int bump) {
-    return Filter.createMemCompFilter(BUMP_OFFSET, new byte[]{(byte) bump});
+  public static Filter createManagedTransferCountFilter(final int managedTransferCount) {
+    return Filter.createMemCompFilter(MANAGED_TRANSFER_COUNT_OFFSET, new byte[]{(byte) managedTransferCount});
   }
 
   public static BridgeRegistry read(final byte[] _data, final int _offset) {
@@ -67,10 +64,18 @@ public record BridgeRegistry(PublicKey _address,
     int i = _offset + discriminator.length();
     final var glamState = readPubKey(_data, i);
     i += 32;
-    final var managedTransferCount = getInt64LE(_data, i);
-    i += 8;
-    final var bump = _data[i] & 0xFF;
-    return new BridgeRegistry(_address, discriminator, glamState, managedTransferCount, bump);
+    final var managedTransferCount = _data[i] & 0xFF;
+    ++i;
+    final var reserved = new byte[7];
+    i += SerDeUtil.readArray(reserved, _data, i);
+    final var transfers = new BridgeManagedTransfer[16];
+    SerDeUtil.readArray(transfers, BridgeManagedTransfer::read, _data, i);
+    return new BridgeRegistry(_address,
+                              discriminator,
+                              glamState,
+                              managedTransferCount,
+                              reserved,
+                              transfers);
   }
 
   @Override
@@ -78,10 +83,10 @@ public record BridgeRegistry(PublicKey _address,
     int i = _offset + discriminator.write(_data, _offset);
     glamState.write(_data, i);
     i += 32;
-    putInt64LE(_data, i, managedTransferCount);
-    i += 8;
-    _data[i] = (byte) bump;
+    _data[i] = (byte) managedTransferCount;
     ++i;
+    i += SerDeUtil.writeArrayChecked(reserved, 7, _data, i);
+    i += SerDeUtil.writeArrayChecked(transfers, 16, _data, i);
     return i - _offset;
   }
 

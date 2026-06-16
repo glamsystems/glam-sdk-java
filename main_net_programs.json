@@ -179,7 +179,30 @@
       "source": "sdk",
       "package": "glam.staging.bridge",
       "module": "sdk",
-      "program": "gstgR7qij5XjLxmk8UK5XS1JKUqXz8DHt5JWyowYNvW",
+      "program": "gstgxS9yTioViNKdsM4DC33k1TU9un2VCYDQK8fAeSA",
+      "typeRefs": [
+        {
+          "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
+      "name": "GLAM Staging CCTP",
+      "source": "sdk",
+      "module": "sdk",
+      "package": "glam.staging.cctp",
+      "program": "gstgcuRwiX2FpmtigowB1TnVi3fPkZC9TEmVnc5sdxW",
       "typeRefs": [
         {
           "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
@@ -319,11 +342,57 @@
       ]
     },
     {
+      "name": "GLAM Staging Marinade",
+      "source": "sdk",
+      "package": "glam.staging.marinade",
+      "module": "sdk",
+      "program": "gstgmvM2o7h7GcScvXymH1oFgWskukWWxRHC1UJJ9FJ",
+      "typeRefs": [
+        {
+          "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
       "name": "GLAM Staging Mint",
       "source": "sdk",
       "package": "glam.staging.mint",
       "module": "sdk",
       "program": "gstgm1M39mhgnvgyScGUDRwNn5kNVSd97hTtyow1Et5",
+      "typeRefs": [
+        {
+          "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
+      "name": "GLAM Staging Neutral Trade",
+      "source": "sdk",
+      "module": "sdk",
+      "package": "glam.staging.nt",
+      "program": "gstgNyHgtURH7iuMn19GQczzv6Wc9fhPV2WDySZVyKx",
       "typeRefs": [
         {
           "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
@@ -413,6 +482,29 @@
               "srcMismatch": "KEEP_REF"
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "GLAM Staging Stake Pool",
+      "source": "sdk",
+      "package": "glam.staging.stake_pool",
+      "module": "sdk",
+      "program": "gstgS4dNeT3BTEQa1aaTS2b8CsAUz1SmwQDGosHSPsw",
+      "typeRefs": [
+        {
+          "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
         }
       ]
     }
