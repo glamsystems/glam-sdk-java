@@ -1,5 +1,12 @@
 # Changelog
 
+## [25.14.0](https://github.com/glamsystems/glam-sdk-java/compare/25.13.0...25.14.0) (2026-06-17)
+
+
+### Miscellaneous Chores
+
+* release 25.14.0 ([ba64b1c](https://github.com/glamsystems/glam-sdk-java/commit/ba64b1cf38a6ed0cfb788bf92d2884e0e05bfffe))
+
 ## [25.13.0](https://github.com/glamsystems/glam-sdk-java/compare/25.12.9...25.13.0) (2026-06-16)
 
 
