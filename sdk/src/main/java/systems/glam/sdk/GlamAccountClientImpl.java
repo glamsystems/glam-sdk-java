@@ -51,8 +51,6 @@ class GlamAccountClientImpl implements GlamAccountClient {
       return Protocol.fromGlamProtocolBitFlag(protocolBitFlag, permissionMask);
     } else if (integrationProgram.equals(glamAccounts.splIntegrationProgram())) {
       return Protocol.fromSplProtocolBitFlag(protocolBitFlag, permissionMask);
-    } else if (integrationProgram.equals(glamAccounts.driftIntegrationProgram())) {
-      return Protocol.fromDriftProtocolBitFlag(protocolBitFlag, permissionMask);
     } else if (integrationProgram.equals(glamAccounts.kaminoIntegrationProgram())) {
       return Protocol.fromKaminoProtocolBitFlag(protocolBitFlag, permissionMask);
     } else {

@@ -15,7 +15,6 @@ public record GlamAccountsRecord(AccountMeta invokedProtocolProgram,
                                  PublicKey policyProgram,
                                  AccountMeta invokedBridgeIntegrationProgram,
                                  AccountMeta invokedCctpIntegrationProgram,
-                                 AccountMeta invokedDriftIntegrationProgram,
                                  AccountMeta invokedExternalPositionProgram,
                                  AccountMeta invokedJupiterIntegrationProgram,
                                  AccountMeta invokedKaminoIntegrationProgram,
@@ -62,16 +61,6 @@ public record GlamAccountsRecord(AccountMeta invokedProtocolProgram,
   @Override
   public AccountMeta readCctpIntegrationAuthority() {
     return integrationAuthorities.get(cctpIntegrationProgram());
-  }
-
-  @Override
-  public PublicKey driftIntegrationProgram() {
-    return invokedDriftIntegrationProgram.publicKey();
-  }
-
-  @Override
-  public AccountMeta readDriftIntegrationAuthority() {
-    return integrationAuthorities.get(driftIntegrationProgram());
   }
 
   @Override

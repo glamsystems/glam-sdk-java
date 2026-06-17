@@ -5,7 +5,6 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
 import systems.glam.sdk.idl.programs.glam.config.gen.GlamConfigPDAs;
-import systems.glam.sdk.idl.programs.glam.drift.gen.ExtDriftPDAs;
 import systems.glam.sdk.idl.programs.glam.kamino.gen.ExtKaminoPDAs;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintPDAs;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplPDAs;
@@ -34,7 +33,6 @@ public final class GlamAccountsBuilder {
   private PublicKey policyProgram;
   private PublicKey bridgeIntegrationProgram = PublicKey.NONE;
   private PublicKey cctpIntegrationProgram = PublicKey.NONE;
-  private PublicKey driftIntegrationProgram = PublicKey.NONE;
   private PublicKey externalPositionProgram = PublicKey.NONE;
   private PublicKey jupiterIntegrationProgram = PublicKey.NONE;
   private PublicKey kaminoIntegrationProgram = PublicKey.NONE;
@@ -78,7 +76,6 @@ public final class GlamAccountsBuilder {
         policyProgram,
         putIfNotNull(map, bridgeIntegrationProgram, ExtBridgePDAs::integrationAuthorityPDA),
         putIfNotNull(map, cctpIntegrationProgram, ExtCctpPDAs::integrationAuthorityPDA),
-        putIfNotNull(map, driftIntegrationProgram, ExtDriftPDAs::integrationAuthorityPDA),
         putIfNotNull(map, externalPositionProgram, ExtEpiPDAs::integrationAuthorityPDA),
         putIfNotNull(map, jupiterIntegrationProgram, ExtJupiterPDAs::integrationAuthorityPDA),
         putIfNotNull(map, kaminoIntegrationProgram, ExtKaminoPDAs::integrationAuthorityPDA),
@@ -150,7 +147,6 @@ public final class GlamAccountsBuilder {
   }
 
   public GlamAccountsBuilder driftIntegrationProgram(final PublicKey driftIntegrationProgram) {
-    this.driftIntegrationProgram = driftIntegrationProgram;
     return this;
   }
 

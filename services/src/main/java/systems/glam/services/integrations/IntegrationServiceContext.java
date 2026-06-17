@@ -2,7 +2,6 @@ package systems.glam.services.integrations;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
-import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.idl.clients.loopscale.LoopscaleAccounts;
@@ -12,8 +11,6 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamEnv;
 import systems.glam.services.ServiceContext;
-import systems.glam.services.integrations.drift.DriftMarketCache;
-import systems.glam.services.integrations.drift.DriftUserCache;
 import systems.glam.services.integrations.kamino.KaminoCache;
 import systems.glam.services.mints.*;
 import systems.glam.services.oracles.scope.FeedIndexes;
@@ -33,9 +30,6 @@ public interface IntegrationServiceContext {
                                                  final GlobalConfigCache globalConfigCache,
                                                  final IntegLookupTableCache integLookupTableCache,
                                                  final AccountFetcher accountFetcher,
-                                                 final DriftAccounts driftAccounts,
-                                                 final DriftMarketCache driftMarketCache,
-                                                 final DriftUserCache driftUserCache,
                                                  final KaminoAccounts kaminoAccounts,
                                                  final KaminoCache kaminoCache,
                                                  final LoopscaleAccounts loopscaleAccounts,
@@ -48,7 +42,6 @@ public interface IntegrationServiceContext {
         globalConfigCache,
         integLookupTableCache,
         accountFetcher,
-        driftAccounts, driftMarketCache, driftUserCache,
         kaminoAccounts, kaminoCache,
         loopscaleAccounts,
         orcaAccounts,
@@ -105,16 +98,6 @@ public interface IntegrationServiceContext {
   PublicKey phoenixEmberProgram();
 
   IntegLookupTableCache integTableCache();
-
-  DriftMarketCache driftMarketCache();
-
-  DriftUserCache driftUserCache();
-
-  DriftAccounts driftAccounts();
-
-  PublicKey driftProgram();
-
-  PublicKey driftVaultsProgram();
 
   KaminoCache kaminoCache();
 

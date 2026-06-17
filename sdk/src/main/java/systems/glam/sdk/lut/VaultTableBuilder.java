@@ -2,8 +2,6 @@ package systems.glam.sdk.lut;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.lookup.AddressLookupTable;
-import software.sava.idl.clients.drift.DriftAccounts;
-import software.sava.idl.clients.drift.vaults.gen.types.VaultDepositor;
 import software.sava.idl.clients.jupiter.JupiterAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.lend.gen.types.Obligation;
@@ -43,12 +41,6 @@ public interface VaultTableBuilder {
     addGlamVaultAccounts(accountsNeeded);
     addGlamVaultTokens(accountsNeeded);
     final var stateAccountClient = stateAccountClient();
-    if (stateAccountClient.driftEnabled()) {
-      addDriftAccounts(accountsNeeded);
-    }
-    if (stateAccountClient.driftVaultsEnabled()) {
-      addDriftVaultAccounts(accountsNeeded);
-    }
     if (stateAccountClient.jupiterSwapEnabled()) {
       addJupiterSwapAccounts(accountsNeeded);
     }
@@ -68,7 +60,6 @@ public interface VaultTableBuilder {
   }
 
   default void addAccountsSecondPhase(final List<AccountInfo<byte[]>> accountsNeeded) {
-    addDriftVaultAccountsSecondPhase(accountsNeeded);
     addKaminoAccountsSecondPhase(accountsNeeded);
     addKaminoVaultAccountsSecondPhase(accountsNeeded);
   }
@@ -76,7 +67,6 @@ public interface VaultTableBuilder {
   CompletableFuture<List<AddressLookupTable>> fetchGlamVaultTables(final SolanaRpcClient rpcClient);
 
   default void removeExternalProtocolTableAccounts() {
-    removeDriftTableAccounts();
     removeKaminoLendTableAccounts();
     removeKaminoVaultTableAccounts();
   }
@@ -86,14 +76,6 @@ public interface VaultTableBuilder {
   void addGlamVaultAccounts(final List<AccountInfo<byte[]>> accountsNeeded);
 
   void addGlamVaultTokens(final List<AccountInfo<byte[]>> accountsNeeded);
-
-  void removeDriftTableAccounts();
-
-  void addDriftAccounts(final List<AccountInfo<byte[]>> accountsNeeded);
-
-  void addDriftVaultAccounts(final List<AccountInfo<byte[]>> accountsNeeded);
-
-  void addDriftVaultAccountsSecondPhase(final List<AccountInfo<byte[]>> accountsNeeded);
 
   void addJupiterSwapAccounts(final List<AccountInfo<byte[]>> accountsNeeded);
 
@@ -112,7 +94,6 @@ public interface VaultTableBuilder {
 
   final class Builder {
 
-    private DriftAccounts driftAccounts = DriftAccounts.MAIN_NET;
     private JupiterAccounts jupiterAccounts = JupiterAccounts.MAIN_NET;
     private KaminoAccounts kaminoAccounts = KaminoAccounts.MAIN_NET;
     private MarinadeAccounts marinadeAccounts = MarinadeAccounts.MAIN_NET;
@@ -120,15 +101,6 @@ public interface VaultTableBuilder {
 
     public static Builder newBuilder() {
       return new Builder();
-    }
-
-    public Builder driftAccounts(final DriftAccounts driftAccounts) {
-      this.driftAccounts = Objects.requireNonNull(driftAccounts);
-      return this;
-    }
-
-    public DriftAccounts driftAccounts() {
-      return driftAccounts;
     }
 
     public Builder jupiterAccounts(final JupiterAccounts jupiterAccounts) {
@@ -181,19 +153,6 @@ public interface VaultTableBuilder {
         accountsNeeded.add(baseAssetMint);
       }
 
-      final Map<PublicKey, AddressLookupTable> driftLookupTables;
-      if (stateAccountClient.driftEnabled() || stateAccountClient.driftVaultsEnabled()) {
-        final var tableKeys = driftAccounts.marketLookupTables();
-        accountsNeeded.addAll(tableKeys);
-        driftLookupTables = HashMap.newHashMap(tableKeys.size());
-      } else {
-        driftLookupTables = Map.of();
-      }
-
-      final Map<PublicKey, VaultDepositor> driftVaultDepositors = stateAccountClient.driftVaultsEnabled()
-          ? HashMap.newHashMap(8)
-          : Map.of();
-
       final Map<PublicKey, AddressLookupTable> kaminoLendLookupTables;
       final Map<PublicKey, Obligation> glamVaultKaminoObligations;
       if (stateAccountClient.kaminoLendEnabled()) {
@@ -230,9 +189,6 @@ public interface VaultTableBuilder {
           accountsNeeded,
           secondPhaseAccountsNeeded,
           glamVaultTableAccounts,
-          driftAccounts,
-          driftLookupTables,
-          driftVaultDepositors,
           jupiterAccounts,
           kaminoAccounts,
           kaminoLendLookupTables,

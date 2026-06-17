@@ -1,8 +1,6 @@
 module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.config.gen.types;
   exports systems.glam.sdk.idl.programs.glam.config.gen;
-  exports systems.glam.sdk.idl.programs.glam.drift.gen.types;
-  exports systems.glam.sdk.idl.programs.glam.drift.gen;
   exports systems.glam.sdk.idl.programs.glam.jupiter;
   exports systems.glam.sdk.idl.programs.glam.kamino.gen.types;
   exports systems.glam.sdk.idl.programs.glam.kamino.gen;
@@ -49,12 +47,7 @@ module systems.glam.sdk {
   requires java.net.http;
   requires systems.comodal.json_iterator;
   requires transitive software.sava.core;
-  requires transitive software.sava.idl.clients.core;
-  requires transitive software.sava.idl.clients.drift;
-  requires transitive software.sava.idl.clients.jupiter;
-  requires transitive software.sava.idl.clients.kamino;
-  requires transitive software.sava.idl.clients.marinade;
-  requires transitive software.sava.idl.clients.meteora;
+  requires transitive software.sava.idl.clients.bundle;
   requires transitive software.sava.idl.clients.spl;
   requires transitive software.sava.rpc;
   requires transitive systems.glam.ix_proxy;

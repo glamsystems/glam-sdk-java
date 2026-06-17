@@ -1,7 +1,6 @@
 package systems.glam.services.integrations;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.idl.clients.drift.DriftAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.idl.clients.loopscale.LoopscaleAccounts;
@@ -10,8 +9,6 @@ import software.sava.idl.clients.phoenix.PhoenixAccounts;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.execution.BaseServiceContext;
-import systems.glam.services.integrations.drift.DriftMarketCache;
-import systems.glam.services.integrations.drift.DriftUserCache;
 import systems.glam.services.integrations.kamino.KaminoCache;
 import systems.glam.services.mints.*;
 import systems.glam.services.oracles.scope.FeedIndexes;
@@ -28,9 +25,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   private final GlobalConfigCache globalConfigCache;
   private final IntegLookupTableCache integLookupTableCache;
   private final AccountFetcher accountFetcher;
-  private final DriftAccounts driftAccounts;
-  private final DriftMarketCache driftMarketCache;
-  private final DriftUserCache driftUserCache;
   private final KaminoAccounts kaminoAccounts;
   private final KaminoCache kaminoCache;
   private final LoopscaleAccounts loopscaleAccounts;
@@ -43,9 +37,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
                                 final GlobalConfigCache globalConfigCache,
                                 final IntegLookupTableCache integLookupTableCache,
                                 final AccountFetcher accountFetcher,
-                                final DriftAccounts driftAccounts,
-                                final DriftMarketCache driftMarketCache,
-                                final DriftUserCache driftUserCache,
                                 final KaminoAccounts kaminoAccounts,
                                 final KaminoCache kaminoCache,
                                 final LoopscaleAccounts loopscaleAccounts,
@@ -57,9 +48,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
     this.globalConfigCache = globalConfigCache;
     this.integLookupTableCache = integLookupTableCache;
     this.accountFetcher = accountFetcher;
-    this.driftAccounts = driftAccounts;
-    this.driftMarketCache = driftMarketCache;
-    this.driftUserCache = driftUserCache;
     this.kaminoAccounts = kaminoAccounts;
     this.kaminoCache = kaminoCache;
     this.loopscaleAccounts = loopscaleAccounts;
@@ -115,31 +103,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   @Override
   public void queueUnique(final Collection<PublicKey> accounts, final AccountConsumer callback) {
     accountFetcher.queueUnique(accounts, callback);
-  }
-
-  @Override
-  public DriftMarketCache driftMarketCache() {
-    return driftMarketCache;
-  }
-
-  @Override
-  public DriftUserCache driftUserCache() {
-    return driftUserCache;
-  }
-
-  @Override
-  public DriftAccounts driftAccounts() {
-    return driftAccounts;
-  }
-
-  @Override
-  public PublicKey driftProgram() {
-    return driftAccounts.driftProgram();
-  }
-
-  @Override
-  public PublicKey driftVaultsProgram() {
-    return driftAccounts.driftVaultsProgram();
   }
 
   @Override

@@ -1,12 +1,14 @@
 package systems.glam.sdk;
 
-import systems.glam.sdk.idl.programs.glam.drift.gen.ExtDriftConstants;
 import systems.glam.sdk.idl.programs.glam.kamino.gen.ExtKaminoConstants;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintConstants;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolConstants;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplConstants;
+import systems.glam.sdk.idl.programs.glam.staging.cctp.gen.ExtCctpConstants;
+import systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.ExtEpiConstants;
 import systems.glam.sdk.idl.programs.glam.staging.jupiter.gen.ExtJupiterConstants;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.ExtLoopscaleConstants;
+import systems.glam.sdk.idl.programs.glam.staging.nt.gen.ExtNeutralConstants;
 import systems.glam.sdk.idl.programs.glam.staging.orca.gen.ExtOrcaConstants;
 import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.ExtPhoenixConstants;
 
@@ -17,8 +19,8 @@ import java.util.stream.Collectors;
 
 public enum Protocol {
 
-  DRIFT(ExtDriftConstants.class, ExtDriftConstants.PROTO_DRIFT_PROTOCOL),
-  DRIFT_VAULTS(ExtDriftConstants.class, ExtDriftConstants.PROTO_DRIFT_VAULTS),
+  CCTP(ExtCctpConstants.class, ExtCctpConstants.PROTO_CCTP),
+  EPI(ExtEpiConstants.class, ExtEpiConstants.PROTO_EPI),
   JUPITER_SWAP(GlamProtocolConstants.class, GlamProtocolConstants.PROTO_JUPITER_SWAP),
   JUPITER_BORROW(ExtJupiterConstants.class, ExtJupiterConstants.PROTO_JUPITER_BORROW),
   JUPITER_EARN(ExtJupiterConstants.class, ExtJupiterConstants.PROTO_JUPITER_EARN),
@@ -28,6 +30,7 @@ public enum Protocol {
   LOOPSCALE_BORROW(ExtLoopscaleConstants.class, ExtLoopscaleConstants.PROTO_LOOPSCALE_BORROW),
   LOOPSCALE_LENDING(ExtLoopscaleConstants.class, ExtLoopscaleConstants.PROTO_LOOPSCALE_LENDING),
   LOOPSCALE_VAULTS(ExtLoopscaleConstants.class, ExtLoopscaleConstants.PROTO_LOOPSCALE_VAULT),
+  NEUTRAL(ExtNeutralConstants.class, ExtNeutralConstants.PROTO_NEUTRAL),
   ORCA_WHIRLPOOLS(ExtOrcaConstants.class, ExtOrcaConstants.PROTO_ORCA_WHIRLPOOLS),
   PHOENIX(ExtPhoenixConstants.class, ExtPhoenixConstants.PROTO_PHOENIX),
   MINT(GlamMintConstants.class, GlamMintConstants.PROTO_MINT),
@@ -82,10 +85,6 @@ public enum Protocol {
 
   public static ProtocolPermissions fromSplProtocolBitFlag(final int protocolBitFlag, final long permissionMask) {
     return fromProtocolBitFlag(ExtSplConstants.class, protocolBitFlag, permissionMask);
-  }
-
-  public static ProtocolPermissions fromDriftProtocolBitFlag(final int protocolBitFlag, final long permissionMask) {
-    return fromProtocolBitFlag(ExtDriftConstants.class, protocolBitFlag, permissionMask);
   }
 
   public static ProtocolPermissions fromKaminoProtocolBitFlag(final int protocolBitFlag, final long permissionMask) {

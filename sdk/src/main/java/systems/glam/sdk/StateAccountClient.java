@@ -97,10 +97,6 @@ public interface StateAccountClient {
 
   boolean integrationEnabled(final PublicKey integrationProgram, final int bitFlag);
 
-  boolean driftEnabled();
-
-  boolean driftVaultsEnabled();
-
   boolean kaminoLendEnabled();
 
   boolean kaminoVaultsEnabled();

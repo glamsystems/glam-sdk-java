@@ -5,11 +5,6 @@ import software.sava.core.accounts.Signer;
 import software.sava.core.accounts.lookup.AddressLookupTable;
 import software.sava.core.accounts.token.TokenAccount;
 import software.sava.core.tx.Transaction;
-import software.sava.idl.clients.drift.DriftAccounts;
-import software.sava.idl.clients.drift.DriftPDAs;
-import software.sava.idl.clients.drift.gen.types.User;
-import software.sava.idl.clients.drift.vaults.gen.types.Vault;
-import software.sava.idl.clients.drift.vaults.gen.types.VaultDepositor;
 import software.sava.idl.clients.jupiter.JupiterAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.lend.gen.types.Obligation;
@@ -42,9 +37,6 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
                              Set<PublicKey> accountsNeeded,
                              Set<PublicKey> secondPhaseAccountsNeeded,
                              Set<PublicKey> glamVaultTableAccounts,
-                             DriftAccounts driftAccounts,
-                             Map<PublicKey, AddressLookupTable> driftLookupTables,
-                             Map<PublicKey, VaultDepositor> driftVaultDepositors,
                              JupiterAccounts jupiterAccounts,
                              KaminoAccounts kaminoAccounts,
                              Map<PublicKey, AddressLookupTable> kaminoLookupTables,
@@ -241,110 +233,6 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
     for (final var table : tables.values()) {
       this.glamVaultTableAccounts.removeIf(table::containKey);
     }
-  }
-
-  @Override
-  public void removeDriftTableAccounts() {
-    removeAccounts(driftLookupTables);
-  }
-
-  private List<AddressLookupTable> mapDriftTables(final List<AccountInfo<byte[]>> accountsNeeded,
-                                                  final DriftAccounts driftAccounts) {
-    final var tableKeys = driftAccounts.marketLookupTables();
-    return accountsNeeded.stream().<AddressLookupTable>mapMulti((accountInfo, downstream) -> {
-      if (accountInfo != null) {
-        if (tableKeys.contains(accountInfo.pubKey())) {
-          final var table = AddressLookupTable.read(accountInfo.pubKey(), accountInfo.data());
-          downstream.accept(table);
-        }
-      }
-    }).toList();
-  }
-
-  private void addDriftUsers(final List<AccountInfo<byte[]>> accountsNeeded, final DriftAccounts driftAccounts) {
-    final var driftProgram = driftAccounts.driftProgram();
-    for (final var accountInfo : accountsNeeded) {
-      if (accountInfo == null
-          || !accountInfo.owner().equals(driftProgram)
-          || accountInfo.data().length != User.BYTES
-          || !User.DISCRIMINATOR.equals(accountInfo.data(), 0)) {
-        continue;
-      }
-      final var user = User.read(accountInfo);
-      add(user._address());
-      for (final var spotPosition : user.spotPositions()) {
-        final int marketIndex = spotPosition.marketIndex();
-        final var spotMarketKey = DriftPDAs.deriveSpotMarketAccount(driftAccounts, marketIndex);
-        add(spotMarketKey.publicKey());
-        final var spotMarketVaultKey = DriftPDAs.deriveSpotMarketVaultAccount(driftAccounts, marketIndex);
-        add(spotMarketVaultKey.publicKey());
-      }
-      for (final var perpPosition : user.perpPositions()) {
-        final var perpMarket = DriftPDAs.derivePerpMarketAccount(driftAccounts, perpPosition.marketIndex());
-        add(perpMarket.publicKey());
-      }
-    }
-  }
-
-  @Override
-  public void addDriftAccounts(final List<AccountInfo<byte[]>> accountsNeeded) {
-    final var glamAccounts = stateAccountClient.accountClient().glamAccounts();
-    add(glamAccounts.readDriftIntegrationAuthority().publicKey());
-
-    final var driftTables = mapDriftTables(accountsNeeded, driftAccounts);
-    for (final var table : driftTables) {
-      this.driftLookupTables.put(table.address(), table);
-    }
-
-    add(driftAccounts.driftProgram());
-    add(driftAccounts.stateKey());
-
-    final var glamVaultKey = stateAccountClient.accountClient().owner();
-    final var userStats = DriftPDAs.deriveUserStatsAccount(this.driftAccounts, glamVaultKey);
-    add(userStats.publicKey());
-
-    addDriftUsers(accountsNeeded, this.driftAccounts);
-  }
-
-  @Override
-  public void addDriftVaultAccounts(final List<AccountInfo<byte[]>> accountsNeeded) {
-    final var glamAccounts = stateAccountClient.accountClient().glamAccounts();
-    add(glamAccounts.readDriftIntegrationAuthority().publicKey());
-    final var driftVaultsProgram = this.driftAccounts.driftVaultsProgram();
-    add(driftVaultsProgram);
-    for (final var accountInfo : accountsNeeded) {
-      if (accountInfo == null
-          || !accountInfo.owner().equals(driftVaultsProgram)
-          || accountInfo.data().length != VaultDepositor.BYTES
-          || !VaultDepositor.DISCRIMINATOR.equals(accountInfo.data(), 0)) {
-        continue;
-      }
-      final var depositor = VaultDepositor.read(accountInfo);
-      add(depositor._address());
-      final var driftVaultKey = depositor.vault();
-      add(driftVaultKey);
-      addSecondPhase(driftVaultKey);
-      final var user = DriftPDAs.deriveUserAccount(this.driftAccounts, driftVaultKey, 0);
-      addSecondPhase(user.publicKey());
-    }
-  }
-
-  @Override
-  public void addDriftVaultAccountsSecondPhase(final List<AccountInfo<byte[]>> accountsNeeded) {
-    final var driftVaultsProgram = this.driftAccounts.driftVaultsProgram();
-    for (final var accountInfo : accountsNeeded) {
-      if (accountInfo == null
-          || !accountInfo.owner().equals(driftVaultsProgram)
-          || accountInfo.data().length != Vault.BYTES
-          || !Vault.DISCRIMINATOR.equals(accountInfo.data(), 0)) {
-        continue;
-      }
-      final var driftVault = Vault.read(accountInfo);
-      add(driftVault.userStats());
-      add(driftVault.user());
-      add(driftVault.tokenAccount());
-    }
-    addDriftUsers(accountsNeeded, this.driftAccounts);
   }
 
   @Override

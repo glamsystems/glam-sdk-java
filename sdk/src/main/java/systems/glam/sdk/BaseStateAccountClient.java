@@ -5,8 +5,6 @@ import software.sava.core.accounts.PublicKey;
 
 import java.util.Map;
 
-import static systems.glam.sdk.idl.programs.glam.drift.gen.ExtDriftConstants.PROTO_DRIFT_PROTOCOL;
-import static systems.glam.sdk.idl.programs.glam.drift.gen.ExtDriftConstants.PROTO_DRIFT_VAULTS;
 import static systems.glam.sdk.idl.programs.glam.kamino.gen.ExtKaminoConstants.PROTO_KAMINO_LENDING;
 import static systems.glam.sdk.idl.programs.glam.kamino.gen.ExtKaminoConstants.PROTO_KAMINO_VAULTS;
 import static systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolConstants.PROTO_JUPITER_SWAP;
@@ -76,16 +74,6 @@ public abstract class BaseStateAccountClient implements StateAccountClient {
   @Override
   public final boolean integrationEnabled(final PublicKey integrationProgram, final int bitFlag) {
     return (protocolBitmask(integrationProgram) & bitFlag) == bitFlag;
-  }
-
-  @Override
-  public final boolean driftEnabled() {
-    return integrationEnabled(glamAccounts.driftIntegrationProgram(), PROTO_DRIFT_PROTOCOL);
-  }
-
-  @Override
-  public final boolean driftVaultsEnabled() {
-    return integrationEnabled(glamAccounts.driftIntegrationProgram(), PROTO_DRIFT_VAULTS);
   }
 
   @Override

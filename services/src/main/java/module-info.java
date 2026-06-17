@@ -8,14 +8,7 @@ module systems.glam.services {
   requires transitive software.sava.core;
   requires transitive software.sava.rpc;
 
-  requires transitive software.sava.idl.clients.core;
-  requires transitive software.sava.idl.clients.drift;
-  requires transitive software.sava.idl.clients.kamino;
-  requires transitive software.sava.idl.clients.loopscale;
-  requires transitive software.sava.idl.clients.marinade;
-  requires software.sava.idl.clients.oracles;
-  requires transitive software.sava.idl.clients.orca;
-  requires transitive software.sava.idl.clients.phoenix;
+  requires transitive software.sava.idl.clients.bundle;
   requires transitive software.sava.idl.clients.spl;
 
   requires transitive software.sava.kms_core;
@@ -34,13 +27,11 @@ module systems.glam.services {
   exports systems.glam.services.fulfillment.accounting;
   exports systems.glam.services.fulfillment.config;
   exports systems.glam.services.fulfillment;
-  exports systems.glam.services.integrations.drift;
   exports systems.glam.services.integrations.kamino;
   exports systems.glam.services.integrations;
   exports systems.glam.services.io;
   exports systems.glam.services.mints;
   exports systems.glam.services.oracles.scope;
-  exports systems.glam.services.pricing;
   exports systems.glam.services.rpc;
   exports systems.glam.services.state;
   exports systems.glam.services;

@@ -19,7 +19,6 @@ public interface GlamAccounts {
       .mintProgram("GM1NtvvnSXUptTrMCqbogAdZJydZSNv98DoU5AZVLmGh")
       .policyProgram("po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY")
       .cctpIntegrationProgram("G1NTcMDYgNLpDwgnrpSZvoSKQuR9NXG7S3DmtNQCDmrK")
-      .driftIntegrationProgram("G1NTdrBmBpW43msRQmsf7qXSw3MFBNaqJcAkGiRmRq2F")
       .kaminoIntegrationProgram("G1NTkDEUR3pkEqGCKZtmtmVzCUEdYa86pezHkwYbLyde")
       .splIntegrationProgram("G1NTsQ36mjPe89HtPYqxKsjY5HmYsDR6CbD2gd2U2pta")
       .create();
@@ -93,12 +92,6 @@ public interface GlamAccounts {
   AccountMeta readExternalPositionAuthority();
 
   PublicKey externalPositionProgram();
-
-  AccountMeta invokedDriftIntegrationProgram();
-
-  PublicKey driftIntegrationProgram();
-
-  AccountMeta readDriftIntegrationAuthority();
 
   AccountMeta invokedKaminoIntegrationProgram();
 
