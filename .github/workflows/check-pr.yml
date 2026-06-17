@@ -11,4 +11,5 @@ concurrency:
 jobs:
   check:
     uses: sava-software/sava-build/.github/workflows/check-pr.yml@main
-    secrets: inherit
+    secrets:
+      READ_SAVA_PACKAGES: ${{ secrets.READ_SAVA_PACKAGES }}

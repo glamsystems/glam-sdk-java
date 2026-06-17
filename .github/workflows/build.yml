@@ -12,4 +12,5 @@ concurrency:
 jobs:
   check:
     uses: sava-software/sava-build/.github/workflows/build.yml@main
-    secrets: inherit
+    secrets:
+      READ_SAVA_PACKAGES: ${{ secrets.READ_SAVA_PACKAGES }}

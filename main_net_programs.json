@@ -3,7 +3,7 @@
   "baseModuleName": "systems.glam",
   "commons": {
     "external": true,
-    "module": "software.sava.idl.clients.core",
+    "module": "software.sava.idl.clients.spl",
     "package": "software.sava.idl.clients.core.gen"
   },
   "genPackageName": "gen",
