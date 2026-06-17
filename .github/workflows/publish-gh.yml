@@ -1,0 +1,21 @@
+name: Publish Release GitHub Packages
+
+on:
+  push:
+    tags:
+      - '[0-9]*.[0-9]*.[0-9]*'
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    uses: sava-software/sava-build/.github/workflows/publish-gh.yml@main
+    secrets:
+      READ_SAVA_PACKAGES: ${{ secrets.READ_SAVA_PACKAGES }}
+      GPG_PUBLISH_SECRET: ${{ secrets.GPG_PUBLISH_SECRET }}
+      GPG_PUBLISH_PHRASE: ${{ secrets.GPG_PUBLISH_PHRASE }}
+    permissions:
+      contents: read
+      packages: write
