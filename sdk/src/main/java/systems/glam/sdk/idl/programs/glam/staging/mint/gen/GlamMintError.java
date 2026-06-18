@@ -23,7 +23,8 @@ public sealed interface GlamMintError extends ProgramError permits
     GlamMintError.AmountAboveMaximum,
     GlamMintError.InsufficientEscrowBalance,
     GlamMintError.TokenAclManagesFreezeThaw,
-    GlamMintError.InvalidMintState {
+    GlamMintError.InvalidMintState,
+    GlamMintError.SubscriptionPausedOverdue {
 
   static GlamMintError getInstance(final int errorCode) {
     return switch (errorCode) {
@@ -47,6 +48,7 @@ public sealed interface GlamMintError extends ProgramError permits
       case 6017 -> InsufficientEscrowBalance.INSTANCE;
       case 6018 -> TokenAclManagesFreezeThaw.INSTANCE;
       case 6019 -> InvalidMintState.INSTANCE;
+      case 6020 -> SubscriptionPausedOverdue.INSTANCE;
       default -> null;
     };
   }
@@ -188,6 +190,13 @@ public sealed interface GlamMintError extends ProgramError permits
 
     public static final InvalidMintState INSTANCE = new InvalidMintState(
         6019, "Invalid mint state"
+    );
+  }
+
+  record SubscriptionPausedOverdue(int code, String msg) implements GlamMintError {
+
+    public static final SubscriptionPausedOverdue INSTANCE = new SubscriptionPausedOverdue(
+        6020, "Subscription paused due to overdue requests"
     );
   }
 }

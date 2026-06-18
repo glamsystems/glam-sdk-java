@@ -14,15 +14,18 @@ public record MintPolicy(int lockupPeriod,
                          long maxCap,
                          long minSubscription,
                          long minRedemption,
-                         long reserved,
+                         int pauseOnOverdue,
+                         byte[] reserved,
                          PublicKey[] allowlist,
                          PublicKey[] blocklist) implements SerDe {
 
+  public static final int RESERVED_LEN = 7;
   public static final int LOCKUP_PERIOD_OFFSET = 0;
   public static final int MAX_CAP_OFFSET = 4;
   public static final int MIN_SUBSCRIPTION_OFFSET = 12;
   public static final int MIN_REDEMPTION_OFFSET = 20;
-  public static final int RESERVED_OFFSET = 28;
+  public static final int PAUSE_ON_OVERDUE_OFFSET = 28;
+  public static final int RESERVED_OFFSET = 29;
   public static final int ALLOWLIST_OFFSET = 37;
 
   public static MintPolicy read(final byte[] _data, final int _offset) {
@@ -38,8 +41,10 @@ public record MintPolicy(int lockupPeriod,
     i += 8;
     final var minRedemption = getInt64LE(_data, i);
     i += 8;
-    final var reserved = getInt64LE(_data, i);
-    i += 8;
+    final var pauseOnOverdue = _data[i] & 0xFF;
+    ++i;
+    final var reserved = new byte[7];
+    i += SerDeUtil.readArray(reserved, _data, i);
     final PublicKey[] allowlist;
     if (SerDeUtil.isAbsent(1, _data, i)) {
       allowlist = null;
@@ -60,6 +65,7 @@ public record MintPolicy(int lockupPeriod,
                           maxCap,
                           minSubscription,
                           minRedemption,
+                          pauseOnOverdue,
                           reserved,
                           allowlist,
                           blocklist);
@@ -76,8 +82,9 @@ public record MintPolicy(int lockupPeriod,
     i += 8;
     putInt64LE(_data, i, minRedemption);
     i += 8;
-    putInt64LE(_data, i, reserved);
-    i += 8;
+    _data[i] = (byte) pauseOnOverdue;
+    ++i;
+    i += SerDeUtil.writeArrayChecked(reserved, 7, _data, i);
     if (allowlist == null || allowlist.length == 0) {
       _data[i++] = 0;
     } else {
@@ -99,7 +106,8 @@ public record MintPolicy(int lockupPeriod,
          + 8
          + 8
          + 8
-         + 8
+         + 1
+         + SerDeUtil.lenArray(reserved)
          + (allowlist == null || allowlist.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, allowlist)))
          + (blocklist == null || blocklist.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, blocklist)));
   }

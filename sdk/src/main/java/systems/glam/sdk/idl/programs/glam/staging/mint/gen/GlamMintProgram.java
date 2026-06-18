@@ -2284,6 +2284,175 @@ public final class GlamMintProgram {
     }
   }
 
+  public static final Discriminator PRICE_MARGINFI_ACCOUNTS_DISCRIMINATOR = toDiscriminator(146, 215, 180, 231, 191, 188, 42, 235);
+
+  /// Prices Marginfi accounts registered as vault external positions.
+  /// 
+  /// Clients must refresh active banks and call Marginfi `lending_account_pulse_health`
+  /// in the same transaction before this ix.
+  /// 
+  /// Extra accounts for pricing N Marginfi accounts:
+  /// - marginfi_account x N
+  ///
+  public static List<AccountMeta> priceMarginfiAccountsKeys(final AccountMeta invokedGlamMintProgramMeta,
+                                                            final PublicKey glamStateKey,
+                                                            final PublicKey glamVaultKey,
+                                                            final PublicKey signerKey,
+                                                            final PublicKey solUsdOracleKey,
+                                                            final PublicKey baseAssetOracleKey,
+                                                            final PublicKey integrationAuthorityKey,
+                                                            final PublicKey glamConfigKey,
+                                                            final PublicKey glamProtocolKey,
+                                                            final PublicKey eventAuthorityKey,
+                                                            final PublicKey eventProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createWritableSigner(signerKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolKey),
+      createRead(requireNonNullElse(eventAuthorityKey, invokedGlamMintProgramMeta.publicKey())),
+      createRead(requireNonNullElse(eventProgramKey, invokedGlamMintProgramMeta.publicKey()))
+    );
+  }
+
+  /// Prices Marginfi accounts registered as vault external positions.
+  /// 
+  /// Clients must refresh active banks and call Marginfi `lending_account_pulse_health`
+  /// in the same transaction before this ix.
+  /// 
+  /// Extra accounts for pricing N Marginfi accounts:
+  /// - marginfi_account x N
+  ///
+  public static Instruction priceMarginfiAccounts(final AccountMeta invokedGlamMintProgramMeta,
+                                                  final PublicKey glamStateKey,
+                                                  final PublicKey glamVaultKey,
+                                                  final PublicKey signerKey,
+                                                  final PublicKey solUsdOracleKey,
+                                                  final PublicKey baseAssetOracleKey,
+                                                  final PublicKey integrationAuthorityKey,
+                                                  final PublicKey glamConfigKey,
+                                                  final PublicKey glamProtocolKey,
+                                                  final PublicKey eventAuthorityKey,
+                                                  final PublicKey eventProgramKey) {
+    final var keys = priceMarginfiAccountsKeys(
+      invokedGlamMintProgramMeta,
+      glamStateKey,
+      glamVaultKey,
+      signerKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolKey,
+      eventAuthorityKey,
+      eventProgramKey
+    );
+    return priceMarginfiAccounts(invokedGlamMintProgramMeta, keys);
+  }
+
+  /// Prices Marginfi accounts registered as vault external positions.
+  /// 
+  /// Clients must refresh active banks and call Marginfi `lending_account_pulse_health`
+  /// in the same transaction before this ix.
+  /// 
+  /// Extra accounts for pricing N Marginfi accounts:
+  /// - marginfi_account x N
+  ///
+  public static Instruction priceMarginfiAccounts(final AccountMeta invokedGlamMintProgramMeta,
+                                                  final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_MARGINFI_ACCOUNTS_DISCRIMINATOR);
+  }
+
+  public static final Discriminator PRICE_NEUTRAL_BUNDLE_DEPOSITORS_DISCRIMINATOR = toDiscriminator(202, 93, 205, 29, 37, 180, 127, 102);
+
+  /// Price neutral bundle depositors
+  /// 
+  /// Remaining accounts:
+  /// - 4 * N neutral bundle depositor account tuples:
+  /// 1. User bundle account
+  /// 2. Bundle account
+  /// 3. Bundle oracle data account
+  /// 4. Bundle asset oracle account
+  ///
+  public static List<AccountMeta> priceNeutralBundleDepositorsKeys(final AccountMeta invokedGlamMintProgramMeta,
+                                                                   final PublicKey glamStateKey,
+                                                                   final PublicKey glamVaultKey,
+                                                                   final PublicKey signerKey,
+                                                                   final PublicKey solUsdOracleKey,
+                                                                   final PublicKey baseAssetOracleKey,
+                                                                   final PublicKey integrationAuthorityKey,
+                                                                   final PublicKey glamConfigKey,
+                                                                   final PublicKey glamProtocolKey,
+                                                                   final PublicKey eventAuthorityKey,
+                                                                   final PublicKey eventProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createWritableSigner(signerKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolKey),
+      createRead(requireNonNullElse(eventAuthorityKey, invokedGlamMintProgramMeta.publicKey())),
+      createRead(requireNonNullElse(eventProgramKey, invokedGlamMintProgramMeta.publicKey()))
+    );
+  }
+
+  /// Price neutral bundle depositors
+  /// 
+  /// Remaining accounts:
+  /// - 4 * N neutral bundle depositor account tuples:
+  /// 1. User bundle account
+  /// 2. Bundle account
+  /// 3. Bundle oracle data account
+  /// 4. Bundle asset oracle account
+  ///
+  public static Instruction priceNeutralBundleDepositors(final AccountMeta invokedGlamMintProgramMeta,
+                                                         final PublicKey glamStateKey,
+                                                         final PublicKey glamVaultKey,
+                                                         final PublicKey signerKey,
+                                                         final PublicKey solUsdOracleKey,
+                                                         final PublicKey baseAssetOracleKey,
+                                                         final PublicKey integrationAuthorityKey,
+                                                         final PublicKey glamConfigKey,
+                                                         final PublicKey glamProtocolKey,
+                                                         final PublicKey eventAuthorityKey,
+                                                         final PublicKey eventProgramKey) {
+    final var keys = priceNeutralBundleDepositorsKeys(
+      invokedGlamMintProgramMeta,
+      glamStateKey,
+      glamVaultKey,
+      signerKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolKey,
+      eventAuthorityKey,
+      eventProgramKey
+    );
+    return priceNeutralBundleDepositors(invokedGlamMintProgramMeta, keys);
+  }
+
+  /// Price neutral bundle depositors
+  /// 
+  /// Remaining accounts:
+  /// - 4 * N neutral bundle depositor account tuples:
+  /// 1. User bundle account
+  /// 2. Bundle account
+  /// 3. Bundle oracle data account
+  /// 4. Bundle asset oracle account
+  ///
+  public static Instruction priceNeutralBundleDepositors(final AccountMeta invokedGlamMintProgramMeta,
+                                                         final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_NEUTRAL_BUNDLE_DEPOSITORS_DISCRIMINATOR);
+  }
+
   public static final Discriminator PRICE_ORCA_WHIRLPOOL_POSITIONS_DISCRIMINATOR = toDiscriminator(3, 81, 117, 34, 5, 238, 158, 232);
 
   /// Prices Orca Whirlpools positions registered as vault external positions.
