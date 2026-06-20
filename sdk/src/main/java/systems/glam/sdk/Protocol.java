@@ -8,6 +8,7 @@ import systems.glam.sdk.idl.programs.glam.staging.cctp.gen.ExtCctpConstants;
 import systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.ExtEpiConstants;
 import systems.glam.sdk.idl.programs.glam.staging.jupiter.gen.ExtJupiterConstants;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.ExtLoopscaleConstants;
+import systems.glam.sdk.idl.programs.glam.staging.marginfi.gen.ExtMarginfiConstants;
 import systems.glam.sdk.idl.programs.glam.staging.nt.gen.ExtNeutralConstants;
 import systems.glam.sdk.idl.programs.glam.staging.orca.gen.ExtOrcaConstants;
 import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.ExtPhoenixConstants;
@@ -30,6 +31,7 @@ public enum Protocol {
   LOOPSCALE_BORROW(ExtLoopscaleConstants.class, ExtLoopscaleConstants.PROTO_LOOPSCALE_BORROW),
   LOOPSCALE_LENDING(ExtLoopscaleConstants.class, ExtLoopscaleConstants.PROTO_LOOPSCALE_LENDING),
   LOOPSCALE_VAULTS(ExtLoopscaleConstants.class, ExtLoopscaleConstants.PROTO_LOOPSCALE_VAULT),
+  MARGINFI(ExtMarginfiConstants.class, ExtMarginfiConstants.PROTO_MARGINFI),
   NEUTRAL(ExtNeutralConstants.class, ExtNeutralConstants.PROTO_NEUTRAL),
   ORCA_WHIRLPOOLS(ExtOrcaConstants.class, ExtOrcaConstants.PROTO_ORCA_WHIRLPOOLS),
   PHOENIX(ExtPhoenixConstants.class, ExtPhoenixConstants.PROTO_PHOENIX),

@@ -342,6 +342,29 @@
       ]
     },
     {
+      "name": "GLAM Staging MarginFi",
+      "source": "sdk",
+      "package": "glam.staging.marginfi",
+      "module": "sdk",
+      "program": "gstgMghFitRBz2GXKwgpMd7L1JXd1sg59q2v5Y83vSY",
+      "typeRefs": [
+        {
+          "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
       "name": "GLAM Staging Marinade",
       "source": "sdk",
       "package": "glam.staging.marinade",

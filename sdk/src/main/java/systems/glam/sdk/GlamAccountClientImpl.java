@@ -426,7 +426,7 @@ class GlamAccountClientImpl implements GlamAccountClient {
   @Override
   public Instruction priceExternalPositions(final PublicKey solUSDOracleKey,
                                             final PublicKey baseAssetUsdOracleKey,
-                                            final boolean cpiEmitEvents) {
+                                            final PublicKey observationStateKey, final boolean cpiEmitEvents) {
     throw throwStagingOnly();
   }
 
@@ -464,6 +464,13 @@ class GlamAccountClientImpl implements GlamAccountClient {
   public Instruction priceStakeAccounts(final PublicKey solUSDOracleKey,
                                         final PublicKey baseAssetUsdOracleKey,
                                         final boolean cpiEmitEvents) {
+    throw throwStagingOnly();
+  }
+
+  @Override
+  public Instruction priceMarginfiAccounts(final PublicKey solUSDOracleKey,
+                                           final PublicKey baseAssetUsdOracleKey,
+                                           final boolean cpiEmitEvents) {
     throw throwStagingOnly();
   }
 

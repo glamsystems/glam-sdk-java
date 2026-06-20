@@ -34,6 +34,7 @@ public interface GlamAccounts {
       .jupiterIntegrationProgram("gstgJbGqoE3p1SdFA2dET9tcaCzNqGcdD8wpbGctnU9")
       .kaminoIntegrationProgram("gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq")
       .loopscaleIntegrationProgram("gstgL6y4uWjsfM3Qjs5euoTDmEcXoUjqx8rkYJhYngG")
+      .marginFiIntegrationProgram("gstgMghFitRBz2GXKwgpMd7L1JXd1sg59q2v5Y83vSY")
       .marinadeIntegrationProgram("gstgmvM2o7h7GcScvXymH1oFgWskukWWxRHC1UJJ9FJ")
       .neutralTradeIntegrationProgram("gstgNyHgtURH7iuMn19GQczzv6Wc9fhPV2WDySZVyKx")
       .phoenixIntegrationProgram("gstgPL7r9aYedDDsXNtLpr4atYtNvY7zubAWWstqS3L")
@@ -111,6 +112,12 @@ public interface GlamAccounts {
 
   AccountMeta readLoopscaleIntegrationAuthority();
 
+  AccountMeta invokedMarginFiIntegrationProgram();
+
+  PublicKey marginFiIntegrationProgram();
+
+  AccountMeta readMarginFiIntegrationAuthority();
+
   AccountMeta invokedMarinadeIntegrationProgram();
 
   PublicKey marinadeIntegrationProgram();
@@ -158,4 +165,8 @@ public interface GlamAccounts {
   PublicKey stakePoolIntegrationProgram();
 
   AccountMeta readStakePoolIntegrationAuthority();
+
+  static void main() {
+    System.out.println(MAIN_NET_STAGING.integrationAuthorities().size());
+  }
 }

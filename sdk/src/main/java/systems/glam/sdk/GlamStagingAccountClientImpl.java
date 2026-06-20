@@ -5,7 +5,6 @@ import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.spl.SPLClient;
 import software.sava.rpc.json.http.response.AccountInfo;
-import systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.ExtEpiPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.mint.gen.GlamMintPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.mint.gen.GlamMintProgram;
 import systems.glam.sdk.idl.programs.glam.staging.protocol.gen.types.IntegrationAcl;
@@ -294,13 +293,10 @@ final class GlamStagingAccountClientImpl extends GlamAccountClientImpl implement
   @Override
   public Instruction priceExternalPositions(final PublicKey solUSDOracleKey,
                                             final PublicKey baseAssetUsdOracleKey,
+                                            final PublicKey observationStateKey,
                                             final boolean cpiEmitEvents) {
     final var invoked = glamAccounts.invokedMintIntegrationProgram();
     final var mintProgram = invoked.publicKey();
-    final var observationPDA = ExtEpiPDAs.observationStatePDA(
-        mintProgram,
-        glamVaultAccounts.glamStateKey()
-    );
     return GlamMintProgram.priceExternalPositions(
         invoked,
         glamVaultAccounts.glamStateKey(),
@@ -313,7 +309,7 @@ final class GlamStagingAccountClientImpl extends GlamAccountClientImpl implement
         invokedProtocolProgram.publicKey(),
         cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
         mintProgram
-    ).extraAccount(AccountMeta.createRead(observationPDA.publicKey()));
+    ).extraAccount(AccountMeta.createRead(observationStateKey));
   }
 
   @Override
@@ -411,6 +407,27 @@ final class GlamStagingAccountClientImpl extends GlamAccountClientImpl implement
     final var invoked = glamAccounts.invokedMintIntegrationProgram();
     final var mintProgram = invoked.publicKey();
     return GlamMintProgram.priceStakeAccounts(
+        invoked,
+        glamVaultAccounts.glamStateKey(),
+        glamVaultAccounts.vaultPublicKey(),
+        feePayer.publicKey(),
+        solUSDOracleKey,
+        baseAssetUsdOracleKey,
+        glamAccounts.readMintIntegrationAuthority().publicKey(),
+        globalConfigKey,
+        invokedProtocolProgram.publicKey(),
+        cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
+        mintProgram
+    );
+  }
+
+  @Override
+  public Instruction priceMarginfiAccounts(final PublicKey solUSDOracleKey,
+                                           final PublicKey baseAssetUsdOracleKey,
+                                           final boolean cpiEmitEvents) {
+    final var invoked = glamAccounts.invokedMintIntegrationProgram();
+    final var mintProgram = invoked.publicKey();
+    return GlamMintProgram.priceMarginfiAccounts(
         invoked,
         glamVaultAccounts.glamStateKey(),
         glamVaultAccounts.vaultPublicKey(),

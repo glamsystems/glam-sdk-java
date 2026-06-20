@@ -24,6 +24,8 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.staging.kamino.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.loopscale.gen;
+  exports systems.glam.sdk.idl.programs.glam.staging.marginfi.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.staging.marginfi.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.marinade.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.marinade.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.mint.gen.events;

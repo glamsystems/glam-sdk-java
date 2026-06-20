@@ -19,6 +19,7 @@ public record GlamAccountsRecord(AccountMeta invokedProtocolProgram,
                                  AccountMeta invokedJupiterIntegrationProgram,
                                  AccountMeta invokedKaminoIntegrationProgram,
                                  AccountMeta invokedLoopscaleIntegrationProgram,
+                                 AccountMeta invokedMarginFiIntegrationProgram,
                                  AccountMeta invokedMarinadeIntegrationProgram,
                                  AccountMeta invokedMintIntegrationProgram,
                                  PublicKey mintEventAuthority,
@@ -111,6 +112,16 @@ public record GlamAccountsRecord(AccountMeta invokedProtocolProgram,
   @Override
   public AccountMeta readMintIntegrationAuthority() {
     return integrationAuthorities.get(mintIntegrationProgram());
+  }
+
+  @Override
+  public PublicKey marginFiIntegrationProgram() {
+    return invokedMarginFiIntegrationProgram.publicKey();
+  }
+
+  @Override
+  public AccountMeta readMarginFiIntegrationAuthority() {
+    return integrationAuthorities.get(marginFiIntegrationProgram());
   }
 
   @Override

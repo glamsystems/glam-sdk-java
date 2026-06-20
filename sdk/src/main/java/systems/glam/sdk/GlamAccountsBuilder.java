@@ -13,6 +13,7 @@ import systems.glam.sdk.idl.programs.glam.staging.cctp.gen.ExtCctpPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.ExtEpiPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.jupiter.gen.ExtJupiterPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.ExtLoopscalePDAs;
+import systems.glam.sdk.idl.programs.glam.staging.marginfi.gen.ExtMarginfiPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.marinade.gen.ExtMarinadePDAs;
 import systems.glam.sdk.idl.programs.glam.staging.nt.gen.ExtNeutralPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.orca.gen.ExtOrcaPDAs;
@@ -37,6 +38,7 @@ public final class GlamAccountsBuilder {
   private PublicKey jupiterIntegrationProgram = PublicKey.NONE;
   private PublicKey kaminoIntegrationProgram = PublicKey.NONE;
   private PublicKey loopscaleIntegrationProgram = PublicKey.NONE;
+  private PublicKey marginFiIntegrationProgram = PublicKey.NONE;
   private PublicKey marinadeIntegrationProgram = PublicKey.NONE;
   private PublicKey neutralTradeIntegrationProgram = PublicKey.NONE;
   private PublicKey orcaIntegrationProgram = PublicKey.NONE;
@@ -69,7 +71,7 @@ public final class GlamAccountsBuilder {
   }
 
   public GlamAccounts create() {
-    final var map = HashMap.<PublicKey, AccountMeta>newHashMap(14);
+    final var map = HashMap.<PublicKey, AccountMeta>newHashMap(15);
     return new GlamAccountsRecord(
         createInvoked(protocolProgram),
         configProgram, GlamConfigPDAs.globalConfigPDA(configProgram),
@@ -80,6 +82,7 @@ public final class GlamAccountsBuilder {
         putIfNotNull(map, jupiterIntegrationProgram, ExtJupiterPDAs::integrationAuthorityPDA),
         putIfNotNull(map, kaminoIntegrationProgram, ExtKaminoPDAs::integrationAuthorityPDA),
         putIfNotNull(map, loopscaleIntegrationProgram, ExtLoopscalePDAs::integrationAuthorityPDA),
+        putIfNotNull(map, marginFiIntegrationProgram, ExtMarginfiPDAs::integrationAuthorityPDA),
         putIfNotNull(map, marinadeIntegrationProgram, ExtMarinadePDAs::integrationAuthorityPDA),
         putIfNotNull(map, mintProgram, GlamMintPDAs::integrationAuthorityPDA),
         GlamMintPDAs.eventAuthorityPDA(mintProgram).publicKey(),
@@ -188,6 +191,15 @@ public final class GlamAccountsBuilder {
 
   public GlamAccountsBuilder loopscaleIntegrationProgram(final String loopscaleIntegrationProgram) {
     return loopscaleIntegrationProgram(createKey(loopscaleIntegrationProgram));
+  }
+
+  public GlamAccountsBuilder marginFiIntegrationProgram(final PublicKey marginFiIntegrationProgram) {
+    this.marginFiIntegrationProgram = marginFiIntegrationProgram;
+    return this;
+  }
+
+  public GlamAccountsBuilder marginFiIntegrationProgram(final String marginFiIntegrationProgram) {
+    return marginFiIntegrationProgram(createKey(marginFiIntegrationProgram));
   }
 
   public GlamAccountsBuilder marinadeIntegrationProgram(final PublicKey marinadeIntegrationProgram) {

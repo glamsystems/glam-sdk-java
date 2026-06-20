@@ -9,6 +9,7 @@ import software.sava.idl.clients.spl.SPLClient;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateModel;
+import systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.ExtEpiPDAs;
 
 import java.util.OptionalInt;
 
@@ -153,7 +154,17 @@ public interface GlamAccountClient extends SPLAccountClient {
 
   Instruction priceExternalPositions(final PublicKey solUSDOracleKey,
                                      final PublicKey baseAssetUsdOracleKey,
-                                     final boolean cpiEmitEvents);
+                                     final PublicKey observationStateKey, final boolean cpiEmitEvents);
+
+  default Instruction priceExternalPositions(final PublicKey solUSDOracleKey,
+                                             final PublicKey baseAssetUsdOracleKey,
+                                             final boolean cpiEmitEvents) {
+    final var observationPDA = ExtEpiPDAs.observationStatePDA(
+        glamAccounts().externalPositionProgram(),
+        vaultAccounts().glamStateKey()
+    );
+    return priceExternalPositions(null, null, observationPDA.publicKey(), cpiEmitEvents);
+  }
 
   default Instruction priceExternalPositions(final PublicKey solUSDOracleKey,
                                              final PublicKey baseAssetUsdOracleKey) {
@@ -207,6 +218,15 @@ public interface GlamAccountClient extends SPLAccountClient {
   default Instruction priceStakeAccounts(final PublicKey solUSDOracleKey,
                                          final PublicKey baseAssetUsdOracleKey) {
     return priceStakeAccounts(solUSDOracleKey, baseAssetUsdOracleKey, false);
+  }
+
+  Instruction priceMarginfiAccounts(final PublicKey solUSDOracleKey,
+                                    final PublicKey baseAssetUsdOracleKey,
+                                    final boolean cpiEmitEvents);
+
+  default Instruction priceMarginfiAccounts(final PublicKey solUSDOracleKey,
+                                            final PublicKey baseAssetUsdOracleKey) {
+    return priceMarginfiAccounts(solUSDOracleKey, baseAssetUsdOracleKey, false);
   }
 
   Instruction pricePhoenixTraders(final PublicKey solUSDOracleKey,
