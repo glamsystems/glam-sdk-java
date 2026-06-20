@@ -1,5 +1,13 @@
 # Changelog
 
+## [25.14.1](https://github.com/glamsystems/glam-sdk-java/compare/25.14.0...25.14.1) (2026-06-20)
+
+
+### Features
+
+* **sdk:** add generated ExtMarginfi program, constants, PDAs, and types ([23e55b4](https://github.com/glamsystems/glam-sdk-java/commit/23e55b43f567c94be0a896e0eecd675d3dd9b376))
+* **sdk:** update MintPolicy to support pauseOnOverdue flag and enhance reserved field handling ([7eff92d](https://github.com/glamsystems/glam-sdk-java/commit/7eff92dcb05ca5e1429e04557afb7f8a56c31ce5))
+
 ## [25.14.0](https://github.com/glamsystems/glam-sdk-java/compare/25.13.0...25.14.0) (2026-06-17)
 
 
