@@ -1,9 +1,12 @@
 package systems.glam.services.integrations;
 
 import software.sava.core.accounts.PublicKey;
+import software.sava.idl.clients.jupiter.JupiterAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.idl.clients.loopscale.LoopscaleAccounts;
+import software.sava.idl.clients.marginfi.v2.MarginfiAccounts;
+import software.sava.idl.clients.meteora.MeteoraAccounts;
 import software.sava.idl.clients.orca.OrcaAccounts;
 import software.sava.idl.clients.phoenix.PhoenixAccounts;
 import software.sava.rpc.json.http.response.AccountInfo;
@@ -30,6 +33,9 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   private final LoopscaleAccounts loopscaleAccounts;
   private final OrcaAccounts orcaAccounts;
   private final PhoenixAccounts phoenixAccounts;
+  private final MarginfiAccounts marginfiAccounts;
+  private final JupiterAccounts jupiterAccounts;
+  private final MeteoraAccounts meteoraAccounts;
 
   IntegrationServiceContextImpl(final ServiceContext serviceContext,
                                 final MintCache mintCache,
@@ -41,7 +47,10 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
                                 final KaminoCache kaminoCache,
                                 final LoopscaleAccounts loopscaleAccounts,
                                 final OrcaAccounts orcaAccounts,
-                                final PhoenixAccounts phoenixAccounts) {
+                                final PhoenixAccounts phoenixAccounts,
+                                final MarginfiAccounts marginfiAccounts,
+                                final JupiterAccounts jupiterAccounts,
+                                final MeteoraAccounts meteoraAccounts) {
     super(serviceContext);
     this.mintCache = mintCache;
     this.stakePoolCache = stakePoolCache;
@@ -53,6 +62,9 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
     this.loopscaleAccounts = loopscaleAccounts;
     this.orcaAccounts = orcaAccounts;
     this.phoenixAccounts = phoenixAccounts;
+    this.marginfiAccounts = marginfiAccounts;
+    this.jupiterAccounts = jupiterAccounts;
+    this.meteoraAccounts = meteoraAccounts;
   }
 
   @Override
@@ -166,7 +178,22 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   }
 
   @Override
+  public MarginfiAccounts marginfiAccounts() {
+    return marginfiAccounts;
+  }
+
+  @Override
+  public JupiterAccounts jupiterAccounts() {
+    return jupiterAccounts;
+  }
+
+  @Override
   public IntegLookupTableCache integTableCache() {
     return integLookupTableCache;
+  }
+
+  @Override
+  public MeteoraAccounts meteoraAccounts() {
+    return meteoraAccounts;
   }
 }

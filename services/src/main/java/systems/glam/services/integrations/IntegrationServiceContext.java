@@ -2,9 +2,12 @@ package systems.glam.services.integrations;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
+import software.sava.idl.clients.jupiter.JupiterAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.idl.clients.loopscale.LoopscaleAccounts;
+import software.sava.idl.clients.marginfi.v2.MarginfiAccounts;
+import software.sava.idl.clients.meteora.MeteoraAccounts;
 import software.sava.idl.clients.orca.OrcaAccounts;
 import software.sava.idl.clients.phoenix.PhoenixAccounts;
 import software.sava.rpc.json.http.response.AccountInfo;
@@ -34,7 +37,10 @@ public interface IntegrationServiceContext {
                                                  final KaminoCache kaminoCache,
                                                  final LoopscaleAccounts loopscaleAccounts,
                                                  final OrcaAccounts orcaAccounts,
-                                                 final PhoenixAccounts phoenixAccounts) {
+                                                 final PhoenixAccounts phoenixAccounts,
+                                                 final MarginfiAccounts marginfiAccounts,
+                                                 final JupiterAccounts jupiterAccounts,
+                                                 final MeteoraAccounts meteoraAccounts) {
     return new IntegrationServiceContextImpl(
         serviceContext,
         mintCache,
@@ -45,7 +51,10 @@ public interface IntegrationServiceContext {
         kaminoAccounts, kaminoCache,
         loopscaleAccounts,
         orcaAccounts,
-        phoenixAccounts
+        phoenixAccounts,
+        marginfiAccounts,
+        jupiterAccounts,
+        meteoraAccounts
     );
   }
 
@@ -97,6 +106,10 @@ public interface IntegrationServiceContext {
 
   PublicKey phoenixEmberProgram();
 
+  MarginfiAccounts marginfiAccounts();
+
+  JupiterAccounts jupiterAccounts();
+
   IntegLookupTableCache integTableCache();
 
   KaminoCache kaminoCache();
@@ -110,4 +123,6 @@ public interface IntegrationServiceContext {
   LoopscaleAccounts loopscaleAccounts();
 
   PublicKey loopscaleProgram();
+
+  MeteoraAccounts meteoraAccounts();
 }
