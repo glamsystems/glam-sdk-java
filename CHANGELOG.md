@@ -1,5 +1,12 @@
 # Changelog
 
+## [25.14.2](https://github.com/glamsystems/glam-sdk-java/compare/25.14.1...25.14.2) (2026-06-21)
+
+
+### Features
+
+* **services:** extend `IntegrationServiceContext` with Marginfi and Meteora integration ([def1381](https://github.com/glamsystems/glam-sdk-java/commit/def13815a20083c9a165250b0782ef80580b080b))
+
 ## [25.14.1](https://github.com/glamsystems/glam-sdk-java/compare/25.14.0...25.14.1) (2026-06-20)
 
 
