@@ -221,9 +221,9 @@
       ]
     },
     {
-      "name": "GLAM Staging External Positions",
+      "name": "GLAM Staging RPI",
       "source": "sdk",
-      "package": "glam.staging.external_positions",
+      "package": "glam.staging.rpi",
       "module": "sdk",
       "program": "gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX",
       "typeRefs": [

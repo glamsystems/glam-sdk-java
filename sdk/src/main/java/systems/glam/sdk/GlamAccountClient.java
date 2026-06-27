@@ -9,7 +9,7 @@ import software.sava.idl.clients.spl.SPLClient;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateModel;
-import systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.ExtEpiPDAs;
+import systems.glam.sdk.idl.programs.glam.staging.rpi.gen.ExtRpiPDAs;
 
 import java.util.OptionalInt;
 
@@ -159,7 +159,7 @@ public interface GlamAccountClient extends SPLAccountClient {
   default Instruction priceExternalPositions(final PublicKey solUSDOracleKey,
                                              final PublicKey baseAssetUsdOracleKey,
                                              final boolean cpiEmitEvents) {
-    final var observationPDA = ExtEpiPDAs.observationStatePDA(
+    final var observationPDA = ExtRpiPDAs.observationStatePDA(
         glamAccounts().externalPositionProgram(),
         vaultAccounts().glamStateKey()
     );

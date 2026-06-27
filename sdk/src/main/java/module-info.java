@@ -16,8 +16,6 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.staging.bridge.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.cctp.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.cctp.gen;
-  exports systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.types;
-  exports systems.glam.sdk.idl.programs.glam.staging.external_positions.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.jupiter.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.jupiter.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.kamino.gen.types;
@@ -39,6 +37,8 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.staging.phoenix.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.protocol.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.protocol.gen;
+  exports systems.glam.sdk.idl.programs.glam.staging.rpi.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.staging.rpi.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.spl.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.stake_pool.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.stake_pool.gen;

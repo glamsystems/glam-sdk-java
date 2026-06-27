@@ -5,7 +5,7 @@ import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintConstants;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolConstants;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplConstants;
 import systems.glam.sdk.idl.programs.glam.staging.cctp.gen.ExtCctpConstants;
-import systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.ExtEpiConstants;
+import systems.glam.sdk.idl.programs.glam.staging.rpi.gen.ExtRpiConstants;
 import systems.glam.sdk.idl.programs.glam.staging.jupiter.gen.ExtJupiterConstants;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.ExtLoopscaleConstants;
 import systems.glam.sdk.idl.programs.glam.staging.marginfi.gen.ExtMarginfiConstants;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public enum Protocol {
 
   CCTP(ExtCctpConstants.class, ExtCctpConstants.PROTO_CCTP),
-  EPI(ExtEpiConstants.class, ExtEpiConstants.PROTO_EPI),
+  RPI(ExtRpiConstants.class, ExtRpiConstants.PROTO_RPI),
   JUPITER_SWAP(GlamProtocolConstants.class, GlamProtocolConstants.PROTO_JUPITER_SWAP),
   JUPITER_BORROW(ExtJupiterConstants.class, ExtJupiterConstants.PROTO_JUPITER_BORROW),
   JUPITER_EARN(ExtJupiterConstants.class, ExtJupiterConstants.PROTO_JUPITER_EARN),
