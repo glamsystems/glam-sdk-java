@@ -5,7 +5,7 @@ import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintConstants;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolConstants;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplConstants;
 import systems.glam.sdk.idl.programs.glam.staging.cctp.gen.ExtCctpConstants;
-import systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.ExtRpiConstants;
+import systems.glam.sdk.idl.programs.glam.staging.registered_positions.gen.ExtRpiConstants;
 import systems.glam.sdk.idl.programs.glam.staging.jupiter.gen.ExtJupiterConstants;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.ExtLoopscaleConstants;
 import systems.glam.sdk.idl.programs.glam.staging.marginfi.gen.ExtMarginfiConstants;

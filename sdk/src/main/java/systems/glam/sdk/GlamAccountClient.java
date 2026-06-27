@@ -9,7 +9,7 @@ import software.sava.idl.clients.spl.SPLClient;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateModel;
-import systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.ExtRpiPDAs;
+import systems.glam.sdk.idl.programs.glam.staging.registered_positions.gen.ExtRpiPDAs;
 
 import java.util.OptionalInt;
 

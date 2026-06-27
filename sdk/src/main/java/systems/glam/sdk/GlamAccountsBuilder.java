@@ -10,7 +10,7 @@ import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintPDAs;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.ExtBridgePDAs;
 import systems.glam.sdk.idl.programs.glam.staging.cctp.gen.ExtCctpPDAs;
-import systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.ExtRpiPDAs;
+import systems.glam.sdk.idl.programs.glam.staging.registered_positions.gen.ExtRpiPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.jupiter.gen.ExtJupiterPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.ExtLoopscalePDAs;
 import systems.glam.sdk.idl.programs.glam.staging.marginfi.gen.ExtMarginfiPDAs;

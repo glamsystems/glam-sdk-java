@@ -221,9 +221,9 @@
       ]
     },
     {
-      "name": "GLAM Staging External Positions",
+      "name": "GLAM Staging Registered Positions",
       "source": "sdk",
-      "package": "glam.staging.external_positions",
+      "package": "glam.staging.registered_positions",
       "module": "sdk",
       "program": "gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX",
       "typeRefs": [
