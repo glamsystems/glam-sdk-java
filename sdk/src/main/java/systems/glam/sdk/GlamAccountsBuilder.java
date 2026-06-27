@@ -10,7 +10,7 @@ import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintPDAs;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.ExtBridgePDAs;
 import systems.glam.sdk.idl.programs.glam.staging.cctp.gen.ExtCctpPDAs;
-import systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.ExtEpiPDAs;
+import systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.ExtRpiPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.jupiter.gen.ExtJupiterPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.ExtLoopscalePDAs;
 import systems.glam.sdk.idl.programs.glam.staging.marginfi.gen.ExtMarginfiPDAs;
@@ -78,7 +78,7 @@ public final class GlamAccountsBuilder {
         policyProgram,
         putIfNotNull(map, bridgeIntegrationProgram, ExtBridgePDAs::integrationAuthorityPDA),
         putIfNotNull(map, cctpIntegrationProgram, ExtCctpPDAs::integrationAuthorityPDA),
-        putIfNotNull(map, externalPositionProgram, ExtEpiPDAs::integrationAuthorityPDA),
+        putIfNotNull(map, externalPositionProgram, ExtRpiPDAs::integrationAuthorityPDA),
         putIfNotNull(map, jupiterIntegrationProgram, ExtJupiterPDAs::integrationAuthorityPDA),
         putIfNotNull(map, kaminoIntegrationProgram, ExtKaminoPDAs::integrationAuthorityPDA),
         putIfNotNull(map, loopscaleIntegrationProgram, ExtLoopscalePDAs::integrationAuthorityPDA),

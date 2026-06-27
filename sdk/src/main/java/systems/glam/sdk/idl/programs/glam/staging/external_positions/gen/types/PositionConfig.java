@@ -13,10 +13,9 @@ import static software.sava.core.encoding.ByteUtil.putInt32LE;
 ///
 /// @param positionId Unique identifier for this position within the vault.
 ///                   
-///                   Under the cleaner pricing model, this 32-byte id is also the canonical
-///                   coverage key published into `glam_state.external_positions` and
-///                   `PricedProtocol.positions`. For bridge-managed inflight transfers, this
-///                   should be the transfer-record pubkey bytes.
+///                   GLAM AUM coverage for RPI is represented by the vault's ObservationState
+///                   PDA. This id remains the per-position key inside the RPI policy and
+///                   observation state.
 /// @param positionType Type of position (Valued or Tokenized).
 /// @param sourceType Source type (Trusted or Native).
 /// @param denomination Denomination rules for Trusted positions.
@@ -30,17 +29,17 @@ import static software.sava.core.encoding.ByteUtil.putInt32LE;
 /// @param configureAllowlist Per-position configure allowlist. Empty vec = use role-based access only.
 ///                           This is intentionally more permissive than the protocol-wide asset
 ///                           allowlist semantics where an empty allowlist means deny all.
-public record ExternalPositionConfig(byte[] positionId,
-                                     ExternalPositionType positionType,
-                                     ExternalSourceType sourceType,
-                                     DenominationSpec denomination,
-                                     PublicKey nativeCustodyAccount,
-                                     NativeCustodyKind nativeCustodyKind,
-                                     boolean enabled,
-                                     int freshnessOverrideSecs,
-                                     PublicKey[] submitAllowlist,
-                                     PublicKey[] validateAllowlist,
-                                     PublicKey[] configureAllowlist) implements SerDe {
+public record PositionConfig(byte[] positionId,
+                             RegisteredPositionType positionType,
+                             RegisteredSourceType sourceType,
+                             DenominationSpec denomination,
+                             PublicKey nativeCustodyAccount,
+                             NativeCustodyKind nativeCustodyKind,
+                             boolean enabled,
+                             int freshnessOverrideSecs,
+                             PublicKey[] submitAllowlist,
+                             PublicKey[] validateAllowlist,
+                             PublicKey[] configureAllowlist) implements SerDe {
 
   public static final int POSITION_ID_LEN = 32;
   public static final int POSITION_ID_OFFSET = 0;
@@ -53,16 +52,16 @@ public record ExternalPositionConfig(byte[] positionId,
   public static final int FRESHNESS_OVERRIDE_SECS_OFFSET = 101;
   public static final int SUBMIT_ALLOWLIST_OFFSET = 105;
 
-  public static ExternalPositionConfig read(final byte[] _data, final int _offset) {
+  public static PositionConfig read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
     int i = _offset;
     final var positionId = new byte[32];
     i += SerDeUtil.readArray(positionId, _data, i);
-    final var positionType = ExternalPositionType.read(_data, i);
+    final var positionType = RegisteredPositionType.read(_data, i);
     i += positionType.l();
-    final var sourceType = ExternalSourceType.read(_data, i);
+    final var sourceType = RegisteredSourceType.read(_data, i);
     i += sourceType.l();
     final var denomination = DenominationSpec.read(_data, i);
     i += denomination.l();
@@ -79,17 +78,17 @@ public record ExternalPositionConfig(byte[] positionId,
     final var validateAllowlist = SerDeUtil.readPublicKeyVector(4, _data, i);
     i += SerDeUtil.lenVector(4, validateAllowlist);
     final var configureAllowlist = SerDeUtil.readPublicKeyVector(4, _data, i);
-    return new ExternalPositionConfig(positionId,
-                                      positionType,
-                                      sourceType,
-                                      denomination,
-                                      nativeCustodyAccount,
-                                      nativeCustodyKind,
-                                      enabled,
-                                      freshnessOverrideSecs,
-                                      submitAllowlist,
-                                      validateAllowlist,
-                                      configureAllowlist);
+    return new PositionConfig(positionId,
+                              positionType,
+                              sourceType,
+                              denomination,
+                              nativeCustodyAccount,
+                              nativeCustodyKind,
+                              enabled,
+                              freshnessOverrideSecs,
+                              submitAllowlist,
+                              validateAllowlist,
+                              configureAllowlist);
   }
 
   @Override

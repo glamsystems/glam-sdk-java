@@ -8,7 +8,7 @@ import java.util.List;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
-public final class ExtEpiPDAs {
+public final class ExtRpiPDAs {
 
   public static ProgramDerivedAddress glamConfigPDA(final PublicKey program) {
     return PublicKey.findProgramAddress(List.of(
@@ -68,6 +68,6 @@ public final class ExtEpiPDAs {
     ), program);
   }
 
-  private ExtEpiPDAs() {
+  private ExtRpiPDAs() {
   }
 }

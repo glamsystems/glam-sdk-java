@@ -14,7 +14,7 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 /// Observation data submitted by a caller.
 ///
 /// @param positionId The position being observed, identified by position_id.
-///                   The same 32-byte id is used as the canonical AUM coverage key.
+///                   GLAM AUM coverage is tracked through the vault's ObservationState PDA.
 /// @param amount Signed amount in the position's denomination.
 ///               Positive = asset, negative = liability.
 /// @param denomination Denomination of the amount.

@@ -4,15 +4,14 @@ package systems.glam.sdk.idl.programs.glam.staging.external_positions.gen.types;
 import software.sava.idl.clients.core.gen.RustEnum;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 
-/// Source of observation data.
+/// Type of registered position.
 /// Never reorder existing variants — append only.
-public enum ExternalSourceType implements RustEnum {
+public enum RegisteredPositionType implements RustEnum {
 
-  Trusted,
-  Native,
-  Wormhole;
+  Valued,
+  Tokenized;
 
-  public static ExternalSourceType read(final byte[] _data, final int _offset) {
-    return SerDeUtil.read(1, ExternalSourceType.values(), _data, _offset);
+  public static RegisteredPositionType read(final byte[] _data, final int _offset) {
+    return SerDeUtil.read(1, RegisteredPositionType.values(), _data, _offset);
   }
 }

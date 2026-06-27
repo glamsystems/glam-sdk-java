@@ -14,12 +14,9 @@ import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
-/// Single PDA per vault that tracks all external position observations.
+/// Single PDA per vault that tracks all registered position observations.
 /// Seeds: SEED_OBSERVATION_STATE, glam_state.key()
 ///
-/// @param glamState The glam_state this observation state belongs to.
-/// @param bump PDA bump.
-/// @param positionsLen Number of active positions stored in `positions`.
 /// @param positions Per-position observation entries.
 public record ObservationState(PublicKey _address,
                                Discriminator discriminator,
