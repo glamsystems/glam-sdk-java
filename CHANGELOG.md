@@ -1,5 +1,12 @@
 # Changelog
 
+## [25.14.3](https://github.com/glamsystems/glam-sdk-java/compare/25.14.2...25.14.3) (2026-06-27)
+
+
+### Features
+
+* **sdk:** migrate Epi to Rpi ([224bb25](https://github.com/glamsystems/glam-sdk-java/commit/224bb253cdf4432063919a82ce26ee48152f6c2d))
+
 ## [25.14.2](https://github.com/glamsystems/glam-sdk-java/compare/25.14.1...25.14.2) (2026-06-21)
 
 
