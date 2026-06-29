@@ -11,6 +11,7 @@ import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 
+/// @param maxAgeSeconds: u16
 public record AssetMeta(PublicKey asset,
                         int decimals,
                         PublicKey oracle,
@@ -43,7 +44,7 @@ public record AssetMeta(PublicKey asset,
     i += 32;
     final var oracleSource = OracleSource.read(_data, i);
     i += oracleSource.l();
-    final var maxAgeSeconds = getInt16LE(_data, i);
+    final var maxAgeSeconds = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var priority = _data[i];
     ++i;

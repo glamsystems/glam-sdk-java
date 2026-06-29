@@ -19,8 +19,8 @@ import static software.sava.core.programs.Discriminator.toDiscriminator;
 /// @param admin The authority that can modify the config
 /// @param feeAuthority The authority that can modify fee structure of individual glam state and claim protocol fees
 /// @param referrer Default GLAM referrer
-/// @param baseFeeBps Default protocol base fee applied to all vaults
-/// @param flowFeeBps Default protocol flow fee applied to all vaults
+/// @param baseFeeBps: u16 Default protocol base fee applied to all vaults
+/// @param flowFeeBps: u16 Default protocol flow fee applied to all vaults
 /// @param assetMetas List of assets and their oracle configs supported by the protocol
 public record GlobalConfig(PublicKey _address,
                            Discriminator discriminator,
@@ -91,9 +91,9 @@ public record GlobalConfig(PublicKey _address,
     i += 32;
     final var referrer = readPubKey(_data, i);
     i += 32;
-    final var baseFeeBps = getInt16LE(_data, i);
+    final var baseFeeBps = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
-    final var flowFeeBps = getInt16LE(_data, i);
+    final var flowFeeBps = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var assetMetas = SerDeUtil.readVector(4, AssetMeta.class, AssetMeta::read, _data, i);
     return new GlobalConfig(_address,

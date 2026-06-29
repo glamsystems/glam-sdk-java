@@ -137,7 +137,19 @@ public record ReserveContext(long slot,
   }
 
   public short[] priceChainIndexes() {
-    return scopeConfiguration().priceChain();
+    final var priceChain = scopeConfiguration().priceChain();
+    final var indexes = new short[priceChain.length];
+    for (int i = 0; i < priceChain.length; ++i) {
+      final var index = priceChain[i];
+      if (index == 0xFFFF) {
+        indexes[i] = -1;
+      } else if (index > Short.MAX_VALUE) {
+        throw new IllegalStateException("Scope price chain index exceeds supported short range: " + index);
+      } else {
+        indexes[i] = (short) index;
+      }
+    }
+    return indexes;
   }
 
   public PublicKey priceFeed() {

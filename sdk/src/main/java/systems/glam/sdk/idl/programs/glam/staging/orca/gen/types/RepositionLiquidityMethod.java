@@ -22,6 +22,10 @@ public sealed interface RepositionLiquidityMethod extends RustEnum permits
     };
   }
 
+  /// @param existingRangeTokenMinA: u64
+  /// @param existingRangeTokenMinB: u64
+  /// @param newRangeTokenMaxA: u64
+  /// @param newRangeTokenMaxB: u64
   record ByLiquidity(BigInteger newLiquidityAmount,
                      long existingRangeTokenMinA,
                      long existingRangeTokenMinB,

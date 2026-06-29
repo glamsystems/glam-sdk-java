@@ -122,7 +122,7 @@ final class GlamStagingAccountClientImpl extends GlamAccountClientImpl implement
   public Instruction fulfill(final int mintId,
                              final PublicKey baseAssetMint,
                              final PublicKey baseAssetTokenProgram,
-                             final OptionalInt limit) {
+                             final OptionalLong limit) {
     final var mint = glamVaultAccounts.mintPDA(mintId).publicKey();
     final var escrow = glamAccounts.escrowPDA(mint).publicKey();
 

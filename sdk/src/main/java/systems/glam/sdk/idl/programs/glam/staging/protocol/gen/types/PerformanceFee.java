@@ -6,6 +6,8 @@ import software.sava.idl.clients.core.gen.SerDe;
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 
+/// @param feeBps: u16
+/// @param hurdleRateBps: u16
 public record PerformanceFee(int feeBps,
                              int hurdleRateBps,
                              HurdleType hurdleType) implements SerDe {
@@ -21,9 +23,9 @@ public record PerformanceFee(int feeBps,
       return null;
     }
     int i = _offset;
-    final var feeBps = getInt16LE(_data, i);
+    final var feeBps = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
-    final var hurdleRateBps = getInt16LE(_data, i);
+    final var hurdleRateBps = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var hurdleType = HurdleType.read(_data, i);
     return new PerformanceFee(feeBps, hurdleRateBps, hurdleType);

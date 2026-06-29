@@ -56,6 +56,7 @@ public final class ExtStakePoolProgram {
     );
   }
 
+  /// @param lamportsIn: u64
   public static Instruction depositSol(final AccountMeta invokedExtStakePoolProgramMeta,
                                        final SolanaAccounts solanaAccounts,
                                        final PublicKey glamStateKey,
@@ -92,6 +93,7 @@ public final class ExtStakePoolProgram {
     return depositSol(invokedExtStakePoolProgramMeta, keys, lamportsIn, minimumPoolTokensOut);
   }
 
+  /// @param lamportsIn: u64
   public static Instruction depositSol(final AccountMeta invokedExtStakePoolProgramMeta,
                                        final List<AccountMeta> keys,
                                        final long lamportsIn,
@@ -108,7 +110,8 @@ public final class ExtStakePoolProgram {
     return Instruction.createInstruction(invokedExtStakePoolProgramMeta, keys, _data);
   }
 
-  public record DepositSolIxData(Discriminator discriminator, long lamportsIn, OptionalLong minimumPoolTokensOut) implements SerDe {  
+  /// @param lamportsIn: u64
+  public record DepositSolIxData(Discriminator discriminator, long lamportsIn, OptionalLong minimumPoolTokensOut) implements SerDe {
 
     public static DepositSolIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -251,7 +254,7 @@ public final class ExtStakePoolProgram {
     return Instruction.createInstruction(invokedExtStakePoolProgramMeta, keys, _data);
   }
 
-  public record DepositStakeIxData(Discriminator discriminator, OptionalLong minimumPoolTokensOut) implements SerDe {  
+  public record DepositStakeIxData(Discriminator discriminator, OptionalLong minimumPoolTokensOut) implements SerDe {
 
     public static DepositStakeIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -325,6 +328,7 @@ public final class ExtStakePoolProgram {
     );
   }
 
+  /// @param poolTokensIn: u64
   public static Instruction withdrawSol(final AccountMeta invokedExtStakePoolProgramMeta,
                                         final SolanaAccounts solanaAccounts,
                                         final PublicKey glamStateKey,
@@ -361,6 +365,7 @@ public final class ExtStakePoolProgram {
     return withdrawSol(invokedExtStakePoolProgramMeta, keys, poolTokensIn, minimumLamportsOut);
   }
 
+  /// @param poolTokensIn: u64
   public static Instruction withdrawSol(final AccountMeta invokedExtStakePoolProgramMeta,
                                         final List<AccountMeta> keys,
                                         final long poolTokensIn,
@@ -377,7 +382,8 @@ public final class ExtStakePoolProgram {
     return Instruction.createInstruction(invokedExtStakePoolProgramMeta, keys, _data);
   }
 
-  public record WithdrawSolIxData(Discriminator discriminator, long poolTokensIn, OptionalLong minimumLamportsOut) implements SerDe {  
+  /// @param poolTokensIn: u64
+  public record WithdrawSolIxData(Discriminator discriminator, long poolTokensIn, OptionalLong minimumLamportsOut) implements SerDe {
 
     public static WithdrawSolIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -459,6 +465,7 @@ public final class ExtStakePoolProgram {
     );
   }
 
+  /// @param poolTokensIn: u64
   public static Instruction withdrawStake(final AccountMeta invokedExtStakePoolProgramMeta,
                                           final SolanaAccounts solanaAccounts,
                                           final PublicKey glamStateKey,
@@ -499,6 +506,7 @@ public final class ExtStakePoolProgram {
     return withdrawStake(invokedExtStakePoolProgramMeta, keys, poolTokensIn, minimumLamportsOut);
   }
 
+  /// @param poolTokensIn: u64
   public static Instruction withdrawStake(final AccountMeta invokedExtStakePoolProgramMeta,
                                           final List<AccountMeta> keys,
                                           final long poolTokensIn,
@@ -515,7 +523,8 @@ public final class ExtStakePoolProgram {
     return Instruction.createInstruction(invokedExtStakePoolProgramMeta, keys, _data);
   }
 
-  public record WithdrawStakeIxData(Discriminator discriminator, long poolTokensIn, OptionalLong minimumLamportsOut) implements SerDe {  
+  /// @param poolTokensIn: u64
+  public record WithdrawStakeIxData(Discriminator discriminator, long poolTokensIn, OptionalLong minimumLamportsOut) implements SerDe {
 
     public static WithdrawStakeIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());

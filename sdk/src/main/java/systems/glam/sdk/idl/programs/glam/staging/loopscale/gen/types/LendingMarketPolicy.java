@@ -14,14 +14,14 @@ import static software.sava.core.encoding.ByteUtil.putInt32LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
 /// @param market Loopscale market information account this policy applies to.
-/// @param maxDepositAmount Maximum principal amount that may be deposited in a single instruction.
+/// @param maxDepositAmount: u64 Maximum principal amount that may be deposited in a single instruction.
 ///                         A value of zero means no per-instruction deposit is allowed for this market.
-/// @param maxTotalDepositAmount Maximum principal exposure (token balance + deployed amount) a single
+/// @param maxTotalDepositAmount: u64 Maximum principal exposure (token balance + deployed amount) a single
 ///                              strategy may hold in this market. Enforced per strategy, not aggregated
 ///                              across all of the vault's strategies in this market. A value of zero means
 ///                              no lending exposure is allowed for this market.
-/// @param minLoanApyCbps Minimum accepted loan APY, in centibasis points, for strategy terms in this market.
-/// @param maxLtvBps Maximum accepted borrower loan-to-value, in basis points, for strategy terms in this market.
+/// @param minLoanApyCbps: u32 Minimum accepted loan APY, in centibasis points, for strategy terms in this market.
+/// @param maxLtvBps: u16 Maximum accepted borrower loan-to-value, in basis points, for strategy terms in this market.
 ///                  A value of zero means no borrower LTV is allowed for this market.
 /// @param durationIndexesAllowlist Duration indexes that may be offered by vault-owned strategies in this market.
 ///                                 An empty list denies all lending durations for this market. Index mapping:
@@ -35,7 +35,7 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 public record LendingMarketPolicy(PublicKey market,
                                   long maxDepositAmount,
                                   long maxTotalDepositAmount,
-                                  int minLoanApyCbps,
+                                  long minLoanApyCbps,
                                   int maxLtvBps,
                                   byte[] durationIndexesAllowlist,
                                   PublicKey[] collateralAssetAllowlist) implements SerDe {
@@ -58,9 +58,9 @@ public record LendingMarketPolicy(PublicKey market,
     i += 8;
     final var maxTotalDepositAmount = getInt64LE(_data, i);
     i += 8;
-    final var minLoanApyCbps = getInt32LE(_data, i);
+    final var minLoanApyCbps = Integer.toUnsignedLong(getInt32LE(_data, i));
     i += 4;
-    final var maxLtvBps = getInt16LE(_data, i);
+    final var maxLtvBps = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var durationIndexesAllowlist = SerDeUtil.readbyteVector(4, _data, i);
     i += SerDeUtil.lenVector(4, durationIndexesAllowlist);
@@ -83,7 +83,7 @@ public record LendingMarketPolicy(PublicKey market,
     i += 8;
     putInt64LE(_data, i, maxTotalDepositAmount);
     i += 8;
-    putInt32LE(_data, i, minLoanApyCbps);
+    putInt32LE(_data, i, (int) minLoanApyCbps);
     i += 4;
     putInt16LE(_data, i, maxLtvBps);
     i += 2;

@@ -12,6 +12,7 @@ import static software.sava.core.encoding.ByteUtil.putInt16LE;
 /// An integration program can have multiple protocols supported.
 /// Enabled protocols are stored in a bitmask, and each protocol can have its own policy.
 ///
+/// @param protocolsBitmask: u16
 public record IntegrationAcl(PublicKey integrationProgram,
                              int protocolsBitmask,
                              ProtocolPolicy[] protocolPolicies) implements SerDe {
@@ -27,7 +28,7 @@ public record IntegrationAcl(PublicKey integrationProgram,
     int i = _offset;
     final var integrationProgram = readPubKey(_data, i);
     i += 32;
-    final var protocolsBitmask = getInt16LE(_data, i);
+    final var protocolsBitmask = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var protocolPolicies = SerDeUtil.readVector(4, ProtocolPolicy.class, ProtocolPolicy::read, _data, i);
     return new IntegrationAcl(integrationProgram, protocolsBitmask, protocolPolicies);

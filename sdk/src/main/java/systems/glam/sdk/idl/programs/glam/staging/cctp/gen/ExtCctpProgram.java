@@ -128,7 +128,7 @@ public final class ExtCctpProgram {
     return Instruction.createInstruction(invokedExtCctpProgramMeta, keys, _data);
   }
 
-  public record DepositForBurnIxData(Discriminator discriminator, DepositForBurnParams args) implements SerDe {  
+  public record DepositForBurnIxData(Discriminator discriminator, DepositForBurnParams args) implements SerDe {
 
     public static DepositForBurnIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -196,7 +196,7 @@ public final class ExtCctpProgram {
     return Instruction.createInstruction(invokedExtCctpProgramMeta, keys, _data);
   }
 
-  public record SetCctpPolicyIxData(Discriminator discriminator, CctpPolicy policy) implements SerDe {  
+  public record SetCctpPolicyIxData(Discriminator discriminator, CctpPolicy policy) implements SerDe {
 
     public static SetCctpPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());

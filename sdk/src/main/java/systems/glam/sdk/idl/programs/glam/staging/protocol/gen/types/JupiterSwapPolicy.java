@@ -8,6 +8,7 @@ import software.sava.idl.clients.core.gen.SerDeUtil;
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 
+/// @param maxSlippageBps: u16
 public record JupiterSwapPolicy(int maxSlippageBps,
                                 PublicKey[] swapAllowlist,
                                 int maxDeviationBps) implements SerDe {
@@ -20,7 +21,7 @@ public record JupiterSwapPolicy(int maxSlippageBps,
       return null;
     }
     int i = _offset;
-    final var maxSlippageBps = getInt16LE(_data, i);
+    final var maxSlippageBps = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final PublicKey[] swapAllowlist;
     if (SerDeUtil.isAbsent(1, _data, i)) {

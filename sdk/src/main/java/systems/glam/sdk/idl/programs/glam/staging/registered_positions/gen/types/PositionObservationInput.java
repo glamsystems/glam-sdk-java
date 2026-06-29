@@ -19,7 +19,7 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 ///               Positive = asset, negative = liability.
 /// @param denomination Denomination of the amount.
 /// @param observationTimestamp Unix timestamp of the observation.
-/// @param externalShares External share count (required > 0 for Tokenized positions, 0 for Valued).
+/// @param externalShares: u64 External share count (required > 0 for Tokenized positions, 0 for Valued).
 /// @param reserved Reserved for future use.
 public record PositionObservationInput(byte[] positionId,
                                        BigInteger amount,

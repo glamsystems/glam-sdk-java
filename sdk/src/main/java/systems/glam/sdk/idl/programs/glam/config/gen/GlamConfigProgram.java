@@ -92,7 +92,7 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
-  public record DeleteAssetMetaIxData(Discriminator discriminator, PublicKey asset, PublicKey oracle) implements SerDe {  
+  public record DeleteAssetMetaIxData(Discriminator discriminator, PublicKey asset, PublicKey oracle) implements SerDe {
 
     public static DeleteAssetMetaIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -143,6 +143,8 @@ public final class GlamConfigProgram {
     );
   }
 
+  /// @param baseFeeBps: u16
+  /// @param flowFeeBps: u16
   public static Instruction initialize(final AccountMeta invokedGlamConfigProgramMeta,
                                        final SolanaAccounts solanaAccounts,
                                        final PublicKey globalConfigKey,
@@ -168,6 +170,8 @@ public final class GlamConfigProgram {
     );
   }
 
+  /// @param baseFeeBps: u16
+  /// @param flowFeeBps: u16
   public static Instruction initialize(final AccountMeta invokedGlamConfigProgramMeta,
                                        final List<AccountMeta> keys,
                                        final PublicKey admin,
@@ -190,12 +194,14 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
+  /// @param baseFeeBps: u16
+  /// @param flowFeeBps: u16
   public record InitializeIxData(Discriminator discriminator,
                                  PublicKey admin,
                                  PublicKey feeAuthority,
                                  PublicKey referrer,
                                  int baseFeeBps,
-                                 int flowFeeBps) implements SerDe {  
+                                 int flowFeeBps) implements SerDe {
 
     public static InitializeIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -221,9 +227,9 @@ public final class GlamConfigProgram {
       i += 32;
       final var referrer = readPubKey(_data, i);
       i += 32;
-      final var baseFeeBps = getInt16LE(_data, i);
+      final var baseFeeBps = Short.toUnsignedInt(getInt16LE(_data, i));
       i += 2;
-      final var flowFeeBps = getInt16LE(_data, i);
+      final var flowFeeBps = Short.toUnsignedInt(getInt16LE(_data, i));
       return new InitializeIxData(discriminator,
                                   admin,
                                   feeAuthority,
@@ -289,7 +295,7 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
-  public record UpdateAdminIxData(Discriminator discriminator, PublicKey newAdmin) implements SerDe {  
+  public record UpdateAdminIxData(Discriminator discriminator, PublicKey newAdmin) implements SerDe {
 
     public static UpdateAdminIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -333,6 +339,8 @@ public final class GlamConfigProgram {
     );
   }
 
+  /// @param baseFeeBps: u16
+  /// @param flowFeeBps: u16
   public static Instruction updateProtocolFees(final AccountMeta invokedGlamConfigProgramMeta,
                                                final PublicKey globalConfigKey,
                                                final PublicKey feeAuthorityKey,
@@ -345,6 +353,8 @@ public final class GlamConfigProgram {
     return updateProtocolFees(invokedGlamConfigProgramMeta, keys, baseFeeBps, flowFeeBps);
   }
 
+  /// @param baseFeeBps: u16
+  /// @param flowFeeBps: u16
   public static Instruction updateProtocolFees(final AccountMeta invokedGlamConfigProgramMeta,
                                                final List<AccountMeta> keys,
                                                final int baseFeeBps,
@@ -358,7 +368,9 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
-  public record UpdateProtocolFeesIxData(Discriminator discriminator, int baseFeeBps, int flowFeeBps) implements SerDe {  
+  /// @param baseFeeBps: u16
+  /// @param flowFeeBps: u16
+  public record UpdateProtocolFeesIxData(Discriminator discriminator, int baseFeeBps, int flowFeeBps) implements SerDe {
 
     public static UpdateProtocolFeesIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -375,9 +387,9 @@ public final class GlamConfigProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var baseFeeBps = getInt16LE(_data, i);
+      final var baseFeeBps = Short.toUnsignedInt(getInt16LE(_data, i));
       i += 2;
-      final var flowFeeBps = getInt16LE(_data, i);
+      final var flowFeeBps = Short.toUnsignedInt(getInt16LE(_data, i));
       return new UpdateProtocolFeesIxData(discriminator, baseFeeBps, flowFeeBps);
     }
 
@@ -428,7 +440,7 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
-  public record UpdateReferrerIxData(Discriminator discriminator, PublicKey referrer) implements SerDe {  
+  public record UpdateReferrerIxData(Discriminator discriminator, PublicKey referrer) implements SerDe {
 
     public static UpdateReferrerIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -497,7 +509,7 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
-  public record UpsertAssetMetaIxData(Discriminator discriminator, AssetMeta assetMeta) implements SerDe {  
+  public record UpsertAssetMetaIxData(Discriminator discriminator, AssetMeta assetMeta) implements SerDe {
 
     public static UpsertAssetMetaIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());

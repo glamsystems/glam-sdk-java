@@ -4,8 +4,9 @@ package systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types;
 import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 
+/// @param weightMatrix: u32[]
 public record UpdateWeightMatrixParams(int collateralIndex,
-                                       int[] weightMatrix,
+                                       long[] weightMatrix,
                                        ExpectedLoanValues expectedLoanValues,
                                        byte[] assetIndexGuidance) implements SerDe {
 
@@ -22,8 +23,8 @@ public record UpdateWeightMatrixParams(int collateralIndex,
     int i = _offset;
     final var collateralIndex = _data[i] & 0xFF;
     ++i;
-    final var weightMatrix = new int[5];
-    i += SerDeUtil.readArray(weightMatrix, _data, i);
+    final var weightMatrix = new long[5];
+    i += SerDeUtil.readUnsignedIntArray(weightMatrix, _data, i);
     final var expectedLoanValues = ExpectedLoanValues.read(_data, i);
     i += expectedLoanValues.l();
     final var assetIndexGuidance = SerDeUtil.readbyteVector(4, _data, i);
@@ -38,7 +39,7 @@ public record UpdateWeightMatrixParams(int collateralIndex,
     int i = _offset;
     _data[i] = (byte) collateralIndex;
     ++i;
-    i += SerDeUtil.writeArrayChecked(weightMatrix, 5, _data, i);
+    i += SerDeUtil.writeUnsignedIntArrayChecked(weightMatrix, 5, _data, i);
     i += expectedLoanValues.write(_data, i);
     i += SerDeUtil.writeVector(4, assetIndexGuidance, _data, i);
     return i - _offset;
@@ -46,6 +47,6 @@ public record UpdateWeightMatrixParams(int collateralIndex,
 
   @Override
   public int l() {
-    return 1 + SerDeUtil.lenArray(weightMatrix) + expectedLoanValues.l() + SerDeUtil.lenVector(4, assetIndexGuidance);
+    return 1 + SerDeUtil.lenUnsignedIntArray(weightMatrix) + expectedLoanValues.l() + SerDeUtil.lenVector(4, assetIndexGuidance);
   }
 }

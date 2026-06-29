@@ -9,11 +9,13 @@ import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt32LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
+/// @param perpDexIndex: u32
+/// @param usdcSpotToken: u64
 public record WormholeHyperliquidObservationConfigInput(byte[] positionId,
                                                         byte[] hyperliquidAccount,
                                                         byte[] accountMarginSummaryPrecompile,
                                                         byte[] spotBalancePrecompile,
-                                                        int perpDexIndex,
+                                                        long perpDexIndex,
                                                         long usdcSpotToken) implements SerDe {
 
   public static final int BYTES = 104;
@@ -42,7 +44,7 @@ public record WormholeHyperliquidObservationConfigInput(byte[] positionId,
     i += SerDeUtil.readArray(accountMarginSummaryPrecompile, _data, i);
     final var spotBalancePrecompile = new byte[20];
     i += SerDeUtil.readArray(spotBalancePrecompile, _data, i);
-    final var perpDexIndex = getInt32LE(_data, i);
+    final var perpDexIndex = Integer.toUnsignedLong(getInt32LE(_data, i));
     i += 4;
     final var usdcSpotToken = getInt64LE(_data, i);
     return new WormholeHyperliquidObservationConfigInput(positionId,
@@ -60,7 +62,7 @@ public record WormholeHyperliquidObservationConfigInput(byte[] positionId,
     i += SerDeUtil.writeArrayChecked(hyperliquidAccount, 20, _data, i);
     i += SerDeUtil.writeArrayChecked(accountMarginSummaryPrecompile, 20, _data, i);
     i += SerDeUtil.writeArrayChecked(spotBalancePrecompile, 20, _data, i);
-    putInt32LE(_data, i, perpDexIndex);
+    putInt32LE(_data, i, (int) perpDexIndex);
     i += 4;
     putInt64LE(_data, i, usdcSpotToken);
     i += 8;

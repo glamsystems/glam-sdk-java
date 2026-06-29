@@ -57,7 +57,7 @@ public final class ExtSplProgram {
     return Instruction.createInstruction(invokedExtSplProgramMeta, keys, _data);
   }
 
-  public record SetTokenTransferPolicyIxData(Discriminator discriminator, TransferPolicy policy) implements SerDe {  
+  public record SetTokenTransferPolicyIxData(Discriminator discriminator, TransferPolicy policy) implements SerDe {
 
     public static SetTokenTransferPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -163,6 +163,7 @@ public final class ExtSplProgram {
     );
   }
 
+  /// @param amount: u64
   public static Instruction tokenTransferChecked(final AccountMeta invokedExtSplProgramMeta,
                                                  final SolanaAccounts solanaAccounts,
                                                  final PublicKey glamStateKey,
@@ -191,6 +192,7 @@ public final class ExtSplProgram {
     return tokenTransferChecked(invokedExtSplProgramMeta, keys, amount, decimals);
   }
 
+  /// @param amount: u64
   public static Instruction tokenTransferChecked(final AccountMeta invokedExtSplProgramMeta,
                                                  final List<AccountMeta> keys,
                                                  final long amount,
@@ -204,7 +206,8 @@ public final class ExtSplProgram {
     return Instruction.createInstruction(invokedExtSplProgramMeta, keys, _data);
   }
 
-  public record TokenTransferCheckedIxData(Discriminator discriminator, long amount, int decimals) implements SerDe {  
+  /// @param amount: u64
+  public record TokenTransferCheckedIxData(Discriminator discriminator, long amount, int decimals) implements SerDe {
 
     public static TokenTransferCheckedIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());

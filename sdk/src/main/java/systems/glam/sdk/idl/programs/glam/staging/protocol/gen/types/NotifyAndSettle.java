@@ -7,6 +7,12 @@ import software.sava.idl.clients.core.gen.SerDeUtil;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
+/// @param subscribeNoticePeriod: u64
+/// @param subscribeSettlementPeriod: u64
+/// @param subscribeCancellationWindow: u64
+/// @param redeemNoticePeriod: u64
+/// @param redeemSettlementPeriod: u64
+/// @param redeemCancellationWindow: u64
 public record NotifyAndSettle(ValuationModel model,
                               boolean permissionlessFulfillment,
                               NoticePeriodType subscribeNoticePeriodType,

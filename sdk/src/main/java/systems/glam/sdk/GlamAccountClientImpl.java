@@ -17,7 +17,7 @@ import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateModel;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplProgram;
 
 import java.util.List;
-import java.util.OptionalInt;
+import java.util.OptionalLong;
 
 class GlamAccountClientImpl implements GlamAccountClient {
 
@@ -253,7 +253,7 @@ class GlamAccountClientImpl implements GlamAccountClient {
   public Instruction fulfill(final int mintId,
                              final PublicKey baseAssetMint,
                              final PublicKey baseAssetTokenProgram,
-                             final OptionalInt limit) {
+                             final OptionalLong limit) {
     final var mint = glamVaultAccounts.mintPDA(mintId).publicKey();
     final var escrow = glamAccounts.escrowPDA(mint).publicKey();
 

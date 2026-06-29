@@ -11,7 +11,7 @@ import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateModel;
 import systems.glam.sdk.idl.programs.glam.staging.registered_positions.gen.ExtRpiPDAs;
 
-import java.util.OptionalInt;
+import java.util.OptionalLong;
 
 public interface GlamAccountClient extends SPLAccountClient {
 
@@ -73,10 +73,10 @@ public interface GlamAccountClient extends SPLAccountClient {
   Instruction fulfill(final int mintId,
                       final PublicKey baseAssetMint,
                       final PublicKey baseAssetTokenProgram,
-                      final OptionalInt limit);
+                      final OptionalLong limit);
 
   default Instruction fulfill(final PublicKey baseAssetMint, final PublicKey baseAssetTokenProgram) {
-    return fulfill(0, baseAssetMint, baseAssetTokenProgram, OptionalInt.empty());
+    return fulfill(0, baseAssetMint, baseAssetTokenProgram, OptionalLong.empty());
   }
 
   Instruction priceVaultTokens(final PublicKey solUsdOracleKey,

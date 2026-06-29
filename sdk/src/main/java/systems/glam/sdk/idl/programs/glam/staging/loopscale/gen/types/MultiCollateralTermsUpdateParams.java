@@ -7,6 +7,7 @@ import software.sava.idl.clients.core.gen.SerDeUtil;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
+/// @param apy: u64
 public record MultiCollateralTermsUpdateParams(long apy, CollateralTermsIndices[] indices) implements SerDe {
 
   public static final int APY_OFFSET = 0;

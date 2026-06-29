@@ -7,7 +7,7 @@ import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import java.util.Arrays;
-import java.util.OptionalInt;
+import java.util.OptionalLong;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -23,7 +23,7 @@ public record StateModel(AccountType accountType,
                          PublicKey owner,
                          byte[] portfolioManagerName,
                          PublicKey[] borrowable,
-                         OptionalInt timelockDuration,
+                         OptionalLong timelockDuration,
                          IntegrationAcl[] integrationAcls,
                          DelegateAcl[] delegateAcls) implements SerDe {
 
@@ -38,7 +38,7 @@ public record StateModel(AccountType accountType,
                                         final PublicKey owner,
                                         final byte[] portfolioManagerName,
                                         final PublicKey[] borrowable,
-                                        final OptionalInt timelockDuration,
+                                        final OptionalLong timelockDuration,
                                         final IntegrationAcl[] integrationAcls,
                                         final DelegateAcl[] delegateAcls) {
     return new StateModel(accountType,
@@ -145,13 +145,13 @@ public record StateModel(AccountType accountType,
       borrowable = SerDeUtil.readPublicKeyVector(4, _data, i);
       i += SerDeUtil.lenVector(4, borrowable);
     }
-    final OptionalInt timelockDuration;
+    final OptionalLong timelockDuration;
     if (SerDeUtil.isAbsent(1, _data, i)) {
-      timelockDuration = OptionalInt.empty();
+      timelockDuration = OptionalLong.empty();
       ++i;
     } else {
       ++i;
-      timelockDuration = OptionalInt.of(getInt32LE(_data, i));
+      timelockDuration = OptionalLong.of(Integer.toUnsignedLong(getInt32LE(_data, i)));
       i += 4;
     }
     final IntegrationAcl[] integrationAcls;
@@ -216,7 +216,7 @@ public record StateModel(AccountType accountType,
       _data[i++] = 1;
       i += SerDeUtil.writeVector(4, borrowable, _data, i);
     }
-    i += SerDeUtil.writeOptional(1, timelockDuration, _data, i);
+    i += SerDeUtil.writeOptionalUnsignedInt(1, timelockDuration, _data, i);
     if (integrationAcls == null || integrationAcls.length == 0) {
       _data[i++] = 0;
     } else {

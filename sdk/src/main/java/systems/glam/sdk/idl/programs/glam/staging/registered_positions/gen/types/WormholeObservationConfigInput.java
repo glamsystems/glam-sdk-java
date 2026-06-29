@@ -9,12 +9,14 @@ import static software.sava.core.encoding.ByteUtil.getInt32LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt32LE;
 
+/// @param emitterChain: u16
+/// @param maxAgeSeconds: u32
 public record WormholeObservationConfigInput(byte[] positionId,
                                              int emitterChain,
                                              byte[] emitterAddress,
                                              int payloadVersion,
                                              int payloadType,
-                                             int maxAgeSeconds) implements SerDe {
+                                             long maxAgeSeconds) implements SerDe {
 
   public static final int BYTES = 72;
   public static final int POSITION_ID_LEN = 32;
@@ -34,7 +36,7 @@ public record WormholeObservationConfigInput(byte[] positionId,
     int i = _offset;
     final var positionId = new byte[32];
     i += SerDeUtil.readArray(positionId, _data, i);
-    final var emitterChain = getInt16LE(_data, i);
+    final var emitterChain = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var emitterAddress = new byte[32];
     i += SerDeUtil.readArray(emitterAddress, _data, i);
@@ -42,7 +44,7 @@ public record WormholeObservationConfigInput(byte[] positionId,
     ++i;
     final var payloadType = _data[i] & 0xFF;
     ++i;
-    final var maxAgeSeconds = getInt32LE(_data, i);
+    final var maxAgeSeconds = Integer.toUnsignedLong(getInt32LE(_data, i));
     return new WormholeObservationConfigInput(positionId,
                                               emitterChain,
                                               emitterAddress,
@@ -62,7 +64,7 @@ public record WormholeObservationConfigInput(byte[] positionId,
     ++i;
     _data[i] = (byte) payloadType;
     ++i;
-    putInt32LE(_data, i, maxAgeSeconds);
+    putInt32LE(_data, i, (int) maxAgeSeconds);
     i += 4;
     return i - _offset;
   }

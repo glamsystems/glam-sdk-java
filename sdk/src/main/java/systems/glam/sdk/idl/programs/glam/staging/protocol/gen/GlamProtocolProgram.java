@@ -176,7 +176,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record CpiProxyIxData(Discriminator discriminator, byte[] data, ExtraParams[] extraParams) implements SerDe {  
+  public record CpiProxyIxData(Discriminator discriminator, byte[] data, ExtraParams[] extraParams) implements SerDe {
 
     public static CpiProxyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -281,7 +281,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record EmergencyAccessUpdateIxData(Discriminator discriminator, EmergencyAccessUpdateArgs args) implements SerDe {  
+  public record EmergencyAccessUpdateIxData(Discriminator discriminator, EmergencyAccessUpdateArgs args) implements SerDe {
 
     public static EmergencyAccessUpdateIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -322,6 +322,7 @@ public final class GlamProtocolProgram {
     );
   }
 
+  /// @param protocolsBitmask: u16
   public static Instruction enableDisableProtocols(final AccountMeta invokedGlamProtocolProgramMeta,
                                                    final PublicKey glamStateKey,
                                                    final PublicKey glamSignerKey,
@@ -341,6 +342,7 @@ public final class GlamProtocolProgram {
     );
   }
 
+  /// @param protocolsBitmask: u16
   public static Instruction enableDisableProtocols(final AccountMeta invokedGlamProtocolProgramMeta,
                                                    final List<AccountMeta> keys,
                                                    final PublicKey integrationProgram,
@@ -357,10 +359,11 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
+  /// @param protocolsBitmask: u16
   public record EnableDisableProtocolsIxData(Discriminator discriminator,
                                              PublicKey integrationProgram,
                                              int protocolsBitmask,
-                                             boolean setEnabled) implements SerDe {  
+                                             boolean setEnabled) implements SerDe {
 
     public static EnableDisableProtocolsIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -380,7 +383,7 @@ public final class GlamProtocolProgram {
       int i = _offset + discriminator.length();
       final var integrationProgram = readPubKey(_data, i);
       i += 32;
-      final var protocolsBitmask = getInt16LE(_data, i);
+      final var protocolsBitmask = Short.toUnsignedInt(getInt16LE(_data, i));
       i += 2;
       final var setEnabled = _data[i] == 1;
       return new EnableDisableProtocolsIxData(discriminator, integrationProgram, protocolsBitmask, setEnabled);
@@ -416,11 +419,12 @@ public final class GlamProtocolProgram {
     );
   }
 
+  /// @param bytes: u32
   public static Instruction extendState(final AccountMeta invokedGlamProtocolProgramMeta,
                                         final SolanaAccounts solanaAccounts,
                                         final PublicKey glamStateKey,
                                         final PublicKey glamSignerKey,
-                                        final int bytes) {
+                                        final long bytes) {
     final var keys = extendStateKeys(
       solanaAccounts,
       glamStateKey,
@@ -429,17 +433,19 @@ public final class GlamProtocolProgram {
     return extendState(invokedGlamProtocolProgramMeta, keys, bytes);
   }
 
+  /// @param bytes: u32
   public static Instruction extendState(final AccountMeta invokedGlamProtocolProgramMeta,
                                         final List<AccountMeta> keys,
-                                        final int bytes) {
+                                        final long bytes) {
     final byte[] _data = new byte[12];
     int i = EXTEND_STATE_DISCRIMINATOR.write(_data, 0);
-    putInt32LE(_data, i, bytes);
+    putInt32LE(_data, i, (int) bytes);
 
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record ExtendStateIxData(Discriminator discriminator, int bytes) implements SerDe {  
+  /// @param bytes: u32
+  public record ExtendStateIxData(Discriminator discriminator, long bytes) implements SerDe {
 
     public static ExtendStateIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -455,14 +461,14 @@ public final class GlamProtocolProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var bytes = getInt32LE(_data, i);
+      final var bytes = Integer.toUnsignedLong(getInt32LE(_data, i));
       return new ExtendStateIxData(discriminator, bytes);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      putInt32LE(_data, i, bytes);
+      putInt32LE(_data, i, (int) bytes);
       i += 4;
       return i - _offset;
     }
@@ -483,6 +489,8 @@ public final class GlamProtocolProgram {
     );
   }
 
+  /// @param protocolBitflag: u16
+  /// @param permissionsBitmask: u64
   public static Instruction grantRevokeDelegatePermissions(final AccountMeta invokedGlamProtocolProgramMeta,
                                                            final PublicKey glamStateKey,
                                                            final PublicKey glamSignerKey,
@@ -506,6 +514,8 @@ public final class GlamProtocolProgram {
     );
   }
 
+  /// @param protocolBitflag: u16
+  /// @param permissionsBitmask: u64
   public static Instruction grantRevokeDelegatePermissions(final AccountMeta invokedGlamProtocolProgramMeta,
                                                            final List<AccountMeta> keys,
                                                            final PublicKey delegate,
@@ -528,12 +538,14 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
+  /// @param protocolBitflag: u16
+  /// @param permissionsBitmask: u64
   public record GrantRevokeDelegatePermissionsIxData(Discriminator discriminator,
                                                      PublicKey delegate,
                                                      PublicKey integrationProgram,
                                                      int protocolBitflag,
                                                      long permissionsBitmask,
-                                                     boolean setGranted) implements SerDe {  
+                                                     boolean setGranted) implements SerDe {
 
     public static GrantRevokeDelegatePermissionsIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -557,7 +569,7 @@ public final class GlamProtocolProgram {
       i += 32;
       final var integrationProgram = readPubKey(_data, i);
       i += 32;
-      final var protocolBitflag = getInt16LE(_data, i);
+      final var protocolBitflag = Short.toUnsignedInt(getInt16LE(_data, i));
       i += 2;
       final var permissionsBitmask = getInt64LE(_data, i);
       i += 8;
@@ -631,7 +643,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record InitializeStateIxData(Discriminator discriminator, StateModel state) implements SerDe {  
+  public record InitializeStateIxData(Discriminator discriminator, StateModel state) implements SerDe {
 
     public static InitializeStateIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -711,7 +723,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record JupiterSwapIxData(Discriminator discriminator, byte[] data) implements SerDe {  
+  public record JupiterSwapIxData(Discriminator discriminator, byte[] data) implements SerDe {
 
     public static JupiterSwapIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -811,7 +823,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record JupiterSwapV2IxData(Discriminator discriminator, boolean skipQuotePriceCheck, byte[] data) implements SerDe {  
+  public record JupiterSwapV2IxData(Discriminator discriminator, boolean skipQuotePriceCheck, byte[] data) implements SerDe {
 
     public static JupiterSwapV2IxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -888,7 +900,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record LinkUnlinkMintByMintAuthorityIxData(Discriminator discriminator, boolean link) implements SerDe {  
+  public record LinkUnlinkMintByMintAuthorityIxData(Discriminator discriminator, boolean link) implements SerDe {
 
     public static LinkUnlinkMintByMintAuthorityIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -988,7 +1000,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record SetJupiterSwapPolicyIxData(Discriminator discriminator, JupiterSwapPolicy policy) implements SerDe {  
+  public record SetJupiterSwapPolicyIxData(Discriminator discriminator, JupiterSwapPolicy policy) implements SerDe {
 
     public static SetJupiterSwapPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1029,6 +1041,7 @@ public final class GlamProtocolProgram {
     );
   }
 
+  /// @param protocolBitflag: u16
   public static Instruction setProtocolPolicy(final AccountMeta invokedGlamProtocolProgramMeta,
                                               final PublicKey glamStateKey,
                                               final PublicKey glamSignerKey,
@@ -1048,6 +1061,7 @@ public final class GlamProtocolProgram {
     );
   }
 
+  /// @param protocolBitflag: u16
   public static Instruction setProtocolPolicy(final AccountMeta invokedGlamProtocolProgramMeta,
                                               final List<AccountMeta> keys,
                                               final PublicKey integrationProgram,
@@ -1064,10 +1078,11 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
+  /// @param protocolBitflag: u16
   public record SetProtocolPolicyIxData(Discriminator discriminator,
                                         PublicKey integrationProgram,
                                         int protocolBitflag,
-                                        byte[] data) implements SerDe {  
+                                        byte[] data) implements SerDe {
 
     public static SetProtocolPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1085,7 +1100,7 @@ public final class GlamProtocolProgram {
       int i = _offset + discriminator.length();
       final var integrationProgram = readPubKey(_data, i);
       i += 32;
-      final var protocolBitflag = getInt16LE(_data, i);
+      final var protocolBitflag = Short.toUnsignedInt(getInt16LE(_data, i));
       i += 2;
       final var data = SerDeUtil.readbyteVector(4, _data, i);
       return new SetProtocolPolicyIxData(discriminator, integrationProgram, protocolBitflag, data);
@@ -1120,6 +1135,7 @@ public final class GlamProtocolProgram {
     );
   }
 
+  /// @param protocolBitflag: u16
   public static Instruction setProtocolPolicyByIntegrationAuthority(final AccountMeta invokedGlamProtocolProgramMeta,
                                                                     final PublicKey glamStateKey,
                                                                     final PublicKey integrationProgramKey,
@@ -1134,6 +1150,7 @@ public final class GlamProtocolProgram {
     return setProtocolPolicyByIntegrationAuthority(invokedGlamProtocolProgramMeta, keys, protocolBitflag, data);
   }
 
+  /// @param protocolBitflag: u16
   public static Instruction setProtocolPolicyByIntegrationAuthority(final AccountMeta invokedGlamProtocolProgramMeta,
                                                                     final List<AccountMeta> keys,
                                                                     final int protocolBitflag,
@@ -1147,7 +1164,8 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record SetProtocolPolicyByIntegrationAuthorityIxData(Discriminator discriminator, int protocolBitflag, byte[] data) implements SerDe {  
+  /// @param protocolBitflag: u16
+  public record SetProtocolPolicyByIntegrationAuthorityIxData(Discriminator discriminator, int protocolBitflag, byte[] data) implements SerDe {
 
     public static SetProtocolPolicyByIntegrationAuthorityIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1162,7 +1180,7 @@ public final class GlamProtocolProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var protocolBitflag = getInt16LE(_data, i);
+      final var protocolBitflag = Short.toUnsignedInt(getInt16LE(_data, i));
       i += 2;
       final var data = SerDeUtil.readbyteVector(4, _data, i);
       return new SetProtocolPolicyByIntegrationAuthorityIxData(discriminator, protocolBitflag, data);
@@ -1214,7 +1232,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record SetSystemTransferPolicyIxData(Discriminator discriminator, TransferPolicy policy) implements SerDe {  
+  public record SetSystemTransferPolicyIxData(Discriminator discriminator, TransferPolicy policy) implements SerDe {
 
     public static SetSystemTransferPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1262,6 +1280,7 @@ public final class GlamProtocolProgram {
     );
   }
 
+  /// @param stakerOrWithdrawer: u32
   public static Instruction stakeAuthorize(final AccountMeta invokedGlamProtocolProgramMeta,
                                            final SolanaAccounts solanaAccounts,
                                            final PublicKey glamStateKey,
@@ -1269,7 +1288,7 @@ public final class GlamProtocolProgram {
                                            final PublicKey glamSignerKey,
                                            final PublicKey stakeKey,
                                            final PublicKey newAuthority,
-                                           final int stakerOrWithdrawer) {
+                                           final long stakerOrWithdrawer) {
     final var keys = stakeAuthorizeKeys(
       solanaAccounts,
       glamStateKey,
@@ -1280,20 +1299,22 @@ public final class GlamProtocolProgram {
     return stakeAuthorize(invokedGlamProtocolProgramMeta, keys, newAuthority, stakerOrWithdrawer);
   }
 
+  /// @param stakerOrWithdrawer: u32
   public static Instruction stakeAuthorize(final AccountMeta invokedGlamProtocolProgramMeta,
                                            final List<AccountMeta> keys,
                                            final PublicKey newAuthority,
-                                           final int stakerOrWithdrawer) {
+                                           final long stakerOrWithdrawer) {
     final byte[] _data = new byte[44];
     int i = STAKE_AUTHORIZE_DISCRIMINATOR.write(_data, 0);
     newAuthority.write(_data, i);
     i += 32;
-    putInt32LE(_data, i, stakerOrWithdrawer);
+    putInt32LE(_data, i, (int) stakerOrWithdrawer);
 
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record StakeAuthorizeIxData(Discriminator discriminator, PublicKey newAuthority, int stakerOrWithdrawer) implements SerDe {  
+  /// @param stakerOrWithdrawer: u32
+  public record StakeAuthorizeIxData(Discriminator discriminator, PublicKey newAuthority, long stakerOrWithdrawer) implements SerDe {
 
     public static StakeAuthorizeIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1312,7 +1333,7 @@ public final class GlamProtocolProgram {
       int i = _offset + discriminator.length();
       final var newAuthority = readPubKey(_data, i);
       i += 32;
-      final var stakerOrWithdrawer = getInt32LE(_data, i);
+      final var stakerOrWithdrawer = Integer.toUnsignedLong(getInt32LE(_data, i));
       return new StakeAuthorizeIxData(discriminator, newAuthority, stakerOrWithdrawer);
     }
 
@@ -1321,7 +1342,7 @@ public final class GlamProtocolProgram {
       int i = _offset + discriminator.write(_data, _offset);
       newAuthority.write(_data, i);
       i += 32;
-      putInt32LE(_data, i, stakerOrWithdrawer);
+      putInt32LE(_data, i, (int) stakerOrWithdrawer);
       i += 4;
       return i - _offset;
     }
@@ -1517,6 +1538,7 @@ public final class GlamProtocolProgram {
     );
   }
 
+  /// @param lamports: u64
   public static Instruction stakeMove(final AccountMeta invokedGlamProtocolProgramMeta,
                                       final SolanaAccounts solanaAccounts,
                                       final PublicKey glamStateKey,
@@ -1537,6 +1559,7 @@ public final class GlamProtocolProgram {
     return stakeMove(invokedGlamProtocolProgramMeta, keys, moveStake, lamports);
   }
 
+  /// @param lamports: u64
   public static Instruction stakeMove(final AccountMeta invokedGlamProtocolProgramMeta,
                                       final List<AccountMeta> keys,
                                       final boolean moveStake,
@@ -1550,7 +1573,8 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record StakeMoveIxData(Discriminator discriminator, boolean moveStake, long lamports) implements SerDe {  
+  /// @param lamports: u64
+  public record StakeMoveIxData(Discriminator discriminator, boolean moveStake, long lamports) implements SerDe {
 
     public static StakeMoveIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1607,6 +1631,7 @@ public final class GlamProtocolProgram {
     );
   }
 
+  /// @param lamports: u64
   public static Instruction stakeSplit(final AccountMeta invokedGlamProtocolProgramMeta,
                                        final SolanaAccounts solanaAccounts,
                                        final PublicKey glamStateKey,
@@ -1626,6 +1651,7 @@ public final class GlamProtocolProgram {
     return stakeSplit(invokedGlamProtocolProgramMeta, keys, lamports);
   }
 
+  /// @param lamports: u64
   public static Instruction stakeSplit(final AccountMeta invokedGlamProtocolProgramMeta,
                                        final List<AccountMeta> keys,
                                        final long lamports) {
@@ -1636,7 +1662,8 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record StakeSplitIxData(Discriminator discriminator, long lamports) implements SerDe {  
+  /// @param lamports: u64
+  public record StakeSplitIxData(Discriminator discriminator, long lamports) implements SerDe {
 
     public static StakeSplitIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1689,6 +1716,7 @@ public final class GlamProtocolProgram {
     );
   }
 
+  /// @param lamports: u64
   public static Instruction stakeWithdraw(final AccountMeta invokedGlamProtocolProgramMeta,
                                           final SolanaAccounts solanaAccounts,
                                           final PublicKey glamStateKey,
@@ -1706,6 +1734,7 @@ public final class GlamProtocolProgram {
     return stakeWithdraw(invokedGlamProtocolProgramMeta, keys, lamports);
   }
 
+  /// @param lamports: u64
   public static Instruction stakeWithdraw(final AccountMeta invokedGlamProtocolProgramMeta,
                                           final List<AccountMeta> keys,
                                           final long lamports) {
@@ -1716,7 +1745,8 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record StakeWithdrawIxData(Discriminator discriminator, long lamports) implements SerDe {  
+  /// @param lamports: u64
+  public record StakeWithdrawIxData(Discriminator discriminator, long lamports) implements SerDe {
 
     public static StakeWithdrawIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1774,6 +1804,7 @@ public final class GlamProtocolProgram {
   /// 
   /// Token program ID is required as a remaining account when wrapping SOL (i.e., transfer to wSOL token account).
   ///
+  /// @param lamports: u64
   public static Instruction systemTransfer(final AccountMeta invokedGlamProtocolProgramMeta,
                                            final SolanaAccounts solanaAccounts,
                                            final PublicKey glamStateKey,
@@ -1795,6 +1826,7 @@ public final class GlamProtocolProgram {
   /// 
   /// Token program ID is required as a remaining account when wrapping SOL (i.e., transfer to wSOL token account).
   ///
+  /// @param lamports: u64
   public static Instruction systemTransfer(final AccountMeta invokedGlamProtocolProgramMeta,
                                            final List<AccountMeta> keys,
                                            final long lamports) {
@@ -1805,7 +1837,8 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record SystemTransferIxData(Discriminator discriminator, long lamports) implements SerDe {  
+  /// @param lamports: u64
+  public record SystemTransferIxData(Discriminator discriminator, long lamports) implements SerDe {
 
     public static SystemTransferIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1865,6 +1898,7 @@ public final class GlamProtocolProgram {
 
   /// For glam mint program's use only
   ///
+  /// @param amount: u64
   public static Instruction tokenTransferCheckedByMintAuthority(final AccountMeta invokedGlamProtocolProgramMeta,
                                                                 final PublicKey glamStateKey,
                                                                 final PublicKey glamVaultKey,
@@ -1891,6 +1925,7 @@ public final class GlamProtocolProgram {
 
   /// For glam mint program's use only
   ///
+  /// @param amount: u64
   public static Instruction tokenTransferCheckedByMintAuthority(final AccountMeta invokedGlamProtocolProgramMeta,
                                                                 final List<AccountMeta> keys,
                                                                 final long amount,
@@ -1904,7 +1939,8 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record TokenTransferCheckedByMintAuthorityIxData(Discriminator discriminator, long amount, int decimals) implements SerDe {  
+  /// @param amount: u64
+  public record TokenTransferCheckedByMintAuthorityIxData(Discriminator discriminator, long amount, int decimals) implements SerDe {
 
     public static TokenTransferCheckedByMintAuthorityIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1974,7 +2010,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record UpdateMintParamsIxData(Discriminator discriminator, EngineField[] params) implements SerDe {  
+  public record UpdateMintParamsIxData(Discriminator discriminator, EngineField[] params) implements SerDe {
 
     public static UpdateMintParamsIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -2046,7 +2082,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record UpdateMintParamsByMintAuthorityIxData(Discriminator discriminator, EngineField[] params) implements SerDe {  
+  public record UpdateMintParamsByMintAuthorityIxData(Discriminator discriminator, EngineField[] params) implements SerDe {
 
     public static UpdateMintParamsByMintAuthorityIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -2114,7 +2150,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record UpdatePricedProtocolIxData(Discriminator discriminator, PricedProtocol pricedProtocol) implements SerDe {  
+  public record UpdatePricedProtocolIxData(Discriminator discriminator, PricedProtocol pricedProtocol) implements SerDe {
 
     public static UpdatePricedProtocolIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -2176,7 +2212,7 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record UpdateStateIxData(Discriminator discriminator, StateModel state) implements SerDe {  
+  public record UpdateStateIxData(Discriminator discriminator, StateModel state) implements SerDe {
 
     public static UpdateStateIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());

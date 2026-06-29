@@ -6,6 +6,8 @@ import software.sava.idl.clients.core.gen.SerDe;
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 
+/// @param subscriptionFeeBps: u16
+/// @param redemptionFeeBps: u16
 public record EntryExitFees(int subscriptionFeeBps, int redemptionFeeBps) implements SerDe {
 
   public static final int BYTES = 4;
@@ -18,9 +20,9 @@ public record EntryExitFees(int subscriptionFeeBps, int redemptionFeeBps) implem
       return null;
     }
     int i = _offset;
-    final var subscriptionFeeBps = getInt16LE(_data, i);
+    final var subscriptionFeeBps = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
-    final var redemptionFeeBps = getInt16LE(_data, i);
+    final var redemptionFeeBps = Short.toUnsignedInt(getInt16LE(_data, i));
     return new EntryExitFees(subscriptionFeeBps, redemptionFeeBps);
   }
 

@@ -18,6 +18,8 @@ import static software.sava.core.programs.Discriminator.toDiscriminator;
 
 /// @param admin The authority that can modify the config
 /// @param feeAuthority The authority that can modify fee structure of individual glam state and claim protocol fees
+/// @param baseFeeBps: u16
+/// @param flowFeeBps: u16
 public record GlobalConfig(PublicKey _address,
                            Discriminator discriminator,
                            PublicKey admin,
@@ -87,9 +89,9 @@ public record GlobalConfig(PublicKey _address,
     i += 32;
     final var referrer = readPubKey(_data, i);
     i += 32;
-    final var baseFeeBps = getInt16LE(_data, i);
+    final var baseFeeBps = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
-    final var flowFeeBps = getInt16LE(_data, i);
+    final var flowFeeBps = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var assetMetas = SerDeUtil.readVector(4, AssetMeta.class, AssetMeta::read, _data, i);
     return new GlobalConfig(_address,

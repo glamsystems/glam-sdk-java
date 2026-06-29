@@ -11,6 +11,12 @@ import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
+/// @param sourceAmount: u64
+/// @param quotedOutAmount: u64
+/// @param providerSequence: u64
+/// @param committedSlot: u64
+/// @param protocol: u16
+/// @param destinationChain: u16
 public record BridgeManagedTransfer(PublicKey transferId,
                                     PublicKey sourceMint,
                                     PublicKey destinationRecipient,
@@ -71,9 +77,9 @@ public record BridgeManagedTransfer(PublicKey transferId,
     i += 8;
     final var committedSlot = getInt64LE(_data, i);
     i += 8;
-    final var protocol = getInt16LE(_data, i);
+    final var protocol = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
-    final var destinationChain = getInt16LE(_data, i);
+    final var destinationChain = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var sourceDecimals = _data[i] & 0xFF;
     ++i;

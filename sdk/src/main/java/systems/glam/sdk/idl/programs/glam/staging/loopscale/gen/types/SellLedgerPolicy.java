@@ -6,9 +6,9 @@ import software.sava.idl.clients.core.gen.SerDe;
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 
-/// @param maxDiscountBps Maximum discount from the ledger's expected value, in basis points.
+/// @param maxDiscountBps: u16 Maximum discount from the ledger's expected value, in basis points.
 ///                       A value of zero requires no discount.
-/// @param maxSlippageBps Maximum tolerated slippage while selling a ledger, in basis points.
+/// @param maxSlippageBps: u16 Maximum tolerated slippage while selling a ledger, in basis points.
 ///                       A value of zero allows no slippage.
 public record SellLedgerPolicy(int maxDiscountBps, int maxSlippageBps) implements SerDe {
 
@@ -22,9 +22,9 @@ public record SellLedgerPolicy(int maxDiscountBps, int maxSlippageBps) implement
       return null;
     }
     int i = _offset;
-    final var maxDiscountBps = getInt16LE(_data, i);
+    final var maxDiscountBps = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
-    final var maxSlippageBps = getInt16LE(_data, i);
+    final var maxSlippageBps = Short.toUnsignedInt(getInt16LE(_data, i));
     return new SellLedgerPolicy(maxDiscountBps, maxSlippageBps);
   }
 

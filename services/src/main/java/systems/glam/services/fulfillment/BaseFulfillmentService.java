@@ -182,7 +182,7 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
         final var fulFillIx = glamAccountClient.fulfill(
             0,
             baseAssetMintContext.mint(), baseAssetMintContext.tokenProgram(),
-            OptionalInt.of(redemptionSummary.fulfillable().size())
+            OptionalLong.of(redemptionSummary.fulfillable().size())
         );
         fulfillInstructions.add(fulFillIx);
       }

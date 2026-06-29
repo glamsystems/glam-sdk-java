@@ -6,7 +6,8 @@ import software.sava.idl.clients.core.gen.SerDeUtil;
 
 /// Vault-specific oracle configs. If available, these configs are preferred over the global config.
 ///
-public record OracleConfigs(short[][] maxAgesSeconds, byte[] padding) implements SerDe {
+/// @param maxAgesSeconds: vec<u16[]>
+public record OracleConfigs(int[][] maxAgesSeconds, byte[] padding) implements SerDe {
 
   public static final int PADDING_LEN = 12;
   public static final int MAX_AGES_SECONDS_OFFSET = 0;
@@ -16,8 +17,8 @@ public record OracleConfigs(short[][] maxAgesSeconds, byte[] padding) implements
       return null;
     }
     int i = _offset;
-    final var maxAgesSeconds = SerDeUtil.readMultiDimensionshortVectorArray(4, 2, _data, i);
-    i += SerDeUtil.lenVectorArray(4, maxAgesSeconds);
+    final var maxAgesSeconds = SerDeUtil.readMultiDimensionUnsignedShortVectorArray(4, 2, _data, i);
+    i += SerDeUtil.lenUnsignedShortVectorArray(4, maxAgesSeconds);
     final var padding = new byte[12];
     SerDeUtil.readArray(padding, _data, i);
     return new OracleConfigs(maxAgesSeconds, padding);

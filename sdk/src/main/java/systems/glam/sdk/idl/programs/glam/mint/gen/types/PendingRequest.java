@@ -9,6 +9,10 @@ import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
+/// @param incoming: u64
+/// @param outgoing: u64
+/// @param createdAt: u64
+/// @param fulfilledAt: u64
 public record PendingRequest(PublicKey user,
                              long incoming,
                              long outgoing,

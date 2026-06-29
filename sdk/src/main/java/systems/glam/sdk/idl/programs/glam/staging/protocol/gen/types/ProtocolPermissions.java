@@ -10,6 +10,8 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
 /// Represents a delegate's permissions for a specific protocol
 ///
+/// @param protocolBitflag: u16
+/// @param permissionsBitmask: u64
 public record ProtocolPermissions(int protocolBitflag, long permissionsBitmask) implements SerDe {
 
   public static final int BYTES = 10;
@@ -22,7 +24,7 @@ public record ProtocolPermissions(int protocolBitflag, long permissionsBitmask) 
       return null;
     }
     int i = _offset;
-    final var protocolBitflag = getInt16LE(_data, i);
+    final var protocolBitflag = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var permissionsBitmask = getInt64LE(_data, i);
     return new ProtocolPermissions(protocolBitflag, permissionsBitmask);

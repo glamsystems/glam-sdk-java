@@ -8,7 +8,8 @@ import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt32LE;
 import static software.sava.core.encoding.ByteUtil.putInt32LE;
 
-public record CctpDestination(int domain, PublicKey address) implements SerDe {
+/// @param domain: u32
+public record CctpDestination(long domain, PublicKey address) implements SerDe {
 
   public static final int BYTES = 36;
 
@@ -20,7 +21,7 @@ public record CctpDestination(int domain, PublicKey address) implements SerDe {
       return null;
     }
     int i = _offset;
-    final var domain = getInt32LE(_data, i);
+    final var domain = Integer.toUnsignedLong(getInt32LE(_data, i));
     i += 4;
     final var address = readPubKey(_data, i);
     return new CctpDestination(domain, address);
@@ -29,7 +30,7 @@ public record CctpDestination(int domain, PublicKey address) implements SerDe {
   @Override
   public int write(final byte[] _data, final int _offset) {
     int i = _offset;
-    putInt32LE(_data, i, domain);
+    putInt32LE(_data, i, (int) domain);
     i += 4;
     address.write(_data, i);
     i += 32;

@@ -10,12 +10,16 @@ import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt32LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
+/// @param amount: u64
+/// @param destinationDomain: u32
+/// @param maxFee: u64
+/// @param minFinalityThreshold: u32
 public record DepositForBurnParams(long amount,
-                                   int destinationDomain,
+                                   long destinationDomain,
                                    PublicKey mintRecipient,
                                    PublicKey destinationCaller,
                                    long maxFee,
-                                   int minFinalityThreshold) implements SerDe {
+                                   long minFinalityThreshold) implements SerDe {
 
   public static final int BYTES = 88;
 
@@ -33,7 +37,7 @@ public record DepositForBurnParams(long amount,
     int i = _offset;
     final var amount = getInt64LE(_data, i);
     i += 8;
-    final var destinationDomain = getInt32LE(_data, i);
+    final var destinationDomain = Integer.toUnsignedLong(getInt32LE(_data, i));
     i += 4;
     final var mintRecipient = readPubKey(_data, i);
     i += 32;
@@ -41,7 +45,7 @@ public record DepositForBurnParams(long amount,
     i += 32;
     final var maxFee = getInt64LE(_data, i);
     i += 8;
-    final var minFinalityThreshold = getInt32LE(_data, i);
+    final var minFinalityThreshold = Integer.toUnsignedLong(getInt32LE(_data, i));
     return new DepositForBurnParams(amount,
                                     destinationDomain,
                                     mintRecipient,
@@ -55,7 +59,7 @@ public record DepositForBurnParams(long amount,
     int i = _offset;
     putInt64LE(_data, i, amount);
     i += 8;
-    putInt32LE(_data, i, destinationDomain);
+    putInt32LE(_data, i, (int) destinationDomain);
     i += 4;
     mintRecipient.write(_data, i);
     i += 32;
@@ -63,7 +67,7 @@ public record DepositForBurnParams(long amount,
     i += 32;
     putInt64LE(_data, i, maxFee);
     i += 8;
-    putInt32LE(_data, i, minFinalityThreshold);
+    putInt32LE(_data, i, (int) minFinalityThreshold);
     i += 4;
     return i - _offset;
   }

@@ -20,6 +20,9 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
+/// @param emitterChain: u16
+/// @param maxAgeSeconds: u32
+/// @param lastSequence: u64
 public record WormholeObservationConfig(PublicKey _address,
                                         Discriminator discriminator,
                                         PublicKey glamState,
@@ -28,7 +31,7 @@ public record WormholeObservationConfig(PublicKey _address,
                                         byte[] emitterAddress,
                                         int payloadVersion,
                                         int payloadType,
-                                        int maxAgeSeconds,
+                                        long maxAgeSeconds,
                                         boolean hasLastSequence,
                                         long lastSequence,
                                         byte[] lastVaaHash,
@@ -73,9 +76,9 @@ public record WormholeObservationConfig(PublicKey _address,
     return Filter.createMemCompFilter(PAYLOAD_TYPE_OFFSET, new byte[]{(byte) payloadType});
   }
 
-  public static Filter createMaxAgeSecondsFilter(final int maxAgeSeconds) {
+  public static Filter createMaxAgeSecondsFilter(final long maxAgeSeconds) {
     final byte[] _data = new byte[4];
-    putInt32LE(_data, 0, maxAgeSeconds);
+    putInt32LE(_data, 0, (int) maxAgeSeconds);
     return Filter.createMemCompFilter(MAX_AGE_SECONDS_OFFSET, _data);
   }
 
@@ -117,7 +120,7 @@ public record WormholeObservationConfig(PublicKey _address,
     i += 32;
     final var positionId = new byte[32];
     i += SerDeUtil.readArray(positionId, _data, i);
-    final var emitterChain = getInt16LE(_data, i);
+    final var emitterChain = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var emitterAddress = new byte[32];
     i += SerDeUtil.readArray(emitterAddress, _data, i);
@@ -125,7 +128,7 @@ public record WormholeObservationConfig(PublicKey _address,
     ++i;
     final var payloadType = _data[i] & 0xFF;
     ++i;
-    final var maxAgeSeconds = getInt32LE(_data, i);
+    final var maxAgeSeconds = Integer.toUnsignedLong(getInt32LE(_data, i));
     i += 4;
     final var hasLastSequence = _data[i] == 1;
     ++i;
@@ -162,7 +165,7 @@ public record WormholeObservationConfig(PublicKey _address,
     ++i;
     _data[i] = (byte) payloadType;
     ++i;
-    putInt32LE(_data, i, maxAgeSeconds);
+    putInt32LE(_data, i, (int) maxAgeSeconds);
     i += 4;
     _data[i] = (byte) (hasLastSequence ? 1 : 0);
     ++i;

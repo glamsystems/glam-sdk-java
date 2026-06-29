@@ -16,6 +16,7 @@ import systems.glam.sdk.idl.programs.glam.staging.protocol.gen.types.AccountType
 
 import java.util.List;
 import java.util.OptionalInt;
+import java.util.OptionalLong;
 
 import static java.util.Objects.requireNonNullElse;
 
@@ -140,7 +141,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record AclGateCreateListIxData(Discriminator discriminator, byte[] seed, int mode) implements SerDe {  
+  public record AclGateCreateListIxData(Discriminator discriminator, byte[] seed, int mode) implements SerDe {
 
     public static AclGateCreateListIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -340,6 +341,7 @@ public final class GlamMintProgram {
     );
   }
 
+  /// @param amount: u64
   public static Instruction burnTokens(final AccountMeta invokedGlamMintProgramMeta,
                                        final PublicKey glamStateKey,
                                        final PublicKey glamSignerKey,
@@ -359,6 +361,7 @@ public final class GlamMintProgram {
     return burnTokens(invokedGlamMintProgramMeta, keys, amount);
   }
 
+  /// @param amount: u64
   public static Instruction burnTokens(final AccountMeta invokedGlamMintProgramMeta,
                                        final List<AccountMeta> keys,
                                        final long amount) {
@@ -369,7 +372,8 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record BurnTokensIxData(Discriminator discriminator, long amount) implements SerDe {  
+  /// @param amount: u64
+  public record BurnTokensIxData(Discriminator discriminator, long amount) implements SerDe {
 
     public static BurnTokensIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -768,7 +772,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record EmergencyUpdateMintIxData(Discriminator discriminator, EmergencyUpdateMintArgs args) implements SerDe {  
+  public record EmergencyUpdateMintIxData(Discriminator discriminator, EmergencyUpdateMintArgs args) implements SerDe {
 
     public static EmergencyUpdateMintIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -859,7 +863,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record EnableTokenAclIxData(Discriminator discriminator, PublicKey gatingProgram) implements SerDe {  
+  public record EnableTokenAclIxData(Discriminator discriminator, PublicKey gatingProgram) implements SerDe {
 
     public static EnableTokenAclIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -925,6 +929,7 @@ public final class GlamMintProgram {
     );
   }
 
+  /// @param amount: u64
   public static Instruction forceTransferTokens(final AccountMeta invokedGlamMintProgramMeta,
                                                 final SolanaAccounts solanaAccounts,
                                                 final PublicKey glamStateKey,
@@ -955,6 +960,7 @@ public final class GlamMintProgram {
     return forceTransferTokens(invokedGlamMintProgramMeta, keys, amount);
   }
 
+  /// @param amount: u64
   public static Instruction forceTransferTokens(final AccountMeta invokedGlamMintProgramMeta,
                                                 final List<AccountMeta> keys,
                                                 final long amount) {
@@ -965,7 +971,8 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record ForceTransferTokensIxData(Discriminator discriminator, long amount) implements SerDe {  
+  /// @param amount: u64
+  public record ForceTransferTokensIxData(Discriminator discriminator, long amount) implements SerDe {
 
     public static ForceTransferTokensIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1049,7 +1056,7 @@ public final class GlamMintProgram {
                                     final PublicKey depositTokenProgramKey,
                                     final PublicKey token2022ProgramKey,
                                     final PublicKey glamProtocolProgramKey,
-                                    final OptionalInt limit) {
+                                    final OptionalLong limit) {
     final var keys = fulfillKeys(
       solanaAccounts,
       glamStateKey,
@@ -1071,18 +1078,18 @@ public final class GlamMintProgram {
 
   public static Instruction fulfill(final AccountMeta invokedGlamMintProgramMeta,
                                     final List<AccountMeta> keys,
-                                    final OptionalInt limit) {
+                                    final OptionalLong limit) {
     final byte[] _data = new byte[
     8
     + (limit == null || limit.isEmpty() ? 1 : 5)
     ];
     int i = FULFILL_DISCRIMINATOR.write(_data, 0);
-    SerDeUtil.writeOptional(1, limit, _data, i);
+    SerDeUtil.writeOptionalUnsignedInt(1, limit, _data, i);
 
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record FulfillIxData(Discriminator discriminator, OptionalInt limit) implements SerDe {  
+  public record FulfillIxData(Discriminator discriminator, OptionalLong limit) implements SerDe {
 
     public static FulfillIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1096,12 +1103,12 @@ public final class GlamMintProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final OptionalInt limit;
+      final OptionalLong limit;
       if (SerDeUtil.isAbsent(1, _data, i)) {
-        limit = OptionalInt.empty();
+        limit = OptionalLong.empty();
       } else {
         ++i;
-        limit = OptionalInt.of(getInt32LE(_data, i));
+        limit = OptionalLong.of(Integer.toUnsignedLong(getInt32LE(_data, i)));
       }
       return new FulfillIxData(discriminator, limit);
     }
@@ -1109,7 +1116,7 @@ public final class GlamMintProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += SerDeUtil.writeOptional(1, limit, _data, i);
+      i += SerDeUtil.writeOptionalUnsignedInt(1, limit, _data, i);
       return i - _offset;
     }
 
@@ -1228,7 +1235,7 @@ public final class GlamMintProgram {
                                      MintModel mintModel,
                                      byte[] createdKey,
                                      AccountType accountType,
-                                     OptionalInt decimals) implements SerDe {  
+                                     OptionalInt decimals) implements SerDe {
 
     public static InitializeMintIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1304,6 +1311,7 @@ public final class GlamMintProgram {
     );
   }
 
+  /// @param amount: u64
   public static Instruction mintTokens(final AccountMeta invokedGlamMintProgramMeta,
                                        final SolanaAccounts solanaAccounts,
                                        final PublicKey glamStateKey,
@@ -1330,6 +1338,7 @@ public final class GlamMintProgram {
     return mintTokens(invokedGlamMintProgramMeta, keys, amount);
   }
 
+  /// @param amount: u64
   public static Instruction mintTokens(final AccountMeta invokedGlamMintProgramMeta,
                                        final List<AccountMeta> keys,
                                        final long amount) {
@@ -1340,7 +1349,8 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record MintTokensIxData(Discriminator discriminator, long amount) implements SerDe {  
+  /// @param amount: u64
+  public record MintTokensIxData(Discriminator discriminator, long amount) implements SerDe {
 
     public static MintTokensIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1543,7 +1553,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record PriceDriftUsersIxData(Discriminator discriminator, int numUsers) implements SerDe {  
+  public record PriceDriftUsersIxData(Discriminator discriminator, int numUsers) implements SerDe {
 
     public static PriceDriftUsersIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1692,7 +1702,7 @@ public final class GlamMintProgram {
   public record PriceDriftVaultDepositorsIxData(Discriminator discriminator,
                                                 int numVaultDepositors,
                                                 int numSpotMarkets,
-                                                int numPerpMarkets) implements SerDe {  
+                                                int numPerpMarkets) implements SerDe {
 
     public static PriceDriftVaultDepositorsIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1976,7 +1986,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record PriceKaminoVaultSharesIxData(Discriminator discriminator, int numVaults) implements SerDe {  
+  public record PriceKaminoVaultSharesIxData(Discriminator discriminator, int numVaults) implements SerDe {
 
     public static PriceKaminoVaultSharesIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -2250,7 +2260,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record PriceLoopscaleVaultPositionsIxData(Discriminator discriminator, int numVaults) implements SerDe {  
+  public record PriceLoopscaleVaultPositionsIxData(Discriminator discriminator, int numVaults) implements SerDe {
 
     public static PriceLoopscaleVaultPositionsIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -2560,7 +2570,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record PriceOrcaWhirlpoolPositionsIxData(Discriminator discriminator, int numPositions) implements SerDe {  
+  public record PriceOrcaWhirlpoolPositionsIxData(Discriminator discriminator, int numPositions) implements SerDe {
 
     public static PriceOrcaWhirlpoolPositionsIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -2900,7 +2910,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record PriceVaultTokensIxData(Discriminator discriminator, short[][] aggIndexes) implements SerDe {  
+  public record PriceVaultTokensIxData(Discriminator discriminator, short[][] aggIndexes) implements SerDe {
 
     public static PriceVaultTokensIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -2956,6 +2966,7 @@ public final class GlamMintProgram {
     );
   }
 
+  /// @param amountIn: u64
   public static Instruction queuedRedeem(final AccountMeta invokedGlamMintProgramMeta,
                                          final SolanaAccounts solanaAccounts,
                                          final PublicKey glamStateKey,
@@ -2981,6 +2992,7 @@ public final class GlamMintProgram {
     return queuedRedeem(invokedGlamMintProgramMeta, keys, amountIn);
   }
 
+  /// @param amountIn: u64
   public static Instruction queuedRedeem(final AccountMeta invokedGlamMintProgramMeta,
                                          final List<AccountMeta> keys,
                                          final long amountIn) {
@@ -2991,7 +3003,8 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record QueuedRedeemIxData(Discriminator discriminator, long amountIn) implements SerDe {  
+  /// @param amountIn: u64
+  public record QueuedRedeemIxData(Discriminator discriminator, long amountIn) implements SerDe {
 
     public static QueuedRedeemIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -3052,6 +3065,7 @@ public final class GlamMintProgram {
     );
   }
 
+  /// @param amountIn: u64
   public static Instruction queuedSubscribe(final AccountMeta invokedGlamMintProgramMeta,
                                             final SolanaAccounts solanaAccounts,
                                             final PublicKey glamStateKey,
@@ -3079,6 +3093,7 @@ public final class GlamMintProgram {
     return queuedSubscribe(invokedGlamMintProgramMeta, keys, amountIn);
   }
 
+  /// @param amountIn: u64
   public static Instruction queuedSubscribe(final AccountMeta invokedGlamMintProgramMeta,
                                             final List<AccountMeta> keys,
                                             final long amountIn) {
@@ -3089,7 +3104,8 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record QueuedSubscribeIxData(Discriminator discriminator, long amountIn) implements SerDe {  
+  /// @param amountIn: u64
+  public record QueuedSubscribeIxData(Discriminator discriminator, long amountIn) implements SerDe {
 
     public static QueuedSubscribeIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -3158,7 +3174,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record SetMintPolicyIxData(Discriminator discriminator, MintPolicy policy) implements SerDe {  
+  public record SetMintPolicyIxData(Discriminator discriminator, MintPolicy policy) implements SerDe {
 
     public static SetMintPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -3205,6 +3221,8 @@ public final class GlamMintProgram {
     );
   }
 
+  /// @param baseFeeBps: u16
+  /// @param flowFeeBps: u16
   public static Instruction setProtocolFees(final AccountMeta invokedGlamMintProgramMeta,
                                             final PublicKey glamStateKey,
                                             final PublicKey glamMintKey,
@@ -3223,6 +3241,8 @@ public final class GlamMintProgram {
     return setProtocolFees(invokedGlamMintProgramMeta, keys, baseFeeBps, flowFeeBps);
   }
 
+  /// @param baseFeeBps: u16
+  /// @param flowFeeBps: u16
   public static Instruction setProtocolFees(final AccountMeta invokedGlamMintProgramMeta,
                                             final List<AccountMeta> keys,
                                             final int baseFeeBps,
@@ -3236,7 +3256,9 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record SetProtocolFeesIxData(Discriminator discriminator, int baseFeeBps, int flowFeeBps) implements SerDe {  
+  /// @param baseFeeBps: u16
+  /// @param flowFeeBps: u16
+  public record SetProtocolFeesIxData(Discriminator discriminator, int baseFeeBps, int flowFeeBps) implements SerDe {
 
     public static SetProtocolFeesIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -3253,9 +3275,9 @@ public final class GlamMintProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var baseFeeBps = getInt16LE(_data, i);
+      final var baseFeeBps = Short.toUnsignedInt(getInt16LE(_data, i));
       i += 2;
-      final var flowFeeBps = getInt16LE(_data, i);
+      final var flowFeeBps = Short.toUnsignedInt(getInt16LE(_data, i));
       return new SetProtocolFeesIxData(discriminator, baseFeeBps, flowFeeBps);
     }
 
@@ -3314,7 +3336,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record SetTokenAccountsStatesIxData(Discriminator discriminator, boolean frozen) implements SerDe {  
+  public record SetTokenAccountsStatesIxData(Discriminator discriminator, boolean frozen) implements SerDe {
 
     public static SetTokenAccountsStatesIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -3390,6 +3412,7 @@ public final class GlamMintProgram {
     );
   }
 
+  /// @param amountIn: u64
   public static Instruction subscribe(final AccountMeta invokedGlamMintProgramMeta,
                                       final SolanaAccounts solanaAccounts,
                                       final PublicKey glamStateKey,
@@ -3432,6 +3455,7 @@ public final class GlamMintProgram {
     return subscribe(invokedGlamMintProgramMeta, keys, amountIn);
   }
 
+  /// @param amountIn: u64
   public static Instruction subscribe(final AccountMeta invokedGlamMintProgramMeta,
                                       final List<AccountMeta> keys,
                                       final long amountIn) {
@@ -3442,7 +3466,8 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record SubscribeIxData(Discriminator discriminator, long amountIn) implements SerDe {  
+  /// @param amountIn: u64
+  public record SubscribeIxData(Discriminator discriminator, long amountIn) implements SerDe {
 
     public static SubscribeIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -3613,7 +3638,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record UpdateMintIxData(Discriminator discriminator, MintModel mintModel) implements SerDe {  
+  public record UpdateMintIxData(Discriminator discriminator, MintModel mintModel) implements SerDe {
 
     public static UpdateMintIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());

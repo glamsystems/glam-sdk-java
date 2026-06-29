@@ -6,6 +6,7 @@ import software.sava.idl.clients.core.gen.SerDe;
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 
+/// @param feeBps: u16
 public record ManagementFee(int feeBps) implements SerDe {
 
   public static final int BYTES = 2;
@@ -16,7 +17,7 @@ public record ManagementFee(int feeBps) implements SerDe {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    final var feeBps = getInt16LE(_data, _offset);
+    final var feeBps = Short.toUnsignedInt(getInt16LE(_data, _offset));
     return new ManagementFee(feeBps);
   }
 

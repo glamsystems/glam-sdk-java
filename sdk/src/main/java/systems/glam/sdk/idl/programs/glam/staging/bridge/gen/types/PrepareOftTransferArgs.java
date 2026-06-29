@@ -11,6 +11,8 @@ import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
+/// @param middleInstructionCount: u16
+/// @param sourceAmount: u64
 public record PrepareOftTransferArgs(PublicKey transferId,
                                      byte[] middleInstructionHash,
                                      int middleInstructionCount,
@@ -35,7 +37,7 @@ public record PrepareOftTransferArgs(PublicKey transferId,
     i += 32;
     final var middleInstructionHash = new byte[32];
     i += SerDeUtil.readArray(middleInstructionHash, _data, i);
-    final var middleInstructionCount = getInt16LE(_data, i);
+    final var middleInstructionCount = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var sourceAmount = getInt64LE(_data, i);
     i += 8;

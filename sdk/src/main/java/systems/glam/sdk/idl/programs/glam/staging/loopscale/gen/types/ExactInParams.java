@@ -6,6 +6,8 @@ import software.sava.idl.clients.core.gen.SerDe;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
+/// @param amountIn: u64
+/// @param minAmountOut: u64
 public record ExactInParams(long amountIn, long minAmountOut) implements SerDe {
 
   public static final int BYTES = 16;

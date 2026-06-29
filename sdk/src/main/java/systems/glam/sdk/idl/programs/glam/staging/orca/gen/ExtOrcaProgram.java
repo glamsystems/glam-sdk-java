@@ -229,7 +229,7 @@ public final class ExtOrcaProgram {
     return Instruction.createInstruction(invokedExtOrcaProgramMeta, keys, _data);
   }
 
-  public record CollectFeesV2IxData(Discriminator discriminator, RemainingAccountsInfo remainingAccountsInfo) implements SerDe {  
+  public record CollectFeesV2IxData(Discriminator discriminator, RemainingAccountsInfo remainingAccountsInfo) implements SerDe {
 
     public static CollectFeesV2IxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -371,7 +371,7 @@ public final class ExtOrcaProgram {
     return Instruction.createInstruction(invokedExtOrcaProgramMeta, keys, _data);
   }
 
-  public record CollectRewardV2IxData(Discriminator discriminator, int rewardIndex, RemainingAccountsInfo remainingAccountsInfo) implements SerDe {  
+  public record CollectRewardV2IxData(Discriminator discriminator, int rewardIndex, RemainingAccountsInfo remainingAccountsInfo) implements SerDe {
 
     public static CollectRewardV2IxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -471,6 +471,8 @@ public final class ExtOrcaProgram {
   /// - Permission: `DecreaseLiquidity`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
+  /// @param tokenMinA: u64
+  /// @param tokenMinB: u64
   public static Instruction decreaseLiquidityV2(final AccountMeta invokedExtOrcaProgramMeta,
                                                 final SolanaAccounts solanaAccounts,
                                                 final PublicKey glamStateKey,
@@ -535,6 +537,8 @@ public final class ExtOrcaProgram {
   /// - Permission: `DecreaseLiquidity`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
+  /// @param tokenMinA: u64
+  /// @param tokenMinB: u64
   public static Instruction decreaseLiquidityV2(final AccountMeta invokedExtOrcaProgramMeta,
                                                 final List<AccountMeta> keys,
                                                 final BigInteger liquidityAmount,
@@ -557,11 +561,13 @@ public final class ExtOrcaProgram {
     return Instruction.createInstruction(invokedExtOrcaProgramMeta, keys, _data);
   }
 
+  /// @param tokenMinA: u64
+  /// @param tokenMinB: u64
   public record DecreaseLiquidityV2IxData(Discriminator discriminator,
                                           BigInteger liquidityAmount,
                                           long tokenMinA,
                                           long tokenMinB,
-                                          RemainingAccountsInfo remainingAccountsInfo) implements SerDe {  
+                                          RemainingAccountsInfo remainingAccountsInfo) implements SerDe {
 
     public static DecreaseLiquidityV2IxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -736,7 +742,7 @@ public final class ExtOrcaProgram {
     return Instruction.createInstruction(invokedExtOrcaProgramMeta, keys, _data);
   }
 
-  public record IncreaseLiquidityByTokenAmountsV2IxData(Discriminator discriminator, IncreaseLiquidityMethod method, RemainingAccountsInfo remainingAccountsInfo) implements SerDe {  
+  public record IncreaseLiquidityByTokenAmountsV2IxData(Discriminator discriminator, IncreaseLiquidityMethod method, RemainingAccountsInfo remainingAccountsInfo) implements SerDe {
 
     public static IncreaseLiquidityByTokenAmountsV2IxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -834,6 +840,8 @@ public final class ExtOrcaProgram {
   /// - Permission: `IncreaseLiquidity`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
+  /// @param tokenMaxA: u64
+  /// @param tokenMaxB: u64
   public static Instruction increaseLiquidityV2(final AccountMeta invokedExtOrcaProgramMeta,
                                                 final SolanaAccounts solanaAccounts,
                                                 final PublicKey glamStateKey,
@@ -898,6 +906,8 @@ public final class ExtOrcaProgram {
   /// - Permission: `IncreaseLiquidity`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
+  /// @param tokenMaxA: u64
+  /// @param tokenMaxB: u64
   public static Instruction increaseLiquidityV2(final AccountMeta invokedExtOrcaProgramMeta,
                                                 final List<AccountMeta> keys,
                                                 final BigInteger liquidityAmount,
@@ -920,11 +930,13 @@ public final class ExtOrcaProgram {
     return Instruction.createInstruction(invokedExtOrcaProgramMeta, keys, _data);
   }
 
+  /// @param tokenMaxA: u64
+  /// @param tokenMaxB: u64
   public record IncreaseLiquidityV2IxData(Discriminator discriminator,
                                           BigInteger liquidityAmount,
                                           long tokenMaxA,
                                           long tokenMaxB,
-                                          RemainingAccountsInfo remainingAccountsInfo) implements SerDe {  
+                                          RemainingAccountsInfo remainingAccountsInfo) implements SerDe {
 
     public static IncreaseLiquidityV2IxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1054,7 +1066,7 @@ public final class ExtOrcaProgram {
     return Instruction.createInstruction(invokedExtOrcaProgramMeta, keys, _data);
   }
 
-  public record InitializeTickArrayIxData(Discriminator discriminator, int startTickIndex) implements SerDe {  
+  public record InitializeTickArrayIxData(Discriminator discriminator, int startTickIndex) implements SerDe {
 
     public static InitializeTickArrayIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1196,7 +1208,7 @@ public final class ExtOrcaProgram {
   public record OpenPositionWithTokenExtensionsIxData(Discriminator discriminator,
                                                       int tickLowerIndex,
                                                       int tickUpperIndex,
-                                                      boolean withTokenMetadataExtension) implements SerDe {  
+                                                      boolean withTokenMetadataExtension) implements SerDe {
 
     public static OpenPositionWithTokenExtensionsIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1386,7 +1398,7 @@ public final class ExtOrcaProgram {
                                             int newTickLowerIndex,
                                             int newTickUpperIndex,
                                             RepositionLiquidityMethod method,
-                                            RemainingAccountsInfo remainingAccountsInfo) implements SerDe {  
+                                            RemainingAccountsInfo remainingAccountsInfo) implements SerDe {
 
     public static RepositionLiquidityV2IxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -1481,7 +1493,7 @@ public final class ExtOrcaProgram {
     return Instruction.createInstruction(invokedExtOrcaProgramMeta, keys, _data);
   }
 
-  public record SetWhirlpoolsPolicyIxData(Discriminator discriminator, WhirlpoolsPolicy policy) implements SerDe {  
+  public record SetWhirlpoolsPolicyIxData(Discriminator discriminator, WhirlpoolsPolicy policy) implements SerDe {
 
     public static SetWhirlpoolsPolicyIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());

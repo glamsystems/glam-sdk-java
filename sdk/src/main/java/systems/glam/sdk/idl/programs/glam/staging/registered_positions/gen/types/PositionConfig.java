@@ -23,7 +23,7 @@ import static software.sava.core.encoding.ByteUtil.putInt32LE;
 /// @param nativeCustodyAccount Custody account for Native positions. `Pubkey::default()` for Trusted.
 /// @param nativeCustodyKind Custody kind for Native positions.
 /// @param enabled Whether this position is enabled for observations.
-/// @param freshnessOverrideSecs Freshness override in seconds. 0 means use vault default.
+/// @param freshnessOverrideSecs: u32 Freshness override in seconds. 0 means use vault default.
 /// @param submitAllowlist Per-position submit allowlist. Empty vec = use role-based access only.
 /// @param validateAllowlist Per-position validate allowlist. Empty vec = use role-based access only.
 /// @param configureAllowlist Per-position configure allowlist. Empty vec = use role-based access only.
@@ -36,7 +36,7 @@ public record PositionConfig(byte[] positionId,
                              PublicKey nativeCustodyAccount,
                              NativeCustodyKind nativeCustodyKind,
                              boolean enabled,
-                             int freshnessOverrideSecs,
+                             long freshnessOverrideSecs,
                              PublicKey[] submitAllowlist,
                              PublicKey[] validateAllowlist,
                              PublicKey[] configureAllowlist) implements SerDe {
@@ -71,7 +71,7 @@ public record PositionConfig(byte[] positionId,
     i += nativeCustodyKind.l();
     final var enabled = _data[i] == 1;
     ++i;
-    final var freshnessOverrideSecs = getInt32LE(_data, i);
+    final var freshnessOverrideSecs = Integer.toUnsignedLong(getInt32LE(_data, i));
     i += 4;
     final var submitAllowlist = SerDeUtil.readPublicKeyVector(4, _data, i);
     i += SerDeUtil.lenVector(4, submitAllowlist);
@@ -103,7 +103,7 @@ public record PositionConfig(byte[] positionId,
     i += nativeCustodyKind.write(_data, i);
     _data[i] = (byte) (enabled ? 1 : 0);
     ++i;
-    putInt32LE(_data, i, freshnessOverrideSecs);
+    putInt32LE(_data, i, (int) freshnessOverrideSecs);
     i += 4;
     i += SerDeUtil.writeVector(4, submitAllowlist, _data, i);
     i += SerDeUtil.writeVector(4, validateAllowlist, _data, i);

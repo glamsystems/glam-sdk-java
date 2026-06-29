@@ -6,6 +6,7 @@ import software.sava.idl.clients.core.gen.SerDe;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
+/// @param orderSequenceNumber: u64
 public record FIFOOrderId(Ticks priceInTicks, long orderSequenceNumber) implements SerDe {
 
   public static final int BYTES = 16;

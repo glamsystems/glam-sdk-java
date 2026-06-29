@@ -65,6 +65,7 @@ public final class ExtMarinadeProgram {
 
   /// Deposits SOL to get mSOL
   ///
+  /// @param lamports: u64
   public static Instruction deposit(final AccountMeta invokedExtMarinadeProgramMeta,
                                     final SolanaAccounts solanaAccounts,
                                     final PublicKey glamStateKey,
@@ -106,6 +107,7 @@ public final class ExtMarinadeProgram {
 
   /// Deposits SOL to get mSOL
   ///
+  /// @param lamports: u64
   public static Instruction deposit(final AccountMeta invokedExtMarinadeProgramMeta,
                                     final List<AccountMeta> keys,
                                     final long lamports) {
@@ -116,7 +118,8 @@ public final class ExtMarinadeProgram {
     return Instruction.createInstruction(invokedExtMarinadeProgramMeta, keys, _data);
   }
 
-  public record DepositIxData(Discriminator discriminator, long lamports) implements SerDe {  
+  /// @param lamports: u64
+  public record DepositIxData(Discriminator discriminator, long lamports) implements SerDe {
 
     public static DepositIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -197,6 +200,7 @@ public final class ExtMarinadeProgram {
 
   /// Deposits a stake account
   ///
+  /// @param validatorIndex: u32
   public static Instruction depositStakeAccount(final AccountMeta invokedExtMarinadeProgramMeta,
                                                 final SolanaAccounts solanaAccounts,
                                                 final PublicKey glamStateKey,
@@ -216,7 +220,7 @@ public final class ExtMarinadeProgram {
                                                 final PublicKey clockKey,
                                                 final PublicKey tokenProgramKey,
                                                 final PublicKey stakeProgramKey,
-                                                final int validatorIndex) {
+                                                final long validatorIndex) {
     final var keys = depositStakeAccountKeys(
       solanaAccounts,
       glamStateKey,
@@ -242,17 +246,19 @@ public final class ExtMarinadeProgram {
 
   /// Deposits a stake account
   ///
+  /// @param validatorIndex: u32
   public static Instruction depositStakeAccount(final AccountMeta invokedExtMarinadeProgramMeta,
                                                 final List<AccountMeta> keys,
-                                                final int validatorIndex) {
+                                                final long validatorIndex) {
     final byte[] _data = new byte[12];
     int i = DEPOSIT_STAKE_ACCOUNT_DISCRIMINATOR.write(_data, 0);
-    putInt32LE(_data, i, validatorIndex);
+    putInt32LE(_data, i, (int) validatorIndex);
 
     return Instruction.createInstruction(invokedExtMarinadeProgramMeta, keys, _data);
   }
 
-  public record DepositStakeAccountIxData(Discriminator discriminator, int validatorIndex) implements SerDe {  
+  /// @param validatorIndex: u32
+  public record DepositStakeAccountIxData(Discriminator discriminator, long validatorIndex) implements SerDe {
 
     public static DepositStakeAccountIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -268,14 +274,14 @@ public final class ExtMarinadeProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var validatorIndex = getInt32LE(_data, i);
+      final var validatorIndex = Integer.toUnsignedLong(getInt32LE(_data, i));
       return new DepositStakeAccountIxData(discriminator, validatorIndex);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      putInt32LE(_data, i, validatorIndex);
+      putInt32LE(_data, i, (int) validatorIndex);
       i += 4;
       return i - _offset;
     }
@@ -324,6 +330,7 @@ public final class ExtMarinadeProgram {
 
   /// Burns mSOL and receives SOL
   ///
+  /// @param msolAmount: u64
   public static Instruction liquidUnstake(final AccountMeta invokedExtMarinadeProgramMeta,
                                           final SolanaAccounts solanaAccounts,
                                           final PublicKey glamStateKey,
@@ -361,6 +368,7 @@ public final class ExtMarinadeProgram {
 
   /// Burns mSOL and receives SOL
   ///
+  /// @param msolAmount: u64
   public static Instruction liquidUnstake(final AccountMeta invokedExtMarinadeProgramMeta,
                                           final List<AccountMeta> keys,
                                           final long msolAmount) {
@@ -371,7 +379,8 @@ public final class ExtMarinadeProgram {
     return Instruction.createInstruction(invokedExtMarinadeProgramMeta, keys, _data);
   }
 
-  public record LiquidUnstakeIxData(Discriminator discriminator, long msolAmount) implements SerDe {  
+  /// @param msolAmount: u64
+  public record LiquidUnstakeIxData(Discriminator discriminator, long msolAmount) implements SerDe {
 
     public static LiquidUnstakeIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -455,6 +464,9 @@ public final class ExtMarinadeProgram {
 
   /// Burns mSOL and receives a stake account
   ///
+  /// @param stakeIndex: u32
+  /// @param validatorIndex: u32
+  /// @param msolAmount: u64
   public static Instruction withdrawStakeAccount(final AccountMeta invokedExtMarinadeProgramMeta,
                                                  final SolanaAccounts solanaAccounts,
                                                  final PublicKey glamStateKey,
@@ -476,8 +488,8 @@ public final class ExtMarinadeProgram {
                                                  final PublicKey clockKey,
                                                  final PublicKey tokenProgramKey,
                                                  final PublicKey stakeProgramKey,
-                                                 final int stakeIndex,
-                                                 final int validatorIndex,
+                                                 final long stakeIndex,
+                                                 final long validatorIndex,
                                                  final long msolAmount,
                                                  final PublicKey beneficiary) {
     final var keys = withdrawStakeAccountKeys(
@@ -514,17 +526,20 @@ public final class ExtMarinadeProgram {
 
   /// Burns mSOL and receives a stake account
   ///
+  /// @param stakeIndex: u32
+  /// @param validatorIndex: u32
+  /// @param msolAmount: u64
   public static Instruction withdrawStakeAccount(final AccountMeta invokedExtMarinadeProgramMeta,
                                                  final List<AccountMeta> keys,
-                                                 final int stakeIndex,
-                                                 final int validatorIndex,
+                                                 final long stakeIndex,
+                                                 final long validatorIndex,
                                                  final long msolAmount,
                                                  final PublicKey beneficiary) {
     final byte[] _data = new byte[56];
     int i = WITHDRAW_STAKE_ACCOUNT_DISCRIMINATOR.write(_data, 0);
-    putInt32LE(_data, i, stakeIndex);
+    putInt32LE(_data, i, (int) stakeIndex);
     i += 4;
-    putInt32LE(_data, i, validatorIndex);
+    putInt32LE(_data, i, (int) validatorIndex);
     i += 4;
     putInt64LE(_data, i, msolAmount);
     i += 8;
@@ -533,11 +548,14 @@ public final class ExtMarinadeProgram {
     return Instruction.createInstruction(invokedExtMarinadeProgramMeta, keys, _data);
   }
 
+  /// @param stakeIndex: u32
+  /// @param validatorIndex: u32
+  /// @param msolAmount: u64
   public record WithdrawStakeAccountIxData(Discriminator discriminator,
-                                           int stakeIndex,
-                                           int validatorIndex,
+                                           long stakeIndex,
+                                           long validatorIndex,
                                            long msolAmount,
-                                           PublicKey beneficiary) implements SerDe {  
+                                           PublicKey beneficiary) implements SerDe {
 
     public static WithdrawStakeAccountIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -556,9 +574,9 @@ public final class ExtMarinadeProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var stakeIndex = getInt32LE(_data, i);
+      final var stakeIndex = Integer.toUnsignedLong(getInt32LE(_data, i));
       i += 4;
-      final var validatorIndex = getInt32LE(_data, i);
+      final var validatorIndex = Integer.toUnsignedLong(getInt32LE(_data, i));
       i += 4;
       final var msolAmount = getInt64LE(_data, i);
       i += 8;
@@ -573,9 +591,9 @@ public final class ExtMarinadeProgram {
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      putInt32LE(_data, i, stakeIndex);
+      putInt32LE(_data, i, (int) stakeIndex);
       i += 4;
-      putInt32LE(_data, i, validatorIndex);
+      putInt32LE(_data, i, (int) validatorIndex);
       i += 4;
       putInt64LE(_data, i, msolAmount);
       i += 8;

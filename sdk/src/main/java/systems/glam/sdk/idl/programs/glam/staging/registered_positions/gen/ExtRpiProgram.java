@@ -87,7 +87,7 @@ public final class ExtRpiProgram {
     return Instruction.createInstruction(invokedExtRpiProgramMeta, keys, _data);
   }
 
-  public record RemoveRegisteredPositionIxData(Discriminator discriminator, byte[] positionId) implements SerDe {  
+  public record RemoveRegisteredPositionIxData(Discriminator discriminator, byte[] positionId) implements SerDe {
 
     public static RemoveRegisteredPositionIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -166,7 +166,7 @@ public final class ExtRpiProgram {
     return Instruction.createInstruction(invokedExtRpiProgramMeta, keys, _data);
   }
 
-  public record SubmitObservationIxData(Discriminator discriminator, PositionObservationInput input) implements SerDe {  
+  public record SubmitObservationIxData(Discriminator discriminator, PositionObservationInput input) implements SerDe {
 
     public static SubmitObservationIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -278,7 +278,7 @@ public final class ExtRpiProgram {
   public record SubmitObservationWormholeIxData(Discriminator discriminator,
                                                 byte[] positionId,
                                                 int guardianSetBump,
-                                                byte[] vaaBody) implements SerDe {  
+                                                byte[] vaaBody) implements SerDe {
 
     public static SubmitObservationWormholeIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -379,7 +379,7 @@ public final class ExtRpiProgram {
     return Instruction.createInstruction(invokedExtRpiProgramMeta, keys, _data);
   }
 
-  public record UpsertRegisteredPositionIxData(Discriminator discriminator, PositionConfig config) implements SerDe {  
+  public record UpsertRegisteredPositionIxData(Discriminator discriminator, PositionConfig config) implements SerDe {
 
     public static UpsertRegisteredPositionIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -458,7 +458,7 @@ public final class ExtRpiProgram {
     return Instruction.createInstruction(invokedExtRpiProgramMeta, keys, _data);
   }
 
-  public record UpsertRegisteredPositionWormholeConfigIxData(Discriminator discriminator, WormholeObservationConfigInput input) implements SerDe {  
+  public record UpsertRegisteredPositionWormholeConfigIxData(Discriminator discriminator, WormholeObservationConfigInput input) implements SerDe {
 
     public static UpsertRegisteredPositionWormholeConfigIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -543,7 +543,7 @@ public final class ExtRpiProgram {
     return Instruction.createInstruction(invokedExtRpiProgramMeta, keys, _data);
   }
 
-  public record UpsertRegisteredPositionWormholeHyperliquidConfigIxData(Discriminator discriminator, WormholeHyperliquidObservationConfigInput input) implements SerDe {  
+  public record UpsertRegisteredPositionWormholeHyperliquidConfigIxData(Discriminator discriminator, WormholeHyperliquidObservationConfigInput input) implements SerDe {
 
     public static UpsertRegisteredPositionWormholeHyperliquidConfigIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -652,7 +652,7 @@ public final class ExtRpiProgram {
     return Instruction.createInstruction(invokedExtRpiProgramMeta, keys, _data);
   }
 
-  public record ValidateObservationIxData(Discriminator discriminator, byte[] positionId) implements SerDe {  
+  public record ValidateObservationIxData(Discriminator discriminator, byte[] positionId) implements SerDe {
 
     public static ValidateObservationIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
