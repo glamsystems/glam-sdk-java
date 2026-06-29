@@ -10,17 +10,17 @@ tasks.named<Jar>("jar") {
   }
 }
 
-//dependencyAnalysis {
-//  issues {
-//    onAny {
-//      severity("ignore")
-//    }
-//  }
-//}
+dependencyAnalysis {
+  issues {
+    onAny {
+      severity("ignore")
+    }
+  }
+}
 
 dependencies {
-  project(":idl-clients:idl-clients-bundle")
-  project(":idl-clients:idl-clients-spl")
+//  project(":idl-clients:idl-clients-bundle")
+//  project(":idl-clients:idl-clients-spl")
 
 //  project(":ravina:ravina-core")
 //  project(":ravina:ravina-solana")
