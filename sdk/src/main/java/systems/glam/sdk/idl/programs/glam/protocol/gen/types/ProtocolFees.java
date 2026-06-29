@@ -6,6 +6,8 @@ import software.sava.idl.clients.core.gen.SerDe;
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 
+/// @param baseFeeBps: u16
+/// @param flowFeeBps: u16
 public record ProtocolFees(int baseFeeBps, int flowFeeBps) implements SerDe {
 
   public static final int BYTES = 4;
@@ -18,9 +20,9 @@ public record ProtocolFees(int baseFeeBps, int flowFeeBps) implements SerDe {
       return null;
     }
     int i = _offset;
-    final var baseFeeBps = getInt16LE(_data, i);
+    final var baseFeeBps = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
-    final var flowFeeBps = getInt16LE(_data, i);
+    final var flowFeeBps = Short.toUnsignedInt(getInt16LE(_data, i));
     return new ProtocolFees(baseFeeBps, flowFeeBps);
   }
 

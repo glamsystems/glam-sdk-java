@@ -160,8 +160,8 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
 
   private void indexReserveByIndex(final ReserveContext reserveContext) {
     final var key = reserveContext.pubKey();
-    for (final short index : reserveContext.priceChainIndexes()) {
-      if (index < 0) {
+    for (final int index : reserveContext.priceChainIndexes()) {
+      if (index >= OracleMappings.PRICE_INFO_ACCOUNTS_LEN) {
         break;
       }
       var reservesForIndex = reservesByIndex.get(index);
@@ -206,8 +206,8 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
 
   public void removePreviousEntry(final ReserveContext previousContext) {
     final var reservePubKey = previousContext.pubKey();
-    for (final short index : previousContext.priceChainIndexes()) {
-      if (index < 0) {
+    for (final int index : previousContext.priceChainIndexes()) {
+      if (index >= OracleMappings.PRICE_INFO_ACCOUNTS_LEN) {
         break;
       } else {
         final var reservesForIndex = reservesByIndex.get(index);

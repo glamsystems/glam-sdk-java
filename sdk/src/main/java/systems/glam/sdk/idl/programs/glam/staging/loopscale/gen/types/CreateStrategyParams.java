@@ -9,6 +9,11 @@ import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
+/// @param originationCap: u64
+/// @param liquidityBuffer: u64
+/// @param interestFee: u64
+/// @param originationFee: u64
+/// @param principalFee: u64
 public record CreateStrategyParams(PublicKey lender,
                                    long originationCap,
                                    long liquidityBuffer,

@@ -18,6 +18,8 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
+/// @param timelockDuration: u32
+/// @param timelockExpiresAt: u64
 public record StateAccount(PublicKey _address,
                            Discriminator discriminator,
                            AccountType accountType,
@@ -30,7 +32,7 @@ public record StateAccount(PublicKey _address,
                            int baseAssetDecimals,
                            int baseAssetTokenProgram,
                            byte[] name,
-                           int timelockDuration,
+                           long timelockDuration,
                            long timelockExpiresAt,
                            PublicKey mint,
                            PublicKey[] assets,
@@ -92,9 +94,9 @@ public record StateAccount(PublicKey _address,
     return Filter.createMemCompFilter(BASE_ASSET_TOKEN_PROGRAM_OFFSET, new byte[]{(byte) baseAssetTokenProgram});
   }
 
-  public static Filter createTimelockDurationFilter(final int timelockDuration) {
+  public static Filter createTimelockDurationFilter(final long timelockDuration) {
     final byte[] _data = new byte[4];
-    putInt32LE(_data, 0, timelockDuration);
+    putInt32LE(_data, 0, (int) timelockDuration);
     return Filter.createMemCompFilter(TIMELOCK_DURATION_OFFSET, _data);
   }
 
@@ -148,7 +150,7 @@ public record StateAccount(PublicKey _address,
     ++i;
     final var name = new byte[32];
     i += SerDeUtil.readArray(name, _data, i);
-    final var timelockDuration = getInt32LE(_data, i);
+    final var timelockDuration = Integer.toUnsignedLong(getInt32LE(_data, i));
     i += 4;
     final var timelockExpiresAt = getInt64LE(_data, i);
     i += 8;
@@ -207,7 +209,7 @@ public record StateAccount(PublicKey _address,
     _data[i] = (byte) baseAssetTokenProgram;
     ++i;
     i += SerDeUtil.writeArrayChecked(name, 32, _data, i);
-    putInt32LE(_data, i, timelockDuration);
+    putInt32LE(_data, i, (int) timelockDuration);
     i += 4;
     putInt64LE(_data, i, timelockExpiresAt);
     i += 8;

@@ -12,13 +12,13 @@ import static software.sava.core.encoding.ByteUtil.putInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
 /// @param market Loopscale market information account this policy applies to.
-/// @param maxBorrowAmount Maximum principal amount that may be borrowed in a single instruction.
+/// @param maxBorrowAmount: u64 Maximum principal amount that may be borrowed in a single instruction.
 ///                        A value of zero means no per-instruction borrow is allowed for this market.
-/// @param maxTotalBorrowAmount Maximum outstanding principal a single loan may owe in this market.
+/// @param maxTotalBorrowAmount: u64 Maximum outstanding principal a single loan may owe in this market.
 ///                             Enforced per loan (summed over that loan's ledgers in this market), not
 ///                             aggregated across all of the vault's loans in this market. A value of zero
 ///                             means no outstanding borrow exposure is allowed for this market.
-/// @param maxLtvBps Maximum expected liquidation LTV threshold, in basis points.
+/// @param maxLtvBps: u16 Maximum expected liquidation LTV threshold, in basis points.
 ///                  Borrow enforcement compares this to Loopscale's expected LQT values.
 ///                  A value of zero means no expected liquidation LTV is allowed for this market.
 /// @param durationIndexesAllowlist Duration indexes that may be used when borrowing from this market.
@@ -51,7 +51,7 @@ public record BorrowMarketPolicy(PublicKey market,
     i += 8;
     final var maxTotalBorrowAmount = getInt64LE(_data, i);
     i += 8;
-    final var maxLtvBps = getInt16LE(_data, i);
+    final var maxLtvBps = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var durationIndexesAllowlist = SerDeUtil.readbyteVector(4, _data, i);
     return new BorrowMarketPolicy(market,

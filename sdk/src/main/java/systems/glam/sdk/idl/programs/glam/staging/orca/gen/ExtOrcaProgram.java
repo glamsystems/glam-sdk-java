@@ -471,6 +471,8 @@ public final class ExtOrcaProgram {
   /// - Permission: `DecreaseLiquidity`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
+  /// @param tokenMinA: u64
+  /// @param tokenMinB: u64
   public static Instruction decreaseLiquidityV2(final AccountMeta invokedExtOrcaProgramMeta,
                                                 final SolanaAccounts solanaAccounts,
                                                 final PublicKey glamStateKey,
@@ -535,6 +537,8 @@ public final class ExtOrcaProgram {
   /// - Permission: `DecreaseLiquidity`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
+  /// @param tokenMinA: u64
+  /// @param tokenMinB: u64
   public static Instruction decreaseLiquidityV2(final AccountMeta invokedExtOrcaProgramMeta,
                                                 final List<AccountMeta> keys,
                                                 final BigInteger liquidityAmount,
@@ -557,6 +561,8 @@ public final class ExtOrcaProgram {
     return Instruction.createInstruction(invokedExtOrcaProgramMeta, keys, _data);
   }
 
+  /// @param tokenMinA: u64
+  /// @param tokenMinB: u64
   public record DecreaseLiquidityV2IxData(Discriminator discriminator,
                                           BigInteger liquidityAmount,
                                           long tokenMinA,
@@ -834,6 +840,8 @@ public final class ExtOrcaProgram {
   /// - Permission: `IncreaseLiquidity`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
+  /// @param tokenMaxA: u64
+  /// @param tokenMaxB: u64
   public static Instruction increaseLiquidityV2(final AccountMeta invokedExtOrcaProgramMeta,
                                                 final SolanaAccounts solanaAccounts,
                                                 final PublicKey glamStateKey,
@@ -898,6 +906,8 @@ public final class ExtOrcaProgram {
   /// - Permission: `IncreaseLiquidity`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
+  /// @param tokenMaxA: u64
+  /// @param tokenMaxB: u64
   public static Instruction increaseLiquidityV2(final AccountMeta invokedExtOrcaProgramMeta,
                                                 final List<AccountMeta> keys,
                                                 final BigInteger liquidityAmount,
@@ -920,6 +930,8 @@ public final class ExtOrcaProgram {
     return Instruction.createInstruction(invokedExtOrcaProgramMeta, keys, _data);
   }
 
+  /// @param tokenMaxA: u64
+  /// @param tokenMaxB: u64
   public record IncreaseLiquidityV2IxData(Discriminator discriminator,
                                           BigInteger liquidityAmount,
                                           long tokenMaxA,

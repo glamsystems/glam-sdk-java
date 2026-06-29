@@ -19,7 +19,7 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 /// @param padValidated Alignment padding after has_validated (to 8-byte boundary for Observation).
 /// @param lastValidatedObservation The last validated observation (only valid when `has_validated == true`).
 /// @param validatedBy Signer who last validated.
-/// @param validatedAtSlot Slot at which last validation occurred.
+/// @param validatedAtSlot: u64 Slot at which last validation occurred.
 /// @param validatedBaseAssetAmount Base-asset-normalized amount from the last validated observation.
 ///                                 This is the value that contributes to the aggregate priced protocol.
 public record PositionObservation(byte[] positionId,

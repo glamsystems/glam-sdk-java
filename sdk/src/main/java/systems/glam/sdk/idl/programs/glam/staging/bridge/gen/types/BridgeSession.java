@@ -18,6 +18,14 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
+/// @param protocol: u16
+/// @param providerInstructionCount: u16
+/// @param sourceAmount: u64
+/// @param quotedOutAmount: u64
+/// @param initialSourceBalance: u64
+/// @param initialProviderSequence: u64
+/// @param destinationChain: u16
+/// @param preparedSlot: u64
 public record BridgeSession(PublicKey _address,
                             Discriminator discriminator,
                             PublicKey glamState,
@@ -213,7 +221,7 @@ public record BridgeSession(PublicKey _address,
     i += 32;
     final var transferId = readPubKey(_data, i);
     i += 32;
-    final var protocol = getInt16LE(_data, i);
+    final var protocol = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var managed = _data[i] == 1;
     ++i;
@@ -235,7 +243,7 @@ public record BridgeSession(PublicKey _address,
     i += 32;
     final var providerInstructionHash = new byte[32];
     i += SerDeUtil.readArray(providerInstructionHash, _data, i);
-    final var providerInstructionCount = getInt16LE(_data, i);
+    final var providerInstructionCount = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var sourceAmount = getInt64LE(_data, i);
     i += 8;
@@ -245,7 +253,7 @@ public record BridgeSession(PublicKey _address,
     i += 8;
     final var initialProviderSequence = getInt64LE(_data, i);
     i += 8;
-    final var destinationChain = getInt16LE(_data, i);
+    final var destinationChain = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var destinationRecipient = readPubKey(_data, i);
     i += 32;

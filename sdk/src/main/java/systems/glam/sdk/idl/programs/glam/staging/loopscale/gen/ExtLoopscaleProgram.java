@@ -908,6 +908,7 @@ public final class ExtLoopscaleProgram {
   /// - If `market_information` has a `LendingPolicy::market_policies` entry,
   /// advanced per-market lending limits are enforced.
   ///
+  /// @param amount: u64
   public static Instruction depositStrategy(final AccountMeta invokedExtLoopscaleProgramMeta,
                                             final SolanaAccounts solanaAccounts,
                                             final PublicKey glamStateKey,
@@ -955,6 +956,7 @@ public final class ExtLoopscaleProgram {
   /// - If `market_information` has a `LendingPolicy::market_policies` entry,
   /// advanced per-market lending limits are enforced.
   ///
+  /// @param amount: u64
   public static Instruction depositStrategy(final AccountMeta invokedExtLoopscaleProgramMeta,
                                             final List<AccountMeta> keys,
                                             final long amount) {
@@ -965,6 +967,7 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
+  /// @param amount: u64
   public record DepositStrategyIxData(Discriminator discriminator, long amount) implements SerDe {  
 
     public static DepositStrategyIxData read(final Instruction instruction) {
@@ -2436,6 +2439,7 @@ public final class ExtLoopscaleProgram {
   /// 
   /// - Permission: `LendingPermissions::WithdrawStrategy`.
   ///
+  /// @param amount: u64
   public static Instruction withdrawStrategy(final AccountMeta invokedExtLoopscaleProgramMeta,
                                              final SolanaAccounts solanaAccounts,
                                              final PublicKey glamStateKey,
@@ -2480,6 +2484,7 @@ public final class ExtLoopscaleProgram {
   /// 
   /// - Permission: `LendingPermissions::WithdrawStrategy`.
   ///
+  /// @param amount: u64
   public static Instruction withdrawStrategy(final AccountMeta invokedExtLoopscaleProgramMeta,
                                              final List<AccountMeta> keys,
                                              final long amount,
@@ -2493,6 +2498,7 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
+  /// @param amount: u64
   public record WithdrawStrategyIxData(Discriminator discriminator, long amount, boolean withdrawAll) implements SerDe {  
 
     public static WithdrawStrategyIxData read(final Instruction instruction) {

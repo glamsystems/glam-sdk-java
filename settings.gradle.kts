@@ -18,7 +18,7 @@ pluginManagement {
         }
       }
     }
-  // includeBuild("../sava-build")
+    // includeBuild("../sava-build")
   }
 }
 
@@ -34,4 +34,4 @@ javaModules {
 }
 
 //includeBuild("../ravina")
-//includeBuild("../idl-clients")
+includeBuild("../idl-clients")

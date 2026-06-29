@@ -22,6 +22,8 @@ public sealed interface IncreaseLiquidityMethod extends RustEnum permits
     };
   }
 
+  /// @param tokenMaxA: u64
+  /// @param tokenMaxB: u64
   record ByTokenAmounts(long tokenMaxA,
                         long tokenMaxB,
                         BigInteger minSqrtPrice,

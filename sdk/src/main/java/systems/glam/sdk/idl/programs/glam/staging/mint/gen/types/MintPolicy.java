@@ -10,7 +10,11 @@ import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt32LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
-public record MintPolicy(int lockupPeriod,
+/// @param lockupPeriod: u32
+/// @param maxCap: u64
+/// @param minSubscription: u64
+/// @param minRedemption: u64
+public record MintPolicy(long lockupPeriod,
                          long maxCap,
                          long minSubscription,
                          long minRedemption,
@@ -33,7 +37,7 @@ public record MintPolicy(int lockupPeriod,
       return null;
     }
     int i = _offset;
-    final var lockupPeriod = getInt32LE(_data, i);
+    final var lockupPeriod = Integer.toUnsignedLong(getInt32LE(_data, i));
     i += 4;
     final var maxCap = getInt64LE(_data, i);
     i += 8;
@@ -74,7 +78,7 @@ public record MintPolicy(int lockupPeriod,
   @Override
   public int write(final byte[] _data, final int _offset) {
     int i = _offset;
-    putInt32LE(_data, i, lockupPeriod);
+    putInt32LE(_data, i, (int) lockupPeriod);
     i += 4;
     putInt64LE(_data, i, maxCap);
     i += 8;

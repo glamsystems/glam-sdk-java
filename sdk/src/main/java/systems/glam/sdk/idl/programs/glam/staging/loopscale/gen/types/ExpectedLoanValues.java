@@ -7,7 +7,9 @@ import software.sava.idl.clients.core.gen.SerDeUtil;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
-public record ExpectedLoanValues(long expectedApy, int[] expectedLqt) implements SerDe {
+/// @param expectedApy: u64
+/// @param expectedLqt: u32[]
+public record ExpectedLoanValues(long expectedApy, long[] expectedLqt) implements SerDe {
 
   public static final int BYTES = 28;
   public static final int EXPECTED_LQT_LEN = 5;
@@ -22,8 +24,8 @@ public record ExpectedLoanValues(long expectedApy, int[] expectedLqt) implements
     int i = _offset;
     final var expectedApy = getInt64LE(_data, i);
     i += 8;
-    final var expectedLqt = new int[5];
-    SerDeUtil.readArray(expectedLqt, _data, i);
+    final var expectedLqt = new long[5];
+    SerDeUtil.readUnsignedIntArray(expectedLqt, _data, i);
     return new ExpectedLoanValues(expectedApy, expectedLqt);
   }
 
@@ -32,7 +34,7 @@ public record ExpectedLoanValues(long expectedApy, int[] expectedLqt) implements
     int i = _offset;
     putInt64LE(_data, i, expectedApy);
     i += 8;
-    i += SerDeUtil.writeArrayChecked(expectedLqt, 5, _data, i);
+    i += SerDeUtil.writeUnsignedIntArrayChecked(expectedLqt, 5, _data, i);
     return i - _offset;
   }
 

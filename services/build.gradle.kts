@@ -14,9 +14,8 @@ dependencyAnalysis {
 dependencies {
   project(":sdk")
 
-//  project(":idl-clients:idl-clients-kamino")
-//  project(":idl-clients:idl-clients-loopscale")
-//  project(":idl-clients:idl-clients-phoenix")
+  project(":idl-clients:idl-clients-bundle")
+  project(":idl-clients:idl-clients-spl")
 
 //  project(":ravina:ravina-core")
 //  project(":ravina:ravina-solana")

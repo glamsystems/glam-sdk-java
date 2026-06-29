@@ -84,6 +84,8 @@ public final class ExtJupiterProgram {
   /// - Permission: `BorrowPermissions::InitPosition`.
   /// - Policy: `vault_state` must be in `BorrowPolicy::vaults_allowlist`.
   ///
+  /// @param vaultId: u16
+  /// @param nextPositionId: u32
   public static Instruction borrowInitPosition(final AccountMeta invokedExtJupiterProgramMeta,
                                                final SolanaAccounts solanaAccounts,
                                                final PublicKey glamStateKey,
@@ -101,7 +103,7 @@ public final class ExtJupiterProgram {
                                                final PublicKey tokenProgramKey,
                                                final PublicKey metadataProgramKey,
                                                final int vaultId,
-                                               final int nextPositionId) {
+                                               final long nextPositionId) {
     final var keys = borrowInitPositionKeys(
       solanaAccounts,
       glamStateKey,
@@ -127,20 +129,24 @@ public final class ExtJupiterProgram {
   /// - Permission: `BorrowPermissions::InitPosition`.
   /// - Policy: `vault_state` must be in `BorrowPolicy::vaults_allowlist`.
   ///
+  /// @param vaultId: u16
+  /// @param nextPositionId: u32
   public static Instruction borrowInitPosition(final AccountMeta invokedExtJupiterProgramMeta,
                                                final List<AccountMeta> keys,
                                                final int vaultId,
-                                               final int nextPositionId) {
+                                               final long nextPositionId) {
     final byte[] _data = new byte[14];
     int i = BORROW_INIT_POSITION_DISCRIMINATOR.write(_data, 0);
     putInt16LE(_data, i, vaultId);
     i += 2;
-    putInt32LE(_data, i, nextPositionId);
+    putInt32LE(_data, i, (int) nextPositionId);
 
     return Instruction.createInstruction(invokedExtJupiterProgramMeta, keys, _data);
   }
 
-  public record BorrowInitPositionIxData(Discriminator discriminator, int vaultId, int nextPositionId) implements SerDe {  
+  /// @param vaultId: u16
+  /// @param nextPositionId: u32
+  public record BorrowInitPositionIxData(Discriminator discriminator, int vaultId, long nextPositionId) implements SerDe {  
 
     public static BorrowInitPositionIxData read(final Instruction instruction) {
       return read(instruction.data(), instruction.offset());
@@ -157,9 +163,9 @@ public final class ExtJupiterProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var vaultId = getInt16LE(_data, i);
+      final var vaultId = Short.toUnsignedInt(getInt16LE(_data, i));
       i += 2;
-      final var nextPositionId = getInt32LE(_data, i);
+      final var nextPositionId = Integer.toUnsignedLong(getInt32LE(_data, i));
       return new BorrowInitPositionIxData(discriminator, vaultId, nextPositionId);
     }
 
@@ -168,7 +174,7 @@ public final class ExtJupiterProgram {
       int i = _offset + discriminator.write(_data, _offset);
       putInt16LE(_data, i, vaultId);
       i += 2;
-      putInt32LE(_data, i, nextPositionId);
+      putInt32LE(_data, i, (int) nextPositionId);
       i += 4;
       return i - _offset;
     }
@@ -518,6 +524,8 @@ public final class ExtJupiterProgram {
   /// - Permission: `EarnPermissions::Deposit`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
+  /// @param assets: u64
+  /// @param minAmountOut: u64
   public static Instruction earnDeposit(final AccountMeta invokedExtJupiterProgramMeta,
                                         final SolanaAccounts solanaAccounts,
                                         final PublicKey glamStateKey,
@@ -573,6 +581,8 @@ public final class ExtJupiterProgram {
   /// - Permission: `EarnPermissions::Deposit`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
+  /// @param assets: u64
+  /// @param minAmountOut: u64
   public static Instruction earnDeposit(final AccountMeta invokedExtJupiterProgramMeta,
                                         final List<AccountMeta> keys,
                                         final long assets,
@@ -586,6 +596,8 @@ public final class ExtJupiterProgram {
     return Instruction.createInstruction(invokedExtJupiterProgramMeta, keys, _data);
   }
 
+  /// @param assets: u64
+  /// @param minAmountOut: u64
   public record EarnDepositIxData(Discriminator discriminator, long assets, long minAmountOut) implements SerDe {  
 
     public static EarnDepositIxData read(final Instruction instruction) {
@@ -686,6 +698,8 @@ public final class ExtJupiterProgram {
   /// - Permission: `EarnPermissions::Withdraw`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
+  /// @param amount: u64
+  /// @param maxSharesBurn: u64
   public static Instruction earnWithdraw(final AccountMeta invokedExtJupiterProgramMeta,
                                          final SolanaAccounts solanaAccounts,
                                          final PublicKey glamStateKey,
@@ -743,6 +757,8 @@ public final class ExtJupiterProgram {
   /// - Permission: `EarnPermissions::Withdraw`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
+  /// @param amount: u64
+  /// @param maxSharesBurn: u64
   public static Instruction earnWithdraw(final AccountMeta invokedExtJupiterProgramMeta,
                                          final List<AccountMeta> keys,
                                          final long amount,
@@ -756,6 +772,8 @@ public final class ExtJupiterProgram {
     return Instruction.createInstruction(invokedExtJupiterProgramMeta, keys, _data);
   }
 
+  /// @param amount: u64
+  /// @param maxSharesBurn: u64
   public record EarnWithdrawIxData(Discriminator discriminator, long amount, long maxSharesBurn) implements SerDe {  
 
     public static EarnWithdrawIxData read(final Instruction instruction) {

@@ -10,6 +10,7 @@ import static software.sava.core.encoding.ByteUtil.putInt16LE;
 /// Stores policy data for an integrated protocol.
 /// Integration programs serialize/deserialize this data.
 ///
+/// @param protocolBitflag: u16
 public record ProtocolPolicy(int protocolBitflag, byte[] data) implements SerDe {
 
   public static final int PROTOCOL_BITFLAG_OFFSET = 0;
@@ -20,7 +21,7 @@ public record ProtocolPolicy(int protocolBitflag, byte[] data) implements SerDe 
       return null;
     }
     int i = _offset;
-    final var protocolBitflag = getInt16LE(_data, i);
+    final var protocolBitflag = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var data = SerDeUtil.readbyteVector(4, _data, i);
     return new ProtocolPolicy(protocolBitflag, data);

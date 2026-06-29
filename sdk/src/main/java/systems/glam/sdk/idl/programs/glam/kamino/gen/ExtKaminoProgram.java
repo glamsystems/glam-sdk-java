@@ -72,6 +72,7 @@ public final class ExtKaminoProgram {
     );
   }
 
+  /// @param rewardIndex: u64
   public static Instruction farmsHarvestReward(final AccountMeta invokedExtKaminoProgramMeta,
                                                final SolanaAccounts solanaAccounts,
                                                final PublicKey glamStateKey,
@@ -114,6 +115,7 @@ public final class ExtKaminoProgram {
     return farmsHarvestReward(invokedExtKaminoProgramMeta, keys, rewardIndex);
   }
 
+  /// @param rewardIndex: u64
   public static Instruction farmsHarvestReward(final AccountMeta invokedExtKaminoProgramMeta,
                                                final List<AccountMeta> keys,
                                                final long rewardIndex) {
@@ -124,6 +126,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
+  /// @param rewardIndex: u64
   public record FarmsHarvestRewardIxData(Discriminator discriminator, long rewardIndex) implements SerDe {  
 
     public static FarmsHarvestRewardIxData read(final Instruction instruction) {
@@ -247,6 +250,7 @@ public final class ExtKaminoProgram {
     );
   }
 
+  /// @param amount: u64
   public static Instruction farmsStake(final AccountMeta invokedExtKaminoProgramMeta,
                                        final SolanaAccounts solanaAccounts,
                                        final PublicKey glamStateKey,
@@ -283,6 +287,7 @@ public final class ExtKaminoProgram {
     return farmsStake(invokedExtKaminoProgramMeta, keys, amount);
   }
 
+  /// @param amount: u64
   public static Instruction farmsStake(final AccountMeta invokedExtKaminoProgramMeta,
                                        final List<AccountMeta> keys,
                                        final long amount) {
@@ -293,6 +298,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
+  /// @param amount: u64
   public record FarmsStakeIxData(Discriminator discriminator, long amount) implements SerDe {  
 
     public static FarmsStakeIxData read(final Instruction instruction) {
@@ -544,6 +550,7 @@ public final class ExtKaminoProgram {
     );
   }
 
+  /// @param liquidityAmount: u64
   public static Instruction lendingBorrowObligationLiquidityV2(final AccountMeta invokedExtKaminoProgramMeta,
                                                                final SolanaAccounts solanaAccounts,
                                                                final PublicKey glamStateKey,
@@ -594,6 +601,7 @@ public final class ExtKaminoProgram {
     return lendingBorrowObligationLiquidityV2(invokedExtKaminoProgramMeta, keys, liquidityAmount);
   }
 
+  /// @param liquidityAmount: u64
   public static Instruction lendingBorrowObligationLiquidityV2(final AccountMeta invokedExtKaminoProgramMeta,
                                                                final List<AccountMeta> keys,
                                                                final long liquidityAmount) {
@@ -604,6 +612,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
+  /// @param liquidityAmount: u64
   public record LendingBorrowObligationLiquidityV2IxData(Discriminator discriminator, long liquidityAmount) implements SerDe {  
 
     public static LendingBorrowObligationLiquidityV2IxData read(final Instruction instruction) {
@@ -691,6 +700,7 @@ public final class ExtKaminoProgram {
     );
   }
 
+  /// @param liquidityAmount: u64
   public static Instruction lendingDepositReserveLiquidityAndObligationCollateralV2(final AccountMeta invokedExtKaminoProgramMeta,
                                                                                     final SolanaAccounts solanaAccounts,
                                                                                     final PublicKey glamStateKey,
@@ -745,6 +755,7 @@ public final class ExtKaminoProgram {
     return lendingDepositReserveLiquidityAndObligationCollateralV2(invokedExtKaminoProgramMeta, keys, liquidityAmount);
   }
 
+  /// @param liquidityAmount: u64
   public static Instruction lendingDepositReserveLiquidityAndObligationCollateralV2(final AccountMeta invokedExtKaminoProgramMeta,
                                                                                     final List<AccountMeta> keys,
                                                                                     final long liquidityAmount) {
@@ -755,6 +766,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
+  /// @param liquidityAmount: u64
   public record LendingDepositReserveLiquidityAndObligationCollateralV2IxData(Discriminator discriminator, long liquidityAmount) implements SerDe {  
 
     public static LendingDepositReserveLiquidityAndObligationCollateralV2IxData read(final Instruction instruction) {
@@ -1185,6 +1197,9 @@ public final class ExtKaminoProgram {
     );
   }
 
+  /// @param liquidityAmount: u64
+  /// @param minAcceptableReceivedLiquidityAmount: u64
+  /// @param maxAllowedLtvOverridePercent: u64
   public static Instruction lendingLiquidateObligationAndRedeemReserveCollateralV2(final AccountMeta invokedExtKaminoProgramMeta,
                                                                                    final SolanaAccounts solanaAccounts,
                                                                                    final PublicKey glamStateKey,
@@ -1263,6 +1278,9 @@ public final class ExtKaminoProgram {
     );
   }
 
+  /// @param liquidityAmount: u64
+  /// @param minAcceptableReceivedLiquidityAmount: u64
+  /// @param maxAllowedLtvOverridePercent: u64
   public static Instruction lendingLiquidateObligationAndRedeemReserveCollateralV2(final AccountMeta invokedExtKaminoProgramMeta,
                                                                                    final List<AccountMeta> keys,
                                                                                    final long liquidityAmount,
@@ -1279,6 +1297,9 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
+  /// @param liquidityAmount: u64
+  /// @param minAcceptableReceivedLiquidityAmount: u64
+  /// @param maxAllowedLtvOverridePercent: u64
   public record LendingLiquidateObligationAndRedeemReserveCollateralV2IxData(Discriminator discriminator,
                                                                              long liquidityAmount,
                                                                              long minAcceptableReceivedLiquidityAmount,
@@ -1371,6 +1392,7 @@ public final class ExtKaminoProgram {
     );
   }
 
+  /// @param liquidityAmount: u64
   public static Instruction lendingRepayObligationLiquidityV2(final AccountMeta invokedExtKaminoProgramMeta,
                                                               final SolanaAccounts solanaAccounts,
                                                               final PublicKey glamStateKey,
@@ -1417,6 +1439,7 @@ public final class ExtKaminoProgram {
     return lendingRepayObligationLiquidityV2(invokedExtKaminoProgramMeta, keys, liquidityAmount);
   }
 
+  /// @param liquidityAmount: u64
   public static Instruction lendingRepayObligationLiquidityV2(final AccountMeta invokedExtKaminoProgramMeta,
                                                               final List<AccountMeta> keys,
                                                               final long liquidityAmount) {
@@ -1427,6 +1450,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
+  /// @param liquidityAmount: u64
   public record LendingRepayObligationLiquidityV2IxData(Discriminator discriminator, long liquidityAmount) implements SerDe {  
 
     public static LendingRepayObligationLiquidityV2IxData read(final Instruction instruction) {
@@ -1607,6 +1631,7 @@ public final class ExtKaminoProgram {
     );
   }
 
+  /// @param collateralAmount: u64
   public static Instruction lendingWithdrawObligationCollateralAndRedeemReserveCollateralV2(final AccountMeta invokedExtKaminoProgramMeta,
                                                                                             final SolanaAccounts solanaAccounts,
                                                                                             final PublicKey glamStateKey,
@@ -1661,6 +1686,7 @@ public final class ExtKaminoProgram {
     return lendingWithdrawObligationCollateralAndRedeemReserveCollateralV2(invokedExtKaminoProgramMeta, keys, collateralAmount);
   }
 
+  /// @param collateralAmount: u64
   public static Instruction lendingWithdrawObligationCollateralAndRedeemReserveCollateralV2(final AccountMeta invokedExtKaminoProgramMeta,
                                                                                             final List<AccountMeta> keys,
                                                                                             final long collateralAmount) {
@@ -1671,6 +1697,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
+  /// @param collateralAmount: u64
   public record LendingWithdrawObligationCollateralAndRedeemReserveCollateralV2IxData(Discriminator discriminator, long collateralAmount) implements SerDe {  
 
     public static LendingWithdrawObligationCollateralAndRedeemReserveCollateralV2IxData read(final Instruction instruction) {
@@ -1881,6 +1908,7 @@ public final class ExtKaminoProgram {
     );
   }
 
+  /// @param maxAmount: u64
   public static Instruction vaultsDeposit(final AccountMeta invokedExtKaminoProgramMeta,
                                           final SolanaAccounts solanaAccounts,
                                           final PublicKey glamStateKey,
@@ -1926,6 +1954,7 @@ public final class ExtKaminoProgram {
     return vaultsDeposit(invokedExtKaminoProgramMeta, keys, maxAmount);
   }
 
+  /// @param maxAmount: u64
   public static Instruction vaultsDeposit(final AccountMeta invokedExtKaminoProgramMeta,
                                           final List<AccountMeta> keys,
                                           final long maxAmount) {
@@ -1936,6 +1965,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
+  /// @param maxAmount: u64
   public record VaultsDepositIxData(Discriminator discriminator, long maxAmount) implements SerDe {  
 
     public static VaultsDepositIxData read(final Instruction instruction) {
@@ -2038,6 +2068,7 @@ public final class ExtKaminoProgram {
     );
   }
 
+  /// @param sharesAmount: u64
   public static Instruction vaultsWithdraw(final AccountMeta invokedExtKaminoProgramMeta,
                                            final SolanaAccounts solanaAccounts,
                                            final PublicKey glamStateKey,
@@ -2107,6 +2138,7 @@ public final class ExtKaminoProgram {
     return vaultsWithdraw(invokedExtKaminoProgramMeta, keys, sharesAmount);
   }
 
+  /// @param sharesAmount: u64
   public static Instruction vaultsWithdraw(final AccountMeta invokedExtKaminoProgramMeta,
                                            final List<AccountMeta> keys,
                                            final long sharesAmount) {
@@ -2117,6 +2149,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
+  /// @param sharesAmount: u64
   public record VaultsWithdrawIxData(Discriminator discriminator, long sharesAmount) implements SerDe {  
 
     public static VaultsWithdrawIxData read(final Instruction instruction) {

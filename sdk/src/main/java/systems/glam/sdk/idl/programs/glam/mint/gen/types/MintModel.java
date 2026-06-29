@@ -10,7 +10,6 @@ import systems.glam.sdk.idl.programs.glam.protocol.gen.types.FeeStructure;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.NotifyAndSettle;
 
 import java.util.Arrays;
-import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -22,12 +21,12 @@ import static software.sava.core.encoding.ByteUtil.getInt64LE;
 public record MintModel(String symbol, byte[] _symbol,
                         byte[] name,
                         String uri, byte[] _uri,
-                        OptionalInt yearInSeconds,
+                        OptionalLong yearInSeconds,
                         PublicKey permanentDelegate,
                         Boolean defaultAccountStateFrozen,
                         FeeStructure feeStructure,
                         NotifyAndSettle notifyAndSettle,
-                        OptionalInt lockupPeriod,
+                        OptionalLong lockupPeriod,
                         OptionalLong maxCap,
                         OptionalLong minSubscription,
                         OptionalLong minRedemption,
@@ -39,12 +38,12 @@ public record MintModel(String symbol, byte[] _symbol,
   public static MintModel createRecord(final String symbol,
                                        final byte[] name,
                                        final String uri,
-                                       final OptionalInt yearInSeconds,
+                                       final OptionalLong yearInSeconds,
                                        final PublicKey permanentDelegate,
                                        final Boolean defaultAccountStateFrozen,
                                        final FeeStructure feeStructure,
                                        final NotifyAndSettle notifyAndSettle,
-                                       final OptionalInt lockupPeriod,
+                                       final OptionalLong lockupPeriod,
                                        final OptionalLong maxCap,
                                        final OptionalLong minSubscription,
                                        final OptionalLong minRedemption,
@@ -106,13 +105,13 @@ public record MintModel(String symbol, byte[] _symbol,
       i += _uriLength;
     }
 
-    final OptionalInt yearInSeconds;
+    final OptionalLong yearInSeconds;
     if (SerDeUtil.isAbsent(1, _data, i)) {
-      yearInSeconds = OptionalInt.empty();
+      yearInSeconds = OptionalLong.empty();
       ++i;
     } else {
       ++i;
-      yearInSeconds = OptionalInt.of(getInt32LE(_data, i));
+      yearInSeconds = OptionalLong.of(Integer.toUnsignedLong(getInt32LE(_data, i)));
       i += 4;
     }
     final PublicKey permanentDelegate;
@@ -151,13 +150,13 @@ public record MintModel(String symbol, byte[] _symbol,
       notifyAndSettle = NotifyAndSettle.read(_data, i);
       i += notifyAndSettle.l();
     }
-    final OptionalInt lockupPeriod;
+    final OptionalLong lockupPeriod;
     if (SerDeUtil.isAbsent(1, _data, i)) {
-      lockupPeriod = OptionalInt.empty();
+      lockupPeriod = OptionalLong.empty();
       ++i;
     } else {
       ++i;
-      lockupPeriod = OptionalInt.of(getInt32LE(_data, i));
+      lockupPeriod = OptionalLong.of(Integer.toUnsignedLong(getInt32LE(_data, i)));
       i += 4;
     }
     final OptionalLong maxCap;
@@ -230,12 +229,12 @@ public record MintModel(String symbol, byte[] _symbol,
       i += SerDeUtil.writeArrayChecked(name, 32, _data, i);
     }
     i += SerDeUtil.writeOptionalVector(1, 4, _uri, _data, i);
-    i += SerDeUtil.writeOptional(1, yearInSeconds, _data, i);
+    i += SerDeUtil.writeOptionalUnsignedInt(1, yearInSeconds, _data, i);
     i += SerDeUtil.writeOptional(1, permanentDelegate, _data, i);
     i += SerDeUtil.writeOptional(1, defaultAccountStateFrozen, _data, i);
     i += SerDeUtil.writeOptional(1, feeStructure, _data, i);
     i += SerDeUtil.writeOptional(1, notifyAndSettle, _data, i);
-    i += SerDeUtil.writeOptional(1, lockupPeriod, _data, i);
+    i += SerDeUtil.writeOptionalUnsignedInt(1, lockupPeriod, _data, i);
     i += SerDeUtil.writeOptional(1, maxCap, _data, i);
     i += SerDeUtil.writeOptional(1, minSubscription, _data, i);
     i += SerDeUtil.writeOptional(1, minRedemption, _data, i);

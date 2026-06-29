@@ -9,10 +9,13 @@ import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt32LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
+/// @param amount: u64
+/// @param principalAmount: u64
+/// @param duration: u32
 public record VaultStakeParams(long amount,
                                long principalAmount,
                                Boolean stakeAll,
-                               int duration,
+                               long duration,
                                int durationType,
                                int actionType) implements SerDe {
 
@@ -38,7 +41,7 @@ public record VaultStakeParams(long amount,
       stakeAll = _data[i] == 1;
       ++i;
     }
-    final var duration = getInt32LE(_data, i);
+    final var duration = Integer.toUnsignedLong(getInt32LE(_data, i));
     i += 4;
     final var durationType = _data[i] & 0xFF;
     ++i;
@@ -59,7 +62,7 @@ public record VaultStakeParams(long amount,
     putInt64LE(_data, i, principalAmount);
     i += 8;
     i += SerDeUtil.writeOptional(1, stakeAll, _data, i);
-    putInt32LE(_data, i, duration);
+    putInt32LE(_data, i, (int) duration);
     i += 4;
     _data[i] = (byte) durationType;
     ++i;

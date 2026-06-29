@@ -12,8 +12,11 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
 /// source_mint, destination_chain, destination_recipient, provider_program uniquely identify a route
 ///
+/// @param destinationChain: u32
+/// @param minAmount: u64
+/// @param maxAmount: u64
 public record LayerzeroOftRoute(PublicKey sourceMint,
-                                int destinationChain,
+                                long destinationChain,
                                 PublicKey destinationRecipient,
                                 PublicKey providerProgram,
                                 RouteManagementMode managementMode,
@@ -37,7 +40,7 @@ public record LayerzeroOftRoute(PublicKey sourceMint,
     int i = _offset;
     final var sourceMint = readPubKey(_data, i);
     i += 32;
-    final var destinationChain = getInt32LE(_data, i);
+    final var destinationChain = Integer.toUnsignedLong(getInt32LE(_data, i));
     i += 4;
     final var destinationRecipient = readPubKey(_data, i);
     i += 32;
@@ -62,7 +65,7 @@ public record LayerzeroOftRoute(PublicKey sourceMint,
     int i = _offset;
     sourceMint.write(_data, i);
     i += 32;
-    putInt32LE(_data, i, destinationChain);
+    putInt32LE(_data, i, (int) destinationChain);
     i += 4;
     destinationRecipient.write(_data, i);
     i += 32;

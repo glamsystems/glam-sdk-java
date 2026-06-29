@@ -12,7 +12,8 @@ import static software.sava.core.encoding.ByteUtil.putInt128LE;
 import static software.sava.core.encoding.ByteUtil.putInt32LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
-public record FeeParams(int yearInSeconds,
+/// @param yearInSeconds: u32
+public record FeeParams(long yearInSeconds,
                         BigInteger paHighWaterMark,
                         BigInteger paLastNav,
                         BigInteger lastAum,
@@ -35,7 +36,7 @@ public record FeeParams(int yearInSeconds,
       return null;
     }
     int i = _offset;
-    final var yearInSeconds = getInt32LE(_data, i);
+    final var yearInSeconds = Integer.toUnsignedLong(getInt32LE(_data, i));
     i += 4;
     final var paHighWaterMark = getInt128LE(_data, i);
     i += 16;
@@ -60,7 +61,7 @@ public record FeeParams(int yearInSeconds,
   @Override
   public int write(final byte[] _data, final int _offset) {
     int i = _offset;
-    putInt32LE(_data, i, yearInSeconds);
+    putInt32LE(_data, i, (int) yearInSeconds);
     i += 4;
     putInt128LE(_data, i, paHighWaterMark);
     i += 16;

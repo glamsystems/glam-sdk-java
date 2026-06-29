@@ -18,6 +18,8 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
+/// @param perpDexIndex: u32
+/// @param usdcSpotToken: u64
 public record WormholeHyperliquidObservationConfig(PublicKey _address,
                                                    Discriminator discriminator,
                                                    PublicKey glamState,
@@ -25,7 +27,7 @@ public record WormholeHyperliquidObservationConfig(PublicKey _address,
                                                    byte[] hyperliquidAccount,
                                                    byte[] accountMarginSummaryPrecompile,
                                                    byte[] spotBalancePrecompile,
-                                                   int perpDexIndex,
+                                                   long perpDexIndex,
                                                    long usdcSpotToken,
                                                    int bump) implements SerDe {
 
@@ -52,9 +54,9 @@ public record WormholeHyperliquidObservationConfig(PublicKey _address,
     return Filter.createMemCompFilter(GLAM_STATE_OFFSET, glamState);
   }
 
-  public static Filter createPerpDexIndexFilter(final int perpDexIndex) {
+  public static Filter createPerpDexIndexFilter(final long perpDexIndex) {
     final byte[] _data = new byte[4];
-    putInt32LE(_data, 0, perpDexIndex);
+    putInt32LE(_data, 0, (int) perpDexIndex);
     return Filter.createMemCompFilter(PERP_DEX_INDEX_OFFSET, _data);
   }
 
@@ -98,7 +100,7 @@ public record WormholeHyperliquidObservationConfig(PublicKey _address,
     i += SerDeUtil.readArray(accountMarginSummaryPrecompile, _data, i);
     final var spotBalancePrecompile = new byte[20];
     i += SerDeUtil.readArray(spotBalancePrecompile, _data, i);
-    final var perpDexIndex = getInt32LE(_data, i);
+    final var perpDexIndex = Integer.toUnsignedLong(getInt32LE(_data, i));
     i += 4;
     final var usdcSpotToken = getInt64LE(_data, i);
     i += 8;
@@ -124,7 +126,7 @@ public record WormholeHyperliquidObservationConfig(PublicKey _address,
     i += SerDeUtil.writeArrayChecked(hyperliquidAccount, 20, _data, i);
     i += SerDeUtil.writeArrayChecked(accountMarginSummaryPrecompile, 20, _data, i);
     i += SerDeUtil.writeArrayChecked(spotBalancePrecompile, 20, _data, i);
-    putInt32LE(_data, i, perpDexIndex);
+    putInt32LE(_data, i, (int) perpDexIndex);
     i += 4;
     putInt64LE(_data, i, usdcSpotToken);
     i += 8;

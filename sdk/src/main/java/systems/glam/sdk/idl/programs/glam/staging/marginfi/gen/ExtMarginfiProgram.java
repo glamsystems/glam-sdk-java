@@ -91,6 +91,7 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// @param amount: u64
   public static Instruction kaminoDeposit(final AccountMeta invokedExtMarginfiProgramMeta,
                                           final SolanaAccounts solanaAccounts,
                                           final PublicKey glamStateKey,
@@ -155,6 +156,7 @@ public final class ExtMarginfiProgram {
     return kaminoDeposit(invokedExtMarginfiProgramMeta, keys, amount);
   }
 
+  /// @param amount: u64
   public static Instruction kaminoDeposit(final AccountMeta invokedExtMarginfiProgramMeta,
                                           final List<AccountMeta> keys,
                                           final long amount) {
@@ -165,6 +167,7 @@ public final class ExtMarginfiProgram {
     return Instruction.createInstruction(invokedExtMarginfiProgramMeta, keys, _data);
   }
 
+  /// @param amount: u64
   public record KaminoDepositIxData(Discriminator discriminator, long amount) implements SerDe {  
 
     public static KaminoDepositIxData read(final Instruction instruction) {
@@ -272,6 +275,7 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// @param amount: u64
   public static Instruction kaminoInitObligation(final AccountMeta invokedExtMarginfiProgramMeta,
                                                  final SolanaAccounts solanaAccounts,
                                                  final PublicKey glamStateKey,
@@ -346,6 +350,7 @@ public final class ExtMarginfiProgram {
     return kaminoInitObligation(invokedExtMarginfiProgramMeta, keys, amount);
   }
 
+  /// @param amount: u64
   public static Instruction kaminoInitObligation(final AccountMeta invokedExtMarginfiProgramMeta,
                                                  final List<AccountMeta> keys,
                                                  final long amount) {
@@ -356,6 +361,7 @@ public final class ExtMarginfiProgram {
     return Instruction.createInstruction(invokedExtMarginfiProgramMeta, keys, _data);
   }
 
+  /// @param amount: u64
   public record KaminoInitObligationIxData(Discriminator discriminator, long amount) implements SerDe {  
 
     public static KaminoInitObligationIxData read(final Instruction instruction) {
@@ -453,6 +459,7 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// @param amount: u64
   public static Instruction kaminoWithdraw(final AccountMeta invokedExtMarginfiProgramMeta,
                                            final SolanaAccounts solanaAccounts,
                                            final PublicKey glamStateKey,
@@ -518,6 +525,7 @@ public final class ExtMarginfiProgram {
     return kaminoWithdraw(invokedExtMarginfiProgramMeta, keys, amount, withdrawAll);
   }
 
+  /// @param amount: u64
   public static Instruction kaminoWithdraw(final AccountMeta invokedExtMarginfiProgramMeta,
                                            final List<AccountMeta> keys,
                                            final long amount,
@@ -534,6 +542,7 @@ public final class ExtMarginfiProgram {
     return Instruction.createInstruction(invokedExtMarginfiProgramMeta, keys, _data);
   }
 
+  /// @param amount: u64
   public record KaminoWithdrawIxData(Discriminator discriminator, long amount, Boolean withdrawAll) implements SerDe {  
 
     public static KaminoWithdrawIxData read(final Instruction instruction) {
@@ -610,6 +619,7 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// @param amount: u64
   public static Instruction lendingAccountBorrow(final AccountMeta invokedExtMarginfiProgramMeta,
                                                  final SolanaAccounts solanaAccounts,
                                                  final PublicKey glamStateKey,
@@ -645,6 +655,7 @@ public final class ExtMarginfiProgram {
     return lendingAccountBorrow(invokedExtMarginfiProgramMeta, keys, amount);
   }
 
+  /// @param amount: u64
   public static Instruction lendingAccountBorrow(final AccountMeta invokedExtMarginfiProgramMeta,
                                                  final List<AccountMeta> keys,
                                                  final long amount) {
@@ -655,6 +666,7 @@ public final class ExtMarginfiProgram {
     return Instruction.createInstruction(invokedExtMarginfiProgramMeta, keys, _data);
   }
 
+  /// @param amount: u64
   public record LendingAccountBorrowIxData(Discriminator discriminator, long amount) implements SerDe {  
 
     public static LendingAccountBorrowIxData read(final Instruction instruction) {
@@ -721,6 +733,7 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// @param amount: u64
   public static Instruction lendingAccountDeposit(final AccountMeta invokedExtMarginfiProgramMeta,
                                                   final SolanaAccounts solanaAccounts,
                                                   final PublicKey glamStateKey,
@@ -755,6 +768,7 @@ public final class ExtMarginfiProgram {
     return lendingAccountDeposit(invokedExtMarginfiProgramMeta, keys, amount, depositUpToLimit);
   }
 
+  /// @param amount: u64
   public static Instruction lendingAccountDeposit(final AccountMeta invokedExtMarginfiProgramMeta,
                                                   final List<AccountMeta> keys,
                                                   final long amount,
@@ -771,6 +785,7 @@ public final class ExtMarginfiProgram {
     return Instruction.createInstruction(invokedExtMarginfiProgramMeta, keys, _data);
   }
 
+  /// @param amount: u64
   public record LendingAccountDepositIxData(Discriminator discriminator, long amount, Boolean depositUpToLimit) implements SerDe {  
 
     public static LendingAccountDepositIxData read(final Instruction instruction) {
@@ -845,6 +860,7 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// @param amount: u64
   public static Instruction lendingAccountRepay(final AccountMeta invokedExtMarginfiProgramMeta,
                                                 final SolanaAccounts solanaAccounts,
                                                 final PublicKey glamStateKey,
@@ -879,6 +895,7 @@ public final class ExtMarginfiProgram {
     return lendingAccountRepay(invokedExtMarginfiProgramMeta, keys, amount, repayAll);
   }
 
+  /// @param amount: u64
   public static Instruction lendingAccountRepay(final AccountMeta invokedExtMarginfiProgramMeta,
                                                 final List<AccountMeta> keys,
                                                 final long amount,
@@ -895,6 +912,7 @@ public final class ExtMarginfiProgram {
     return Instruction.createInstruction(invokedExtMarginfiProgramMeta, keys, _data);
   }
 
+  /// @param amount: u64
   public record LendingAccountRepayIxData(Discriminator discriminator, long amount, Boolean repayAll) implements SerDe {  
 
     public static LendingAccountRepayIxData read(final Instruction instruction) {
@@ -971,6 +989,7 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// @param amount: u64
   public static Instruction lendingAccountWithdraw(final AccountMeta invokedExtMarginfiProgramMeta,
                                                    final SolanaAccounts solanaAccounts,
                                                    final PublicKey glamStateKey,
@@ -1007,6 +1026,7 @@ public final class ExtMarginfiProgram {
     return lendingAccountWithdraw(invokedExtMarginfiProgramMeta, keys, amount, withdrawAll);
   }
 
+  /// @param amount: u64
   public static Instruction lendingAccountWithdraw(final AccountMeta invokedExtMarginfiProgramMeta,
                                                    final List<AccountMeta> keys,
                                                    final long amount,
@@ -1023,6 +1043,7 @@ public final class ExtMarginfiProgram {
     return Instruction.createInstruction(invokedExtMarginfiProgramMeta, keys, _data);
   }
 
+  /// @param amount: u64
   public record LendingAccountWithdrawIxData(Discriminator discriminator, long amount, Boolean withdrawAll) implements SerDe {  
 
     public static LendingAccountWithdrawIxData read(final Instruction instruction) {
@@ -1140,6 +1161,7 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// @param accountIndex: u16
   public static Instruction marginfiAccountInitializePda(final AccountMeta invokedExtMarginfiProgramMeta,
                                                          final SolanaAccounts solanaAccounts,
                                                          final PublicKey glamStateKey,
@@ -1168,6 +1190,7 @@ public final class ExtMarginfiProgram {
     return marginfiAccountInitializePda(invokedExtMarginfiProgramMeta, keys, accountIndex, thirdPartyId);
   }
 
+  /// @param accountIndex: u16
   public static Instruction marginfiAccountInitializePda(final AccountMeta invokedExtMarginfiProgramMeta,
                                                          final List<AccountMeta> keys,
                                                          final int accountIndex,
@@ -1184,6 +1207,7 @@ public final class ExtMarginfiProgram {
     return Instruction.createInstruction(invokedExtMarginfiProgramMeta, keys, _data);
   }
 
+  /// @param accountIndex: u16
   public record MarginfiAccountInitializePdaIxData(Discriminator discriminator, int accountIndex, OptionalInt thirdPartyId) implements SerDe {  
 
     public static MarginfiAccountInitializePdaIxData read(final Instruction instruction) {
@@ -1199,14 +1223,14 @@ public final class ExtMarginfiProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var accountIndex = getInt16LE(_data, i);
+      final var accountIndex = Short.toUnsignedInt(getInt16LE(_data, i));
       i += 2;
       final OptionalInt thirdPartyId;
       if (SerDeUtil.isAbsent(1, _data, i)) {
         thirdPartyId = OptionalInt.empty();
       } else {
         ++i;
-        thirdPartyId = OptionalInt.of(getInt16LE(_data, i));
+        thirdPartyId = OptionalInt.of(Short.toUnsignedInt(getInt16LE(_data, i)));
       }
       return new MarginfiAccountInitializePdaIxData(discriminator, accountIndex, thirdPartyId);
     }

@@ -15,6 +15,9 @@ import static software.sava.core.encoding.ByteUtil.putInt128LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
+/// @param rent: u64
+/// @param lastUpdatedSlot: u64
+/// @param protocolBitflag: u16
 public record PricedProtocol(long rent,
                              BigInteger amount,
                              int decimals,
@@ -46,7 +49,7 @@ public record PricedProtocol(long rent,
     i += 8;
     final var integrationProgram = readPubKey(_data, i);
     i += 32;
-    final var protocolBitflag = getInt16LE(_data, i);
+    final var protocolBitflag = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var positions = SerDeUtil.readPublicKeyVector(4, _data, i);
     return new PricedProtocol(rent,

@@ -136,7 +136,7 @@ public record ReserveContext(long slot,
     return tokenInfo.scopeConfiguration();
   }
 
-  public short[] priceChainIndexes() {
+  public int[] priceChainIndexes() {
     return scopeConfiguration().priceChain();
   }
 

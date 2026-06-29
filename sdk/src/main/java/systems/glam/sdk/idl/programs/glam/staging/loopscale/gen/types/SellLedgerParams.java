@@ -7,6 +7,7 @@ import software.sava.idl.clients.core.gen.SerDeUtil;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
+/// @param expectedSalePrice: u64
 public record SellLedgerParams(int ledgerIndex,
                                long expectedSalePrice,
                                byte[] assetIndexGuidance) implements SerDe {

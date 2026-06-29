@@ -15,9 +15,9 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 /// @param denomination Denomination of the amount.
 /// @param padDenom Alignment padding after denomination (to 8-byte boundary for i64).
 /// @param observationTimestamp Unix timestamp of the observation.
-/// @param externalShares External share count (for Tokenized positions).
+/// @param externalShares: u64 External share count (for Tokenized positions).
 /// @param submittedBy Signer who submitted this observation.
-/// @param submittedAtSlot Slot at which this observation was submitted.
+/// @param submittedAtSlot: u64 Slot at which this observation was submitted.
 public record Observation(StoredI128 amount,
                           DenominationSpec denomination,
                           byte[] padDenom,

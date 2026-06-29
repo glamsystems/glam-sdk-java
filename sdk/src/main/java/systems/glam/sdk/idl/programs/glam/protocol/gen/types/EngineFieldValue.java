@@ -80,10 +80,10 @@ public sealed interface EngineFieldValue extends RustEnum permits
     }
   }
 
-  record U32(int val) implements EnumInt32, EngineFieldValue {
+  record U32(long val) implements EnumUInt32, EngineFieldValue {
 
     public static U32 read(final byte[] _data, int i) {
-      return new U32(getInt32LE(_data, i));
+      return new U32(Integer.toUnsignedLong(getInt32LE(_data, i)));
     }
 
     @Override
@@ -192,7 +192,8 @@ public sealed interface EngineFieldValue extends RustEnum permits
     }
   }
 
-  record VecU32(int[] val) implements EngineFieldValue {
+  /// @param val: vec<u32>
+  record VecU32(long[] val) implements EngineFieldValue {
 
     public static final int VAL_OFFSET = 0;
 
@@ -200,20 +201,20 @@ public sealed interface EngineFieldValue extends RustEnum permits
       if (_data == null || _data.length == 0) {
         return null;
       }
-      final var val = SerDeUtil.readintVector(4, _data, _offset);
+      final var val = SerDeUtil.readUnsignedIntVector(4, _data, _offset);
       return new VecU32(val);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + writeOrdinal(_data, _offset);
-      i += SerDeUtil.writeVector(4, val, _data, i);
+      i += SerDeUtil.writeUnsignedIntVector(4, val, _data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 1 + SerDeUtil.lenVector(4, val);
+      return 1 + SerDeUtil.lenUnsignedIntVector(4, val);
     }
 
     @Override

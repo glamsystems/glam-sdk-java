@@ -212,6 +212,7 @@ public final class ExtNeutralProgram {
   /// - Permission: `RequestDeposit`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
   ///
+  /// @param amount: u64
   public static Instruction requestDeposit(final AccountMeta invokedExtNeutralProgramMeta,
                                            final SolanaAccounts solanaAccounts,
                                            final PublicKey glamStateKey,
@@ -258,6 +259,7 @@ public final class ExtNeutralProgram {
   /// - Permission: `RequestDeposit`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
   ///
+  /// @param amount: u64
   public static Instruction requestDeposit(final AccountMeta invokedExtNeutralProgramMeta,
                                            final List<AccountMeta> keys,
                                            final long amount) {
@@ -268,6 +270,7 @@ public final class ExtNeutralProgram {
     return Instruction.createInstruction(invokedExtNeutralProgramMeta, keys, _data);
   }
 
+  /// @param amount: u64
   public record RequestDepositIxData(Discriminator discriminator, long amount) implements SerDe {  
 
     public static RequestDepositIxData read(final Instruction instruction) {
@@ -343,6 +346,7 @@ public final class ExtNeutralProgram {
   /// - Permission: `RequestWithdrawal`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
   ///
+  /// @param minEstimatedValue: u64
   public static Instruction requestWithdrawal(final AccountMeta invokedExtNeutralProgramMeta,
                                               final SolanaAccounts solanaAccounts,
                                               final PublicKey glamStateKey,
@@ -380,6 +384,7 @@ public final class ExtNeutralProgram {
   /// - Permission: `RequestWithdrawal`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
   ///
+  /// @param minEstimatedValue: u64
   public static Instruction requestWithdrawal(final AccountMeta invokedExtNeutralProgramMeta,
                                               final List<AccountMeta> keys,
                                               final BigInteger sharesAmount,
@@ -393,6 +398,7 @@ public final class ExtNeutralProgram {
     return Instruction.createInstruction(invokedExtNeutralProgramMeta, keys, _data);
   }
 
+  /// @param minEstimatedValue: u64
   public record RequestWithdrawalIxData(Discriminator discriminator, BigInteger sharesAmount, long minEstimatedValue) implements SerDe {  
 
     public static RequestWithdrawalIxData read(final Instruction instruction) {

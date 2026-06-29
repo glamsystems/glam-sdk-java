@@ -21,15 +21,15 @@ import static software.sava.core.encoding.ByteUtil.putInt32LE;
 /// @param requireReduceOnlyOrders When `true`, every order must have the reduce-only flag set; orders
 ///                                without it are rejected with `ReduceOnlyRequired`. Use this to lock the
 ///                                vault into pure position-unwinding mode.
-/// @param maxPriceDeviationBps Maximum allowed deviation in basis points. Retained in policy state for
+/// @param maxPriceDeviationBps: u16 Maximum allowed deviation in basis points. Retained in policy state for
 ///                             future enforcement; currently not checked by order placement.
-/// @param maxReferencePriceAgeSecs Maximum reference price age in seconds. Retained in policy state for
+/// @param maxReferencePriceAgeSecs: u32 Maximum reference price age in seconds. Retained in policy state for
 ///                                 future enforcement; currently not checked by order placement.
 public record PhoenixPolicy(PublicKey[] marketsAllowlist,
                             byte[] allowedOrderTypes,
                             boolean requireReduceOnlyOrders,
                             int maxPriceDeviationBps,
-                            int maxReferencePriceAgeSecs) implements SerDe {
+                            long maxReferencePriceAgeSecs) implements SerDe {
 
   public static final int MARKETS_ALLOWLIST_OFFSET = 0;
 
@@ -44,9 +44,9 @@ public record PhoenixPolicy(PublicKey[] marketsAllowlist,
     i += SerDeUtil.lenVector(4, allowedOrderTypes);
     final var requireReduceOnlyOrders = _data[i] == 1;
     ++i;
-    final var maxPriceDeviationBps = getInt16LE(_data, i);
+    final var maxPriceDeviationBps = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
-    final var maxReferencePriceAgeSecs = getInt32LE(_data, i);
+    final var maxReferencePriceAgeSecs = Integer.toUnsignedLong(getInt32LE(_data, i));
     return new PhoenixPolicy(marketsAllowlist,
                              allowedOrderTypes,
                              requireReduceOnlyOrders,
@@ -63,7 +63,7 @@ public record PhoenixPolicy(PublicKey[] marketsAllowlist,
     ++i;
     putInt16LE(_data, i, maxPriceDeviationBps);
     i += 2;
-    putInt32LE(_data, i, maxReferencePriceAgeSecs);
+    putInt32LE(_data, i, (int) maxReferencePriceAgeSecs);
     i += 4;
     return i - _offset;
   }

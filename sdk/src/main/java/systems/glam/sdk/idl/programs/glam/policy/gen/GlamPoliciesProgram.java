@@ -118,6 +118,7 @@ public final class GlamPoliciesProgram {
   }
 
   /// @param authorityKey Must be the mint authority or permanent delegate
+  /// @param lockedUntil: u64
   public static Instruction createPolicy(final AccountMeta invokedGlamPoliciesProgramMeta,
                                          final SolanaAccounts solanaAccounts,
                                          final PublicKey policyAccountKey,
@@ -140,6 +141,7 @@ public final class GlamPoliciesProgram {
     return createPolicy(invokedGlamPoliciesProgramMeta, keys, lockedUntil, timeUnit);
   }
 
+  /// @param lockedUntil: u64
   public static Instruction createPolicy(final AccountMeta invokedGlamPoliciesProgramMeta,
                                          final List<AccountMeta> keys,
                                          final long lockedUntil,
@@ -153,6 +155,7 @@ public final class GlamPoliciesProgram {
     return Instruction.createInstruction(invokedGlamPoliciesProgramMeta, keys, _data);
   }
 
+  /// @param lockedUntil: u64
   public record CreatePolicyIxData(Discriminator discriminator, long lockedUntil, TimeUnit timeUnit) implements SerDe {  
 
     public static CreatePolicyIxData read(final Instruction instruction) {
@@ -211,6 +214,7 @@ public final class GlamPoliciesProgram {
     );
   }
 
+  /// @param amount: u64
   public static Instruction execute(final AccountMeta invokedGlamPoliciesProgramMeta,
                                     final PublicKey srcAccountKey,
                                     final PublicKey mintKey,
@@ -232,6 +236,7 @@ public final class GlamPoliciesProgram {
     return execute(invokedGlamPoliciesProgramMeta, keys, amount);
   }
 
+  /// @param amount: u64
   public static Instruction execute(final AccountMeta invokedGlamPoliciesProgramMeta,
                                     final List<AccountMeta> keys,
                                     final long amount) {
@@ -242,6 +247,7 @@ public final class GlamPoliciesProgram {
     return Instruction.createInstruction(invokedGlamPoliciesProgramMeta, keys, _data);
   }
 
+  /// @param amount: u64
   public record ExecuteIxData(Discriminator discriminator, long amount) implements SerDe {  
 
     public static ExecuteIxData read(final Instruction instruction) {
