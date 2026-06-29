@@ -1,5 +1,17 @@
 # Changelog
 
+## [25.15.0](https://github.com/glamsystems/glam-sdk-java/compare/25.14.3...25.15.0) (2026-06-29)
+
+
+### Features
+
+* **sdk:** migrate integer fields to use unsigned data types for improved range handling ([4f9c0f3](https://github.com/glamsystems/glam-sdk-java/commit/4f9c0f3e25303d979b5f0201dbe807dfdbed497f))
+
+
+### Miscellaneous Chores
+
+* release 25.15.0 ([1a1c616](https://github.com/glamsystems/glam-sdk-java/commit/1a1c616da4ef86a1c593a347e59780caeae6009d))
+
 ## [25.14.3](https://github.com/glamsystems/glam-sdk-java/compare/25.14.2...25.14.3) (2026-06-27)
 
 
