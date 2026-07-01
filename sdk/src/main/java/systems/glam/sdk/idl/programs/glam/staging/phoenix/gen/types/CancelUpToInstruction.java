@@ -8,6 +8,8 @@ import java.util.OptionalLong;
 
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 
+/// @param numOrdersToCancel: Option<u64>
+/// @param tickLimit: Option<u64>
 public record CancelUpToInstruction(Side side,
                                     OptionalLong numOrdersToCancel,
                                     OptionalLong tickLimit) implements SerDe {

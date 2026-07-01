@@ -18,6 +18,18 @@ import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt32LE;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 
+/// @param symbol: Option<string>
+/// @param name: Option<u8[]>
+/// @param uri: Option<string>
+/// @param yearInSeconds: Option<u32>
+/// @param permanentDelegate: Option<publicKey>
+/// @param defaultAccountStateFrozen: Option<bool>
+/// @param lockupPeriod: Option<u32>
+/// @param maxCap: Option<u64>
+/// @param minSubscription: Option<u64>
+/// @param minRedemption: Option<u64>
+/// @param allowlist: Option<Vec<publicKey>>
+/// @param blocklist: Option<Vec<publicKey>>
 public record MintModel(String symbol, byte[] _symbol,
                         byte[] name,
                         String uri, byte[] _uri,

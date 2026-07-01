@@ -11,6 +11,7 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
 /// @param priceInTicks: u64
 /// @param sizeInBaseLots: u64
+/// @param lastValidSlot: Option<u64>
 public record CondensedOrder(long priceInTicks,
                              long sizeInBaseLots,
                              OptionalLong lastValidSlot) implements SerDe {

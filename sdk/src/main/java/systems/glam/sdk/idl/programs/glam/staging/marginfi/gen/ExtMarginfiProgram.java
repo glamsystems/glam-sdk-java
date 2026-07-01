@@ -460,6 +460,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
+  /// @param withdrawAll: Option<bool>
   public static Instruction kaminoWithdraw(final AccountMeta invokedExtMarginfiProgramMeta,
                                            final SolanaAccounts solanaAccounts,
                                            final PublicKey glamStateKey,
@@ -526,6 +527,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
+  /// @param withdrawAll: Option<bool>
   public static Instruction kaminoWithdraw(final AccountMeta invokedExtMarginfiProgramMeta,
                                            final List<AccountMeta> keys,
                                            final long amount,
@@ -543,6 +545,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
+  /// @param withdrawAll: Option<bool>
   public record KaminoWithdrawIxData(Discriminator discriminator, long amount, Boolean withdrawAll) implements SerDe {  
 
     public static KaminoWithdrawIxData read(final Instruction instruction) {
@@ -734,6 +737,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
+  /// @param depositUpToLimit: Option<bool>
   public static Instruction lendingAccountDeposit(final AccountMeta invokedExtMarginfiProgramMeta,
                                                   final SolanaAccounts solanaAccounts,
                                                   final PublicKey glamStateKey,
@@ -769,6 +773,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
+  /// @param depositUpToLimit: Option<bool>
   public static Instruction lendingAccountDeposit(final AccountMeta invokedExtMarginfiProgramMeta,
                                                   final List<AccountMeta> keys,
                                                   final long amount,
@@ -786,6 +791,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
+  /// @param depositUpToLimit: Option<bool>
   public record LendingAccountDepositIxData(Discriminator discriminator, long amount, Boolean depositUpToLimit) implements SerDe {  
 
     public static LendingAccountDepositIxData read(final Instruction instruction) {
@@ -861,6 +867,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
+  /// @param repayAll: Option<bool>
   public static Instruction lendingAccountRepay(final AccountMeta invokedExtMarginfiProgramMeta,
                                                 final SolanaAccounts solanaAccounts,
                                                 final PublicKey glamStateKey,
@@ -896,6 +903,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
+  /// @param repayAll: Option<bool>
   public static Instruction lendingAccountRepay(final AccountMeta invokedExtMarginfiProgramMeta,
                                                 final List<AccountMeta> keys,
                                                 final long amount,
@@ -913,6 +921,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
+  /// @param repayAll: Option<bool>
   public record LendingAccountRepayIxData(Discriminator discriminator, long amount, Boolean repayAll) implements SerDe {  
 
     public static LendingAccountRepayIxData read(final Instruction instruction) {
@@ -990,6 +999,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
+  /// @param withdrawAll: Option<bool>
   public static Instruction lendingAccountWithdraw(final AccountMeta invokedExtMarginfiProgramMeta,
                                                    final SolanaAccounts solanaAccounts,
                                                    final PublicKey glamStateKey,
@@ -1027,6 +1037,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
+  /// @param withdrawAll: Option<bool>
   public static Instruction lendingAccountWithdraw(final AccountMeta invokedExtMarginfiProgramMeta,
                                                    final List<AccountMeta> keys,
                                                    final long amount,
@@ -1044,6 +1055,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
+  /// @param withdrawAll: Option<bool>
   public record LendingAccountWithdrawIxData(Discriminator discriminator, long amount, Boolean withdrawAll) implements SerDe {  
 
     public static LendingAccountWithdrawIxData read(final Instruction instruction) {
@@ -1162,6 +1174,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param accountIndex: u16
+  /// @param thirdPartyId: Option<u16>
   public static Instruction marginfiAccountInitializePda(final AccountMeta invokedExtMarginfiProgramMeta,
                                                          final SolanaAccounts solanaAccounts,
                                                          final PublicKey glamStateKey,
@@ -1191,6 +1204,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param accountIndex: u16
+  /// @param thirdPartyId: Option<u16>
   public static Instruction marginfiAccountInitializePda(final AccountMeta invokedExtMarginfiProgramMeta,
                                                          final List<AccountMeta> keys,
                                                          final int accountIndex,
@@ -1208,6 +1222,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param accountIndex: u16
+  /// @param thirdPartyId: Option<u16>
   public record MarginfiAccountInitializePdaIxData(Discriminator discriminator, int accountIndex, OptionalInt thirdPartyId) implements SerDe {  
 
     public static MarginfiAccountInitializePdaIxData read(final Instruction instruction) {

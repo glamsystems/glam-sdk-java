@@ -656,6 +656,7 @@ public final class GlamMintProgram {
     );
   }
 
+  /// @param limit: Option<u32>
   public static Instruction fulfill(final AccountMeta invokedGlamMintProgramMeta,
                                     final SolanaAccounts solanaAccounts,
                                     final PublicKey glamStateKey,
@@ -691,6 +692,7 @@ public final class GlamMintProgram {
     return fulfill(invokedGlamMintProgramMeta, keys, limit);
   }
 
+  /// @param limit: Option<u32>
   public static Instruction fulfill(final AccountMeta invokedGlamMintProgramMeta,
                                     final List<AccountMeta> keys,
                                     final OptionalLong limit) {
@@ -704,6 +706,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
+  /// @param limit: Option<u32>
   public record FulfillIxData(Discriminator discriminator, OptionalLong limit) implements SerDe {  
 
     public static FulfillIxData read(final Instruction instruction) {
@@ -782,6 +785,7 @@ public final class GlamMintProgram {
   /// - `account_type` - Fund (for tokenized vault mint) or Mint
   /// - `decimals` - Decimals of new mint
   ///
+  /// @param decimals: Option<u8>
   public static Instruction initializeMint(final AccountMeta invokedGlamMintProgramMeta,
                                            final SolanaAccounts solanaAccounts,
                                            final PublicKey glamStateKey,
@@ -827,6 +831,7 @@ public final class GlamMintProgram {
   /// - `account_type` - Fund (for tokenized vault mint) or Mint
   /// - `decimals` - Decimals of new mint
   ///
+  /// @param decimals: Option<u8>
   public static Instruction initializeMint(final AccountMeta invokedGlamMintProgramMeta,
                                            final List<AccountMeta> keys,
                                            final MintModel mintModel,
@@ -846,6 +851,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
+  /// @param decimals: Option<u8>
   public record InitializeMintIxData(Discriminator discriminator,
                                      MintModel mintModel,
                                      byte[] createdKey,

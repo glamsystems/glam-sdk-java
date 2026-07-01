@@ -14,6 +14,14 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt32LE;
 
+/// @param name: Option<u8[]>
+/// @param uri: Option<string>
+/// @param enabled: Option<bool>
+/// @param assets: Option<Vec<publicKey>>
+/// @param owner: Option<publicKey>
+/// @param portfolioManagerName: Option<u8[]>
+/// @param borrowable: Option<Vec<publicKey>>
+/// @param timelockDuration: Option<u32>
 public record StateModel(AccountType accountType,
                          byte[] name,
                          String uri, byte[] _uri,

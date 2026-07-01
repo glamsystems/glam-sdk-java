@@ -24,6 +24,7 @@ public sealed interface OrderPacketKind extends RustEnum permits
     };
   }
 
+  /// @param lastValidSlot: Option<u64>
   record PostOnly(Side side,
                   Ticks priceInTicks,
                   BaseLots numBaseLots,
@@ -112,6 +113,8 @@ public sealed interface OrderPacketKind extends RustEnum permits
     }
   }
 
+  /// @param matchLimit: Option<u64>
+  /// @param lastValidSlot: Option<u64>
   record Limit(Side side,
                Ticks priceInTicks,
                BaseLots numBaseLots,
@@ -211,6 +214,8 @@ public sealed interface OrderPacketKind extends RustEnum permits
     }
   }
 
+  /// @param matchLimit: Option<u64>
+  /// @param lastValidSlot: Option<u64>
   record ImmediateOrCancel(Side side,
                            Ticks priceInTicks,
                            BaseLots numBaseLots,

@@ -14,6 +14,8 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 /// @param maxCap: u64
 /// @param minSubscription: u64
 /// @param minRedemption: u64
+/// @param allowlist: Option<Vec<publicKey>>
+/// @param blocklist: Option<Vec<publicKey>>
 public record MintPolicy(long lockupPeriod,
                          long maxCap,
                          long minSubscription,

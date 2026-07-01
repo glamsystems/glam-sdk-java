@@ -10,6 +10,13 @@ import java.util.OptionalLong;
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 
+/// @param originationsEnabled: Option<bool>
+/// @param liquidityBuffer: Option<u64>
+/// @param interestFee: Option<u64>
+/// @param originationFee: Option<u64>
+/// @param principalFee: Option<u64>
+/// @param originationCap: Option<u64>
+/// @param marketInformation: Option<publicKey>
 public record UpdateStrategyParams(Boolean originationsEnabled,
                                    OptionalLong liquidityBuffer,
                                    OptionalLong interestFee,

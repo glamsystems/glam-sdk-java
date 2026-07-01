@@ -192,7 +192,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
     }
   }
 
-  /// @param val: vec<u32>
+  /// @param val: Vec<u32>
   record VecU32(long[] val) implements EngineFieldValue {
 
     public static final int VAL_OFFSET = 0;

@@ -5,6 +5,7 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 
+/// @param stateEnabled: Option<bool>
 public record EmergencyAccessUpdateArgs(PublicKey[] disabledIntegrations,
                                         PublicKey[] disabledDelegates,
                                         Boolean stateEnabled) implements SerDe {

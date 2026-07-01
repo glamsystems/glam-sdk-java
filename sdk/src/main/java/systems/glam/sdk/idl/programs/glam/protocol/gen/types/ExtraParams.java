@@ -10,6 +10,7 @@ import java.util.OptionalLong;
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 
+/// @param amount: Option<u64>
 public record ExtraParams(ActionType actionType,
                           PublicKey pubkey,
                           OptionalLong amount) implements SerDe {

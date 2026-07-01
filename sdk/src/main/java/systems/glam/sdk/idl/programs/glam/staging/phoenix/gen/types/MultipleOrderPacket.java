@@ -4,6 +4,7 @@ package systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types;
 import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 
+/// @param clientOrderId: Option<u8[]>
 public record MultipleOrderPacket(CondensedOrder[] bids,
                                   CondensedOrder[] asks,
                                   byte[] clientOrderId,

@@ -9,6 +9,7 @@ import static software.sava.core.encoding.ByteUtil.getInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 
 /// @param maxSlippageBps: u16
+/// @param swapAllowlist: Option<Vec<publicKey>>
 public record JupiterSwapPolicy(int maxSlippageBps,
                                 PublicKey[] swapAllowlist,
                                 int maxDeviationBps) implements SerDe {

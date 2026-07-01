@@ -6,7 +6,7 @@ import software.sava.idl.clients.core.gen.SerDeUtil;
 
 /// Vault-specific oracle configs. If available, these configs are preferred over the global config.
 ///
-/// @param maxAgesSeconds: vec<u16[]>
+/// @param maxAgesSeconds: Vec<u16[]>
 public record OracleConfigs(int[][] maxAgesSeconds, byte[] padding) implements SerDe {
 
   public static final int PADDING_LEN = 12;

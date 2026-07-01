@@ -8,6 +8,7 @@ import java.util.OptionalLong;
 
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 
+/// @param amount: Option<u64>
 public record WithdrawParams(OptionalLong amount) implements SerDe {
 
   public static final int AMOUNT_OFFSET = 1;
