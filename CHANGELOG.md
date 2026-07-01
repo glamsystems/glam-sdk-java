@@ -1,5 +1,17 @@
 # Changelog
 
+## [25.15.1](https://github.com/glamsystems/glam-sdk-java/compare/25.15.0...25.15.1) (2026-07-01)
+
+
+### Features
+
+* **sdk:** add optional parameters for improved flexibility and configurability across multiple SDK types ([c1ee546](https://github.com/glamsystems/glam-sdk-java/commit/c1ee5462d41d9208b187135bd2d2d4e77f3008a9))
+
+
+### Bug Fixes
+
+* **services:** handle empty global config data and log file read errors ([76c1719](https://github.com/glamsystems/glam-sdk-java/commit/76c1719e17d08cc694d7671a4e562e33ac2efd97))
+
 ## [25.15.0](https://github.com/glamsystems/glam-sdk-java/compare/25.14.3...25.15.0) (2026-06-29)
 
 
