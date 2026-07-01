@@ -35,65 +35,67 @@ public interface GlobalConfigCache extends Runnable {
                                                         final Duration fetchDelay) {
     if (Files.exists(globalConfigFilePath)) {
       final byte[] data = FileUtils.readAccountData(globalConfigFilePath).data();
-      final var globalConfig = GlobalConfig.read(globalConfigKey, data);
-      final var assetMetaContexts = AssetMetaContext.mapAssetMetas(globalConfig);
-      final var assetMetaMap = createMap(assetMetaContexts);
-      final var globalConfigUpdate = new GlobalConfigUpdate(0, assetMetaContexts, data);
-      final var cache = new GlobalConfigCacheImpl(
-          globalConfigFilePath,
-          configProgram, globalConfigKey,
-          solanaAccounts,
-          mintCache,
-          accountFetcher,
-          fetchDelay,
-          globalConfigUpdate, assetMetaMap
-      );
-      return CompletableFuture.completedFuture(cache);
+      if (data.length > 0) {
+        final var globalConfig = GlobalConfig.read(globalConfigKey, data);
+        final var assetMetaContexts = AssetMetaContext.mapAssetMetas(globalConfig);
+        final var assetMetaMap = createMap(assetMetaContexts);
+        final var globalConfigUpdate = new GlobalConfigUpdate(0, assetMetaContexts, data);
+        final var cache = new GlobalConfigCacheImpl(
+            globalConfigFilePath,
+            configProgram, globalConfigKey,
+            solanaAccounts,
+            mintCache,
+            accountFetcher,
+            fetchDelay,
+            globalConfigUpdate, assetMetaMap
+        );
+        return CompletableFuture.completedFuture(cache);
+      }
     } else {
       try {
         Files.createDirectories(globalConfigFilePath.getParent());
       } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
-      return rpcCaller.courteousCall(
-          rpcClient -> rpcClient.getAccountInfo(globalConfigKey),
-          "rpcClient::getGlobalConfigAccount"
-      ).thenApply(accountInfo -> {
-        final long slot = accountInfo.context().slot();
-        final byte[] data = accountInfo.data();
-        if (checkAccount(configProgram, accountInfo.owner(), slot, accountInfo.pubKey(), data)) {
-          final var globalConfig = GlobalConfig.read(accountInfo.pubKey(), data);
-          final var assetMetaContexts = AssetMetaContext.mapAssetMetas(globalConfig);
-          final var assetMetaMap = createMapChecked(slot, assetMetaContexts, mintCache);
-          final var globalConfigUpdate = new GlobalConfigUpdate(
-              slot, assetMetaContexts, data
-          );
-          persistGlobalConfig(globalConfigFilePath, data);
-          final var mintsNeeded = Arrays.stream(globalConfig.assetMetas()).<PublicKey>mapMulti((assetMeta, downstream) -> {
-            final var asset = assetMeta.asset();
-            final var mintContext = mintCache.get(asset);
-            if (mintContext == null) {
-              downstream.accept(asset);
-            }
-          }).toList();
-          final var cache = new GlobalConfigCacheImpl(
-              globalConfigFilePath,
-              configProgram, globalConfigKey,
-              solanaAccounts,
-              mintCache,
-              accountFetcher,
-              fetchDelay,
-              globalConfigUpdate, assetMetaMap
-          );
-          if (!mintsNeeded.isEmpty()) {
-            accountFetcher.priorityQueueBatchable(mintsNeeded, cache);
-          }
-          return cache;
-        } else {
-          throw new IllegalStateException("Unexpected GlobalConfig Account.");
-        }
-      });
     }
+    return rpcCaller.courteousCall(
+        rpcClient -> rpcClient.getAccountInfo(globalConfigKey),
+        "rpcClient::getGlobalConfigAccount"
+    ).thenApply(accountInfo -> {
+      final long slot = accountInfo.context().slot();
+      final byte[] data = accountInfo.data();
+      if (checkAccount(configProgram, accountInfo.owner(), slot, accountInfo.pubKey(), data)) {
+        final var globalConfig = GlobalConfig.read(accountInfo.pubKey(), data);
+        final var assetMetaContexts = AssetMetaContext.mapAssetMetas(globalConfig);
+        final var assetMetaMap = createMapChecked(slot, assetMetaContexts, mintCache);
+        final var globalConfigUpdate = new GlobalConfigUpdate(
+            slot, assetMetaContexts, data
+        );
+        persistGlobalConfig(globalConfigFilePath, data);
+        final var mintsNeeded = Arrays.stream(globalConfig.assetMetas()).<PublicKey>mapMulti((assetMeta, downstream) -> {
+          final var asset = assetMeta.asset();
+          final var mintContext = mintCache.get(asset);
+          if (mintContext == null) {
+            downstream.accept(asset);
+          }
+        }).toList();
+        final var cache = new GlobalConfigCacheImpl(
+            globalConfigFilePath,
+            configProgram, globalConfigKey,
+            solanaAccounts,
+            mintCache,
+            accountFetcher,
+            fetchDelay,
+            globalConfigUpdate, assetMetaMap
+        );
+        if (!mintsNeeded.isEmpty()) {
+          accountFetcher.priorityQueueBatchable(mintsNeeded, cache);
+        }
+        return cache;
+      } else {
+        throw new IllegalStateException("Unexpected GlobalConfig Account.");
+      }
+    });
   }
 
   private static Map<PublicKey, AssetMetaContext[]> createMap(final AssetMetaContext[] assetMetaContexts) {

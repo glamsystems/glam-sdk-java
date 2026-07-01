@@ -14,6 +14,8 @@ import static java.nio.file.StandardOpenOption.*;
 
 public final class FileUtils {
 
+  private static final System.Logger logger = System.getLogger(FileUtils.class.getName());
+
   public static final String ACCOUNT_FILE_EXTENSION = ".dat";
   public static final String COMPRESSED_ACCOUNT_FILE_EXTENSION = ".dat.gz";
 
@@ -45,17 +47,26 @@ public final class FileUtils {
       try (final var gzipInputStream = new GZIPInputStream(Files.newInputStream(path))) {
         return AccountData.createData(entryName, gzipInputStream.readAllBytes());
       } catch (final IOException e) {
-        throw new UncheckedIOException(e);
+        logger.log(System.Logger.Level.WARNING, "Failed to read compressed account data: " + path, e);
+        try {
+          Files.deleteIfExists(path);
+        } catch (final IOException e2) {
+          logger.log(System.Logger.Level.WARNING, "Failed to delete invalid account data: " + path, e2);
+        }
       }
     } else if (fileName.endsWith(ACCOUNT_FILE_EXTENSION)) {
       try {
         return AccountData.createData(fileName, Files.readAllBytes(path));
       } catch (final IOException e) {
-        throw new UncheckedIOException(e);
+        logger.log(System.Logger.Level.WARNING, "Failed to read account data: " + path, e);
+        try {
+          Files.deleteIfExists(path);
+        } catch (final IOException e2) {
+          logger.log(System.Logger.Level.WARNING, "Failed to delete invalid account data: " + path, e2);
+        }
       }
-    } else {
-      return AccountData.EMPTY;
     }
+    return AccountData.EMPTY;
   }
 
   private FileUtils() {
