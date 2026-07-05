@@ -947,6 +947,7 @@ public final class ExtKaminoProgram {
     );
   }
 
+  /// @param mode: u8
   public static Instruction lendingInitObligationFarmsForReserve(final AccountMeta invokedExtKaminoProgramMeta,
                                                                  final SolanaAccounts solanaAccounts,
                                                                  final PublicKey glamStateKey,
@@ -984,6 +985,7 @@ public final class ExtKaminoProgram {
     return lendingInitObligationFarmsForReserve(invokedExtKaminoProgramMeta, keys, mode);
   }
 
+  /// @param mode: u8
   public static Instruction lendingInitObligationFarmsForReserve(final AccountMeta invokedExtKaminoProgramMeta,
                                                                  final List<AccountMeta> keys,
                                                                  final int mode) {
@@ -994,6 +996,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
+  /// @param mode: u8
   public record LendingInitObligationFarmsForReserveIxData(Discriminator discriminator, int mode) implements SerDe {  
 
     public static LendingInitObligationFarmsForReserveIxData read(final Instruction instruction) {
@@ -1509,6 +1512,7 @@ public final class ExtKaminoProgram {
     );
   }
 
+  /// @param elevationGroup: u8
   public static Instruction lendingRequestElevationGroup(final AccountMeta invokedExtKaminoProgramMeta,
                                                          final SolanaAccounts solanaAccounts,
                                                          final PublicKey glamStateKey,
@@ -1534,6 +1538,7 @@ public final class ExtKaminoProgram {
     return lendingRequestElevationGroup(invokedExtKaminoProgramMeta, keys, elevationGroup);
   }
 
+  /// @param elevationGroup: u8
   public static Instruction lendingRequestElevationGroup(final AccountMeta invokedExtKaminoProgramMeta,
                                                          final List<AccountMeta> keys,
                                                          final int elevationGroup) {
@@ -1544,6 +1549,7 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
+  /// @param elevationGroup: u8
   public record LendingRequestElevationGroupIxData(Discriminator discriminator, int elevationGroup) implements SerDe {  
 
     public static LendingRequestElevationGroupIxData read(final Instruction instruction) {

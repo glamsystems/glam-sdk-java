@@ -227,6 +227,7 @@ public final class ExtRpiProgram {
   /// The caller only relays a VAA body whose signatures have already been
   /// posted to the Wormhole Verification Shim.
   ///
+  /// @param guardianSetBump: u8
   public static Instruction submitObservationWormhole(final AccountMeta invokedExtRpiProgramMeta,
                                                       final PublicKey glamStateKey,
                                                       final PublicKey glamSignerKey,
@@ -260,6 +261,7 @@ public final class ExtRpiProgram {
   /// The caller only relays a VAA body whose signatures have already been
   /// posted to the Wormhole Verification Shim.
   ///
+  /// @param guardianSetBump: u8
   public static Instruction submitObservationWormhole(final AccountMeta invokedExtRpiProgramMeta,
                                                       final List<AccountMeta> keys,
                                                       final byte[] positionId,
@@ -275,6 +277,7 @@ public final class ExtRpiProgram {
     return Instruction.createInstruction(invokedExtRpiProgramMeta, keys, _data);
   }
 
+  /// @param guardianSetBump: u8
   public record SubmitObservationWormholeIxData(Discriminator discriminator,
                                                 byte[] positionId,
                                                 int guardianSetBump,

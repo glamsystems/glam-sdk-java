@@ -4,6 +4,7 @@ package systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types;
 import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 
+/// @param collateralIndex: u8
 /// @param weightMatrix: u32[]
 public record UpdateWeightMatrixParams(int collateralIndex,
                                        long[] weightMatrix,

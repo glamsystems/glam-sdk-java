@@ -18,6 +18,8 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
+/// @param baseAssetDecimals: u8
+/// @param baseAssetTokenProgram: u8
 /// @param timelockDuration: u32
 /// @param timelockExpiresAt: u64
 public record StateAccount(PublicKey _address,

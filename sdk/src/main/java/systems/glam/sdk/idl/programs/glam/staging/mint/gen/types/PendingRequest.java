@@ -13,6 +13,7 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 /// @param outgoing: u64
 /// @param createdAt: u64
 /// @param fulfilledAt: u64
+/// @param timeUnit: u8
 public record PendingRequest(PublicKey user,
                              long incoming,
                              long outgoing,

@@ -6,6 +6,7 @@ import software.sava.idl.clients.core.gen.SerDe;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
+/// @param actionType: u8
 /// @param principalAmount: u64
 public record VaultUnstakeParams(int actionType, long principalAmount) implements SerDe {
 

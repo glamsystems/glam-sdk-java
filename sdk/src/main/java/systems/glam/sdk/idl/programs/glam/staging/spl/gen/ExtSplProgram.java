@@ -164,6 +164,7 @@ public final class ExtSplProgram {
   }
 
   /// @param amount: u64
+  /// @param decimals: u8
   public static Instruction tokenTransferChecked(final AccountMeta invokedExtSplProgramMeta,
                                                  final SolanaAccounts solanaAccounts,
                                                  final PublicKey glamStateKey,
@@ -193,6 +194,7 @@ public final class ExtSplProgram {
   }
 
   /// @param amount: u64
+  /// @param decimals: u8
   public static Instruction tokenTransferChecked(final AccountMeta invokedExtSplProgramMeta,
                                                  final List<AccountMeta> keys,
                                                  final long amount,
@@ -207,6 +209,7 @@ public final class ExtSplProgram {
   }
 
   /// @param amount: u64
+  /// @param decimals: u8
   public record TokenTransferCheckedIxData(Discriminator discriminator, long amount, int decimals) implements SerDe {  
 
     public static TokenTransferCheckedIxData read(final Instruction instruction) {

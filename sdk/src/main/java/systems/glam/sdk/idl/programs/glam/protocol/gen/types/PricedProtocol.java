@@ -16,6 +16,7 @@ import static software.sava.core.encoding.ByteUtil.putInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
 /// @param rent: u64
+/// @param decimals: u8
 /// @param lastUpdatedSlot: u64
 /// @param protocolBitflag: u16
 public record PricedProtocol(long rent,

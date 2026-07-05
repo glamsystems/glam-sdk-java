@@ -1254,6 +1254,7 @@ public final class GlamProtocolProgram {
   /// For glam mint program's use only
   ///
   /// @param amount: u64
+  /// @param decimals: u8
   public static Instruction tokenTransferCheckedByMintAuthority(final AccountMeta invokedGlamProtocolProgramMeta,
                                                                 final PublicKey glamStateKey,
                                                                 final PublicKey glamVaultKey,
@@ -1281,6 +1282,7 @@ public final class GlamProtocolProgram {
   /// For glam mint program's use only
   ///
   /// @param amount: u64
+  /// @param decimals: u8
   public static Instruction tokenTransferCheckedByMintAuthority(final AccountMeta invokedGlamProtocolProgramMeta,
                                                                 final List<AccountMeta> keys,
                                                                 final long amount,
@@ -1295,6 +1297,7 @@ public final class GlamProtocolProgram {
   }
 
   /// @param amount: u64
+  /// @param decimals: u8
   public record TokenTransferCheckedByMintAuthorityIxData(Discriminator discriminator, long amount, int decimals) implements SerDe {  
 
     public static TokenTransferCheckedByMintAuthorityIxData read(final Instruction instruction) {

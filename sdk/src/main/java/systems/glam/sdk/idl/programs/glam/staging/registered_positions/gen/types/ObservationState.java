@@ -17,6 +17,8 @@ import static software.sava.core.programs.Discriminator.toDiscriminator;
 /// Single PDA per vault that tracks all registered position observations.
 /// Seeds: SEED_OBSERVATION_STATE, glam_state.key()
 ///
+/// @param bump: u8
+/// @param positionsLen: u8
 /// @param positions Per-position observation entries.
 public record ObservationState(PublicKey _address,
                                Discriminator discriminator,

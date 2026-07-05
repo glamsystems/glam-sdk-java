@@ -10,6 +10,8 @@ import static software.sava.core.encoding.ByteUtil.putInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt32LE;
 
 /// @param emitterChain: u16
+/// @param payloadVersion: u8
+/// @param payloadType: u8
 /// @param maxAgeSeconds: u32
 public record WormholeObservationConfigInput(byte[] positionId,
                                              int emitterChain,

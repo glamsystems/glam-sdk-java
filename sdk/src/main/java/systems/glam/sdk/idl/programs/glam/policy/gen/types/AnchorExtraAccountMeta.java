@@ -4,6 +4,7 @@ package systems.glam.sdk.idl.programs.glam.policy.gen.types;
 import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 
+/// @param discriminator: u8
 public record AnchorExtraAccountMeta(int discriminator,
                                      byte[] addressConfig,
                                      boolean isSigner,

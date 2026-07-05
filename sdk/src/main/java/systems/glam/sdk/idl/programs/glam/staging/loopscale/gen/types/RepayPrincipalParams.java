@@ -7,6 +7,7 @@ import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
 /// @param amount: u64
+/// @param ledgerIndex: u8
 public record RepayPrincipalParams(long amount,
                                    int ledgerIndex,
                                    boolean repayAll) implements SerDe {

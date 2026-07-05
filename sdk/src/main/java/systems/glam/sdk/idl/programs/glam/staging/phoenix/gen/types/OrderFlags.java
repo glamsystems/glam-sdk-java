@@ -3,6 +3,7 @@ package systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types;
 
 import software.sava.idl.clients.core.gen.SerDe;
 
+/// @param flags: u8
 public record OrderFlags(int flags) implements SerDe {
 
   public static final int BYTES = 1;

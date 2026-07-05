@@ -20,6 +20,7 @@ import static software.sava.core.programs.Discriminator.toDiscriminator;
 
 /// @param perpDexIndex: u32
 /// @param usdcSpotToken: u64
+/// @param bump: u8
 public record WormholeHyperliquidObservationConfig(PublicKey _address,
                                                    Discriminator discriminator,
                                                    PublicKey glamState,

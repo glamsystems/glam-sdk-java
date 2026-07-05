@@ -13,6 +13,8 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 /// @param principalAmount: u64
 /// @param stakeAll: Option<bool>
 /// @param duration: u32
+/// @param durationType: u8
+/// @param actionType: u8
 public record VaultStakeParams(long amount,
                                long principalAmount,
                                Boolean stakeAll,

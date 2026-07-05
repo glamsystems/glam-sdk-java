@@ -3,6 +3,8 @@ package systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.types;
 
 import software.sava.idl.clients.core.gen.SerDe;
 
+/// @param collateralIndex: u8
+/// @param durationIndex: u8
 public record CollateralTermsIndices(int collateralIndex, int durationIndex) implements SerDe {
 
   public static final int BYTES = 2;

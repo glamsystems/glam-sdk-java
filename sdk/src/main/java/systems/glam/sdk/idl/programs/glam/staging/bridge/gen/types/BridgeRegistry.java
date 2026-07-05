@@ -14,6 +14,7 @@ import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
+/// @param managedTransferCount: u8
 public record BridgeRegistry(PublicKey _address,
                              Discriminator discriminator,
                              PublicKey glamState,

@@ -312,6 +312,7 @@ public final class ExtOrcaProgram {
   /// - Permission: `CollectReward`.
   /// - Policy: The reward mint is validated against the Whirlpool reward config.
   ///
+  /// @param rewardIndex: u8
   public static Instruction collectRewardV2(final AccountMeta invokedExtOrcaProgramMeta,
                                             final SolanaAccounts solanaAccounts,
                                             final PublicKey glamStateKey,
@@ -355,6 +356,7 @@ public final class ExtOrcaProgram {
   /// - Permission: `CollectReward`.
   /// - Policy: The reward mint is validated against the Whirlpool reward config.
   ///
+  /// @param rewardIndex: u8
   public static Instruction collectRewardV2(final AccountMeta invokedExtOrcaProgramMeta,
                                             final List<AccountMeta> keys,
                                             final int rewardIndex,
@@ -371,6 +373,7 @@ public final class ExtOrcaProgram {
     return Instruction.createInstruction(invokedExtOrcaProgramMeta, keys, _data);
   }
 
+  /// @param rewardIndex: u8
   public record CollectRewardV2IxData(Discriminator discriminator, int rewardIndex, RemainingAccountsInfo remainingAccountsInfo) implements SerDe {  
 
     public static CollectRewardV2IxData read(final Instruction instruction) {

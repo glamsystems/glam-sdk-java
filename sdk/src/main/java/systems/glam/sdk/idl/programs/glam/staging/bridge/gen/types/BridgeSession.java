@@ -19,6 +19,7 @@ import static software.sava.core.programs.Discriminator.createAnchorDiscriminato
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
 /// @param protocol: u16
+/// @param sourceDecimals: u8
 /// @param providerInstructionCount: u16
 /// @param sourceAmount: u64
 /// @param quotedOutAmount: u64
@@ -26,6 +27,7 @@ import static software.sava.core.programs.Discriminator.toDiscriminator;
 /// @param initialProviderSequence: u64
 /// @param destinationChain: u16
 /// @param preparedSlot: u64
+/// @param bump: u8
 public record BridgeSession(PublicKey _address,
                             Discriminator discriminator,
                             PublicKey glamState,

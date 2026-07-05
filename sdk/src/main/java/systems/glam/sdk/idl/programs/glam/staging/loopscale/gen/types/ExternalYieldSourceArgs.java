@@ -6,6 +6,7 @@ import software.sava.idl.clients.core.gen.SerDe;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
 
+/// @param newExternalYieldSource: u8
 public record ExternalYieldSourceArgs(int newExternalYieldSource, PublicKey externalYieldVault) implements SerDe {
 
   public static final int BYTES = 33;

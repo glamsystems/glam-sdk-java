@@ -11,7 +11,9 @@ import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
 import static software.sava.core.encoding.ByteUtil.putInt16LE;
 
+/// @param decimals: u8
 /// @param maxAgeSeconds: u16
+/// @param priority: i8
 public record AssetMeta(PublicKey asset,
                         int decimals,
                         PublicKey oracle,

@@ -8,6 +8,7 @@ import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
 /// @param amount: u64
+/// @param duration: u8
 public record BorrowPrincipalParams(long amount,
                                     byte[] assetIndexGuidance,
                                     int duration,

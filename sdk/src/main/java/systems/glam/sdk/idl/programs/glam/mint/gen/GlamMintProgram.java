@@ -1052,6 +1052,7 @@ public final class GlamMintProgram {
   /// referenced spot markets. Calls will fail with `StaleDriftInterest` if a required
   /// spot market's cumulative interest is too old.
   ///
+  /// @param numUsers: u8
   public static Instruction priceDriftUsers(final AccountMeta invokedGlamMintProgramMeta,
                                             final PublicKey glamStateKey,
                                             final PublicKey glamVaultKey,
@@ -1090,6 +1091,7 @@ public final class GlamMintProgram {
   /// referenced spot markets. Calls will fail with `StaleDriftInterest` if a required
   /// spot market's cumulative interest is too old.
   ///
+  /// @param numUsers: u8
   public static Instruction priceDriftUsers(final AccountMeta invokedGlamMintProgramMeta,
                                             final List<AccountMeta> keys,
                                             final int numUsers) {
@@ -1100,6 +1102,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
+  /// @param numUsers: u8
   public record PriceDriftUsersIxData(Discriminator discriminator, int numUsers) implements SerDe {  
 
     public static PriceDriftUsersIxData read(final Instruction instruction) {
@@ -1183,6 +1186,9 @@ public final class GlamMintProgram {
   /// referenced spot markets. Calls will fail with `StaleDriftInterest` if a required
   /// spot market's cumulative interest is too old.
   ///
+  /// @param numVaultDepositors: u8
+  /// @param numSpotMarkets: u8
+  /// @param numPerpMarkets: u8
   public static Instruction priceDriftVaultDepositors(final AccountMeta invokedGlamMintProgramMeta,
                                                       final PublicKey glamStateKey,
                                                       final PublicKey glamVaultKey,
@@ -1230,6 +1236,9 @@ public final class GlamMintProgram {
   /// referenced spot markets. Calls will fail with `StaleDriftInterest` if a required
   /// spot market's cumulative interest is too old.
   ///
+  /// @param numVaultDepositors: u8
+  /// @param numSpotMarkets: u8
+  /// @param numPerpMarkets: u8
   public static Instruction priceDriftVaultDepositors(final AccountMeta invokedGlamMintProgramMeta,
                                                       final List<AccountMeta> keys,
                                                       final int numVaultDepositors,
@@ -1246,6 +1255,9 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
+  /// @param numVaultDepositors: u8
+  /// @param numSpotMarkets: u8
+  /// @param numPerpMarkets: u8
   public record PriceDriftVaultDepositorsIxData(Discriminator discriminator,
                                                 int numVaultDepositors,
                                                 int numSpotMarkets,
@@ -1412,6 +1424,7 @@ public final class GlamMintProgram {
   /// - M = number of reserves used by all kvaults' allocations
   /// - reserve pubkeys must follow the same order of reserves used by each allocation
   ///
+  /// @param numVaults: u8
   public static Instruction priceKaminoVaultShares(final AccountMeta invokedGlamMintProgramMeta,
                                                    final PublicKey glamStateKey,
                                                    final PublicKey glamVaultKey,
@@ -1449,6 +1462,7 @@ public final class GlamMintProgram {
   /// - M = number of reserves used by all kvaults' allocations
   /// - reserve pubkeys must follow the same order of reserves used by each allocation
   ///
+  /// @param numVaults: u8
   public static Instruction priceKaminoVaultShares(final AccountMeta invokedGlamMintProgramMeta,
                                                    final List<AccountMeta> keys,
                                                    final int numVaults) {
@@ -1459,6 +1473,7 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
+  /// @param numVaults: u8
   public record PriceKaminoVaultSharesIxData(Discriminator discriminator, int numVaults) implements SerDe {  
 
     public static PriceKaminoVaultSharesIxData read(final Instruction instruction) {

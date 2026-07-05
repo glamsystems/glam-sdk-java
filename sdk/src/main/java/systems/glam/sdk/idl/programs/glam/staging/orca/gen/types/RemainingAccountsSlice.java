@@ -3,6 +3,7 @@ package systems.glam.sdk.idl.programs.glam.staging.orca.gen.types;
 
 import software.sava.idl.clients.core.gen.SerDe;
 
+/// @param length: u8
 public record RemainingAccountsSlice(AccountsType accountsType, int length) implements SerDe {
 
   public static final int BYTES = 2;

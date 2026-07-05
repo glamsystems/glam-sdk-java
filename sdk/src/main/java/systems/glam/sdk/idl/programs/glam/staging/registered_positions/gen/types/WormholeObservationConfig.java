@@ -21,8 +21,11 @@ import static software.sava.core.programs.Discriminator.createAnchorDiscriminato
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
 /// @param emitterChain: u16
+/// @param payloadVersion: u8
+/// @param payloadType: u8
 /// @param maxAgeSeconds: u32
 /// @param lastSequence: u64
+/// @param bump: u8
 public record WormholeObservationConfig(PublicKey _address,
                                         Discriminator discriminator,
                                         PublicKey glamState,

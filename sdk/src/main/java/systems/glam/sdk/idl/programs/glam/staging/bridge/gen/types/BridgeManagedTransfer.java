@@ -17,6 +17,8 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 /// @param committedSlot: u64
 /// @param protocol: u16
 /// @param destinationChain: u16
+/// @param sourceDecimals: u8
+/// @param status: u8
 public record BridgeManagedTransfer(PublicKey transferId,
                                     PublicKey sourceMint,
                                     PublicKey destinationRecipient,
