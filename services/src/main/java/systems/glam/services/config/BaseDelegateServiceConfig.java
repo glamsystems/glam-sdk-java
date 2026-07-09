@@ -4,7 +4,6 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
-import software.sava.core.tx.Transaction;
 import software.sava.core.util.LamportDecimal;
 import software.sava.kms.core.signing.SigningService;
 import software.sava.kms.core.signing.SigningServiceConfig;
@@ -22,8 +21,6 @@ import software.sava.services.core.remote.load_balance.LoadBalancer;
 import software.sava.services.core.remote.load_balance.LoadBalancerConfig;
 import software.sava.services.core.request_capacity.CapacityConfig;
 import software.sava.services.core.request_capacity.context.CallContext;
-import software.sava.services.solana.alt.LookupTableCache;
-import software.sava.services.solana.alt.TableCacheConfig;
 import software.sava.services.solana.config.ChainItemFormatter;
 import software.sava.services.solana.config.HeliusConfig;
 import software.sava.services.solana.epoch.EpochInfoService;
@@ -66,7 +63,6 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
                                         ChainItemFormatter formatter,
                                         NotifyClient notifyClient,
                                         Path cacheDirectory,
-                                        TableCacheConfig tableCacheConfig,
                                         RpcCaller rpcCaller,
                                         LoadBalancer<SolanaRpcClient> sendClients,
                                         LoadBalancer<HeliusFeeProvider> feeProviders,
@@ -102,24 +98,13 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
   }
 
   @Override
-  public LookupTableCache createLookupTableCache(final ExecutorService taskExecutor) {
-    return LookupTableCache.createCache(
-        taskExecutor,
-        tableCacheConfig.initialCapacity(),
-        rpcCaller.rpcClients()
-    );
-  }
-
-  @Override
   public TransactionProcessor createTransactionProcessor(final ExecutorService taskExecutor,
                                                          final SigningService signingService,
-                                                         final LookupTableCache tableCache,
                                                          final PublicKey serviceKey,
                                                          final WebSocketManager webSocketManager) {
     return TransactionProcessor.createProcessor(
         taskExecutor,
         signingService,
-        tableCache,
         serviceKey,
         solanaAccounts,
         formatter,
@@ -156,13 +141,11 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
   @Override
   public InstructionProcessor createInstructionProcessor(final TransactionProcessor transactionProcessor,
                                                          final InstructionService instructionService) {
+    // Fee, compute budget, and retry defaults are configured on the InstructionService.
     return InstructionProcessor.createProcessor(
         transactionProcessor,
         instructionService,
-        maxLamportPriorityFee,
-        notifyClient,
-        defaultCuBudgetMultiplier,
-        maxTransactionRetries
+        notifyClient
     );
   }
 
@@ -206,7 +189,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
         serviceContext,
         epochInfoService,
         instructionProcessor,
-        instructions -> Transaction.createTx(serviceContext.serviceKey(), instructions)
+        instructionProcessor.transactionProcessor().transactionFactory()
     );
   }
 
@@ -230,7 +213,6 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
     private ChainItemFormatter formatter;
     private NotifyClient notifyClient;
     private Path cacheDirectory;
-    private TableCacheConfig tableCacheConfig;
     private CallWeights callWeights;
     private Backoff defaultRPCBackoff = DEFAULT_NETWORK_BACKOFF;
     private LoadBalancer<SolanaRpcClient> rpcClients;
@@ -301,11 +283,6 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
       final var cacheDirectoryStr = getProperty(properties, p, "cacheDirectory");
       if (cacheDirectoryStr != null) {
         this.cacheDirectory = Path.of(cacheDirectoryStr);
-      }
-
-      final var tableCachePrefix = p + "tableCache.";
-      if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(tableCachePrefix))) {
-        this.tableCacheConfig = TableCacheConfig.parseConfig(tableCachePrefix, properties);
       }
 
       final var rpcCallWeightsPrefix = p + "rpcCallWeights.";
@@ -441,9 +418,6 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
       if (sendClients == null) {
         sendClients = rpcClients;
       }
-      if (tableCacheConfig == null) {
-        tableCacheConfig = TableCacheConfig.createDefault();
-      }
       if (maxSOLPriorityFee == null) {
         maxSOLPriorityFee = new BigDecimal("0.00042");
       }
@@ -479,7 +453,6 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
           formatter,
           notifyClient,
           cacheDirectory,
-          tableCacheConfig,
           new RpcCaller(taskExecutor, rpcClients, callWeights),
           sendClients,
           feeProviders,
@@ -524,7 +497,9 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
       } else if (fieldEquals("cacheDirectory", buf, offset, len)) {
         cacheDirectory = Path.of(ji.readString());
       } else if (fieldEquals("tableCache", buf, offset, len)) {
-        tableCacheConfig = TableCacheConfig.parse(ji);
+        // Address lookup tables are no longer used to create transactions; retained to remain
+        // backwards compatible with existing configuration files.
+        ji.skip();
       } else if (fieldEquals("rpcCallWeights", buf, offset, len)) {
         callWeights = CallWeights.parse(ji);
       } else if (fieldEquals("rpc", buf, offset, len)) {

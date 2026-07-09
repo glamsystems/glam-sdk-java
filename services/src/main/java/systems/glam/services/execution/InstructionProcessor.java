@@ -1,32 +1,27 @@
 package systems.glam.services.execution;
 
-import software.sava.core.accounts.PublicKey;
 import software.sava.core.tx.Instruction;
 import software.sava.core.tx.Transaction;
 import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.solana.transactions.InstructionService;
 import software.sava.services.solana.transactions.TransactionProcessor;
+import software.sava.services.solana.transactions.TxRequest;
 
-import java.math.BigDecimal;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
+/// Processes instructions in batches which fit within the transaction account limit, delegating
+/// to the {@link InstructionService} and halving the batch size when a transaction exceeds the
+/// serialized size limit. Fee, compute budget, and retry defaults are resolved by the service.
 public interface InstructionProcessor {
 
   static InstructionProcessor createProcessor(final TransactionProcessor transactionProcessor,
                                               final InstructionService instructionService,
-                                              final BigDecimal maxLamportPriorityFee,
-                                              final NotifyClient notifyClient,
-                                              final double cuBudgetMultiplier,
-                                              final int maxRetries) {
+                                              final NotifyClient notifyClient) {
     return new InstructionProcessorImpl(
         transactionProcessor,
         instructionService,
-        maxLamportPriorityFee,
-        notifyClient,
-        cuBudgetMultiplier,
-        maxRetries
+        notifyClient
     );
   }
 
@@ -36,28 +31,15 @@ public interface InstructionProcessor {
 
   InstructionService instructionService();
 
-  BigDecimal maxLamportPriorityFee();
-
-  double cuBudgetMultiplier();
-
-  int maxRetries();
-
-  boolean processInstructions(final String logContext,
-                              final List<Instruction> instructions,
-                              final Collection<PublicKey> lookupTableKeys,
-                              final Function<List<Instruction>, Transaction> transactionFactory) throws InterruptedException;
-
   default boolean processInstructions(final String logContext,
                                       final List<Instruction> instructions,
                                       final Function<List<Instruction>, Transaction> transactionFactory) throws InterruptedException {
-    return processInstructions(logContext, instructions, null, transactionFactory);
+    return processInstructions(
+        TxRequest.createRequest(instructions, logContext)
+            .transactionFactory(transactionFactory)
+            .retrySend(true)
+    );
   }
 
-  boolean processInstructions(final String logContext,
-                              final List<Instruction> instructions,
-                              final double cuBudgetMultiplier,
-                              final BigDecimal maxLamportPriorityFee,
-                              final int maxRetries,
-                              final Collection<PublicKey> lookupTableKeys,
-                              final Function<List<Instruction>, Transaction> transactionFactory) throws InterruptedException;
+  boolean processInstructions(final TxRequest request) throws InterruptedException;
 }

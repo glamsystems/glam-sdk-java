@@ -134,10 +134,8 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
     final var webSocketManager = delegateServiceConfig.createWebSocketManager(wsHttpClient, webSocketConsumers);
     webSocketManager.checkConnection();
 
-    final var tableCache = delegateServiceConfig.createLookupTableCache(taskExecutor);
-
     final var transactionProcessor = delegateServiceConfig.createTransactionProcessor(
-        taskExecutor, signingService, tableCache, serviceKey, webSocketManager
+        taskExecutor, signingService, serviceKey, webSocketManager
     );
 
     final var epochInfoService = delegateServiceConfig.createEpochInfoService();
@@ -152,7 +150,11 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
         transactionProcessor,
         splClient,
         epochInfoService,
-        txMonitorService
+        txMonitorService,
+        delegateServiceConfig.maxLamportPriorityFee(),
+        delegateServiceConfig.defaultCuBudgetMultiplier(),
+        1.0,
+        delegateServiceConfig.maxTransactionRetries()
     );
 
     final var instructionProcessor = delegateServiceConfig.createInstructionProcessor(transactionProcessor, instructionService);

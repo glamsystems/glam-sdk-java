@@ -19,6 +19,9 @@ dependencyAnalysis {
 }
 
 dependencies {
+//  project(":sava:sava-core")
+//  project(":sava:sava-rpc")
+
 //  project(":idl-clients:idl-clients-bundle")
 //  project(":idl-clients:idl-clients-spl")
 

@@ -33,5 +33,6 @@ javaModules {
   }
 }
 
-//includeBuild("../ravina")
-//includeBuild("../idl-clients")
+includeBuild("../sava")
+includeBuild("../ravina")
+includeBuild("../idl-clients")
