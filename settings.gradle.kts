@@ -19,14 +19,14 @@ pluginManagement {
       }
     }
   }
-  if (settingsDir.resolve("../sava-build").isDirectory) {
-    includeBuild("../sava-build")
-  }
+//  if (settingsDir.resolve("../sava-build").isDirectory) {
+//    includeBuild("../sava-build")
+//  }
 }
 
 plugins {
-  id("software.sava.build") version "21.5.0"
-  id("software.sava.build.feature.jdk-provisioning") version "21.5.0"
+  id("software.sava.build") version "21.5.1"
+  id("software.sava.build.feature.jdk-provisioning") version "21.5.1"
 }
 
 javaModules {
