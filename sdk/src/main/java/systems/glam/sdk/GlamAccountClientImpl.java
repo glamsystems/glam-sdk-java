@@ -254,7 +254,6 @@ class GlamAccountClientImpl implements GlamAccountClient {
                              final PublicKey baseAssetMint,
                              final PublicKey baseAssetTokenProgram,
                              final OptionalLong limit) {
-    GlamMintReferenceNavCodec.requireU32Limit(limit);
     final var mint = glamVaultAccounts.mintPDA(mintId).publicKey();
     final var escrow = glamAccounts.escrowPDA(mint).publicKey();
 
