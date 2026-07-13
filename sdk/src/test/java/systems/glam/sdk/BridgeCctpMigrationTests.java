@@ -49,7 +49,7 @@ final class BridgeCctpMigrationTests {
   }
 
   @Test
-  void cctpProtocolUsesBridgePermissionsWhileLegacyMappingRemainsAvailable() {
+  void bridgeProtocolsDecodeCctpAndLayerzeroPermissionsWhileLegacyMappingRemainsAvailable() {
     final long bridgePermissionMask =
         ExtBridgeConstants.PROTO_BRIDGE_PERM_SEND | ExtBridgeConstants.PROTO_BRIDGE_PERM_VALIDATE;
     assertEquals(
@@ -57,6 +57,17 @@ final class BridgeCctpMigrationTests {
         Protocol.fromBridgeProtocolBitFlag(
             ExtBridgeConstants.PROTO_CCTP,
             bridgePermissionMask
+        )
+    );
+    final long oftPermissionMask =
+        ExtBridgeConstants.PROTO_BRIDGE_PERM_SEND | ExtBridgeConstants.PROTO_BRIDGE_PERM_SETTLE;
+    assertEquals(
+        new ProtocolPermissions(Protocol.LAYERZERO_OFT, oftPermissionMask),
+        GlamAccountClientImpl.adaptPermissions(
+            GlamAccounts.MAIN_NET,
+            GlamAccounts.MAIN_NET.bridgeIntegrationProgram(),
+            ExtBridgeConstants.PROTO_LAYERZERO_OFT,
+            oftPermissionMask
         )
     );
     assertEquals(

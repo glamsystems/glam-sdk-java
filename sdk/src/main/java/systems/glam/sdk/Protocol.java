@@ -41,7 +41,8 @@ public enum Protocol {
   SYSTEM(GlamProtocolConstants.class, GlamProtocolConstants.PROTO_SYSTEM),
   TOKEN(ExtSplConstants.class, ExtSplConstants.PROTO_TOKEN),
   @Deprecated(forRemoval = false)
-  LEGACY_CCTP(ExtCctpConstants.class, ExtCctpConstants.PROTO_CCTP);
+  LEGACY_CCTP(ExtCctpConstants.class, ExtCctpConstants.PROTO_CCTP),
+  LAYERZERO_OFT(ExtBridgeConstants.class, ExtBridgeConstants.PROTO_LAYERZERO_OFT);
 
   private static final Map<Class<?>, Map<Integer, Protocol>> protocolMap = Arrays.stream(values())
       .collect(Collectors.groupingBy(Protocol::constantsClass, Collectors.toUnmodifiableMap(Protocol::protocolBitFlag, Function.identity())));
