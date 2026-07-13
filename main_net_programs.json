@@ -221,7 +221,7 @@
       ]
     },
     {
-      "name": "GLAM Staging Legacy CCTP",
+      "name": "GLAM Staging CCTP",
       "source": "sdk",
       "module": "sdk",
       "package": "glam.staging.cctp",
