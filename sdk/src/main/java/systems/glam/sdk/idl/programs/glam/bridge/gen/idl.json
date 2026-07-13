@@ -1,5 +1,5 @@
 {
-  "address": "gstgxS9yTioViNKdsM4DC33k1TU9un2VCYDQK8fAeSA",
+  "address": "G1NTbnLcjMex9Tjo8ocmNK9S2zBCiGVuxKUUNGhYZztx",
   "metadata": {
     "name": "ext_bridge",
     "version": "1.0.0",
@@ -31,7 +31,7 @@
         },
         {
           "name": "glam_protocol_program",
-          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+          "address": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"
         }
       ],
       "args": [
@@ -135,7 +135,7 @@
         },
         {
           "name": "glam_protocol_program",
-          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+          "address": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"
         },
         {
           "name": "system_program",
@@ -260,7 +260,7 @@
         },
         {
           "name": "glam_protocol_program",
-          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+          "address": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"
         },
         {
           "name": "instructions",
@@ -417,7 +417,7 @@
         },
         {
           "name": "glam_protocol_program",
-          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+          "address": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"
         }
       ],
       "args": [
@@ -521,7 +521,7 @@
         },
         {
           "name": "glam_protocol_program",
-          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+          "address": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"
         },
         {
           "name": "system_program",
@@ -789,7 +789,7 @@
         },
         {
           "name": "glam_protocol_program",
-          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+          "address": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"
         },
         {
           "name": "system_program",
@@ -897,7 +897,7 @@
         },
         {
           "name": "glam_protocol_program",
-          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+          "address": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"
         },
         {
           "name": "glam_config",
@@ -991,7 +991,7 @@
         },
         {
           "name": "glam_protocol_program",
-          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+          "address": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"
         }
       ],
       "args": [
@@ -1058,7 +1058,7 @@
         },
         {
           "name": "glam_protocol_program",
-          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+          "address": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"
         },
         {
           "name": "bridge_registry",
@@ -1165,7 +1165,7 @@
         },
         {
           "name": "glam_protocol_program",
-          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+          "address": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"
         }
       ],
       "args": [

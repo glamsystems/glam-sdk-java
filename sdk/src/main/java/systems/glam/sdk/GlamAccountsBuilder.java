@@ -33,7 +33,7 @@ public final class GlamAccountsBuilder {
   private PublicKey mintProgram;
   private PublicKey policyProgram;
   private PublicKey bridgeIntegrationProgram = PublicKey.NONE;
-  private PublicKey cctpIntegrationProgram = PublicKey.NONE;
+  private PublicKey legacyCctpIntegrationProgram = PublicKey.NONE;
   private PublicKey externalPositionProgram = PublicKey.NONE;
   private PublicKey jupiterIntegrationProgram = PublicKey.NONE;
   private PublicKey kaminoIntegrationProgram = PublicKey.NONE;
@@ -77,7 +77,7 @@ public final class GlamAccountsBuilder {
         configProgram, GlamConfigPDAs.globalConfigPDA(configProgram),
         policyProgram,
         putIfNotNull(map, bridgeIntegrationProgram, ExtBridgePDAs::integrationAuthorityPDA),
-        putIfNotNull(map, cctpIntegrationProgram, ExtCctpPDAs::integrationAuthorityPDA),
+        putIfNotNull(map, legacyCctpIntegrationProgram, ExtCctpPDAs::integrationAuthorityPDA),
         putIfNotNull(map, externalPositionProgram, ExtRpiPDAs::integrationAuthorityPDA),
         putIfNotNull(map, jupiterIntegrationProgram, ExtJupiterPDAs::integrationAuthorityPDA),
         putIfNotNull(map, kaminoIntegrationProgram, ExtKaminoPDAs::integrationAuthorityPDA),
@@ -140,13 +140,31 @@ public final class GlamAccountsBuilder {
     return bridgeIntegrationProgram(createKey(bridgeIntegrationProgram));
   }
 
-  public GlamAccountsBuilder cctpIntegrationProgram(final PublicKey cctpIntegrationProgram) {
-    this.cctpIntegrationProgram = cctpIntegrationProgram;
+  public GlamAccountsBuilder legacyCctpIntegrationProgram(final PublicKey legacyCctpIntegrationProgram) {
+    this.legacyCctpIntegrationProgram = legacyCctpIntegrationProgram;
     return this;
   }
 
+  public GlamAccountsBuilder legacyCctpIntegrationProgram(final String legacyCctpIntegrationProgram) {
+    return legacyCctpIntegrationProgram(createKey(legacyCctpIntegrationProgram));
+  }
+
+  /**
+   * @deprecated Use {@link #bridgeIntegrationProgram(PublicKey)} for current CCTP, or
+   * {@link #legacyCctpIntegrationProgram(PublicKey)} for the standalone legacy program.
+   */
+  @Deprecated(forRemoval = false)
+  public GlamAccountsBuilder cctpIntegrationProgram(final PublicKey cctpIntegrationProgram) {
+    return legacyCctpIntegrationProgram(cctpIntegrationProgram);
+  }
+
+  /**
+   * @deprecated Use {@link #bridgeIntegrationProgram(String)} for current CCTP, or
+   * {@link #legacyCctpIntegrationProgram(String)} for the standalone legacy program.
+   */
+  @Deprecated(forRemoval = false)
   public GlamAccountsBuilder cctpIntegrationProgram(final String cctpIntegrationProgram) {
-    return cctpIntegrationProgram(createKey(cctpIntegrationProgram));
+    return legacyCctpIntegrationProgram(cctpIntegrationProgram);
   }
 
   public GlamAccountsBuilder driftIntegrationProgram(final PublicKey driftIntegrationProgram) {

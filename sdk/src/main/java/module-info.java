@@ -1,4 +1,6 @@
 module systems.glam.sdk {
+  exports systems.glam.sdk.idl.programs.glam.bridge.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.bridge.gen;
   exports systems.glam.sdk.idl.programs.glam.config.gen.types;
   exports systems.glam.sdk.idl.programs.glam.config.gen;
   exports systems.glam.sdk.idl.programs.glam.jupiter;

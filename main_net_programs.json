@@ -175,6 +175,29 @@
       ]
     },
     {
+      "name": "GLAM Bridge",
+      "source": "sdk",
+      "package": "glam.bridge",
+      "module": "sdk",
+      "program": "G1NTbnLcjMex9Tjo8ocmNK9S2zBCiGVuxKUUNGhYZztx",
+      "typeRefs": [
+        {
+          "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
       "name": "GLAM Staging Bridge",
       "source": "sdk",
       "package": "glam.staging.bridge",
@@ -198,7 +221,7 @@
       ]
     },
     {
-      "name": "GLAM Staging CCTP",
+      "name": "GLAM Staging Legacy CCTP",
       "source": "sdk",
       "module": "sdk",
       "package": "glam.staging.cctp",

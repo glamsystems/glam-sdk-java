@@ -1,5 +1,6 @@
 package systems.glam.sdk;
 
+import systems.glam.sdk.idl.programs.glam.bridge.gen.ExtBridgeConstants;
 import systems.glam.sdk.idl.programs.glam.kamino.gen.ExtKaminoConstants;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintConstants;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolConstants;
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
 
 public enum Protocol {
 
-  CCTP(ExtCctpConstants.class, ExtCctpConstants.PROTO_CCTP),
+  CCTP(ExtBridgeConstants.class, ExtBridgeConstants.PROTO_CCTP),
   RPI(ExtRpiConstants.class, ExtRpiConstants.PROTO_RPI),
   JUPITER_SWAP(GlamProtocolConstants.class, GlamProtocolConstants.PROTO_JUPITER_SWAP),
   JUPITER_BORROW(ExtJupiterConstants.class, ExtJupiterConstants.PROTO_JUPITER_BORROW),
@@ -38,7 +39,9 @@ public enum Protocol {
   MINT(GlamMintConstants.class, GlamMintConstants.PROTO_MINT),
   STAKE(GlamProtocolConstants.class, GlamProtocolConstants.PROTO_STAKE),
   SYSTEM(GlamProtocolConstants.class, GlamProtocolConstants.PROTO_SYSTEM),
-  TOKEN(ExtSplConstants.class, ExtSplConstants.PROTO_TOKEN);
+  TOKEN(ExtSplConstants.class, ExtSplConstants.PROTO_TOKEN),
+  @Deprecated(forRemoval = false)
+  LEGACY_CCTP(ExtCctpConstants.class, ExtCctpConstants.PROTO_CCTP);
 
   private static final Map<Class<?>, Map<Integer, Protocol>> protocolMap = Arrays.stream(values())
       .collect(Collectors.groupingBy(Protocol::constantsClass, Collectors.toUnmodifiableMap(Protocol::protocolBitFlag, Function.identity())));
@@ -91,5 +94,21 @@ public enum Protocol {
 
   public static ProtocolPermissions fromKaminoProtocolBitFlag(final int protocolBitFlag, final long permissionMask) {
     return fromProtocolBitFlag(ExtKaminoConstants.class, protocolBitFlag, permissionMask);
+  }
+
+  public static ProtocolPermissions fromBridgeProtocolBitFlag(final int protocolBitFlag, final long permissionMask) {
+    return fromProtocolBitFlag(ExtBridgeConstants.class, protocolBitFlag, permissionMask);
+  }
+
+  /**
+   * Decodes permissions for the standalone legacy CCTP program.
+   *
+   * @deprecated New CCTP permissions belong to the bridge program and should be decoded with
+   * {@link #fromBridgeProtocolBitFlag(int, long)}.
+   */
+  @Deprecated(forRemoval = false)
+  public static ProtocolPermissions fromLegacyCctpProtocolBitFlag(final int protocolBitFlag,
+                                                                  final long permissionMask) {
+    return fromProtocolBitFlag(ExtCctpConstants.class, protocolBitFlag, permissionMask);
   }
 }
