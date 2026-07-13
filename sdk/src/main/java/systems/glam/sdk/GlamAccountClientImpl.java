@@ -41,7 +41,6 @@ class GlamAccountClientImpl implements GlamAccountClient {
     this.globalConfigKey = glamAccounts.globalConfigPDA().publicKey();
   }
 
-  @SuppressWarnings("deprecation")
   static ProtocolPermissions adaptPermissions(final GlamAccounts glamAccounts,
                                               final PublicKey integrationProgram,
                                               final int protocolBitFlag,
@@ -56,8 +55,8 @@ class GlamAccountClientImpl implements GlamAccountClient {
       return Protocol.fromKaminoProtocolBitFlag(protocolBitFlag, permissionMask);
     } else if (integrationProgram.equals(glamAccounts.bridgeIntegrationProgram())) {
       return Protocol.fromBridgeProtocolBitFlag(protocolBitFlag, permissionMask);
-    } else if (integrationProgram.equals(glamAccounts.legacyCctpIntegrationProgram())) {
-      return Protocol.fromLegacyCctpProtocolBitFlag(protocolBitFlag, permissionMask);
+    } else if (integrationProgram.equals(glamAccounts.cctpIntegrationProgram())) {
+      return Protocol.fromCctpProtocolBitFlag(protocolBitFlag, permissionMask);
     } else {
       throw new UnsupportedOperationException("Unknown integration program: " + integrationProgram);
     }

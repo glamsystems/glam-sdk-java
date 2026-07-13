@@ -19,7 +19,7 @@ public interface GlamAccounts {
       .mintProgram("GM1NtvvnSXUptTrMCqbogAdZJydZSNv98DoU5AZVLmGh")
       .policyProgram("po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY")
       .bridgeIntegrationProgram("G1NTbnLcjMex9Tjo8ocmNK9S2zBCiGVuxKUUNGhYZztx")
-      .legacyCctpIntegrationProgram("G1NTcMDYgNLpDwgnrpSZvoSKQuR9NXG7S3DmtNQCDmrK")
+      .cctpIntegrationProgram("G1NTcMDYgNLpDwgnrpSZvoSKQuR9NXG7S3DmtNQCDmrK")
       .kaminoIntegrationProgram("G1NTkDEUR3pkEqGCKZtmtmVzCUEdYa86pezHkwYbLyde")
       .splIntegrationProgram("G1NTsQ36mjPe89HtPYqxKsjY5HmYsDR6CbD2gd2U2pta")
       .create();
@@ -30,7 +30,7 @@ public interface GlamAccounts {
       .mintProgram("gstgm1M39mhgnvgyScGUDRwNn5kNVSd97hTtyow1Et5")
       .policyProgram("po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY")
       .bridgeIntegrationProgram("gstgxS9yTioViNKdsM4DC33k1TU9un2VCYDQK8fAeSA")
-      .legacyCctpIntegrationProgram("gstgcuRwiX2FpmtigowB1TnVi3fPkZC9TEmVnc5sdxW")
+      .cctpIntegrationProgram("gstgcuRwiX2FpmtigowB1TnVi3fPkZC9TEmVnc5sdxW")
       .externalPositionProgram("gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX")
       .jupiterIntegrationProgram("gstgJbGqoE3p1SdFA2dET9tcaCzNqGcdD8wpbGctnU9")
       .kaminoIntegrationProgram("gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq")
@@ -83,38 +83,11 @@ public interface GlamAccounts {
 
   AccountMeta readBridgeIntegrationAuthority();
 
-  AccountMeta invokedLegacyCctpIntegrationProgram();
+  AccountMeta invokedCctpIntegrationProgram();
 
-  PublicKey legacyCctpIntegrationProgram();
+  PublicKey cctpIntegrationProgram();
 
-  AccountMeta readLegacyCctpIntegrationAuthority();
-
-  /**
-   * @deprecated CCTP is served by {@link #invokedBridgeIntegrationProgram()}. This accessor is
-   * retained for the standalone legacy CCTP program only.
-   */
-  @Deprecated(forRemoval = false)
-  default AccountMeta invokedCctpIntegrationProgram() {
-    return invokedLegacyCctpIntegrationProgram();
-  }
-
-  /**
-   * @deprecated CCTP is served by {@link #bridgeIntegrationProgram()}. This accessor is retained
-   * for the standalone legacy CCTP program only.
-   */
-  @Deprecated(forRemoval = false)
-  default PublicKey cctpIntegrationProgram() {
-    return legacyCctpIntegrationProgram();
-  }
-
-  /**
-   * @deprecated CCTP is served by {@link #readBridgeIntegrationAuthority()}. This accessor is
-   * retained for the standalone legacy CCTP program only.
-   */
-  @Deprecated(forRemoval = false)
-  default AccountMeta readCctpIntegrationAuthority() {
-    return readLegacyCctpIntegrationAuthority();
-  }
+  AccountMeta readCctpIntegrationAuthority();
 
   AccountMeta invokedExternalPositionProgram();
 

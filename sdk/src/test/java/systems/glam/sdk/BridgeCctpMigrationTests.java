@@ -16,11 +16,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static software.sava.core.accounts.PublicKey.fromBase58Encoded;
 
-@SuppressWarnings("deprecation")
 final class BridgeCctpMigrationTests {
 
   @Test
-  void mainNetAccountsExposeCurrentBridgeAndExplicitLegacyCctpPrograms() {
+  void mainNetAccountsExposeBridgeAndStandaloneCctpPrograms() {
     final var accounts = GlamAccounts.MAIN_NET;
 
     assertEquals(
@@ -29,14 +28,9 @@ final class BridgeCctpMigrationTests {
     );
     assertEquals(
         fromBase58Encoded("G1NTcMDYgNLpDwgnrpSZvoSKQuR9NXG7S3DmtNQCDmrK"),
-        accounts.legacyCctpIntegrationProgram()
+        accounts.cctpIntegrationProgram()
     );
-    assertNotEquals(accounts.bridgeIntegrationProgram(), accounts.legacyCctpIntegrationProgram());
-
-    // The ambiguous compatibility aliases continue to identify only the standalone legacy program.
-    assertEquals(accounts.invokedLegacyCctpIntegrationProgram(), accounts.invokedCctpIntegrationProgram());
-    assertEquals(accounts.legacyCctpIntegrationProgram(), accounts.cctpIntegrationProgram());
-    assertEquals(accounts.readLegacyCctpIntegrationAuthority(), accounts.readCctpIntegrationAuthority());
+    assertNotEquals(accounts.bridgeIntegrationProgram(), accounts.cctpIntegrationProgram());
 
     assertEquals(
         fromBase58Encoded("gstgxS9yTioViNKdsM4DC33k1TU9un2VCYDQK8fAeSA"),
@@ -44,16 +38,16 @@ final class BridgeCctpMigrationTests {
     );
     assertEquals(
         fromBase58Encoded("gstgcuRwiX2FpmtigowB1TnVi3fPkZC9TEmVnc5sdxW"),
-        GlamAccounts.MAIN_NET_STAGING.legacyCctpIntegrationProgram()
+        GlamAccounts.MAIN_NET_STAGING.cctpIntegrationProgram()
     );
   }
 
   @Test
-  void bridgeProtocolsDecodeCctpAndLayerzeroPermissionsWhileLegacyMappingRemainsAvailable() {
+  void bridgeAndStandaloneCctpPermissionsRemainProgramScoped() {
     final long bridgePermissionMask =
         ExtBridgeConstants.PROTO_BRIDGE_PERM_SEND | ExtBridgeConstants.PROTO_BRIDGE_PERM_VALIDATE;
     assertEquals(
-        new ProtocolPermissions(Protocol.CCTP, bridgePermissionMask),
+        new ProtocolPermissions(Protocol.BRIDGE_CCTP, bridgePermissionMask),
         Protocol.fromBridgeProtocolBitFlag(
             ExtBridgeConstants.PROTO_CCTP,
             bridgePermissionMask
@@ -62,7 +56,7 @@ final class BridgeCctpMigrationTests {
     final long oftPermissionMask =
         ExtBridgeConstants.PROTO_BRIDGE_PERM_SEND | ExtBridgeConstants.PROTO_BRIDGE_PERM_SETTLE;
     assertEquals(
-        new ProtocolPermissions(Protocol.LAYERZERO_OFT, oftPermissionMask),
+        new ProtocolPermissions(Protocol.BRIDGE_LAYERZERO_OFT, oftPermissionMask),
         GlamAccountClientImpl.adaptPermissions(
             GlamAccounts.MAIN_NET,
             GlamAccounts.MAIN_NET.bridgeIntegrationProgram(),
@@ -71,7 +65,7 @@ final class BridgeCctpMigrationTests {
         )
     );
     assertEquals(
-        new ProtocolPermissions(Protocol.CCTP, bridgePermissionMask),
+        new ProtocolPermissions(Protocol.BRIDGE_CCTP, bridgePermissionMask),
         GlamAccountClientImpl.adaptPermissions(
             GlamAccounts.MAIN_NET,
             GlamAccounts.MAIN_NET.bridgeIntegrationProgram(),
@@ -80,17 +74,17 @@ final class BridgeCctpMigrationTests {
         )
     );
     assertEquals(
-        new ProtocolPermissions(Protocol.LEGACY_CCTP, ExtCctpConstants.PROTO_CCTP_PERM_TRANSFER),
-        Protocol.fromLegacyCctpProtocolBitFlag(
+        new ProtocolPermissions(Protocol.CCTP, ExtCctpConstants.PROTO_CCTP_PERM_TRANSFER),
+        Protocol.fromCctpProtocolBitFlag(
             ExtCctpConstants.PROTO_CCTP,
             ExtCctpConstants.PROTO_CCTP_PERM_TRANSFER
         )
     );
     assertEquals(
-        new ProtocolPermissions(Protocol.LEGACY_CCTP, ExtCctpConstants.PROTO_CCTP_PERM_TRANSFER),
+        new ProtocolPermissions(Protocol.CCTP, ExtCctpConstants.PROTO_CCTP_PERM_TRANSFER),
         GlamAccountClientImpl.adaptPermissions(
             GlamAccounts.MAIN_NET,
-            GlamAccounts.MAIN_NET.legacyCctpIntegrationProgram(),
+            GlamAccounts.MAIN_NET.cctpIntegrationProgram(),
             ExtCctpConstants.PROTO_CCTP,
             ExtCctpConstants.PROTO_CCTP_PERM_TRANSFER
         )

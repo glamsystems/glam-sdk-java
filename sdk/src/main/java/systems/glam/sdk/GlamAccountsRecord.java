@@ -14,7 +14,7 @@ public record GlamAccountsRecord(AccountMeta invokedProtocolProgram,
                                  ProgramDerivedAddress globalConfigPDA,
                                  PublicKey policyProgram,
                                  AccountMeta invokedBridgeIntegrationProgram,
-                                 AccountMeta invokedLegacyCctpIntegrationProgram,
+                                 AccountMeta invokedCctpIntegrationProgram,
                                  AccountMeta invokedExternalPositionProgram,
                                  AccountMeta invokedJupiterIntegrationProgram,
                                  AccountMeta invokedKaminoIntegrationProgram,
@@ -55,31 +55,13 @@ public record GlamAccountsRecord(AccountMeta invokedProtocolProgram,
   }
 
   @Override
-  public PublicKey legacyCctpIntegrationProgram() {
-    return invokedLegacyCctpIntegrationProgram.publicKey();
-  }
-
-  @Override
-  public AccountMeta readLegacyCctpIntegrationAuthority() {
-    return integrationAuthorities.get(legacyCctpIntegrationProgram());
-  }
-
-  @Deprecated(forRemoval = false)
-  @Override
-  public AccountMeta invokedCctpIntegrationProgram() {
-    return invokedLegacyCctpIntegrationProgram;
-  }
-
-  @Deprecated(forRemoval = false)
-  @Override
   public PublicKey cctpIntegrationProgram() {
-    return legacyCctpIntegrationProgram();
+    return invokedCctpIntegrationProgram.publicKey();
   }
 
-  @Deprecated(forRemoval = false)
   @Override
   public AccountMeta readCctpIntegrationAuthority() {
-    return readLegacyCctpIntegrationAuthority();
+    return integrationAuthorities.get(cctpIntegrationProgram());
   }
 
   @Override
