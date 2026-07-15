@@ -7,6 +7,7 @@ import systems.comodal.jsoniter.JsonIterator;
 
 import java.time.Duration;
 import java.util.Properties;
+import java.util.function.Supplier;
 
 import static systems.comodal.jsoniter.JsonIterator.fieldEquals;
 
@@ -25,13 +26,11 @@ public record DefensivePollingConfig(Duration globalConfig,
   public static DefensivePollingConfig parseConfig(final String prefix, final Properties properties) {
     final var parser = new DefensivePollingConfig.Parser();
     parser.parseProperties(prefix, properties);
-    return parser.createConfig();
+    return parser.get();
   }
 
   public static DefensivePollingConfig parseConfig(final JsonIterator ji) {
-    final var parser = new DefensivePollingConfig.Parser();
-    ji.testObject(parser);
-    return parser.createConfig();
+    return ji.parseObject(new DefensivePollingConfig.Parser());
   }
 
   public static DefensivePollingConfig createDefaultConfig() {
@@ -44,7 +43,7 @@ public record DefensivePollingConfig(Duration globalConfig,
     );
   }
 
-  private static final class Parser extends PropertiesParser implements FieldBufferPredicate {
+  private static final class Parser extends PropertiesParser implements FieldBufferPredicate, Supplier<DefensivePollingConfig> {
 
     private Duration globalConfig;
     private Duration glamStateAccounts;
@@ -79,7 +78,8 @@ public record DefensivePollingConfig(Duration globalConfig,
       }
     }
 
-    private DefensivePollingConfig createConfig() {
+    @Override
+    public DefensivePollingConfig get() {
       if (globalConfig == null) {
         globalConfig = Duration.ofMinutes(1);
       }

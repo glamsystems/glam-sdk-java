@@ -19,9 +19,7 @@ final class FulfillmentServiceConfigTests {
       final var parser = new FulfillmentServiceConfig.Parser(
           Executors.newVirtualThreadPerTaskExecutor(), httpClient
       );
-      final var ji = JsonIterator.parse(json);
-      ji.testObject(parser);
-      return parser.createFulfillmentConfig();
+      return JsonIterator.parse(json).parseObject(parser);
     }
   }
 
@@ -35,7 +33,7 @@ final class FulfillmentServiceConfigTests {
           Executors.newVirtualThreadPerTaskExecutor(), httpClient
       );
       parser.parseProperties(prefix, properties);
-      return parser.createFulfillmentConfig();
+      return parser.get();
     }
   }
 

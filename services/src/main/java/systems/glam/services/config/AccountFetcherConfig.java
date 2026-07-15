@@ -7,6 +7,7 @@ import systems.comodal.jsoniter.JsonIterator;
 
 import java.time.Duration;
 import java.util.Properties;
+import java.util.function.Supplier;
 
 import static systems.comodal.jsoniter.JsonIterator.fieldEquals;
 
@@ -23,16 +24,14 @@ public record AccountFetcherConfig(Duration fetchDelay, boolean reactive) {
   public static AccountFetcherConfig parseConfig(final String prefix, final Properties properties) {
     final var parser = new AccountFetcherConfig.Parser();
     parser.parseProperties(prefix, properties);
-    return parser.createConfig();
+    return parser.get();
   }
 
   public static AccountFetcherConfig parseConfig(final JsonIterator ji) {
-    final var parser = new AccountFetcherConfig.Parser();
-    ji.testObject(parser);
-    return parser.createConfig();
+    return ji.parseObject(new AccountFetcherConfig.Parser());
   }
 
-  private static final class Parser extends PropertiesParser implements FieldBufferPredicate {
+  private static final class Parser extends PropertiesParser implements FieldBufferPredicate, Supplier<AccountFetcherConfig> {
 
     private Duration fetchDelay;
     private boolean reactive;
@@ -49,7 +48,8 @@ public record AccountFetcherConfig(Duration fetchDelay, boolean reactive) {
       this.reactive = parseBoolean(properties, p, "reactive", this.reactive);
     }
 
-    private AccountFetcherConfig createConfig() {
+    @Override
+    public AccountFetcherConfig get() {
       return new AccountFetcherConfig(
           fetchDelay == null ? Duration.ofSeconds(5) : fetchDelay,
           reactive

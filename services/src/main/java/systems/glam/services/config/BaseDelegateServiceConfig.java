@@ -33,6 +33,7 @@ import software.sava.services.solana.remote.call.RpcCaller;
 import software.sava.services.solana.transactions.*;
 import software.sava.services.solana.websocket.WebSocketManager;
 import systems.comodal.jsoniter.FieldBufferPredicate;
+import systems.comodal.jsoniter.FieldMatcher;
 import systems.comodal.jsoniter.JsonIterator;
 import systems.glam.sdk.GlamAccounts;
 import systems.glam.services.ServiceContext;
@@ -58,7 +59,6 @@ import static software.sava.services.core.config.PropertiesParser.getProperty;
 import static software.sava.services.core.config.PropertiesParser.propertyPrefix;
 import static software.sava.services.solana.config.ChainItemFormatter.parseFormatter;
 import static software.sava.services.solana.load_balance.LoadBalanceUtil.createRPCLoadBalancer;
-import static systems.comodal.jsoniter.JsonIterator.fieldEquals;
 
 public record BaseDelegateServiceConfig(PublicKey glamStateKey,
                                         SigningServiceConfig signingServiceConfig,
@@ -499,106 +499,116 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
       );
     }
 
+    // Buffer predicate retained so subclasses can prefix their own fields and
+    // fall through to this dispatch, and so the strict default can name the
+    // unknown field.
+    private static final FieldMatcher FIELDS = FieldMatcher.of(
+        "glamStateKey",
+        "signingService",
+        "serviceBackoff",
+        "formatter",
+        "notificationHooks",
+        "cacheDirectory",
+        "tableCache",
+        "rpcCallWeights",
+        "rpc",
+        "sendRPC",
+        "websocket",
+        "helius",
+        "epochService",
+        "txMonitor",
+        "accountFetcher",
+        "defensivePolling",
+        "maxSOLPriorityFee",
+        "warnFeePayerBalance",
+        "minFeePayerBalance",
+        "minCheckStateDelay",
+        "maxCheckStateDelay",
+        "defaultCuBudgetMultiplier",
+        "maxTransactionRetries",
+        "hikariPropertiesFiles"
+    );
+
     @Override
     public boolean test(final char[] buf, final int offset, final int len, final JsonIterator ji) {
-      if (fieldEquals("glamStateKey", buf, offset, len)) {
-        glamStateKey = PublicKeyEncoding.parseBase58Encoded(ji);
-      } else if (fieldEquals("signingService", buf, offset, len)) {
-        signingServiceConfig = SigningServiceConfig.parseConfig(taskExecutor, DEFAULT_NETWORK_BACKOFF, ji);
-      } else if (fieldEquals("serviceBackoff", buf, offset, len)) {
-        serviceBackoff = BackoffConfig.parseConfig(ji).createBackoff();
-      } else if (fieldEquals("formatter", buf, offset, len)) {
-        formatter = parseFormatter(ji);
-      } else if (fieldEquals("notificationHooks", buf, offset, len)) {
-        final var webHookConfigs = WebHookConfig.parseConfigs(
-            ji,
-            null,
-            CapacityConfig.createSimpleConfig(
-                Duration.ofSeconds(13),
-                2,
-                Duration.ofSeconds(1)
-            ),
-            DEFAULT_NETWORK_BACKOFF
-        );
-        this.notifyClient = createNotifyClient(webHookConfigs);
-      } else if (fieldEquals("cacheDirectory", buf, offset, len)) {
-        cacheDirectory = Path.of(ji.readString());
-      } else if (fieldEquals("tableCache", buf, offset, len)) {
-        tableCacheConfig = TableCacheConfig.parse(ji);
-      } else if (fieldEquals("rpcCallWeights", buf, offset, len)) {
-        callWeights = CallWeights.parse(ji);
-      } else if (fieldEquals("rpc", buf, offset, len)) {
-        final var loadBalancerConfig = LoadBalancerConfig.parse(
-            ji,
-            CapacityConfig.createSimpleConfig(
-                Duration.ofSeconds(13),
-                10,
-                Duration.ofSeconds(1)
-            ),
-            DEFAULT_NETWORK_BACKOFF
-        );
-        defaultRPCBackoff = loadBalancerConfig.defaultBackoff();
-        rpcClients = createRPCLoadBalancer(loadBalancerConfig, httpClient);
-      } else if (fieldEquals("sendRPC", buf, offset, len)) {
-        final var loadBalancerConfig = LoadBalancerConfig.parse(
-            ji,
-            CapacityConfig.createSimpleConfig(
-                Duration.ofSeconds(5),
-                1,
-                Duration.ofSeconds(1)
-            ),
-            defaultRPCBackoff
-        );
-        sendClients = createRPCLoadBalancer(loadBalancerConfig, httpClient);
-      } else if (fieldEquals("websocket", buf, offset, len)) {
-        websocketConfig = RemoteResourceConfig.parseConfig(ji, null, DEFAULT_NETWORK_BACKOFF);
-      } else if (fieldEquals("helius", buf, offset, len)) {
-        final var heliusConfig = HeliusConfig.parseConfig(
-            ji,
-            CapacityConfig.createSimpleConfig(
-                Duration.ofSeconds(5),
-                3,
-                Duration.ofSeconds(1)
-            ),
-            DEFAULT_NETWORK_BACKOFF
-        );
-        final var heliusClient = heliusConfig.createClient(httpClient);
-        final var balancedItem = BalancedItem.createItem(
-            new HeliusFeeProvider(heliusClient),
-            heliusConfig.capacityMonitor(),
-            requireNonNullElse(heliusConfig.backoff(), DEFAULT_NETWORK_BACKOFF)
-        );
-        this.feeProviders = LoadBalancer.createBalancer(balancedItem);
-      } else if (fieldEquals("epochService", buf, offset, len)) {
-        epochServiceConfig = EpochServiceConfig.parseConfig(ji);
-      } else if (fieldEquals("txMonitor", buf, offset, len)) {
-        txMonitorConfig = TxMonitorConfig.parseConfig(ji);
-      } else if (fieldEquals("accountFetcher", buf, offset, len)) {
-        accountFetcherConfig = AccountFetcherConfig.parseConfig(ji);
-      } else if (fieldEquals("defensivePolling", buf, offset, len)) {
-        defensivePollingConfig = DefensivePollingConfig.parseConfig(ji);
-      } else if (fieldEquals("maxSOLPriorityFee", buf, offset, len)) {
-        maxSOLPriorityFee = ji.readBigDecimalDropZeroes();
-      } else if (fieldEquals("warnFeePayerBalance", buf, offset, len)) {
-        warnFeePayerBalance = ji.readBigDecimalDropZeroes();
-      } else if (fieldEquals("minFeePayerBalance", buf, offset, len)) {
-        minFeePayerBalance = ji.readBigDecimalDropZeroes();
-      } else if (fieldEquals("minCheckStateDelay", buf, offset, len)) {
-        minCheckStateDelay = ServiceConfigUtil.parseDuration(ji);
-      } else if (fieldEquals("maxCheckStateDelay", buf, offset, len)) {
-        maxCheckStateDelay = ServiceConfigUtil.parseDuration(ji);
-      } else if (fieldEquals("defaultCuBudgetMultiplier", buf, offset, len)) {
-        defaultCuBudgetMultiplier = ji.readDouble();
-      } else if (fieldEquals("maxTransactionRetries", buf, offset, len)) {
-        maxTransactionRetries = ji.readInt();
-      } else if (fieldEquals("hikariPropertiesFiles", buf, offset, len)) {
-        final var files = new ArrayList<String>();
-        while (ji.readArray()) {
-          files.add(ji.readString());
+      switch (FIELDS.match(buf, offset, len)) {
+        case 0 -> glamStateKey = PublicKeyEncoding.parseBase58Encoded(ji);
+        case 1 -> signingServiceConfig = SigningServiceConfig.parseConfig(taskExecutor, DEFAULT_NETWORK_BACKOFF, ji);
+        case 2 -> serviceBackoff = BackoffConfig.parseConfig(ji).createBackoff();
+        case 3 -> formatter = parseFormatter(ji);
+        case 4 -> {
+          final var webHookConfigs = WebHookConfig.parseConfigs(
+              ji,
+              null,
+              CapacityConfig.createSimpleConfig(
+                  Duration.ofSeconds(13),
+                  2,
+                  Duration.ofSeconds(1)
+              ),
+              DEFAULT_NETWORK_BACKOFF
+          );
+          this.notifyClient = createNotifyClient(webHookConfigs);
         }
-        hikariPropertiesFiles = List.copyOf(files);
-      } else {
-        throw new IllegalStateException("Unknown service config field " + new String(buf, offset, len));
+        case 5 -> cacheDirectory = Path.of(ji.readString());
+        case 6 -> tableCacheConfig = TableCacheConfig.parse(ji);
+        case 7 -> callWeights = CallWeights.parse(ji);
+        case 8 -> {
+          final var loadBalancerConfig = LoadBalancerConfig.parse(
+              ji,
+              CapacityConfig.createSimpleConfig(
+                  Duration.ofSeconds(13),
+                  10,
+                  Duration.ofSeconds(1)
+              ),
+              DEFAULT_NETWORK_BACKOFF
+          );
+          defaultRPCBackoff = loadBalancerConfig.defaultBackoff();
+          rpcClients = createRPCLoadBalancer(loadBalancerConfig, httpClient);
+        }
+        case 9 -> {
+          final var loadBalancerConfig = LoadBalancerConfig.parse(
+              ji,
+              CapacityConfig.createSimpleConfig(
+                  Duration.ofSeconds(5),
+                  1,
+                  Duration.ofSeconds(1)
+              ),
+              defaultRPCBackoff
+          );
+          sendClients = createRPCLoadBalancer(loadBalancerConfig, httpClient);
+        }
+        case 10 -> websocketConfig = RemoteResourceConfig.parseConfig(ji, null, DEFAULT_NETWORK_BACKOFF);
+        case 11 -> {
+          final var heliusConfig = HeliusConfig.parseConfig(
+              ji,
+              CapacityConfig.createSimpleConfig(
+                  Duration.ofSeconds(5),
+                  3,
+                  Duration.ofSeconds(1)
+              ),
+              DEFAULT_NETWORK_BACKOFF
+          );
+          final var heliusClient = heliusConfig.createClient(httpClient);
+          final var balancedItem = BalancedItem.createItem(
+              new HeliusFeeProvider(heliusClient),
+              heliusConfig.capacityMonitor(),
+              requireNonNullElse(heliusConfig.backoff(), DEFAULT_NETWORK_BACKOFF)
+          );
+          this.feeProviders = LoadBalancer.createBalancer(balancedItem);
+        }
+        case 12 -> epochServiceConfig = EpochServiceConfig.parseConfig(ji);
+        case 13 -> txMonitorConfig = TxMonitorConfig.parseConfig(ji);
+        case 14 -> accountFetcherConfig = AccountFetcherConfig.parseConfig(ji);
+        case 15 -> defensivePollingConfig = DefensivePollingConfig.parseConfig(ji);
+        case 16 -> maxSOLPriorityFee = ji.readBigDecimalDropZeroes();
+        case 17 -> warnFeePayerBalance = ji.readBigDecimalDropZeroes();
+        case 18 -> minFeePayerBalance = ji.readBigDecimalDropZeroes();
+        case 19 -> minCheckStateDelay = ServiceConfigUtil.parseDuration(ji);
+        case 20 -> maxCheckStateDelay = ServiceConfigUtil.parseDuration(ji);
+        case 21 -> defaultCuBudgetMultiplier = ji.readDouble();
+        case 22 -> maxTransactionRetries = ji.readInt();
+        case 23 -> hikariPropertiesFiles = List.copyOf(ji.readList(JsonIterator::readString));
+        default -> throw new IllegalStateException("Unknown service config field " + new String(buf, offset, len));
       }
       return true;
     }

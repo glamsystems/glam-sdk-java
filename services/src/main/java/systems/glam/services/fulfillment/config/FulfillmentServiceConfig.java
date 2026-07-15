@@ -7,11 +7,12 @@ import systems.glam.services.config.DelegateServiceConfig;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.http.HttpClient;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Supplier;
 
+import static java.nio.file.Files.readAllBytes;
 import static software.sava.services.core.config.PropertiesParser.getProperty;
 import static software.sava.services.core.config.PropertiesParser.propertyPrefix;
 import static systems.comodal.jsoniter.JsonIterator.fieldEquals;
@@ -21,16 +22,15 @@ public record FulfillmentServiceConfig(DelegateServiceConfig delegateServiceConf
   public static FulfillmentServiceConfig loadConfig(final Path serviceConfigFile,
                                                     final ExecutorService executorService,
                                                     final HttpClient httpClient) {
-    try (final var ji = JsonIterator.parse(Files.readAllBytes(serviceConfigFile))) {
-      final var parser = new Parser(executorService, httpClient);
-      ji.testObject(parser);
-      return parser.createFulfillmentConfig();
+    try {
+      final byte[] jsonBytes = readAllBytes(serviceConfigFile);
+      return JsonIterator.parse(jsonBytes).parseObject(new Parser(executorService, httpClient));
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
-  static class Parser extends BaseDelegateServiceConfig.ConfigParser {
+  static class Parser extends BaseDelegateServiceConfig.ConfigParser implements Supplier<FulfillmentServiceConfig> {
 
     private boolean softRedeem = true;
 
@@ -48,7 +48,8 @@ public record FulfillmentServiceConfig(DelegateServiceConfig delegateServiceConf
       }
     }
 
-    public FulfillmentServiceConfig createFulfillmentConfig() {
+    @Override
+    public FulfillmentServiceConfig get() {
       final var delegateServiceConfig = createBaseConfig();
 
       return new FulfillmentServiceConfig(delegateServiceConfig, softRedeem);
