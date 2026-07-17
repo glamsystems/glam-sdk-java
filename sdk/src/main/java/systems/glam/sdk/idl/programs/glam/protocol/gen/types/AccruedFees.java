@@ -5,7 +5,7 @@ import software.sava.idl.clients.core.gen.SerDe;
 
 import java.math.BigInteger;
 
-import static software.sava.core.encoding.ByteUtil.getInt128LE;
+import static software.sava.core.encoding.ByteUtil.getUInt128LE;
 import static software.sava.core.encoding.ByteUtil.putInt128LE;
 
 public record AccruedFees(BigInteger vaultSubscriptionFee,
@@ -33,21 +33,21 @@ public record AccruedFees(BigInteger vaultSubscriptionFee,
       return null;
     }
     int i = _offset;
-    final var vaultSubscriptionFee = getInt128LE(_data, i);
+    final var vaultSubscriptionFee = getUInt128LE(_data, i);
     i += 16;
-    final var vaultRedemptionFee = getInt128LE(_data, i);
+    final var vaultRedemptionFee = getUInt128LE(_data, i);
     i += 16;
-    final var managerSubscriptionFee = getInt128LE(_data, i);
+    final var managerSubscriptionFee = getUInt128LE(_data, i);
     i += 16;
-    final var managerRedemptionFee = getInt128LE(_data, i);
+    final var managerRedemptionFee = getUInt128LE(_data, i);
     i += 16;
-    final var managementFee = getInt128LE(_data, i);
+    final var managementFee = getUInt128LE(_data, i);
     i += 16;
-    final var performanceFee = getInt128LE(_data, i);
+    final var performanceFee = getUInt128LE(_data, i);
     i += 16;
-    final var protocolBaseFee = getInt128LE(_data, i);
+    final var protocolBaseFee = getUInt128LE(_data, i);
     i += 16;
-    final var protocolFlowFee = getInt128LE(_data, i);
+    final var protocolFlowFee = getUInt128LE(_data, i);
     return new AccruedFees(vaultSubscriptionFee,
                            vaultRedemptionFee,
                            managerSubscriptionFee,

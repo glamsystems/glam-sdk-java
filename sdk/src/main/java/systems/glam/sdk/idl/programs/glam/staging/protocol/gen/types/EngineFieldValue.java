@@ -153,7 +153,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
 
     @Override
     public int l() {
-      return 1 + SerDeUtil.lenVector(4, val);
+      return ordinalBytes() + SerDeUtil.lenVector(4, val);
     }
 
     @Override
@@ -183,7 +183,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
 
     @Override
     public int l() {
-      return 1 + SerDeUtil.lenVector(4, val);
+      return ordinalBytes() + SerDeUtil.lenVector(4, val);
     }
 
     @Override
@@ -214,7 +214,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
 
     @Override
     public int l() {
-      return 1 + SerDeUtil.lenUnsignedIntVector(4, val);
+      return ordinalBytes() + SerDeUtil.lenUnsignedIntVector(4, val);
     }
 
     @Override
@@ -244,7 +244,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
 
     @Override
     public int l() {
-      return 1 + SerDeUtil.lenVector(4, val);
+      return ordinalBytes() + SerDeUtil.lenVector(4, val);
     }
 
     @Override
@@ -274,7 +274,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
 
     @Override
     public int l() {
-      return 1 + SerDeUtil.lenVector(4, val);
+      return ordinalBytes() + SerDeUtil.lenVector(4, val);
     }
 
     @Override

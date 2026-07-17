@@ -5,8 +5,8 @@ import software.sava.idl.clients.core.gen.RustEnum;
 
 import java.math.BigInteger;
 
-import static software.sava.core.encoding.ByteUtil.getInt128LE;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
+import static software.sava.core.encoding.ByteUtil.getUInt128LE;
 import static software.sava.core.encoding.ByteUtil.putInt128LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
@@ -45,7 +45,7 @@ public sealed interface RepositionLiquidityMethod extends RustEnum permits
         return null;
       }
       int i = _offset;
-      final var newLiquidityAmount = getInt128LE(_data, i);
+      final var newLiquidityAmount = getUInt128LE(_data, i);
       i += 16;
       final var existingRangeTokenMinA = getInt64LE(_data, i);
       i += 8;
@@ -79,7 +79,7 @@ public sealed interface RepositionLiquidityMethod extends RustEnum permits
 
     @Override
     public int l() {
-      return BYTES;
+      return ordinalBytes() + BYTES;
     }
 
     @Override

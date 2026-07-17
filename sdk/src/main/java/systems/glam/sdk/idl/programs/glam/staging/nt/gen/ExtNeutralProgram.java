@@ -17,8 +17,8 @@ import java.util.List;
 import static software.sava.core.accounts.meta.AccountMeta.createRead;
 import static software.sava.core.accounts.meta.AccountMeta.createWritableSigner;
 import static software.sava.core.accounts.meta.AccountMeta.createWrite;
-import static software.sava.core.encoding.ByteUtil.getInt128LE;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
+import static software.sava.core.encoding.ByteUtil.getUInt128LE;
 import static software.sava.core.encoding.ByteUtil.putInt128LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
@@ -416,7 +416,7 @@ public final class ExtNeutralProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var sharesAmount = getInt128LE(_data, i);
+      final var sharesAmount = getUInt128LE(_data, i);
       i += 16;
       final var minEstimatedValue = getInt64LE(_data, i);
       return new RequestWithdrawalIxData(discriminator, sharesAmount, minEstimatedValue);

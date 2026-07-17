@@ -97,7 +97,7 @@ public sealed interface OrderPacketKind extends RustEnum permits
 
     @Override
     public int l() {
-      return 1 + side.l()
+      return ordinalBytes() + side.l()
            + priceInTicks.l()
            + numBaseLots.l()
            + SerDeUtil.lenArray(clientOrderId)
@@ -197,7 +197,7 @@ public sealed interface OrderPacketKind extends RustEnum permits
 
     @Override
     public int l() {
-      return 1 + side.l()
+      return ordinalBytes() + side.l()
            + priceInTicks.l()
            + numBaseLots.l()
            + selfTradeBehavior.l()
@@ -324,7 +324,7 @@ public sealed interface OrderPacketKind extends RustEnum permits
 
     @Override
     public int l() {
-      return 1 + side.l()
+      return ordinalBytes() + side.l()
            + (priceInTicks == null ? 1 : (1 + priceInTicks.l()))
            + numBaseLots.l()
            + (numQuoteLots == null ? 1 : (1 + numQuoteLots.l()))

@@ -21,9 +21,9 @@ import java.util.List;
 import static software.sava.core.accounts.meta.AccountMeta.createRead;
 import static software.sava.core.accounts.meta.AccountMeta.createWritableSigner;
 import static software.sava.core.accounts.meta.AccountMeta.createWrite;
-import static software.sava.core.encoding.ByteUtil.getInt128LE;
 import static software.sava.core.encoding.ByteUtil.getInt32LE;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
+import static software.sava.core.encoding.ByteUtil.getUInt128LE;
 import static software.sava.core.encoding.ByteUtil.putInt128LE;
 import static software.sava.core.encoding.ByteUtil.putInt32LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
@@ -587,7 +587,7 @@ public final class ExtOrcaProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var liquidityAmount = getInt128LE(_data, i);
+      final var liquidityAmount = getUInt128LE(_data, i);
       i += 16;
       final var tokenMinA = getInt64LE(_data, i);
       i += 8;
@@ -956,7 +956,7 @@ public final class ExtOrcaProgram {
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var liquidityAmount = getInt128LE(_data, i);
+      final var liquidityAmount = getUInt128LE(_data, i);
       i += 16;
       final var tokenMaxA = getInt64LE(_data, i);
       i += 8;

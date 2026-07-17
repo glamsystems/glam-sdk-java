@@ -5,8 +5,8 @@ import software.sava.idl.clients.core.gen.RustEnum;
 
 import java.math.BigInteger;
 
-import static software.sava.core.encoding.ByteUtil.getInt128LE;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
+import static software.sava.core.encoding.ByteUtil.getUInt128LE;
 import static software.sava.core.encoding.ByteUtil.putInt128LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
@@ -45,9 +45,9 @@ public sealed interface IncreaseLiquidityMethod extends RustEnum permits
       i += 8;
       final var tokenMaxB = getInt64LE(_data, i);
       i += 8;
-      final var minSqrtPrice = getInt128LE(_data, i);
+      final var minSqrtPrice = getUInt128LE(_data, i);
       i += 16;
-      final var maxSqrtPrice = getInt128LE(_data, i);
+      final var maxSqrtPrice = getUInt128LE(_data, i);
       return new ByTokenAmounts(tokenMaxA,
                                 tokenMaxB,
                                 minSqrtPrice,
@@ -70,7 +70,7 @@ public sealed interface IncreaseLiquidityMethod extends RustEnum permits
 
     @Override
     public int l() {
-      return BYTES;
+      return ordinalBytes() + BYTES;
     }
 
     @Override
