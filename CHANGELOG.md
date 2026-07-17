@@ -1,5 +1,24 @@
 # Changelog
 
+## [25.16.0](https://github.com/glamsystems/glam-sdk-java/compare/25.15.0...25.16.0) (2026-07-17)
+
+
+### Features
+
+* **sdk:** add guarded mint reference nav helpers ([7d1f6b4](https://github.com/glamsystems/glam-sdk-java/commit/7d1f6b4008a6ba9187e38f5889295874276638d2))
+* **sdk:** add optional parameters for improved flexibility and configurability across multiple SDK types ([c1ee546](https://github.com/glamsystems/glam-sdk-java/commit/c1ee5462d41d9208b187135bd2d2d4e77f3008a9))
+* **sdk:** add unsigned `u8` parameters for enhanced precision and flexibility across generated types ([a8f0a83](https://github.com/glamsystems/glam-sdk-java/commit/a8f0a83e685e6aecac13fab6346f779631f20521))
+
+
+### Bug Fixes
+
+* **services:** handle empty global config data and log file read errors ([76c1719](https://github.com/glamsystems/glam-sdk-java/commit/76c1719e17d08cc694d7671a4e562e33ac2efd97))
+
+
+### Miscellaneous Chores
+
+* release 25.16.0 ([c8eb1a2](https://github.com/glamsystems/glam-sdk-java/commit/c8eb1a2d526f756b4d5dbe93e911c855654bbba4))
+
 ## [25.15.0](https://github.com/glamsystems/glam-sdk-java/compare/25.14.3...25.15.0) (2026-06-29)
 
 
