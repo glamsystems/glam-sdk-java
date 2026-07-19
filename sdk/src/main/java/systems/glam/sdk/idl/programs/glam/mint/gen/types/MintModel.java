@@ -267,9 +267,9 @@ public record MintModel(String symbol, byte[] _symbol,
 
   @Override
   public int l() {
-    return (_symbol == null || _symbol.length == 0 ? 1 : (1 + _symbol.length))
+    return (_symbol == null || _symbol.length == 0 ? 1 : (1 + 4 + _symbol.length))
          + (name == null || name.length == 0 ? 1 : (1 + SerDeUtil.lenArray(name)))
-         + (_uri == null || _uri.length == 0 ? 1 : (1 + _uri.length))
+         + (_uri == null || _uri.length == 0 ? 1 : (1 + 4 + _uri.length))
          + (yearInSeconds == null || yearInSeconds.isEmpty() ? 1 : (1 + 4))
          + (permanentDelegate == null ? 1 : (1 + 32))
          + (defaultAccountStateFrozen == null ? 1 : (1 + 1))

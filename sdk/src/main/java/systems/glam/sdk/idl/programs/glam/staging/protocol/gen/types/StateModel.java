@@ -244,7 +244,7 @@ public record StateModel(AccountType accountType,
   public int l() {
     return (accountType == null ? 1 : (1 + accountType.l()))
          + (name == null || name.length == 0 ? 1 : (1 + SerDeUtil.lenArray(name)))
-         + (_uri == null || _uri.length == 0 ? 1 : (1 + _uri.length))
+         + (_uri == null || _uri.length == 0 ? 1 : (1 + 4 + _uri.length))
          + (enabled == null ? 1 : (1 + 1))
          + (assets == null || assets.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, assets)))
          + (created == null ? 1 : (1 + created.l()))
