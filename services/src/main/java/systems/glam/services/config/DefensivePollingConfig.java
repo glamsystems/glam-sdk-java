@@ -111,7 +111,7 @@ public record DefensivePollingConfig(Duration globalConfig,
       } else if (fieldEquals("kaminoScope", buf, offset, len)) {
         kaminoScope = ServiceConfigUtil.parseDuration(ji);
       } else {
-        throw new IllegalStateException("Unknown DefensivePollingConfiguration field " + new String(buf, offset, len));
+        throw new IllegalStateException("Unknown DefensivePollingConfig field " + new String(buf, offset, len));
       }
       return true;
     }
