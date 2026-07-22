@@ -9,6 +9,7 @@ testModuleInfo {
 
 hardening {
   mutation.register("sdk") {
+    mutators = "STRONGER,EXPERIMENTAL_NAKED_RECEIVER"
     // catch-all by exclusion, so a new hand-written class is mutated by
     // default instead of silently skipped
     targetClasses = listOf("systems.glam.sdk.*")

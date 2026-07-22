@@ -212,6 +212,8 @@ final class AccountFetcherTests {
     fetcher.run();
 
     assertEquals(1, rpc.calls.size());
+    // queueing and the run loop both hand the lock back
+    assertFalse(((AccountFetcherImpl) fetcher).lock.isLocked());
     // the batch carries the always-fetch keys alongside the queued ones
     assertTrue(rpc.calls.getFirst().containsAll(List.of(clockKey, present, absent)));
 
@@ -356,6 +358,7 @@ final class AccountFetcherTests {
     fetcher.run();
 
     assertEquals(1, rpc.calls.size());
+    assertFalse(((AccountFetcherImpl) fetcher).lock.isLocked());
     assertTrue(rpc.calls.getFirst().contains(first));
     assertFalse(rpc.calls.getFirst().contains(second));
     assertEquals(1, consumer.received.size());

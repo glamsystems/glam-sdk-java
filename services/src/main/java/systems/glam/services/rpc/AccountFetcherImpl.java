@@ -29,7 +29,9 @@ final class AccountFetcherImpl implements AccountFetcher {
   private final RpcCaller rpcCaller;
   private final Set<PublicKey> alwaysFetch;
   private final LinkedHashSet<PublicKey> batch;
-  private final ReentrantLock lock;
+  /// Package-private so tests can assert the lock is released; a leaked lock
+  /// blocks every other caller and no result assertion can see it.
+  final ReentrantLock lock;
   private final Condition newBatch;
   private final Set<AccountConsumer> pendingUniqueConsumers;
   private final ConcurrentLinkedDeque<AccountBatch> queue;
@@ -315,7 +317,6 @@ final class AccountFetcherImpl implements AccountFetcher {
       }
     } else {
       do { // Amortize (pollDelay / 2) after an initial batch is added.
-        //noinspection BusyWait
         Thread.sleep(pollDelay);
       } while (queue.isEmpty());
     }

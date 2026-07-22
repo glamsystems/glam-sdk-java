@@ -20,6 +20,11 @@ import java.nio.file.Files;
 import java.util.zip.GZIPInputStream;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.Context;
+import java.util.ArrayList;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
+import org.junit.jupiter.api.BeforeEach;
+import java.util.List;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -61,9 +66,49 @@ final class GlobalConfigCacheTests {
 
   private static byte[] globalConfigData;
 
+  /// Every rejection path in this cache logs before it returns null or throws.
+  /// Capturing the stream keeps the console quiet while pinning the contract
+  /// that a rejected config is never silent -- otherwise a dropped
+  /// `logger.log` is invisible to every assertion.
+  private static final class CapturingHandler extends Handler {
+
+    private final List<LogRecord> records = new ArrayList<>();
+
+    @Override
+    public void publish(final LogRecord record) {
+      records.add(record);
+    }
+
+    @Override
+    public void flush() {
+    }
+
+    @Override
+    public void close() {
+    }
+  }
+
+  private static final CapturingHandler LOG_RECORDS = new CapturingHandler();
+
+  @BeforeEach
+  void clearLog() {
+    LOG_RECORDS.records.clear();
+  }
+
+  private static void assertLogged(final String event) {
+    assertTrue(
+        LOG_RECORDS.records.stream().anyMatch(r -> r.getMessage() != null && r.getMessage().contains(event)),
+        () -> "expected a log record naming \"" + event + "\", got "
+            + LOG_RECORDS.records.stream().map(LogRecord::getMessage).toList()
+    );
+  }
+
   @BeforeAll
   static void beforeAll() throws IOException {
-    Logger.getLogger(GlobalConfigCache.class.getName()).setLevel(Level.OFF);
+    final var logger = Logger.getLogger(GlobalConfigCache.class.getName());
+    logger.setLevel(Level.ALL);
+    logger.setUseParentHandlers(false);
+    logger.addHandler(LOG_RECORDS);
     globalConfigData = ResourceUtil.readResource("accounts/glam/global/" + GLOBAL_CONFIG_KEY + ".json.gz");
   }
 
@@ -287,6 +332,7 @@ final class GlobalConfigCacheTests {
     assertNotNull(result);
     // assertNull(result); // TODO: Update once v2 is deployed to production.
     assertEquals("onAssetMetaRemoved", called.get());
+    assertLogged("GlobalConfig Oracle Removed");
   }
 
   @Test
@@ -415,6 +461,7 @@ final class GlobalConfigCacheTests {
     final var result = GlobalConfigCacheImpl.createMapChecked(1L, AssetMetaContext.mapAssetMetas(invalidConfig), Map.of(), NULL_MINT_CACHE, Set.of(listener));
     assertNull(result);
     assertEquals("onInconsistentOracleSourceWithinConfig", called.get());
+    assertLogged("Inconsistent OracleSource Within GlobalConfig");
   }
 
   @Test
@@ -494,6 +541,7 @@ final class GlobalConfigCacheTests {
     final var result = GlobalConfigCacheImpl.createMapChecked(1L, AssetMetaContext.mapAssetMetas(invalidConfig), Map.of(), NULL_MINT_CACHE, Set.of(listener));
     assertNull(result);
     assertEquals("onDuplicateOracleForAsset", called.get());
+    assertLogged("Duplicate Oracle For Asset");
   }
 
   @Test
@@ -537,6 +585,7 @@ final class GlobalConfigCacheTests {
     final var result = GlobalConfigCacheImpl.createMapChecked(1L, AssetMetaContext.mapAssetMetas(invalidConfig), Map.of(), NULL_MINT_CACHE, Set.of(listener));
     assertNull(result);
     assertEquals("onInconsistentDecimalsWithinConfig", called.get());
+    assertLogged("Inconsistent Asset Decimals Within Config");
   }
 
   @Test
@@ -584,6 +633,7 @@ final class GlobalConfigCacheTests {
     );
     assertNull(result);
     assertEquals("onDecimalsChange", called.get());
+    assertLogged("Inconsistent Asset Decimals Across GlobalConfig");
   }
 
   @Test
@@ -602,6 +652,8 @@ final class GlobalConfigCacheTests {
     assertFalse(GlobalConfigCacheImpl.checkAccount(
         configProgram, configProgram, 1L, GLOBAL_CONFIG_KEY, corrupted
     ));
+    // a rejected account is never silent
+    assertLogged("Unexpected GlobalConfig Account");
   }
 
   @Test
@@ -714,6 +766,7 @@ final class GlobalConfigCacheTests {
 
     assertNull(cache.globalConfig());
     assertEquals("onDecimalsChange", called.get());
+    assertLogged("Inconsistent Asset Decimals Across GlobalConfig");
     // a waiter learns the config is gone rather than blocking
     assertNull(cache.awaitNewGlobalConfig(before, 1L));
   }
@@ -776,6 +829,7 @@ final class GlobalConfigCacheTests {
     // decimals disagreement is unrecoverable: throw and drop the cached config
     assertThrows(IllegalStateException.class, () -> mismatched.topPriorityForMintChecked(usdc));
     assertEquals("onInvalidDecimals", called.get());
+    assertLogged("GlobalConfig decimals for Asset does not match Mint");
     assertNull(mismatched.globalConfig());
   }
 

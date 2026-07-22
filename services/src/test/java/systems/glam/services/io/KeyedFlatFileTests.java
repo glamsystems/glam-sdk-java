@@ -56,6 +56,13 @@ final class KeyedFlatFileTests {
     return KeyedFlatFile.createFlatFile(ENTRY_SIZE, tempDir.resolve("sub").resolve("entries.dat"));
   }
 
+  /// Every entry point takes the lock in a try/finally. A leaked lock blocks
+  /// every other caller and no result assertion can see it, so each test that
+  /// mutates the file checks the lock was handed back.
+  private static void assertUnlocked(final KeyedFlatFile<Entry> file) {
+    assertFalse(((KeyedFlatFileImpl<Entry>) file).lock.isLocked());
+  }
+
   @Test
   void appendPersistsEntriesInOrder(@TempDir final Path tempDir) throws Exception {
     try (final var file = createFile(tempDir)) {
@@ -66,6 +73,7 @@ final class KeyedFlatFileTests {
       assertEquals(2 * ENTRY_SIZE, data.length);
       assertEquals(new Entry(1, 11), readEntry(data, 0));
       assertEquals(new Entry(2, 22), readEntry(data, 1));
+      assertUnlocked(file);
     }
   }
 
@@ -83,6 +91,7 @@ final class KeyedFlatFileTests {
       // the last entry moved into the deleted slot; order is not preserved
       assertEquals(new Entry(3, 33), readEntry(data, 0));
       assertEquals(new Entry(2, 22), readEntry(data, 1));
+      assertUnlocked(file);
     }
   }
 
@@ -165,6 +174,7 @@ final class KeyedFlatFileTests {
       final byte[] data = Files.readAllBytes(file.filePath());
       assertEquals(ENTRY_SIZE, data.length);
       assertEquals(new Entry(7, 77), readEntry(data, 0));
+      assertUnlocked(file);
     }
   }
 
@@ -172,6 +182,29 @@ final class KeyedFlatFileTests {
   void closeIsIdempotent(@TempDir final Path tempDir) {
     final var file = createFile(tempDir);
     file.close();
+    assertUnlocked(file);
     assertDoesNotThrow(file::close);
+    assertUnlocked(file);
+  }
+
+  @Test
+  void appendingToAReopenedFileSeeksToTheEnd(@TempDir final Path tempDir) throws Exception {
+    // a cache file outlives the process: a fresh channel starts at position 0,
+    // so appending without seeking to the end overwrites the first entry
+    final var filePath = tempDir.resolve("sub").resolve("entries.dat");
+    try (final var file = KeyedFlatFile.<Entry>createFlatFile(ENTRY_SIZE, filePath)) {
+      file.appendEntry(new Entry(1, 11));
+      file.appendEntry(new Entry(2, 22));
+    }
+
+    try (final var reopened = KeyedFlatFile.<Entry>createFlatFile(ENTRY_SIZE, filePath)) {
+      reopened.appendEntry(new Entry(3, 33));
+    }
+
+    final byte[] data = Files.readAllBytes(filePath);
+    assertEquals(3 * ENTRY_SIZE, data.length);
+    assertEquals(new Entry(1, 11), readEntry(data, 0));
+    assertEquals(new Entry(2, 22), readEntry(data, 1));
+    assertEquals(new Entry(3, 33), readEntry(data, 2));
   }
 }

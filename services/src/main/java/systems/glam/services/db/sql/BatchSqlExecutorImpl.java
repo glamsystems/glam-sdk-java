@@ -29,7 +29,9 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
   private final long batchDelayNanos;
   private final Backoff backoff;
   private final ConcurrentLinkedDeque<T> pending;
-  private final ReentrantLock lock;
+  /// Package-private so tests can assert the lock is released; a leaked lock
+  /// blocks every other caller and no result assertion can see it.
+  final ReentrantLock lock;
   private final Condition startWindow;
   private final Condition batchLimit;
   private final Condition batchCompleteCondition;
@@ -125,6 +127,7 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
               ++errorCount, componentType.getSimpleName(), sqlState, e.getErrorCode(), e.getCause(), e.getMessage()
           );
           final long backoffDelay = backoff.delay(errorCount, TimeUnit.MILLISECONDS);
+          //noinspection BusyWait
           Thread.sleep(backoffDelay);
         }
       }

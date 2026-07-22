@@ -14,7 +14,9 @@ import java.util.concurrent.locks.ReentrantLock;
 final class KeyedFlatFileImpl<E extends SerDe> implements KeyedFlatFile<E> {
 
   private final int entrySize;
-  private final ReentrantLock lock;
+  /// Package-private so tests can assert the lock is released; a leaked lock
+  /// blocks every other caller and no result assertion can see it.
+  final ReentrantLock lock;
   private final Path filePath;
   private final FileChannel fileChannel;
 

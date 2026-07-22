@@ -11,6 +11,7 @@ import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.Context;
 import systems.glam.services.oracles.scope.ScopeFeedContext;
+import systems.glam.services.tests.LogCapture;
 import systems.glam.services.tests.ResourceUtil;
 
 import java.io.IOException;
@@ -208,7 +209,10 @@ final class KaminoCacheTests {
     // wrong shape: not a reserve
     assertNull(cache.acceptReserve(accountInfo(SOL_RESERVE_KEY, 101L, new byte[16])));
     // an unhandled account size logs and changes nothing
-    cache.accept(accountInfo(SOL_RESERVE_KEY, 101L, new byte[16]));
+    try (final var log = LogCapture.attach(KaminoCache.class.getName())) {
+      cache.accept(accountInfo(SOL_RESERVE_KEY, 101L, new byte[16]));
+      log.assertLogged("Unhandled Kamino Account");
+    }
     assertTrue(cache.reserveContexts().isEmpty());
 
     final var reserveContext = cache.acceptReserve(accountInfo(SOL_RESERVE_KEY, 101L, reserveData));

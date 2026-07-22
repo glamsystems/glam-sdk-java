@@ -44,6 +44,7 @@ definition.
 | 2026-07-21 (6th pass) | 1299 | 917 | 382 | 754/2151 (35%) |
 | 2026-07-22 | 1286 | 909 | 377 | 768/2151 (35%) |
 | 2026-07-22 (2nd) | 1265 | 909 | 356 | 789/2151 (36%) |
+| 2026-07-22 (naked receiver + recording pass) | 1311 | 1069 | 340 | 851/2260 (37%) |
 
 The 2026-07-22 (2nd) pass killed 21 `BaseDelegateServiceConfig.parseProperties`
 survivors by pinning both directions of every optional-section presence guard:
@@ -112,6 +113,77 @@ to disk), `fulfillment/accounting` (redemption windows, unsigned share math),
 and `execution/FormatUtil`. Remaining `KeyedFlatFileImpl` survivors are
 durability calls (`force`, lock guards) — unobservable in-process; triage as
 a family when killing mutants here.
+
+## EXPERIMENTAL_NAKED_RECEIVER trial (2026-07-22)
+
+Fluent calls returning their receiver are expressions, so `VoidMethodCallMutator`
+never fires on them. Trialled per sava-build's HARDENING.md and **kept**, since
+it fires here:
+
+| Suite | Mutants | Detected | New unkilled |
+|---|---|---|---|
+| `services` | 2162 -> 2260 (+98) | 800 -> 832 (+32) | 65 |
+
+Of the 65 new baseline rows, 62 are `NO_COVERAGE` in classes that already carry
+untriaged debt, and three are survivors triaged below. It immediately exposed a
+real gap: `KeyedFlatFileImpl.appendEntry` seeks to the end of the channel before
+writing, and nothing covered a *reopened* file — where the channel starts at
+position 0 and a dropped seek overwrites the first entry instead of appending.
+That is the restart path for every on-disk cache here; it now has a test.
+
+### Naked-receiver survivors (accepted with reasons)
+
+**`ScopeFeedContext.indexes` — dropped `.sorted()`** (line 277). The stream
+sorts `FilteredReserve` by collateral descending, but its source
+`reservesByMint` is *already* maintained in that order: `resortReserves` sorts
+every mutation with `RESERVE_CONTEXT_BY_LIQUIDITY`, which is the same
+descending-unsigned-collateral order, and `Stream.sorted` is stable, so
+reserves contributing several matching entries keep their encounter order
+either way. Re-sorting an already-sorted source cannot change the result.
+Killing it would mean breaking the invariant the rest of the class maintains.
+
+**`KaminoCacheImpl.indexes` — dropped `.sorted()`** (line 176). This one picks
+the highest-liquidity feed across *scope feeds*, so distinguishing it needs two
+feeds whose reserves cover the same mint at different depths. The fixtures hold
+a single feed (the klend one), so sorting one element is a no-op — **unreachable
+in-harness**, not equivalent. The escape is a second `Configuration` +
+`OracleMappings` snapshot (the hubble feed, `ScopeFeedAccounts.SCOPE_MAINNET_HUBBLE_FEED`)
+plus reserves pointing at it; add those and this becomes killable.
+
+**`KeyedFlatFileImpl.deleteEntry` — dropped `mappedBuffer.force()`** (line 73).
+Durability only: the swap is already visible through the same mapping and to
+every subsequent read in the process, so no in-process assertion can see whether
+the pages were flushed. Same family as the `force`/lock survivors already
+accepted for this class.
+
+## Recording-collaborator pass (2026-07-22)
+
+sava-build's HARDENING.md notes that "wire-invisible" behaviour is usually
+observable through an injected recording collaborator, and that capturing the
+log stream is the cheap alternative for trivial emissions. Applied here, this
+killed 19 survivors that had looked untestable:
+
+- **Log emissions (10).** `GlobalConfigCacheImpl` logs before every rejection
+  in `createMapChecked`, `topPriorityForMintChecked` and `checkAccount`, as do
+  `BatchSqlExecutorImpl`'s batch reports and `KaminoCacheImpl`'s unhandled
+  account branch. `systems.glam.services.tests.LogCapture` attaches a JUL
+  handler for the duration of a test, formats `{0}` patterns with their
+  parameters, and asserts the record. This pins a real contract — **a rejected
+  config, a failed batch or an unrecognised account is never silent** — rather
+  than restating the implementation. The tests previously set the logger to
+  `Level.OFF`, which is precisely why these survived.
+- **Lock release (9).** Every entry point takes a `ReentrantLock` in a
+  try/finally, and a dropped `unlock()` is invisible to any single-threaded
+  result assertion while deadlocking every other caller in production. The
+  locks in `KeyedFlatFileImpl`, `AccountFetcherImpl` and `BatchSqlExecutorImpl`
+  are now package-private (the repo's stated preference over reflection), and
+  the tests assert `!lock.isLocked()` after the operation returns. Deterministic
+  on the calling thread, with no second thread and no waiting.
+
+Remaining in this family and *not* killed this way: the `ReentrantReadWriteLock`
+releases in `KaminoCacheImpl` (same technique, needs the parent lock exposed
+rather than just the read/write views), and `force()`/`close()` durability calls,
+which no in-process assertion can observe.
 
 ## Untriaged debt
 

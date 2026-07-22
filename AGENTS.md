@@ -133,7 +133,7 @@ changes here:
      template changes until the block is re-diffed — sync or ACT on each
      changed bullet (a new bullet may need code, not prose) — and the digest
      updated. -->
-<!-- hardening-template sha256:96ddf18dcc3a -->
+<!-- hardening-template sha256:a3a73f4b95f3 -->
 
 1. **Scale verification to the change.** Iterate with the module's `test`
    task; before handing off, run only the `pitest<Suite>`(s) whose mutated
@@ -182,8 +182,18 @@ changes here:
 10. **Kill rates are bounded by the mutator set.** `BigInteger`/`BigDecimal`
     arithmetic is method calls, invisible to the default arithmetic mutators —
     fixed-point and fee math needs `EXPERIMENTAL_BIG_INTEGER` (pitest ≥
-    1.25.8). Trial per suite, enable only what fires, and record the numbers
-    in `config/pitest/README.md`.
+    1.25.8) — and fluent calls returning their receiver are expressions,
+    invisible to `VoidMethodCallMutator`, so builder-style writes need
+    `EXPERIMENTAL_NAKED_RECEIVER`. Trial per suite, enable only what fires,
+    and record the numbers in `config/pitest/README.md`. Both suites here run
+    `STRONGER,EXPERIMENTAL_NAKED_RECEIVER`; the trial numbers are recorded.
+12. **PIT minions run on the class path**, even though this repo's tasks run
+    on the module path: `module-info` services are invisible to them, and a
+    test-resources `META-INF/services` is invisible to the module-path `test`
+    task. Real services are declared in both places; a harness whose result
+    depends on which task ran it is never committed. This repo currently
+    declares no services and uses no `ServiceLoader` (audited 2026-07-22), so
+    there is nothing to keep in sync — re-check when adding one.
 11. **Exclusions must cover the test source set, not a naming convention**:
     shared fakes named `RecordingFoo` / `StubFoo` match no `*Test*` pattern.
     After registering or widening a suite, list the mutated classes and

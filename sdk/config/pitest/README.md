@@ -66,6 +66,19 @@ instruction wiring, `StateAccountClient`/`StateAccountClientImpl`/
 uncovered code is now executed; the two triaged rows are below, the rest of
 the 24 are untriaged survivors in still-partially-covered classes.
 
+## EXPERIMENTAL_NAKED_RECEIVER trial (2026-07-22)
+
+Trialled per sava-build's HARDENING.md and **kept**, since it fires here:
+
+| Suite | Mutants | Detected | New unkilled |
+|---|---|---|---|
+| `sdk` | 703 -> 748 (+45) | 429 -> 456 (+27) | 18 |
+
+All 18 new rows are `NO_COVERAGE` in classes that already carry untriaged debt
+(`VaultTableBuilderImpl`, the staging state client, `proxy`); the mutator added
+no new survivors, so nothing here needed triage. Roughly a third of the new
+mutants were killed outright by existing tests.
+
 ## Untriaged debt, in priority order
 
 The 2nd pass covered `lut` batching/tasks (surfacing and fixing an

@@ -2,6 +2,7 @@ package systems.glam.services.db.sql;
 
 import org.junit.jupiter.api.Test;
 import software.sava.services.core.remote.call.Backoff;
+import systems.glam.services.tests.LogCapture;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Proxy;
@@ -123,9 +124,15 @@ final class BatchSqlExecutorTests {
     executor.queue("b");
     executor.queue("c");
 
-    executor.run();
+    try (final var log = LogCapture.attach(BatchSqlExecutor.class.getName())) {
+      executor.run();
+      // a completed batch reports what it wrote
+      log.assertLogged("Inserted");
+    }
 
     assertEquals(List.of("a", "b", "c"), prepared);
+    // the run loop hands the lock back on the way out
+    assertFalse(((BatchSqlExecutorImpl<String>) executor).lock.isLocked());
     assertEquals(1, jdbc.executions);
     assertEquals(1, jdbc.commits);
     // the queue drained fully, so the completion latch is already open
@@ -146,6 +153,7 @@ final class BatchSqlExecutorTests {
     executor.run();
 
     assertEquals(List.of("item0", "item1", "item2", "item3", "item4"), prepared);
+    assertFalse(((BatchSqlExecutorImpl<String>) executor).lock.isLocked());
     // two full batches plus the odd remainder
     assertEquals(3, jdbc.executions);
     assertEquals(3, jdbc.commits);
@@ -161,7 +169,12 @@ final class BatchSqlExecutorTests {
     executor.queue("a");
     executor.queue("b");
 
-    executor.run();
+    try (final var log = LogCapture.attach(BatchSqlExecutor.class.getName())) {
+      executor.run();
+      // the failure is reported with its SQL state, never swallowed silently
+      log.assertLogged("Failed");
+      log.assertLogged("57P01");
+    }
 
     // the failed batch is prepared again, oldest first
     assertEquals(List.of("a", "b", "a", "b"), prepared);
