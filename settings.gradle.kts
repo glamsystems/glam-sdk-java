@@ -38,5 +38,9 @@ javaModules {
   }
 }
 
-//includeBuild("../ravina")
+// TEMPORARY: depends on unpublished ravina changes (BackoffConfig delay
+// granularity, tx monitor delay guards). Publish ravina, bump
+// solanaBOMVersion in gradle/sava.properties, then re-comment this.
+// See "Changing a dependency" in AGENTS.md.
+includeBuild("../ravina")
 //includeBuild("../idl-clients")

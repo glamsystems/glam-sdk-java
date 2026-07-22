@@ -35,9 +35,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /// Drives AccountFetcherImpl.run() deterministically on the test thread: a
 /// Proxy-backed SolanaRpcClient serves canned batches (no request leaves the
-/// JVM), the fetch delay is zero so sleeps are yields, and the fake interrupts
-/// the thread on its final batch so run() exits through its InterruptedException
-/// path instead of looping.
+/// JVM), the fetch delay sits at its one millisecond floor, and the fake
+/// interrupts the thread on its final batch so run() exits through its
+/// InterruptedException path -- the pending interrupt makes that sleep throw
+/// immediately rather than wait.
 final class AccountFetcherTests {
 
   private static final class TestClock implements NanoClock {
@@ -168,7 +169,30 @@ final class AccountFetcherTests {
   }
 
   private AccountFetcher createFetcher(final RecordingRpc rpc, final Set<PublicKey> alwaysFetch) {
-    return AccountFetcher.createFetcher(Duration.ZERO, false, createCaller(rpc), alwaysFetch);
+    // one millisecond is the floor a polling fetcher accepts; the fake
+    // interrupts the thread on its last batch, so the sleep throws at once
+    // rather than actually waiting
+    return AccountFetcher.createFetcher(Duration.ofMillis(1), false, createCaller(rpc), alwaysFetch);
+  }
+
+  @Test
+  void pollingFetchersRejectADelayThatWouldNotSleep() {
+    final var rpc = new RecordingRpc();
+    // a polling fetcher sleeps between passes, so a sub-millisecond delay
+    // would round to a spin
+    for (final var tooSmall : new Duration[]{Duration.ZERO, Duration.ofNanos(999_999)}) {
+      final var caller = createCaller(rpc);
+      final var ex = assertThrows(
+          IllegalArgumentException.class,
+          () -> AccountFetcher.createFetcher(tooSmall, false, caller, Set.of())
+      );
+      assertTrue(ex.getMessage().contains("at least one millisecond"), ex.getMessage());
+    }
+    // exactly the floor is accepted
+    assertNotNull(AccountFetcher.createFetcher(Duration.ofMillis(1), false, createCaller(rpc), Set.of()));
+    // reactive fetchers wait on a condition instead of sleeping, so any delay
+    // remains legal there
+    assertNotNull(AccountFetcher.createFetcher(Duration.ZERO, true, createCaller(rpc), Set.of()));
   }
 
   @Test

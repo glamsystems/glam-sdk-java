@@ -23,7 +23,7 @@ final class AccountFetcherImpl implements AccountFetcher {
 
   private static final System.Logger logger = System.getLogger(AccountFetcher.class.getName());
 
-  private final long pollDelayMillis;
+  private final Duration pollDelay;
   private final long pollDelayNanos;
   private final boolean reactive;
   private final RpcCaller rpcCaller;
@@ -43,7 +43,15 @@ final class AccountFetcherImpl implements AccountFetcher {
                      final boolean reactive,
                      final RpcCaller rpcCaller,
                      final Set<PublicKey> alwaysFetch) {
-    this.pollDelayMillis = fetchDelay.toMillis();
+    // The polling path sleeps for this delay between passes; below a
+    // millisecond that sleep rounds to nothing and the loop spins a core.
+    // Reactive fetchers wait on a condition instead, so any delay works there.
+    if (!reactive && fetchDelay.toMillis() < 1) {
+      throw new IllegalArgumentException(
+          "A polling account fetcher needs a fetch delay of at least one millisecond, not " + fetchDelay
+      );
+    }
+    this.pollDelay = fetchDelay;
     this.pollDelayNanos = fetchDelay.toNanos();
     this.reactive = reactive;
     this.rpcCaller = rpcCaller;
@@ -288,7 +296,7 @@ final class AccountFetcherImpl implements AccountFetcher {
     }
   }
 
-  private void delay(final long pollDelayMillis, final long pollDelayNanos) throws InterruptedException {
+  private void delay(final Duration pollDelay, final long pollDelayNanos) throws InterruptedException {
     if (reactive) {
       // Break out on the first batch received after the minimum delay has been met.
       lock.lock();
@@ -306,9 +314,9 @@ final class AccountFetcherImpl implements AccountFetcher {
         lock.unlock();
       }
     } else {
-      do { // Amortize (pollDelayMillis / 2) after an initial batch is added.
+      do { // Amortize (pollDelay / 2) after an initial batch is added.
         //noinspection BusyWait
-        Thread.sleep(pollDelayMillis);
+        Thread.sleep(pollDelay);
       } while (queue.isEmpty());
     }
   }
@@ -317,7 +325,7 @@ final class AccountFetcherImpl implements AccountFetcher {
   public void run() {
     try {
       if (queue.isEmpty()) {
-        delay(pollDelayMillis, pollDelayNanos);
+        delay(pollDelay, pollDelayNanos);
       }
       for (; ; ) {
         final var keys = createBatch();
@@ -375,7 +383,7 @@ final class AccountFetcherImpl implements AccountFetcher {
 
         clearBatch();
 
-        delay(pollDelayMillis, pollDelayNanos);
+        delay(pollDelay, pollDelayNanos);
       }
     } catch (final InterruptedException e) {
       // exit

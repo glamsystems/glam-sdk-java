@@ -58,6 +58,45 @@ plus service components for operating against it.
   release-please cuts releases from them. Don't hand-edit versions or
   `CHANGELOG.md`.
 
+## Changing a dependency
+
+Much of what this SDK is built on lives in sibling repositories, published
+through the Solana BOM (`solanaBOMVersion` in `gradle/sava.properties`):
+
+| Repo | What it owns here |
+|---|---|
+| `../ravina` | `software.sava.services.*` — RPC calling, backoff/retry, request capacity, load balancing, tx monitoring, epoch service, config parsing (`BackoffConfig`, `ServiceConfigUtil`) |
+| `../sava` | `software.sava.core.*` / `software.sava.rpc.*` — keys, instructions, transactions, RPC client |
+| `../idl-clients` | `software.sava.idl.clients.*` — SPL, Kamino, Jupiter, Marinade clients |
+| `../sava-build` | the convention plugin, the hardening feature, and `HARDENING.md` itself |
+
+**A fix belongs in the repo that owns the code, not worked around here.** When
+a defect traces into one of the above:
+
+1. Fix it there, and follow *that* repo's process — it has the same hardening
+   ratchet. Run its module `test`, then the `pitest<Suite>` owning the file
+   (`grep` its `build.gradle.kts` to find which suite claims the class), and
+   keep its accepted baselines green.
+2. Editing a mutated file shifts line numbers, so its ratchet will report a
+   pile of "new" unkilled mutants. Confirm each has a stale counterpart at a
+   consistent offset **before** refreshing — same rule as here.
+3. To build against the change before it is published, uncomment the matching
+   `includeBuild("../<repo>")` at the bottom of `settings.gradle.kts` (Gradle
+   substitutes the published module for the local project — verify with
+   `./gradlew :services:dependencies --configuration runtimeClasspath`, which
+   should show `-> project ':ravina:...'`). `sava-build` is different: it is
+   resolved in `pluginManagement`, so uncomment the guarded `includeBuild`
+   block there instead.
+4. **The `includeBuild` line is temporary and must not ship.** CI has no
+   sibling checkout, and leaving it in silently builds every developer against
+   whatever they happen to have on disk. Publish the dependency, bump
+   `solanaBOMVersion`, re-comment the line, and re-run `check` against the
+   published artifact before releasing.
+
+A change that spans both repos is therefore two commits and a publish, not
+one. Say so plainly when handing off — the SDK-side commit is not releasable
+until the dependency version is bumped.
+
 ## Testing conventions
 
 - JUnit 5, built-in `Assertions`, package-private `final class *Tests`, placed

@@ -19,7 +19,7 @@ final class StakePoolCacheImpl implements StakePoolCache, Consumer<AccountInfo<b
 
   private static final System.Logger logger = System.getLogger(StakePoolCache.class.getName());
 
-  private final long fetchDelayMillis;
+  private final Duration fetchDelay;
   private final RpcCaller rpcCaller;
   private final List<Filter> stakePoolFilters;
   private final Map<PublicKey, KeyedFlatFile<StakePoolContext>> stakePoolFileChannelByProgram;
@@ -30,7 +30,14 @@ final class StakePoolCacheImpl implements StakePoolCache, Consumer<AccountInfo<b
                      final List<Filter> stakePoolFilters,
                      final Map<PublicKey, KeyedFlatFile<StakePoolContext>> stakePoolFileChannelByProgram,
                      final Map<PublicKey, StakePoolContext> stakePoolContextByMint) {
-    this.fetchDelayMillis = fetchDelay.toMillis();
+    // This delay is slept between polling passes; below a millisecond that
+    // sleep rounds to nothing and the loop spins a core.
+    if (fetchDelay.toMillis() < 1) {
+      throw new IllegalArgumentException(
+          "A stake pool cache needs a fetch delay of at least one millisecond, not " + fetchDelay
+      );
+    }
+    this.fetchDelay = fetchDelay;
     this.rpcCaller = rpcCaller;
     this.stakePoolFilters = stakePoolFilters;
     this.stakePoolFileChannelByProgram = stakePoolFileChannelByProgram;
@@ -53,7 +60,7 @@ final class StakePoolCacheImpl implements StakePoolCache, Consumer<AccountInfo<b
           stateAccounts.parallelStream().forEach(this);
         }
         //noinspection BusyWait
-        Thread.sleep(fetchDelayMillis);
+        Thread.sleep(fetchDelay);
       }
     } catch (final InterruptedException e) {
       // exit

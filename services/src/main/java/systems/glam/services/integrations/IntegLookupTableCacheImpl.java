@@ -21,7 +21,7 @@ final class IntegLookupTableCacheImpl implements IntegLookupTableCache {
 
   static final System.Logger logger = System.getLogger(IntegLookupTableCache.class.getName());
 
-  private final long fetchDelayMillis;
+  private final Duration fetchDelay;
   private final Path integrationTablesDirectory;
   private final ConcurrentMap<PublicKey, AddressLookupTable> integrationTables;
   private final AccountFetcher accountFetcher;
@@ -30,7 +30,14 @@ final class IntegLookupTableCacheImpl implements IntegLookupTableCache {
                             final Path integrationTablesDirectory,
                             final ConcurrentMap<PublicKey, AddressLookupTable> integrationTables,
                             final AccountFetcher accountFetcher) {
-    this.fetchDelayMillis = fetchDelay.toMillis();
+    // This delay is slept between polling passes; below a millisecond that
+    // sleep rounds to nothing and the loop spins a core.
+    if (fetchDelay.toMillis() < 1) {
+      throw new IllegalArgumentException(
+          "An integration lookup table cache needs a fetch delay of at least one millisecond, not " + fetchDelay
+      );
+    }
+    this.fetchDelay = fetchDelay;
     this.integrationTablesDirectory = integrationTablesDirectory;
     this.integrationTables = integrationTables;
     this.accountFetcher = accountFetcher;
@@ -47,7 +54,7 @@ final class IntegLookupTableCacheImpl implements IntegLookupTableCache {
       for (; ; ) {
         accountFetcher.queueBatchable(List.copyOf(integrationTables.keySet()), this);
         //noinspection BusyWait
-        Thread.sleep(fetchDelayMillis);
+        Thread.sleep(fetchDelay);
       }
     } catch (final InterruptedException e) {
       // exit
