@@ -163,7 +163,7 @@ public interface GlamAccountClient extends SPLAccountClient {
         glamAccounts().externalPositionProgram(),
         vaultAccounts().glamStateKey()
     );
-    return priceExternalPositions(null, null, observationPDA.publicKey(), cpiEmitEvents);
+    return priceExternalPositions(solUSDOracleKey, baseAssetUsdOracleKey, observationPDA.publicKey(), cpiEmitEvents);
   }
 
   default Instruction priceExternalPositions(final PublicKey solUSDOracleKey,

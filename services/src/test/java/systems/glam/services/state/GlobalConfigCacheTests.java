@@ -15,6 +15,11 @@ import systems.glam.services.mints.MintCache;
 import systems.glam.services.mints.MintContext;
 import systems.glam.services.tests.ResourceUtil;
 
+import java.math.BigInteger;
+import java.nio.file.Files;
+import java.util.zip.GZIPInputStream;
+import software.sava.rpc.json.http.response.AccountInfo;
+import software.sava.rpc.json.http.response.Context;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -63,6 +68,10 @@ final class GlobalConfigCacheTests {
   }
 
   private static GlobalConfigCacheImpl createCache(final Path tempDir) {
+    return createCache(tempDir, NULL_MINT_CACHE);
+  }
+
+  private static GlobalConfigCacheImpl createCache(final Path tempDir, final MintCache mintCache) {
     final var globalConfigFile = FileUtils.resolveCompressedAccountPath(tempDir, GLOBAL_CONFIG_KEY);
     try {
       FileUtils.writeCompressedAccountData(tempDir, GLOBAL_CONFIG_KEY, globalConfigData);
@@ -75,7 +84,7 @@ final class GlobalConfigCacheTests {
         GlamAccounts.MAIN_NET.configProgram(),
         GLOBAL_CONFIG_KEY,
         SolanaAccounts.MAIN_NET,
-        NULL_MINT_CACHE,
+        mintCache,
         null,
         null,
         Duration.ofSeconds(1)
@@ -575,6 +584,199 @@ final class GlobalConfigCacheTests {
     );
     assertNull(result);
     assertEquals("onDecimalsChange", called.get());
+  }
+
+  @Test
+  void checkAccountValidatesOwnerAndDiscriminator(@TempDir final Path tempDir) {
+    final var configProgram = GlamAccounts.MAIN_NET.configProgram();
+    assertTrue(GlobalConfigCacheImpl.checkAccount(
+        configProgram, configProgram, 1L, GLOBAL_CONFIG_KEY, globalConfigData
+    ));
+    // wrong owner
+    assertFalse(GlobalConfigCacheImpl.checkAccount(
+        configProgram, PublicKey.NONE, 1L, GLOBAL_CONFIG_KEY, globalConfigData
+    ));
+    // wrong discriminator
+    final var corrupted = Arrays.copyOf(globalConfigData, globalConfigData.length);
+    corrupted[0] ^= 1;
+    assertFalse(GlobalConfigCacheImpl.checkAccount(
+        configProgram, configProgram, 1L, GLOBAL_CONFIG_KEY, corrupted
+    ));
+  }
+
+  @Test
+  void queryHelpers(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var usdc = PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+    assertTrue(cache.hasAssetMetaForMint(usdc));
+    assertFalse(cache.hasAssetMetaForMint(PublicKey.NONE));
+
+    final var solMeta = cache.solAssetMeta();
+    assertNotNull(solMeta);
+    assertEquals(SolanaAccounts.MAIN_NET.wrappedSolTokenMint(), solMeta.asset());
+    assertEquals(9, solMeta.decimals());
+    assertSame(cache.topPriorityForMint(SolanaAccounts.MAIN_NET.wrappedSolTokenMint()), solMeta);
+
+    // an unknown mint has no mint context, so the checked lookup yields null
+    assertNull(cache.topPriorityForMintChecked(usdc));
+  }
+
+  private static AccountInfo<byte[]> accountInfo(final long slot, final PublicKey owner, final byte[] data) {
+    return new AccountInfo<>(
+        GLOBAL_CONFIG_KEY, new Context(slot, null), false, 0, owner,
+        BigInteger.ZERO, 0, data
+    );
+  }
+
+  @Test
+  void acceptIgnoresUnchangedOlderAndForeignAccounts(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var before = cache.globalConfigUpdate();
+    final var configProgram = GlamAccounts.MAIN_NET.configProgram();
+
+    // identical data: no update regardless of slot
+    cache.accept(accountInfo(before.slot() + 10, configProgram, globalConfigData));
+    assertSame(before, cache.globalConfigUpdate());
+
+    final var globalConfig = GlobalConfig.read(globalConfigData, 0);
+    final var changed = new GlobalConfig(
+        globalConfig._address(), globalConfig.discriminator(),
+        globalConfig.admin(), globalConfig.feeAuthority(), globalConfig.referrer(),
+        globalConfig.baseFeeBps() + 1, globalConfig.flowFeeBps(),
+        globalConfig.assetMetas()
+    ).write();
+
+    // changed data but not a newer slot: ignored
+    cache.accept(accountInfo(before.slot(), configProgram, changed));
+    assertSame(before, cache.globalConfigUpdate());
+    // changed data from the wrong owner: ignored
+    cache.accept(accountInfo(before.slot() + 10, PublicKey.NONE, changed));
+    assertSame(before, cache.globalConfigUpdate());
+  }
+
+  @Test
+  void acceptValidNewerConfigReplacesPersistsAndSignals(@TempDir final Path tempDir) throws Exception {
+    final var cache = createCache(tempDir);
+    final var before = cache.globalConfigUpdate();
+    final var configProgram = GlamAccounts.MAIN_NET.configProgram();
+
+    final var globalConfig = GlobalConfig.read(globalConfigData, 0);
+    final byte[] changed = new GlobalConfig(
+        globalConfig._address(), globalConfig.discriminator(),
+        globalConfig.admin(), globalConfig.feeAuthority(), globalConfig.referrer(),
+        globalConfig.baseFeeBps() + 1, globalConfig.flowFeeBps(),
+        globalConfig.assetMetas()
+    ).write();
+
+    final long newSlot = before.slot() + 42;
+    cache.accept(accountInfo(newSlot, configProgram, changed));
+
+    final var after = cache.globalConfigUpdate();
+    assertNotSame(before, after);
+    assertEquals(newSlot, after.slot());
+    assertArrayEquals(changed, after.data());
+    // asset metas were re-validated and survive intact
+    assertNotNull(cache.topPriorityForMint(SolanaAccounts.MAIN_NET.wrappedSolTokenMint()));
+
+    // a caller holding the previous update sees the new one without waiting
+    assertSame(after, cache.awaitNewGlobalConfig(before, 1L));
+
+    // and the update was persisted for the next restart
+    final var persistedPath = FileUtils.resolveCompressedAccountPath(tempDir, GLOBAL_CONFIG_KEY);
+    try (final var in = new GZIPInputStream(Files.newInputStream(persistedPath))) {
+      assertArrayEquals(changed, in.readAllBytes());
+    }
+  }
+
+  @Test
+  void acceptInvalidNewerConfigInvalidatesTheCache(@TempDir final Path tempDir) throws Exception {
+    final var cache = createCache(tempDir);
+    final var before = cache.globalConfigUpdate();
+    final var configProgram = GlamAccounts.MAIN_NET.configProgram();
+    final var called = new AtomicReference<String>();
+    cache.subscribe(new TestGlobalConfigListener(called));
+
+    final var globalConfig = GlobalConfig.read(globalConfigData, 0);
+    final var metas = Arrays.copyOf(globalConfig.assetMetas(), globalConfig.assetMetas().length);
+    final var first = metas[0];
+    metas[0] = new AssetMeta(
+        first.asset(), first.decimals() + 1, first.oracle(),
+        first.oracleSource(), first.maxAgeSeconds(), first.priority(), first.padding()
+    );
+    final byte[] invalid = new GlobalConfig(
+        globalConfig._address(), globalConfig.discriminator(),
+        globalConfig.admin(), globalConfig.feeAuthority(), globalConfig.referrer(),
+        globalConfig.baseFeeBps(), globalConfig.flowFeeBps(),
+        metas
+    ).write();
+
+    cache.accept(accountInfo(before.slot() + 1, configProgram, invalid));
+
+    assertNull(cache.globalConfig());
+    assertEquals("onDecimalsChange", called.get());
+    // a waiter learns the config is gone rather than blocking
+    assertNull(cache.awaitNewGlobalConfig(before, 1L));
+  }
+
+  @Test
+  void topPriorityForMintCheckedValidatesDecimals(@TempDir final Path tempDir) {
+    final var usdc = PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+
+    final var matching = createCache(tempDir, new MintCache() {
+      @Override
+      public MintContext get(final PublicKey mintPubkey) {
+        return mintPubkey.equals(usdc)
+            ? MintContext.createContext(SolanaAccounts.MAIN_NET, usdc, 6, 0)
+            : null;
+      }
+
+      @Override
+      public MintContext setGet(final MintContext mintContext) {
+        return mintContext;
+      }
+
+      @Override
+      public MintContext delete(final PublicKey mintPubkey) {
+        return null;
+      }
+
+      @Override
+      public void close() {
+      }
+    });
+    final var meta = matching.topPriorityForMintChecked(usdc);
+    assertNotNull(meta);
+    assertEquals(usdc, meta.asset());
+    assertNotNull(matching.globalConfig());
+
+    final var mismatched = createCache(tempDir, new MintCache() {
+      @Override
+      public MintContext get(final PublicKey mintPubkey) {
+        return mintPubkey.equals(usdc)
+            ? MintContext.createContext(SolanaAccounts.MAIN_NET, usdc, 9, 0)
+            : null;
+      }
+
+      @Override
+      public MintContext setGet(final MintContext mintContext) {
+        return mintContext;
+      }
+
+      @Override
+      public MintContext delete(final PublicKey mintPubkey) {
+        return null;
+      }
+
+      @Override
+      public void close() {
+      }
+    });
+    final var called = new AtomicReference<String>();
+    mismatched.subscribe(new TestGlobalConfigListener(called));
+    // decimals disagreement is unrecoverable: throw and drop the cached config
+    assertThrows(IllegalStateException.class, () -> mismatched.topPriorityForMintChecked(usdc));
+    assertEquals("onInvalidDecimals", called.get());
+    assertNull(mismatched.globalConfig());
   }
 
   private record TestGlobalConfigListener(AtomicReference<String> called) implements GlobalConfigListener {

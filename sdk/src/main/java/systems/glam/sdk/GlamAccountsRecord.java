@@ -32,7 +32,9 @@ public record GlamAccountsRecord(AccountMeta invokedProtocolProgram,
 
   @Override
   public ProgramDerivedAddress mintPDA(final PublicKey glamPublicKey, final int shareClassId) {
-    if (shareClassId < 0 || shareClassId > 256) {
+    // the id is written as a single byte below: 256 would cast to 0 and
+    // silently alias share class 0's PDA
+    if (shareClassId < 0 || shareClassId > 255) {
       throw new IllegalStateException("Invalid share class id: " + shareClassId);
     }
     return PublicKey.findProgramAddress(

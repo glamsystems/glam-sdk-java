@@ -144,6 +144,9 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
           newArray[i] = reserveContext;
           Arrays.sort(newArray, RESERVE_CONTEXT_BY_LIQUIDITY);
           reservesByMint.put(mint, newArray);
+          // the by-index maps must reference the latest context too, or they
+          // keep serving the stale one this call just replaced
+          indexReserveByIndex(reserveContext);
           return;
         }
       }
@@ -283,7 +286,7 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
     for (int i = 1; i < topReserves.length; i++) {
       reserve = topReserves[i];
       collateral = collateral.add(BigInteger.valueOf(reserve.collateral()));
-      indexes[i++] = (short) reserve.index();
+      indexes[i] = (short) reserve.index();
     }
     return new FeedIndexes(readPriceFeed, readOracleMappings, indexes, collateral);
   }

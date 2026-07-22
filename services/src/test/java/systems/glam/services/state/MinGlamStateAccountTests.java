@@ -29,7 +29,9 @@ final class MinGlamStateAccountTests {
     final var stateAccount = StateAccount.read(STATE_ACCOUNT_KEY, stateAccountData);
     validateStateAccount(stateAccount);
 
-    long slot = System.currentTimeMillis();
+    // fixed non-zero slot: a wall-clock value here makes the asserted input
+    // wander per run, and a zero one hides "slot mutated to 0" mutants
+    long slot = 337_845_331L;
     var accountInfo = new AccountInfo<>(
         stateAccount._address(),
         new Context(slot, null),

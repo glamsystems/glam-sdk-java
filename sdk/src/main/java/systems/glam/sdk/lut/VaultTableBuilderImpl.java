@@ -130,22 +130,26 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
       final int remainingAccounts = accounts.length - i;
       final List<PublicKey> extendAccounts;
       final TableTask tableTask;
-      if (tableKey == null || tableSpace == 0) {
-        final int add = Math.min(maxAccountsWithCreateIx, tablePrefix.size() + remainingAccounts);
-        extendAccounts = new ArrayList<>(add);
+      if (tableKey == null && createTableTask == null) {
+        // fresh table: create + first extend share a transaction, so the first
+        // extend carries the table prefix and is capped lower than a bare extend
+        final int add = Math.min(maxAccountsWithCreateIx - tablePrefix.size(), remainingAccounts);
+        extendAccounts = new ArrayList<>(tablePrefix.size() + add);
         extendAccounts.addAll(tablePrefix);
         for (final int to = i + add; i < to; ++i) {
           extendAccounts.add(accounts[i]);
         }
         createTableTask = new CreateTable(accountClient, extendAccounts);
         tableTask = createTableTask;
+        tableSpace = LOOKUP_TABLE_MAX_ADDRESSES;
       } else {
         final int add = Math.min(tableSpace, Math.min(30, remainingAccounts));
         extendAccounts = new ArrayList<>(add);
         for (final int to = i + add; i < to; ++i) {
           extendAccounts.add(accounts[i]);
         }
-        if (createTableTask != null) {
+        if (tableKey == null) {
+          // keep filling the table the pending create task will produce
           tableTask = new DynamicExtendTable(accountClient, extendAccounts, createTableTask);
         } else {
           final var solanaAccounts = accountClient.solanaAccounts();
@@ -162,6 +166,7 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
       tasks.add(tableTask);
       tableSpace -= extendAccounts.size();
       if (tableSpace == 0) {
+        createTableTask = null;
         if (++remainingTableIndex < remainingTables.length) {
           final var maxTable = remainingTables[remainingTableIndex];
           tableKey = maxTable.address();

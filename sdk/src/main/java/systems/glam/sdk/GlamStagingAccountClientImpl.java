@@ -50,9 +50,13 @@ final class GlamStagingAccountClientImpl extends GlamAccountClientImpl implement
           final int protocolBitFlag = protocolPermission.protocolBitflag();
           final long permissionMask = protocolPermission.permissionsBitmask();
           final var adaptedPermissions = adaptPermissions(integrationProgram, protocolBitFlag, permissionMask);
-          protocolPermissionsMap.put(adaptedPermissions.protocol(), adaptedPermissions);
+          if (adaptedPermissions != null) {
+            protocolPermissionsMap.put(adaptedPermissions.protocol(), adaptedPermissions);
+          }
         }
-        permissionsMap.put(integrationProgram, protocolPermissionsMap);
+        if (!protocolPermissionsMap.isEmpty()) {
+          permissionsMap.put(integrationProgram, protocolPermissionsMap);
+        }
       }
       delegatePermissions.put(delegateAcl.pubkey(), permissionsMap);
     }

@@ -71,6 +71,8 @@ final class KeyedFlatFileImpl<E extends SerDe> implements KeyedFlatFile<E> {
             mappedBuffer.position(i);
             mappedBuffer.put(lastEntry);
             mappedBuffer.force();
+            // the swapped-in last entry may match too; re-examine this slot
+            i -= entrySize;
           }
 
           fileChannel.truncate(lastElementOffset);
@@ -97,6 +99,7 @@ final class KeyedFlatFileImpl<E extends SerDe> implements KeyedFlatFile<E> {
       entry.write(data, offset);
       offset += this.entrySize;
     }
+    overwriteFile(data);
   }
 
   @Override

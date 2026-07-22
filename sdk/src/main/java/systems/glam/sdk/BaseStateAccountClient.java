@@ -52,10 +52,16 @@ public abstract class BaseStateAccountClient implements StateAccountClient {
     }
     for (final var entry : requiredPermissions.entrySet()) {
       final var integrationPermissions = delegatePermissions.get(entry.getKey());
+      if (integrationPermissions == null) {
+        return false;
+      }
       final var requiredProtocolPermissions = entry.getValue();
       final var protocolPermissions = integrationPermissions.get(requiredProtocolPermissions.protocol());
-      final var mask = protocolPermissions.permissionMask();
-      if ((requiredProtocolPermissions.permissionMask() & mask) != mask) {
+      if (protocolPermissions == null) {
+        return false;
+      }
+      final long required = requiredProtocolPermissions.permissionMask();
+      if ((required & protocolPermissions.permissionMask()) != required) {
         return false;
       }
     }

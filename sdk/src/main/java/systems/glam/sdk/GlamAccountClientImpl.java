@@ -41,6 +41,9 @@ class GlamAccountClientImpl implements GlamAccountClient {
     this.globalConfigKey = glamAccounts.globalConfigPDA().publicKey();
   }
 
+  /// Returns null for integration programs without an adapter (e.g. drift ACLs
+  /// on accounts created before support was dropped) — callers skip them so a
+  /// stale on-chain ACL cannot fail client construction.
   static ProtocolPermissions adaptPermissions(final GlamAccounts glamAccounts,
                                               final PublicKey integrationProgram,
                                               final int protocolBitFlag,
@@ -54,7 +57,7 @@ class GlamAccountClientImpl implements GlamAccountClient {
     } else if (integrationProgram.equals(glamAccounts.kaminoIntegrationProgram())) {
       return Protocol.fromKaminoProtocolBitFlag(protocolBitFlag, permissionMask);
     } else {
-      throw new UnsupportedOperationException("Unknown integration program: " + integrationProgram);
+      return null;
     }
   }
 
@@ -158,8 +161,9 @@ class GlamAccountClientImpl implements GlamAccountClient {
 
   @Override
   public List<Instruction> wrapSOL(final long lamports) {
-    final var transferIx = transferSolLamports(wrappedSolPDA, lamports);
-    transferIx.extraAccount(solanaAccounts.readTokenProgram());
+    // Instruction is immutable: extraAccount returns a new instruction
+    final var transferIx = transferSolLamports(wrappedSolPDA, lamports)
+        .extraAccount(solanaAccounts.readTokenProgram());
     return List.of(transferIx, syncNative());
   }
 
