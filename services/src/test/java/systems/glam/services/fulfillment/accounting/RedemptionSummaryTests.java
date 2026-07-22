@@ -137,6 +137,37 @@ final class RedemptionSummaryTests {
   }
 
   @Test
+  void summaryParsesTheQueueFromAccountData() {
+    // round-trips the generated RequestQueue serde: the mutation suites
+    // exclude generated code, so this boundary is pinned here instead
+    final var queue = queue(
+        pending(1, 100, 899L, 0L, RequestType.Redemption),
+        pending(2, 200, 990L, 0L, RequestType.Redemption),
+        pending(3, 300, 800L, 5_000L, RequestType.Redemption)
+    );
+    final byte[] data = queue.write();
+    final var parsed = systems.glam.sdk.idl.programs.glam.mint.gen.types.RequestQueue.read(user(50), data);
+    assertEquals(queue.glamState(), parsed.glamState());
+    assertEquals(queue.glamMint(), parsed.glamMint());
+    assertEquals(3, parsed.data().length);
+    assertEquals(queue.data()[0].user(), parsed.data()[0].user());
+    assertEquals(queue.data()[0].incoming(), parsed.data()[0].incoming());
+    assertEquals(queue.data()[0].createdAt(), parsed.data()[0].createdAt());
+    assertEquals(RequestType.Redemption, parsed.data()[0].requestType());
+
+    final var accountInfo = new software.sava.rpc.json.http.response.AccountInfo<>(
+        user(50), new software.sava.rpc.json.http.response.Context(50_000L, null),
+        false, 0, user(51), java.math.BigInteger.ZERO, 0, data
+    );
+    final var summary = RedemptionSummary.createSummary(1_000L, accountInfo, 100L, true);
+    // the slot comes from the account context, the shares from the parsed queue
+    assertEquals(50_000L, summary.slot());
+    assertEquals(2, summary.requests().size());
+    assertEquals(new BigDecimal(300), summary.outstandingShares());
+    assertEquals(List.of(user(1)), summary.fulfillable().stream().map(RedemptionRequest::user).toList());
+  }
+
+  @Test
   void toJsonScalesSharesByMintDecimals() {
     final var request = RedemptionRequest.createRequest(user(7), 1_650_000_000L, new BigDecimal(1_234_500));
     final var mintContext = MintContext.createContext(

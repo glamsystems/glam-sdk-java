@@ -42,6 +42,25 @@ definition.
 | 2026-07-21 (4th pass) | 1408 | 1153 | 255 | 616/2151 (28%) |
 | 2026-07-21 (5th pass) | 1370 | 1095 | 275 | 665/2151 (30%) |
 | 2026-07-21 (6th pass) | 1299 | 917 | 382 | 754/2151 (35%) |
+| 2026-07-22 | 1286 | 909 | 377 | 768/2151 (35%) |
+| 2026-07-22 (2nd) | 1265 | 909 | 356 | 789/2151 (36%) |
+
+The 2026-07-22 (2nd) pass killed 21 `BaseDelegateServiceConfig.parseProperties`
+survivors by pinning both directions of every optional-section presence guard:
+each section parsed with real values when present (serviceBackoff single
+strategy, formatter formats, tableCache capacity, rpcCallWeights, a separate
+sendRPC balancer, the websocket endpoint value), and the absent-case defaults
+characterized exactly — serviceBackoff falls back to fibonacci, tableCache to
+its documented defaults, sendRPC to the primary rpc balancer, and
+notificationHooks to a no-op client, while callWeights stays null.
+
+The 2026-07-22 pass added the `RequestQueue` serde round trip through
+`RedemptionSummary.createSummary(accountInfo, …)` (the mutation suites exclude
+generated code, so that layout boundary is pinned by test instead) and
+`AssetMetaContext.compareTo` ordering (negative priorities sort after every
+non-negative one, then by magnitude). A sweep confirmed the only main class
+outside every suite's targeting is the git-ignored `systems.glam.Integ`
+scratch file — no silent mutation blind spots.
 
 The 6th pass covered `integrations/kamino/KaminoCacheImpl` using checked-in
 mainnet snapshots (`src/test/resources/accounts/kamino/`, provenance in its

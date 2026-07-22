@@ -219,6 +219,53 @@ final class GlamAccountsTests {
   }
 
   @Test
+  void stagingBuilderInTest() {
+    // exercises every integration setter from a @Test: coverage attributed to
+    // the MAIN_NET_STAGING static initializer is unstable under mutation
+    final var built = GlamAccountsBuilder.builder()
+        .protocolProgram("gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz")
+        .configProgram("gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX")
+        .mintProgram("gstgm1M39mhgnvgyScGUDRwNn5kNVSd97hTtyow1Et5")
+        .policyProgram("po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY")
+        .bridgeIntegrationProgram("gstgxS9yTioViNKdsM4DC33k1TU9un2VCYDQK8fAeSA")
+        .cctpIntegrationProgram("gstgcuRwiX2FpmtigowB1TnVi3fPkZC9TEmVnc5sdxW")
+        .externalPositionProgram("gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX")
+        .jupiterIntegrationProgram("gstgJbGqoE3p1SdFA2dET9tcaCzNqGcdD8wpbGctnU9")
+        .kaminoIntegrationProgram("gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq")
+        .loopscaleIntegrationProgram("gstgL6y4uWjsfM3Qjs5euoTDmEcXoUjqx8rkYJhYngG")
+        .marginFiIntegrationProgram("gstgMghFitRBz2GXKwgpMd7L1JXd1sg59q2v5Y83vSY")
+        .marinadeIntegrationProgram("gstgmvM2o7h7GcScvXymH1oFgWskukWWxRHC1UJJ9FJ")
+        .neutralTradeIntegrationProgram("gstgNyHgtURH7iuMn19GQczzv6Wc9fhPV2WDySZVyKx")
+        .phoenixIntegrationProgram("gstgPL7r9aYedDDsXNtLpr4atYtNvY7zubAWWstqS3L")
+        .orcaIntegrationProgram("gstgo1EgmTp2PbLSaL6Qg57P7uADx3aiRZrMsewEdSy")
+        .splIntegrationProgram("gstgs9nJgX8PmRHWAAEP9H7xT3ZkaPWSGPYbj3mXdTa")
+        .stakePoolIntegrationProgram("gstgS4dNeT3BTEQa1aaTS2b8CsAUz1SmwQDGosHSPsw")
+        .create();
+    assertSameAccounts(GlamAccounts.MAIN_NET_STAGING, built);
+    // and the PublicKey overloads of the setters MAIN_NET never uses
+    final var fromKeys = GlamAccountsBuilder.builder()
+        .protocolProgram(GlamAccounts.MAIN_NET_STAGING.protocolProgram())
+        .configProgram(CONFIG_PROGRAM)
+        .mintProgram(GlamAccounts.MAIN_NET_STAGING.mintProgram())
+        .policyProgram(POLICY_PROGRAM)
+        .bridgeIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.bridgeIntegrationProgram())
+        .cctpIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.cctpIntegrationProgram())
+        .externalPositionProgram(GlamAccounts.MAIN_NET_STAGING.externalPositionProgram())
+        .jupiterIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.jupiterIntegrationProgram())
+        .kaminoIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.kaminoIntegrationProgram())
+        .loopscaleIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.loopscaleIntegrationProgram())
+        .marginFiIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.marginFiIntegrationProgram())
+        .marinadeIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.marinadeIntegrationProgram())
+        .neutralTradeIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.neutralTradeIntegrationProgram())
+        .phoenixIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.phoenixIntegrationProgram())
+        .orcaIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.orcaIntegrationProgram())
+        .splIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.splIntegrationProgram())
+        .stakePoolIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.stakePoolIntegrationProgram())
+        .create();
+    assertSameAccounts(GlamAccounts.MAIN_NET_STAGING, fromKeys);
+  }
+
+  @Test
   void stagingAccounts() {
     final var staging = GlamAccounts.MAIN_NET_STAGING;
     assertEquals(

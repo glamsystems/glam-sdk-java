@@ -112,6 +112,59 @@ final class BaseDelegateServiceConfigTests {
   }
 
   @Test
+  void testPropertiesOptionalSections() {
+    final var properties = minimalRpcProperties("");
+    properties.setProperty("serviceBackoff.strategy", "single");
+    properties.setProperty("serviceBackoff.initialRetryDelay", "PT2S");
+    properties.setProperty("formatter.sig", "sig=%s");
+    properties.setProperty("formatter.address", "addr=%s");
+    properties.setProperty("tableCache.initialCapacity", "64");
+    properties.setProperty("rpcCallWeights.getProgramAccounts", "7");
+    properties.setProperty("rpcCallWeights.getTransaction", "3");
+    properties.setProperty("rpcCallWeights.sendTransaction", "5");
+    properties.setProperty("sendRPC.endpoints.0.url", RPC_ENDPOINT);
+
+    final var config = parseProperties(properties);
+
+    // each optional section must have been parsed, not skipped
+    final var backoff = config.serviceBackoff();
+    assertNotNull(backoff);
+    // single strategy: a constant delay, unlike the fibonacci default
+    assertEquals(2_000L, backoff.delay(1, java.util.concurrent.TimeUnit.MILLISECONDS));
+    assertEquals(2_000L, backoff.delay(5, java.util.concurrent.TimeUnit.MILLISECONDS));
+
+    assertEquals("sig=%s", config.formatter().sigFormat());
+    assertEquals("addr=%s", config.formatter().addressFormat());
+    assertEquals(64, config.tableCacheConfig().initialCapacity());
+    assertEquals(7, config.rpcCaller().callWeights().getProgramAccounts());
+    assertEquals(3, config.rpcCaller().callWeights().getTransaction());
+    assertEquals(5, config.rpcCaller().callWeights().sendTransaction());
+    // a configured sendRPC is its own balancer, not the rpc fallback
+    assertNotNull(config.sendClients());
+    assertNotSame(config.rpcCaller().rpcClients(), config.sendClients());
+    // the websocket endpoint must survive the round trip, not just be non-null
+    assertNotNull(config.websocketConfig());
+    assertEquals(WS_ENDPOINT, config.websocketConfig().endpoint().toString());
+  }
+
+  @Test
+  void testPropertiesOptionalSectionsAbsent() {
+    final var config = parseProperties(minimalRpcProperties(""));
+    // absent sections must be left null/default, not parsed from nothing;
+    // serviceBackoff falls back to a fibonacci default rather than null
+    assertNotNull(config.serviceBackoff());
+    // table cache falls back to its documented defaults
+    assertEquals(1024, config.tableCacheConfig().initialCapacity());
+    assertEquals(Duration.ofHours(4), config.tableCacheConfig().refreshStaleItemsDelay());
+    assertEquals(Duration.ofHours(8), config.tableCacheConfig().consideredStale());
+    assertNull(config.rpcCaller().callWeights());
+    // sendRPC falls back to the primary rpc balancer
+    assertSame(config.rpcCaller().rpcClients(), config.sendClients());
+    // absent hooks produce a no-op notify client rather than null
+    assertNotNull(config.notifyClient());
+  }
+
+  @Test
   void testJsonScalarFields() {
     final var glamKey = "11111111111111111111111111111111";
     final var json = """

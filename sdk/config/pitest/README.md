@@ -38,6 +38,16 @@ recompiled root. `build.gradle.kts` is the authoritative definition.
 | 2026-07-21 | 447 | 423 | 24 | 208/688 (30%) |
 | 2026-07-21 (2nd pass) | 388 | 359 | 29 | 287/703 (40%) |
 | 2026-07-21 (3rd pass) | 340 | 305 | 35 | 338/703 (48%) |
+| 2026-07-22 | 251 | 236 | 15 | 429/703 (61%) |
+
+The 2026-07-22 pass covered `GlamStagingAccountClientImpl` /
+`StagingStateAccountClientImpl` (every staging pricing method's event-authority
+branches, staging token/fulfill routing, and state-client construction from the
+real staging fixture including the skipped drift ACL), killed the
+`GlamAccountsBuilder` setter survivors by exercising all seventeen setters from
+a `@Test` (static-initializer coverage attribution is unstable), the
+`fixCPICallerRights` no-signer loop-boundary mutants, and the wrap-condition
+operand mutants in the jupiter swap paths.
 
 The 3rd pass covered `idl.programs.glam.jupiter.*` — `fixCPICallerRights`
 (first-signer stripping), the jupiterSwapV2 CPI wiring with and without the

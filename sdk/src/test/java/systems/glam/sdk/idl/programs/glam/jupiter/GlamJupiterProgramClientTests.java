@@ -64,12 +64,17 @@ final class GlamJupiterProgramClientTests {
     final var readOnlySignerFirst = GlamJupiterProgramClient.fixCPICallerRights(
         List.of(createReadOnlySigner(key(14)), createWrite(key(15)))
     );
-    assertEquals(createRead(key(14)), readOnlySignerFirst.get(0));
+    assertEquals(createRead(key(14)), readOnlySignerFirst.getFirst());
 
     final var fixedIx = GlamJupiterProgramClient.fixCPICallerRights(routeIx());
     assertEquals(JupiterAccounts.MAIN_NET.swapProgram(), fixedIx.programId().publicKey());
     assertArrayEquals(new byte[]{9, 8, 7, 6}, fixedIx.data());
     assertEquals(fixed, fixedIx.accounts());
+
+    // no signer at all: the scan must run off the end gracefully, not index
+    // past it
+    final var noSigners = List.of(createRead(key(16)), createWrite(key(17)));
+    assertEquals(noSigners, GlamJupiterProgramClient.fixCPICallerRights(noSigners));
   }
 
   @Test
@@ -156,7 +161,7 @@ final class GlamJupiterProgramClientTests {
     assertEquals(3, instructions.size());
 
     final var wrappedSolPDA = GlamAccountClient.createClient(FEE_PAYER, STATE_KEY).wrappedSolPDA().publicKey();
-    final var transferIx = instructions.get(0);
+    final var transferIx = instructions.getFirst();
     assertEquals(createWrite(wrappedSolPDA), transferIx.accounts().get(4));
     assertEquals(1_000_000L, GlamProtocolProgram.SystemTransferIxData.read(transferIx).lamports());
     final var syncIx = instructions.get(1);
@@ -169,6 +174,18 @@ final class GlamJupiterProgramClientTests {
         .wrapSOL(true)
         .create();
     assertEquals(1, client.swap(nonSolContext).size());
+
+    // and a wSOL input without wrapSOL must not wrap either — both operands
+    // of the wrap condition matter, in both the checked and unchecked paths
+    final var noWrapContext = contextBuilder(wSolMint)
+        .skipQuotePriceCheck(true)
+        .create();
+    assertEquals(1, client.swap(noWrapContext).size());
+    final var noWrapChecked = contextBuilder(wSolMint)
+        .skipQuotePriceCheck(true)
+        .createATA(true)
+        .create();
+    assertEquals(2, client.swap(noWrapChecked).size());
   }
 
   @Test
@@ -222,5 +239,11 @@ final class GlamJupiterProgramClientTests {
         tokenProgram, wSolMint, tokenProgram, key(22)
     );
     assertEquals(bothAtas.keySet(), explicit.keySet());
+    // and for a non-wSOL input it must create only the output ata
+    final var explicitSingle = client.createSwapTokenAccountsIdempotent(
+        tokenProgram, key(21), tokenProgram, key(22)
+    );
+    assertEquals(1, explicitSingle.size());
+    assertNotNull(explicitSingle.get(outputATA));
   }
 }
