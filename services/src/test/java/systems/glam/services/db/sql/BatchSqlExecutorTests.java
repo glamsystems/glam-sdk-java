@@ -31,6 +31,11 @@ final class BatchSqlExecutorTests {
     assertEquals("holdings", BatchSqlExecutorImpl.parseTableName("MERGE INTO holdings USING dual"));
     // unrecognized statements fall back to the trimmed statement itself
     assertEquals("SELECT 1", BatchSqlExecutorImpl.parseTableName("  SELECT 1"));
+    // a name running to the end of the statement, and a keyword with nothing
+    // after it, must both stay within bounds
+    assertEquals("holdings", BatchSqlExecutorImpl.parseTableName("UPDATE holdings"));
+    assertEquals("", BatchSqlExecutorImpl.parseTableName("INSERT INTO "));
+    assertEquals("", BatchSqlExecutorImpl.parseTableName("INSERT INTO"));
   }
 
   @Test
@@ -128,6 +133,9 @@ final class BatchSqlExecutorTests {
       executor.run();
       // a completed batch reports what it wrote
       log.assertLogged("Inserted");
+      // a clean interrupt exit is not an error; the lock discipline held
+      assertTrue(log.messages().stream().noneMatch(m -> m.contains("Unexpected error")),
+          () -> String.join("\n", log.messages()));
     }
 
     assertEquals(List.of("a", "b", "c"), prepared);
@@ -150,13 +158,157 @@ final class BatchSqlExecutorTests {
       executor.queue("item" + i);
     }
 
-    executor.run();
+    try (final var log = LogCapture.attach(BatchSqlExecutor.class.getName())) {
+      executor.run();
+      // the odd remainder reports its own insert
+      log.assertLogged("1 out of 1");
+    }
 
     assertEquals(List.of("item0", "item1", "item2", "item3", "item4"), prepared);
     assertFalse(((BatchSqlExecutorImpl<String>) executor).lock.isLocked());
     // two full batches plus the odd remainder
     assertEquals(3, jdbc.executions);
     assertEquals(3, jdbc.commits);
+  }
+
+  @Test
+  void interruptionDuringBackoffCancelsTheRetry() {
+    final var jdbc = new FakeJdbc();
+    jdbc.failFirst = 1;
+    jdbc.interruptOnExecution = 1;
+    final var prepared = new ArrayList<String>();
+    final var executor = createExecutor(jdbc, 2, prepared);
+    executor.queue("a");
+    executor.queue("b");
+
+    executor.run();
+
+    // the backoff sleep is where a pending interrupt cancels the retry;
+    // skipping it would re-execute the failed batch before exiting
+    assertEquals(List.of("a", "b"), prepared);
+    assertEquals(1, jdbc.executions);
+    assertEquals(0, jdbc.commits);
+  }
+
+  @Test
+  void aSubBatchSizeItemQueuedUpFrontIsFlushed() throws InterruptedException {
+    final var jdbc = new FakeJdbc();
+    final var prepared = new ArrayList<String>();
+    final var executor = createExecutor(jdbc, 2, prepared);
+    executor.queue("a");
+
+    // fewer items than a batch at loop entry: the runner must pass through the
+    // delay window and flush, not treat the non-empty queue as drained
+    final var worker = new Thread(executor::run, "batch-sql-runner");
+    worker.start();
+    worker.join(5_000);
+    if (worker.isAlive()) {
+      worker.interrupt();
+      worker.join(5_000);
+      fail("the runner never flushed the sub-batch-size item");
+    }
+    assertEquals(List.of("a"), prepared);
+    assertEquals(1, jdbc.executions);
+    assertEquals(1, jdbc.commits);
+  }
+
+  private static void awaitTrue(final String what, final java.util.function.BooleanSupplier condition) throws InterruptedException {
+    for (int i = 0; i < 5_000; ++i) {
+      if (condition.getAsBoolean()) {
+        return;
+      }
+      Thread.sleep(1);
+    }
+    fail("timed out awaiting " + what);
+  }
+
+  @Test
+  void queueSignalsWakeTheRunnerAndCompletionWakesWaiters() throws InterruptedException {
+    final var jdbc = new FakeJdbc();
+    final var prepared = new ArrayList<String>();
+    // a long delay window: only the batch-full signal can wake the runner in time
+    final var executor = (BatchSqlExecutorImpl<String>) BatchSqlExecutor.create(
+        String.class,
+        jdbc.dataSource(),
+        "INSERT INTO items (v) VALUES (?)",
+        2,
+        (ps, item) -> {
+          prepared.add(item);
+          return 1;
+        },
+        Duration.ofSeconds(30),
+        Backoff.single(MILLISECONDS, 0)
+    );
+
+    final var worker = new Thread(executor::run, "batch-sql-runner");
+    worker.start();
+    try {
+      // the runner parks awaiting the first item
+      awaitTrue("runner parked on an empty queue",
+          () -> executor.batchComplete && worker.getState() == Thread.State.WAITING);
+
+      // the first item must signal the start window
+      executor.queue("a");
+      awaitTrue("the start-window signal woke the runner", () -> !executor.batchComplete);
+
+      // a waiter arriving while the batch is open must block until completion
+      final var sizeAtRelease = new java.util.concurrent.atomic.AtomicInteger(-1);
+      final var waiter = new Thread(() -> {
+        try {
+          executor.awaitBatchComplete();
+          sizeAtRelease.set(prepared.size());
+        } catch (final InterruptedException e) {
+          // fail via the join assert below
+        }
+      }, "batch-complete-waiter");
+      waiter.start();
+      awaitTrue("the waiter parked", () -> waiter.getState() == Thread.State.WAITING);
+
+      // filling the batch must signal the delay window, not wait out the 30s
+      executor.queue("b");
+      worker.join(5_000);
+      assertFalse(worker.isAlive(), "the batch-full signal never woke the runner");
+
+      waiter.join(5_000);
+      assertFalse(waiter.isAlive(), "completion never signalled the waiter");
+      // the waiter was only released once the batch had fully executed
+      assertEquals(2, sizeAtRelease.get());
+      assertEquals(List.of("a", "b"), prepared);
+      assertEquals(1, jdbc.executions);
+      assertEquals(1, jdbc.commits);
+      assertFalse(executor.lock.isLocked());
+    } finally {
+      worker.interrupt();
+    }
+  }
+
+  @Test
+  void anUnexpectedRuntimeErrorIsLoggedAndEndsTheRun() {
+    final var badDataSource = (DataSource) Proxy.newProxyInstance(
+        DataSource.class.getClassLoader(),
+        new Class<?>[]{DataSource.class},
+        (proxy, method, args) -> {
+          throw new IllegalStateException("pool torn down");
+        }
+    );
+    final var executor = BatchSqlExecutor.create(
+        String.class,
+        badDataSource,
+        "INSERT INTO items (v) VALUES (?)",
+        2,
+        (ps, item) -> 1,
+        Duration.ZERO,
+        Backoff.single(MILLISECONDS, 0)
+    );
+    executor.queue("a");
+    executor.queue("b");
+
+    try (final var log = LogCapture.attach(BatchSqlExecutor.class.getName())) {
+      // the loop must not leak the runtime error to the executing thread,
+      // and the death of the run loop must never be silent
+      assertDoesNotThrow(executor::run);
+      log.assertLogged("Unexpected error executing batch.");
+    }
   }
 
   @Test
@@ -171,8 +323,9 @@ final class BatchSqlExecutorTests {
 
     try (final var log = LogCapture.attach(BatchSqlExecutor.class.getName())) {
       executor.run();
-      // the failure is reported with its SQL state, never swallowed silently
-      log.assertLogged("Failed");
+      // the failure is reported with its SQL state and attempt count,
+      // never swallowed silently
+      log.assertLogged("Failed 1 times");
       log.assertLogged("57P01");
     }
 

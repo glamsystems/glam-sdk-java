@@ -56,6 +56,9 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   private final ConcurrentMap<PublicKey, MappingsContext> mappingsContextMap;
   private final ConcurrentMap<PublicKey, ScopeFeedContext> priceFeedContextMap;
   private final ConcurrentMap<PublicKey, KaminoVaultContext> vaultStateContextMap;
+  /// Package-private so tests can assert both views were released; a leaked
+  /// lock blocks every other caller and no result assertion can see it.
+  final ReentrantReadWriteLock lock;
   private final ReentrantReadWriteLock.WriteLock writeLock;
   private final Condition reserveScopeChangeCondition;
   private volatile int numReserveChanges;
@@ -112,6 +115,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
       }
     }
     final var lock = new ReentrantReadWriteLock();
+    this.lock = lock;
     this.writeLock = lock.writeLock();
     this.readLock = lock.readLock();
     this.reserveScopeChangeCondition = writeLock.newCondition();

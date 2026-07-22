@@ -78,6 +78,13 @@ final class KaminoCacheTests {
     );
   }
 
+  /// Every entry point takes a read or write lock in a try/finally. A leaked
+  /// lock blocks every other caller and no result assertion can see it.
+  private static void assertUnlocked(final KaminoCacheImpl cache) {
+    assertFalse(cache.lock.isWriteLocked());
+    assertEquals(0, cache.lock.getReadLockCount());
+  }
+
   private record RecordingListener(PublicKey key, List<String> events) implements KaminoListener {
 
     RecordingListener(final int id) {
@@ -137,6 +144,8 @@ final class KaminoCacheTests {
     // the chain became direct and the branch below should assert real indexes.
     assertFalse(priceChains.priceChain()[0] instanceof OracleEntry);
     assertNull(cache.indexes(SOL_MINT, PRICE_FEED_KEY, OracleType.Chainlink));
+    // the read lock taken by the query is handed back
+    assertUnlocked(cache);
 
     // the reserve snapshot was persisted under its market directory
     assertTrue(java.nio.file.Files.exists(
@@ -144,6 +153,7 @@ final class KaminoCacheTests {
     ));
 
     cache.accept(accountInfo(VAULT_STATE_KEY, 103L, vaultStateData));
+    assertUnlocked(cache);
     assertEquals(List.of("onNewKaminoVault"), vaultListener.events());
     assertEquals(1, cache.vaultContexts().size());
     final var sharesMint = PublicKey.readPubKey(vaultStateData, VaultState.SHARES_MINT_OFFSET);
@@ -171,6 +181,7 @@ final class KaminoCacheTests {
         Map.of()
     );
     assertNotNull(cache.reserveContext(SOL_RESERVE_KEY));
+    assertUnlocked(cache);
   }
 
   @Test

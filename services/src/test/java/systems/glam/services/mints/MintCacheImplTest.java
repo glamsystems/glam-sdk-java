@@ -198,6 +198,35 @@ final class MintCacheImplTest {
   }
 
   @Test
+  void aDeleteOnlyReportsTheEntryItActuallyRemovedFromDisk(@TempDir final Path tempDir) {
+    final var mintKey = PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+    final var cacheFile = tempDir.resolve("mint_cache.dat");
+    try (final var cacheA = MintCache.createCache(SOLANA_ACCOUNTS, cacheFile)) {
+      cacheA.setGet(new MintContext(AccountMeta.createRead(mintKey), 6, 0, SOLANA_ACCOUNTS.readTokenProgram()));
+      // a second cache over the same file removes the persistent entry
+      try (final var cacheB = MintCache.createCache(SOLANA_ACCOUNTS, cacheFile)) {
+        assertNotNull(cacheB.delete(mintKey));
+      }
+      // A's in-memory map still holds the mint, but the disk entry is gone:
+      // the delete must not claim to have removed what was no longer persisted
+      assertNull(cacheA.delete(mintKey));
+    }
+  }
+
+  @Test
+  void aClosedCacheRefusesNewEntries(@TempDir final Path tempDir) {
+    final var mintKey1 = PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+    final var mintKey2 = PublicKey.fromBase58Encoded("So11111111111111111111111111111111111111112");
+    final var cacheFile = tempDir.resolve("mint_cache.dat");
+    final var cache = MintCache.createCache(SOLANA_ACCOUNTS, cacheFile);
+    cache.setGet(new MintContext(AccountMeta.createRead(mintKey1), 6, 0, SOLANA_ACCOUNTS.readTokenProgram()));
+    cache.close();
+    // the close must release the underlying channel; persisting to it afterwards fails
+    assertThrows(RuntimeException.class,
+        () -> cache.setGet(new MintContext(AccountMeta.createRead(mintKey2), 9, 1, SOLANA_ACCOUNTS.readToken2022Program())));
+  }
+
+  @Test
   void testDelete(@TempDir final Path tempDir) throws Exception {
     final var mintKey1 = PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
     final var mintKey2 = PublicKey.fromBase58Encoded("So11111111111111111111111111111111111111112");

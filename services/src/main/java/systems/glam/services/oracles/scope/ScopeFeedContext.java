@@ -61,18 +61,6 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
     return createContext(slot, accountInfo.data(), accountInfo.pubKey());
   }
 
-  public static String configurationToJson(final long slot,
-                                           final PublicKey configurationKey,
-                                           final byte[] data) {
-    return configurationToJson(
-        slot,
-        configurationKey,
-        PublicKey.readPubKey(data, Configuration.ORACLE_MAPPINGS_OFFSET),
-        PublicKey.readPubKey(data, Configuration.ORACLE_PRICES_OFFSET),
-        data
-    );
-  }
-
   static String configurationToJson(final long slot,
                                     final PublicKey configurationKey,
                                     final PublicKey oracleMappings,
@@ -185,7 +173,8 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
   }
 
   public void indexReserveContext(final ReserveContext reserveContext) {
-    indexReserveByIndex(reserveContext);
+    // resortReserves re-indexes by chain index on both of its paths, so a
+    // leading indexReserveByIndex call here would be a redundant double-index
     resortReserves(reserveContext);
   }
 

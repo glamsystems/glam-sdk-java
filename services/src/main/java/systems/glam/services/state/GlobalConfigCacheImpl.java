@@ -38,6 +38,9 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   private final MintCache mintCache;
   private final AccountFetcher accountFetcher;
   private final long fetchDelayNanos;
+  /// Package-private so tests can assert both views were released; a leaked
+  /// lock blocks every other caller and no result assertion can see it.
+  final ReentrantReadWriteLock lock;
   private final ReentrantReadWriteLock.ReadLock readLock;
   private final ReentrantReadWriteLock.WriteLock writeLock;
   private final Condition invalidGlobalConfig;
@@ -64,6 +67,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     this.accountFetcher = accountFetcher;
     this.fetchDelayNanos = fetchDelay.toNanos();
     final var lock = new ReentrantReadWriteLock();
+    this.lock = lock;
     this.readLock = lock.readLock();
     this.writeLock = lock.writeLock();
     this.invalidGlobalConfig = writeLock.newCondition();
@@ -125,6 +129,10 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     readLock.lock();
     try {
       final var assetMetaMap = this.assetMetaMap;
+      if (assetMetaMap == null) {
+        // the cache has been invalidated; treat as a miss until a valid config is re-accepted
+        return null;
+      }
       final var assetMetaEntries = assetMetaMap.get(mint);
       if (assetMetaEntries == null) {
         return null;

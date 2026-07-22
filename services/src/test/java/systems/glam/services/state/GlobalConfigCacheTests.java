@@ -510,6 +510,7 @@ final class GlobalConfigCacheTests {
     );
     assertNull(result);
     assertEquals("onInconsistentOracleSource", called.get());
+    assertLogged("Inconsistent Asset OracleSource Across GlobalConfig's");
   }
 
   @Test
@@ -656,6 +657,13 @@ final class GlobalConfigCacheTests {
     assertLogged("Unexpected GlobalConfig Account");
   }
 
+  /// Every entry point takes a read or write lock in a try/finally. A leaked
+  /// lock blocks every other caller and no result assertion can see it.
+  private static void assertUnlocked(final GlobalConfigCacheImpl cache) {
+    assertFalse(cache.lock.isWriteLocked());
+    assertEquals(0, cache.lock.getReadLockCount());
+  }
+
   @Test
   void queryHelpers(@TempDir final Path tempDir) {
     final var cache = createCache(tempDir);
@@ -671,6 +679,13 @@ final class GlobalConfigCacheTests {
 
     // an unknown mint has no mint context, so the checked lookup yields null
     assertNull(cache.topPriorityForMintChecked(usdc));
+    assertUnlocked(cache);
+    // and a mint context for a mint the config does not carry yields null too
+    final var strange = PublicKey.fromBase58Encoded("So11111111111111111111111111111111111111111");
+    assertNull(cache.topPriorityForMintChecked(
+        MintContext.createContext(SolanaAccounts.MAIN_NET, strange, 6, 0)
+    ));
+    assertUnlocked(cache);
   }
 
   private static AccountInfo<byte[]> accountInfo(final long slot, final PublicKey owner, final byte[] data) {
@@ -732,6 +747,7 @@ final class GlobalConfigCacheTests {
 
     // a caller holding the previous update sees the new one without waiting
     assertSame(after, cache.awaitNewGlobalConfig(before, 1L));
+    assertUnlocked(cache);
 
     // and the update was persisted for the next restart
     final var persistedPath = FileUtils.resolveCompressedAccountPath(tempDir, GLOBAL_CONFIG_KEY);
@@ -769,6 +785,11 @@ final class GlobalConfigCacheTests {
     assertLogged("Inconsistent Asset Decimals Across GlobalConfig");
     // a waiter learns the config is gone rather than blocking
     assertNull(cache.awaitNewGlobalConfig(before, 1L));
+    // and so do checked lookups after the invalidation
+    assertNull(cache.topPriorityForMintChecked(
+        MintContext.createContext(SolanaAccounts.MAIN_NET,
+            PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"), 6, 0)
+    ));
   }
 
   @Test
@@ -800,6 +821,7 @@ final class GlobalConfigCacheTests {
     final var meta = matching.topPriorityForMintChecked(usdc);
     assertNotNull(meta);
     assertEquals(usdc, meta.asset());
+    assertSame(meta, matching.topPriorityForMintChecked(MintContext.createContext(SolanaAccounts.MAIN_NET, usdc, 6, 0)));
     assertNotNull(matching.globalConfig());
 
     final var mismatched = createCache(tempDir, new MintCache() {
@@ -828,9 +850,329 @@ final class GlobalConfigCacheTests {
     mismatched.subscribe(new TestGlobalConfigListener(called));
     // decimals disagreement is unrecoverable: throw and drop the cached config
     assertThrows(IllegalStateException.class, () -> mismatched.topPriorityForMintChecked(usdc));
+    // the write lock is released even on the throwing path
+    assertUnlocked(mismatched);
     assertEquals("onInvalidDecimals", called.get());
     assertLogged("GlobalConfig decimals for Asset does not match Mint");
     assertNull(mismatched.globalConfig());
+  }
+
+
+  private static AssetMetaContext[] contexts(final GlobalConfig config, final AssetMeta[] metas) {
+    return AssetMetaContext.mapAssetMetas(new GlobalConfig(
+        config._address(), config.discriminator(), config.admin(), config.feeAuthority(),
+        config.referrer(), config.baseFeeBps(), config.flowFeeBps(), metas
+    ));
+  }
+
+  private static AssetMeta withPriority(final AssetMeta meta, final int priority) {
+    return new AssetMeta(meta.asset(), meta.decimals(), meta.oracle(), meta.oracleSource(),
+        meta.maxAgeSeconds(), priority, meta.padding());
+  }
+
+  /// The rejection paths are covered above; these are the transitions that must
+  /// be *accepted* and reported, where a dropped notification leaves listeners
+  /// unaware that an oracle moved.
+  @Test
+  void anOracleConfigurationChangeIsAcceptedAndReported(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var previous = cache.globalConfigUpdate();
+    final var config = GlobalConfig.read(previous.data(), 0);
+    final var metas = config.assetMetas();
+
+    // same asset and oracle, different maxAgeSeconds
+    final var ageChanged = Arrays.copyOf(metas, metas.length);
+    final var first = metas[0];
+    ageChanged[0] = new AssetMeta(first.asset(), first.decimals(), first.oracle(), first.oracleSource(),
+        first.maxAgeSeconds() + 5, first.priority(), first.padding());
+
+    var called = new AtomicReference<String>();
+    var result = GlobalConfigCacheImpl.createMapChecked(
+        1L, previous.assetMetaContexts(), cache.assetMetaMap,
+        contexts(config, ageChanged), NULL_MINT_CACHE, Set.of(new TestGlobalConfigListener(called))
+    );
+    assertNotNull(result, "a changed max age is a valid config");
+    assertEquals("onOracleConfigurationChange", called.get());
+    assertLogged("Oracle Configuration Change");
+
+    // and the same via priority alone
+    final var priorityChanged = Arrays.copyOf(metas, metas.length);
+    priorityChanged[0] = withPriority(first, first.priority() + 3);
+    called = new AtomicReference<>();
+    result = GlobalConfigCacheImpl.createMapChecked(
+        1L, previous.assetMetaContexts(), cache.assetMetaMap,
+        contexts(config, priorityChanged), NULL_MINT_CACHE, Set.of(new TestGlobalConfigListener(called))
+    );
+    assertNotNull(result);
+    assertEquals("onOracleConfigurationChange", called.get());
+  }
+
+  @Test
+  void anUnchangedConfigIsAcceptedWithoutNotifying(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var previous = cache.globalConfigUpdate();
+    final var config = GlobalConfig.read(previous.data(), 0);
+
+    final var called = new AtomicReference<String>();
+    final var result = GlobalConfigCacheImpl.createMapChecked(
+        1L, previous.assetMetaContexts(), cache.assetMetaMap,
+        contexts(config, config.assetMetas()), NULL_MINT_CACHE, Set.of(new TestGlobalConfigListener(called))
+    );
+    // identical lengths are not a removal, and nothing moved
+    assertNotNull(result);
+    assertNull(called.get(), () -> "unexpected notification: " + called.get());
+    assertEquals(previous.assetMetaContexts().length, result.values().stream().mapToInt(v -> v.length).sum());
+  }
+
+  @Test
+  void aRotatedOracleEntryIsReported(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var previous = cache.globalConfigUpdate();
+    final var config = GlobalConfig.read(previous.data(), 0);
+    final var metas = config.assetMetas();
+
+    // a negative priority marks an entry as replaceable: swapping its oracle is
+    // a rotation rather than an unexpected change
+    final var previousMetas = Arrays.copyOf(metas, metas.length);
+    previousMetas[0] = withPriority(metas[0], -1);
+    final var rotated = Arrays.copyOf(metas, metas.length);
+    rotated[0] = new AssetMeta(metas[0].asset(), metas[0].decimals(), PublicKey.NONE, metas[0].oracleSource(),
+        metas[0].maxAgeSeconds(), metas[0].priority(), metas[0].padding());
+
+    final var called = new AtomicReference<String>();
+    final var result = GlobalConfigCacheImpl.createMapChecked(
+        1L, contexts(config, previousMetas), cache.assetMetaMap,
+        contexts(config, rotated), NULL_MINT_CACHE, Set.of(new TestGlobalConfigListener(called))
+    );
+    assertNotNull(result);
+    assertEquals("onOracleEntryRotation", called.get());
+    assertLogged("GlobalConfig Oracle Entry Rotation");
+  }
+
+  @Test
+  void addedOraclesAreReported(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var previous = cache.globalConfigUpdate();
+    final var config = GlobalConfig.read(previous.data(), 0);
+    final var metas = config.assetMetas();
+
+    // one fewer entry previously means this config added one
+    final var fewer = Arrays.copyOf(metas, metas.length - 1);
+
+    final var called = new AtomicReference<String>();
+    final var result = GlobalConfigCacheImpl.createMapChecked(
+        1L, contexts(config, fewer), cache.assetMetaMap,
+        contexts(config, metas), NULL_MINT_CACHE, Set.of(new TestGlobalConfigListener(called))
+    );
+    assertNotNull(result, "adding an oracle is valid");
+    assertEquals("onAssetMetaAdded", called.get());
+    // the added entry is named in the log, not merely counted: the listener
+    // fires from outside this loop, so only the log proves it ran
+    assertLogged("New GlobalConfig Oracle Entry");
+  }
+
+
+  @Test
+  void anEntryChangedWithoutRotationRightsIsLogged(@TempDir final Path tempDir) {
+    // covers the two ERROR logs on the rejection branches driven by existing
+    // listener tests: the same-index oracle-source change and the unexpected
+    // (non-negative-priority) oracle swap
+    final var cache = createCache(tempDir);
+    final var previous = cache.globalConfigUpdate();
+    final var config = GlobalConfig.read(previous.data(), 0);
+    final var metas = config.assetMetas();
+    final var first = metas[0];
+
+    final var swapped = Arrays.copyOf(metas, metas.length);
+    swapped[0] = new AssetMeta(first.asset(), first.decimals(), PublicKey.NONE,
+        first.oracleSource(), first.maxAgeSeconds(), first.priority(), first.padding());
+    final var called = new AtomicReference<String>();
+    assertNotNull(previous);
+    final var result = GlobalConfigCacheImpl.createMapChecked(
+        1L, previous.assetMetaContexts(), cache.assetMetaMap,
+        contexts(config, swapped), NULL_MINT_CACHE, Set.of(new TestGlobalConfigListener(called))
+    );
+    // deliberately flag-and-continue: the swap is logged and notified but the
+    // config is still accepted (see the TODO on this branch in createMapChecked)
+    assertNotNull(result, "an unexpected oracle swap is currently allowed");
+    assertEquals("onUnexpectedOracleChange", called.get());
+    assertLogged("Unexpected GlobalConfig Oracle Change");
+  }
+
+  @Test
+  void aDeprecatedOracleSourceIsRejected(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var previous = cache.globalConfigUpdate();
+    final var config = GlobalConfig.read(previous.data(), 0);
+    final var metas = Arrays.copyOf(config.assetMetas(), config.assetMetas().length);
+    final var first = metas[0];
+    // Pyth (push) is retired; only the pull/lazer family is valid
+    metas[0] = new AssetMeta(first.asset(), first.decimals(), first.oracle(),
+        OracleSource.Pyth, first.maxAgeSeconds(), first.priority(), first.padding());
+
+    final var called = new AtomicReference<String>();
+    final var result = GlobalConfigCacheImpl.createMapChecked(
+        1L, contexts(config, metas), cache.assetMetaMap,
+        contexts(config, metas), NULL_MINT_CACHE, Set.of(new TestGlobalConfigListener(called))
+    );
+    assertNull(result);
+    assertEquals("onInvalidOracleSource", called.get());
+    assertLogged("GlobalConfig Invalid OracleSource");
+  }
+
+  @Test
+  void aMintCacheDecimalsMismatchRejectsTheConfig(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var previous = cache.globalConfigUpdate();
+    final var config = GlobalConfig.read(previous.data(), 0);
+    final var usdc = PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+
+    final var wrongDecimals = new MintCache() {
+      @Override
+      public MintContext get(final PublicKey mintPubkey) {
+        return mintPubkey.equals(usdc)
+            ? MintContext.createContext(SolanaAccounts.MAIN_NET, usdc, 9, 0)
+            : null;
+      }
+
+      @Override
+      public MintContext setGet(final MintContext mintContext) {
+        return mintContext;
+      }
+
+      @Override
+      public MintContext delete(final PublicKey mintPubkey) {
+        return null;
+      }
+
+      @Override
+      public void close() {
+      }
+    };
+    final var called = new AtomicReference<String>();
+    final var result = GlobalConfigCacheImpl.createMapChecked(
+        1L, previous.assetMetaContexts(), cache.assetMetaMap,
+        contexts(config, config.assetMetas()), wrongDecimals, Set.of(new TestGlobalConfigListener(called))
+    );
+    assertNull(result, "the on-chain mint is the authority on decimals");
+    assertEquals("onDecimalsDoNotMatchMint", called.get());
+    assertLogged("GlobalConfig Asset Decimals Does Not Match Mint");
+  }
+
+  @Test
+  void aCrossConfigDecimalsChangeIsRejected(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var previous = cache.globalConfigUpdate();
+    final var config = GlobalConfig.read(previous.data(), 0);
+    final var metas = Arrays.copyOf(config.assetMetas(), config.assetMetas().length);
+    final var first = metas[0];
+    // the oracle changes too, so the per-index comparison flags-and-continues
+    // and the cross-config decimals sweep is what must reject the config
+    metas[0] = new AssetMeta(first.asset(), first.decimals() + 1, PublicKey.NONE,
+        first.oracleSource(), first.maxAgeSeconds(), first.priority(), first.padding());
+
+    final var called = new AtomicReference<String>();
+    final var result = GlobalConfigCacheImpl.createMapChecked(
+        1L, previous.assetMetaContexts(), cache.assetMetaMap,
+        contexts(config, metas), NULL_MINT_CACHE, Set.of(new TestGlobalConfigListener(called))
+    );
+    assertNull(result, "an asset cannot change decimals between configs");
+    assertEquals("onInconsistentDecimals", called.get());
+    assertLogged("Inconsistent Asset Decimals Across GlobalConfig's");
+  }
+
+  @Test
+  void anOracleReusedWithADifferentSourceIsRejected(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var previous = cache.globalConfigUpdate();
+    final var config = GlobalConfig.read(previous.data(), 0);
+    final var metas = Arrays.copyOf(config.assetMetas(), config.assetMetas().length);
+    final var first = metas[0];
+    int j = -1;
+    for (int i = 1; i < metas.length; ++i) {
+      if (metas[i].oracleSource() != first.oracleSource()) {
+        j = i;
+        break;
+      }
+    }
+    assertTrue(j > 0, "fixture holds multiple oracle sources");
+    final var reused = metas[j];
+    metas[j] = new AssetMeta(reused.asset(), reused.decimals(), first.oracle(),
+        reused.oracleSource(), reused.maxAgeSeconds(), reused.priority(), reused.padding());
+
+    final var called = new AtomicReference<String>();
+    final var result = GlobalConfigCacheImpl.createMapChecked(
+        1L, previous.assetMetaContexts(), cache.assetMetaMap,
+        contexts(config, metas), NULL_MINT_CACHE, Set.of(new TestGlobalConfigListener(called))
+    );
+    assertNull(result, "one oracle account cannot serve two sources");
+    assertEquals("onInconsistentOracleSourceAcrossConfigs", called.get());
+    assertLogged("Inconsistent OracleSource Across Configs");
+  }
+
+  @Test
+  void aMatchingMintCacheAcceptsTheConfig(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var previous = cache.globalConfigUpdate();
+    final var config = GlobalConfig.read(previous.data(), 0);
+    final var usdc = PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+
+    final var agreeing = new MintCache() {
+      @Override
+      public MintContext get(final PublicKey mintPubkey) {
+        return mintPubkey.equals(usdc)
+            ? MintContext.createContext(SolanaAccounts.MAIN_NET, usdc, 6, 0)
+            : null;
+      }
+
+      @Override
+      public MintContext setGet(final MintContext mintContext) {
+        return mintContext;
+      }
+
+      @Override
+      public MintContext delete(final PublicKey mintPubkey) {
+        return null;
+      }
+
+      @Override
+      public void close() {
+      }
+    };
+    final var result = GlobalConfigCacheImpl.createMapChecked(
+        1L, previous.assetMetaContexts(), cache.assetMetaMap,
+        contexts(config, config.assetMetas()), agreeing, Set.of()
+    );
+    assertNotNull(result, "an agreeing mint cache is not a rejection");
+    assertNotNull(result.get(usdc));
+  }
+
+  @Test
+  void multipleOraclesForOneAssetServeTopPriorityFirst(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var previous = cache.globalConfigUpdate();
+    final var config = GlobalConfig.read(previous.data(), 0);
+    final var metas = config.assetMetas();
+    final var first = metas[0];
+
+    // demote the existing entry in place and append a BETTER priority under a
+    // new oracle: only the final per-asset sort can serve the appended entry first
+    final var extended = Arrays.copyOf(metas, metas.length + 1);
+    extended[0] = withPriority(first, first.priority() + 5);
+    extended[metas.length] = new AssetMeta(first.asset(), first.decimals(), PublicKey.NONE,
+        first.oracleSource(), first.maxAgeSeconds(), first.priority(), first.padding());
+
+    final var result = GlobalConfigCacheImpl.createMapChecked(
+        1L, previous.assetMetaContexts(), cache.assetMetaMap,
+        contexts(config, extended), NULL_MINT_CACHE, Set.of()
+    );
+    assertNotNull(result);
+    final var entries = result.get(first.asset());
+    assertEquals(2, entries.length);
+    assertEquals(PublicKey.NONE, entries[0].oracle(), "the appended better priority entry is served first");
+    assertEquals(first.priority(), entries[0].priority());
+    assertEquals(first.priority() + 5, entries[1].priority());
+    assertEquals(first.oracle(), entries[1].oracle());
   }
 
   private record TestGlobalConfigListener(AtomicReference<String> called) implements GlobalConfigListener {

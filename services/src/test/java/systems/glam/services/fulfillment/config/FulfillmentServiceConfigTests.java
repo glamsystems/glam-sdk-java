@@ -77,6 +77,25 @@ final class FulfillmentServiceConfigTests {
 
     assertTrue(config.softRedeem());
     assertNotNull(config.delegateServiceConfig());
+    // the base sections must actually be parsed, not just defaulted
+    assertNotNull(config.delegateServiceConfig().rpcCaller().rpcClients());
+    assertNotNull(config.delegateServiceConfig().websocketConfig());
+  }
+
+  @Test
+  void fieldsAfterSoftRedeemAreStillParsed() {
+    // softRedeem leads: the parser must keep consuming the remaining fields
+    final var json = """
+        {
+          "softRedeem": false,
+          %s
+        }
+        """.formatted(minimalRpcJson());
+    final var config = parseJson(json);
+
+    assertFalse(config.softRedeem());
+    assertNotNull(config.delegateServiceConfig().rpcCaller().rpcClients());
+    assertNotNull(config.delegateServiceConfig().websocketConfig());
   }
 
   @Test

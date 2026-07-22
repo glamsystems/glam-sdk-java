@@ -35,7 +35,9 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
   private final Condition startWindow;
   private final Condition batchLimit;
   private final Condition batchCompleteCondition;
-  private volatile boolean batchComplete;
+  /// Package-private so tests can sequence the run loop deterministically
+  /// against the queue/await signalling without sleeping on timing guesses.
+  volatile boolean batchComplete;
 
   BatchSqlExecutorImpl(final Class<T> componentType,
                        final DataSource datasource,

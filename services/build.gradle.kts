@@ -9,7 +9,7 @@ testModuleInfo {
 
 hardening {
   mutation.register("services") {
-    mutators = "STRONGER,EXPERIMENTAL_NAKED_RECEIVER"
+    mutators = "STRONGER,EXPERIMENTAL_NAKED_RECEIVER,EXPERIMENTAL_BIG_INTEGER,EXPERIMENTAL_BIG_DECIMAL"
     // catch-all by exclusion, so a new class is mutated by default instead of
     // silently skipped
     targetClasses = listOf("systems.glam.services.*")

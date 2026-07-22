@@ -109,11 +109,110 @@ final class BaseDelegateServiceConfigTests {
     assertNull(config.txMonitorConfig());
     assertNotNull(config.accountFetcherConfig());
     assertNotNull(config.defensivePollingConfig());
+    // absent sections with no synthesized default stay null
+    assertNull(config.formatter());
+    assertNull(config.feeProviders());
+  }
+
+  @Test
+  void anAbsentRpcSectionLeavesTheBalancerUnbuilt() {
+    final var properties = new Properties();
+    properties.setProperty("websocket.endpoint", WS_ENDPOINT);
+    final var config = parseProperties(properties);
+    // no rpc section: nothing may be parsed from the empty prefix
+    assertNull(config.rpcCaller().rpcClients());
+    assertNull(config.sendClients());
+  }
+
+  @Test
+  void aSigningServiceSectionIsParsed() {
+    final var properties = minimalRpcProperties("");
+    properties.setProperty("signingService.factoryClass", "software.sava.kms.core.signing.MemorySignerFactory");
+    properties.setProperty("signingService.config.encoding", "base58PrivateKey");
+    properties.setProperty("signingService.config.secret", "So11111111111111111111111111111111111111112");
+    final var config = parseProperties(properties);
+    final var signingServiceConfig = config.signingServiceConfig();
+    assertNotNull(signingServiceConfig);
+    assertNotNull(signingServiceConfig.signingService());
+  }
+
+  @Test
+  void aNotificationHooksSectionBuildsARealNotifyClient() {
+    final var properties = minimalRpcProperties("");
+    properties.setProperty("notificationHooks.0.endpoint", "http://localhost:9/hook");
+    properties.setProperty("notificationHooks.0.bodyFormat", "{\"text\":\"%s\"}");
+    final var config = parseProperties(properties);
+    // one webhook => one pending post per notification; the noop default posts none
+    assertEquals(1, config.notifyClient().postMsg("glam-test").size());
+  }
+
+  @Test
+  void aHeliusSectionBuildsFeeProviders() {
+    final var properties = minimalRpcProperties("");
+    properties.setProperty("helius.url", "https://mainnet.helius-rpc.com/?api-key=test");
+    properties.setProperty("helius.capacity.maxCapacity", "2");
+    properties.setProperty("helius.capacity.resetDuration", "PT1S");
+    properties.setProperty("helius.capacity.minCapacityDuration", "PT13S");
+    final var config = parseProperties(properties);
+    assertNotNull(config.feeProviders());
+  }
+
+  @Test
+  void aDefensivePollingJsonSectionParsesEveryField() {
+    final var json = """
+        {
+          %s,
+          "defensivePolling": {
+            "globalConfig": "PT1M30S",
+            "glamStateAccounts": "PT2M",
+            "integTables": "PT3M",
+            "stakePools": "PT4M",
+            "kaminoScope": "PT5M"
+          }
+        }
+        """.formatted(minimalRpcJson());
+    final var config = parseJson(json);
+    final var polling = config.defensivePollingConfig();
+    assertEquals(Duration.ofSeconds(90), polling.globalConfig());
+    assertEquals(Duration.ofMinutes(2), polling.glamStateAccounts());
+    assertEquals(Duration.ofMinutes(3), polling.integTables());
+    assertEquals(Duration.ofMinutes(4), polling.stakePools());
+    assertEquals(Duration.ofMinutes(5), polling.kaminoScope());
+  }
+
+  @Test
+  void anUnknownDefensivePollingFieldIsAnError() {
+    final var json = """
+        {
+          %s,
+          "defensivePolling": {
+            "globalConfig": "PT1M30S",
+            "globalCfg": "PT9M"
+          }
+        }
+        """.formatted(minimalRpcJson());
+    // a misspelled field must fail loudly, not silently land in another slot
+    final var error = assertThrows(IllegalStateException.class, () -> parseJson(json));
+    assertTrue(error.getMessage().contains("globalCfg"), error.getMessage());
+  }
+
+  @Test
+  void anAbsentWebsocketSectionStaysNull() {
+    // every other test supplies a websocket, so its absent direction needs its
+    // own case; the rpc balancer, by contrast, must always be built
+    final var properties = new Properties();
+    properties.setProperty("rpc.endpoints.0.url", RPC_ENDPOINT);
+    final var config = parseProperties(properties);
+    assertNull(config.websocketConfig());
+    assertNotNull(config.rpcCaller().rpcClients());
   }
 
   @Test
   void testPropertiesOptionalSections() {
     final var properties = minimalRpcProperties("");
+    properties.setProperty("glamStateKey", "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+    properties.setProperty("minCheckStateDelay", "PT30S");
+    properties.setProperty("maxCheckStateDelay", "PT10M");
     properties.setProperty("serviceBackoff.strategy", "single");
     properties.setProperty("serviceBackoff.initialRetryDelay", "PT2S");
     properties.setProperty("formatter.sig", "sig=%s");
@@ -123,10 +222,14 @@ final class BaseDelegateServiceConfigTests {
     properties.setProperty("rpcCallWeights.getTransaction", "3");
     properties.setProperty("rpcCallWeights.sendTransaction", "5");
     properties.setProperty("sendRPC.endpoints.0.url", RPC_ENDPOINT);
+    properties.setProperty("defensivePolling.globalConfig", "PT7M");
 
     final var config = parseProperties(properties);
 
     // each optional section must have been parsed, not skipped
+    assertEquals(PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"), config.glamStateKey());
+    assertEquals(Duration.ofSeconds(30), config.minCheckStateDelay());
+    assertEquals(Duration.ofMinutes(10), config.maxCheckStateDelay());
     final var backoff = config.serviceBackoff();
     assertNotNull(backoff);
     // single strategy: a constant delay, unlike the fibonacci default
@@ -145,14 +248,19 @@ final class BaseDelegateServiceConfigTests {
     // the websocket endpoint must survive the round trip, not just be non-null
     assertNotNull(config.websocketConfig());
     assertEquals(WS_ENDPOINT, config.websocketConfig().endpoint().toString());
+    // a configured defensive-polling value beats its default
+    assertEquals(Duration.ofMinutes(7), config.defensivePollingConfig().globalConfig());
   }
 
   @Test
   void testPropertiesOptionalSectionsAbsent() {
     final var config = parseProperties(minimalRpcProperties(""));
     // absent sections must be left null/default, not parsed from nothing;
-    // serviceBackoff falls back to a fibonacci default rather than null
+    // serviceBackoff falls back to a FIBONACCI default — an accidentally
+    // parsed empty section would default to exponential, whose sequence
+    // diverges at the third step (3s vs 4s)
     assertNotNull(config.serviceBackoff());
+    assertEquals(3L, config.serviceBackoff().delay(3, java.util.concurrent.TimeUnit.SECONDS));
     // table cache falls back to its documented defaults
     assertEquals(1024, config.tableCacheConfig().initialCapacity());
     assertEquals(Duration.ofHours(4), config.tableCacheConfig().refreshStaleItemsDelay());

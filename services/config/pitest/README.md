@@ -45,6 +45,27 @@ definition.
 | 2026-07-22 | 1286 | 909 | 377 | 768/2151 (35%) |
 | 2026-07-22 (2nd) | 1265 | 909 | 356 | 789/2151 (36%) |
 | 2026-07-22 (naked receiver + recording pass) | 1311 | 1069 | 340 | 851/2260 (37%) |
+| 2026-07-22 (rw-locks + equality) | 1287 | 1049 | 329 | 882/2260 (39%) |
+| 2026-07-22 (change detection) | 1256 | 1040 | 307 | 913/2260 (40%) |
+| 2026-07-22 (config transitions) | 1245 | 1031 | 301 | 928/2260 (41%) |
+| 2026-07-22 (big-decimal trial + kamino sequences) | 1268 | 936 | 332 | 1032/2263 (45%) |
+| 2026-07-22 (scope shapes + fetcher batching) | 1129 | 928 | 264 | 1065/2262 (47%) |
+| 2026-07-22 (fetcher dispatch hardening) | 1130 | 928 | 268 | 1068/2264 (47%) |
+| 2026-07-22 (state change detector) | 1121 | 924 | 260 | 1079/2264 (47%) |
+| 2026-07-22 (config parse + global config validation) | 1082 | 908 | 240 | 1118/2266 (49%) |
+| 2026-07-22 (config sections + mint cache) | 1059 | 905 | 220 | 1141/2266 (50%) |
+| 2026-07-22 (batch sql executor) | 1033 | 893 | 203 | 1170/2266 (51%) |
+
+The dispatch-hardening change wraps every consumer callback in
+`AccountFetcherImpl` (the always-call listeners, batch and unique consumers,
+and the oversized-batch notification) in its own catch-and-log: previously a
+single throwing consumer exited `run()`'s loop and silently stopped account
+fetching for every service sharing the fetcher. A consumer's failure is now
+its own — logged as "Account consumer failed; continuing to poll" — and the
+test drives a throwing listener, batch consumer and unique consumer through
+one cycle, asserting the healthy consumer in the same batch is still served,
+the loop survives into a second cycle, and the loop-fatal log line never
+appears.
 
 The 2026-07-22 (2nd) pass killed 21 `BaseDelegateServiceConfig.parseProperties`
 survivors by pinning both directions of every optional-section presence guard:
@@ -180,10 +201,245 @@ killed 19 survivors that had looked untestable:
   the tests assert `!lock.isLocked()` after the operation returns. Deterministic
   on the calling thread, with no second thread and no waiting.
 
-Remaining in this family and *not* killed this way: the `ReentrantReadWriteLock`
-releases in `KaminoCacheImpl` (same technique, needs the parent lock exposed
-rather than just the read/write views), and `force()`/`close()` durability calls,
-which no in-process assertion can observe.
+The `ReentrantReadWriteLock` releases in `KaminoCacheImpl` and
+`GlobalConfigCacheImpl` were then killed the same way: both classes discarded
+the parent lock and kept only the read/write views, so each now retains it
+package-private and tests assert `!lock.isWriteLocked()` and a zero read-lock
+count after each entry point, including the throwing path in
+`topPriorityForMintChecked`. Still not killable this way: `force()`/`close()`
+durability calls, which no in-process assertion can observe.
+
+`GlobalConfigCacheImpl.createMapChecked` was covered only on its *rejection*
+side; the transitions it must **accept** and report were the survivors. Tests
+now drive an oracle configuration change (priority and max age independently),
+an unchanged config that must notify nobody, a rotation of a negative-priority
+entry, and an added oracle — each asserting both the listener callback and the
+log line, because several of these notifications fire from outside the loop
+that logs them, so the listener assertion alone cannot tell whether the loop
+ran.
+
+`ReserveContext.changed` got the same treatment, and for the same reason: it
+decides what the Kamino cache propagates to listeners and whether a reserve is
+merely re-sorted or fully re-indexed, so a dropped comparison leaves downstream
+state stale rather than failing. Each of its ten compared fields now has a case
+differing in exactly that field, plus the accumulation case (changes add to the
+set rather than replacing it), the null-price-chain transitions in both
+directions, the different-reserve rejection, and the `onlyCollateralChanged`
+fast-path gate.
+
+`MinGlamStateAccount.equals` decides whether a re-fetched account is a change
+worth propagating, so a dropped comparison silently reports "unchanged" and
+listeners never fire. Each of its ten compared components now has a case
+differing in exactly that component (plus symmetry, and the deliberate
+exclusion of slot and raw data, so a no-op refresh stays equal).
+
+**`MinGlamStateAccount.hashCode` mixing arithmetic (9 mutants)** — the
+`MathMutator` rows on lines 339-347, each swapping a `31 *` for `31 /` or a
+`+` for a `-` in the accumulator chain. `hashCode`'s only contract is that
+equal accounts hash equally, which every one of these preserves, so nothing
+observable distinguishes them: a different-but-still-well-distributed mixing
+constant is not a defect. The two properties that *do* matter are asserted —
+equal accounts hash equally, and accounts differing in any compared component
+hash differently — and those killed the `return 0` mutant that the contract
+alone would have allowed. Distinguishing the rest would mean asserting exact
+hash values, which pins an implementation detail callers cannot depend on.
+
+## EXPERIMENTAL_BIG_INTEGER / EXPERIMENTAL_BIG_DECIMAL trial (2026-07-22)
+
+Trialled with `./gradlew pitestMutatorTrial -PtrialMutators=EXPERIMENTAL_BIG_INTEGER,EXPERIMENTAL_BIG_DECIMAL`
+and **kept for `services`**, which carries the money math the default
+arithmetic mutators cannot express — `BigDecimal` share sums in
+`RedemptionSummary`/`RedemptionRequest` and `BigInteger` liquidity totals in
+`ScopeFeedContext.indexes`:
+
+| Suite | Generated | Killed by existing tests | Unkilled |
+|---|---|---|---|
+| `services` | 3 (BigDecimalMutator x2, BigIntegerMutator x1) | 3 | 0 |
+| `sdk` | 0 — cannot fire | — | — |
+
+Zero baseline cost: every newly expressible mutant was already killed, which is
+what a property-asserting suite looks like. Suite total moved 2260 -> 2263
+mutants, 928 -> 931 detected. Not enabled for `sdk`, where no such arithmetic
+exists.
+
+## Kamino cache sequence pass (2026-07-22)
+
+`KaminoCacheSequenceTests` drives the cache through changed/stale/malformed
+*sequences* of the mainnet fixtures — byte-surgical variants using the
+generated offset constants (collateral, token name, each vault key) — killing
+~101 mutants across the dispatch chain, mapping/reserve/vault update gating,
+per-key vault change detection, and the mappings-scan fallback of `indexes`.
+The 24 survivors this deeper coverage newly exposed are accepted as follows:
+
+**Feed-map maintenance invisible through the cache API (updateIfChanged
+392/395/398/399, reIndexReserves 196/198)** — `resortReserves`,
+`removePreviousEntry` and `indexReserveContext` maintain `ScopeFeedContext`'s
+internal by-index/by-mint maps, and the cache exposes those only through
+`indexes()`, which returns null for the fixture's SOL reserve (composite
+`MostRecentOf` chain — see the 6th-pass note). **Unreachable in-harness with
+the current fixtures**; the named escape is a reserve whose chain heads with a
+direct oracle entry (a second feed snapshot, e.g. the hubble feed), at which
+point these become killable and should be.
+
+**In-lock recheck race guards (handleMappingChange 328, updateIfChanged 386
+retry, handleVaultStateChange 449)** — double-checks between the optimistic
+read and the locked write; single-threaded tests cannot interleave a
+concurrent writer between the two. Deterministically forcing that interleaving
+is the concurrency-harness problem ravina's triage README documents at length;
+accepted with that as the named escape.
+
+**Slot-gate shadowed comparisons (lambda 457 boundary/order)** — the merge
+remapping picks the newer context, but `handleVaultStateChange` line 438
+already rejects non-newer slots before merge is reached, so the remapping only
+ever sees a strictly newer value and its `>=`-vs-`>` boundary cannot be
+observed. Defensive redundancy, equivalent in context.
+
+**Remaining per-key `createIfChanged` internals (KaminoVaultContext
+112-173, noKeyChange 101)** — the null-transition arms (a key appearing where
+none was, or vanishing to the NULL sentinel). The fixture's keys are all
+present and real; synthesizing null-key variants means hand-building 62KB
+VaultState images. Accepted as unreachable-in-harness; escape: a fixture from
+a vault with an unset farm/lookup-table key.
+## Scope shapes + fetcher batching pass (2026-07-22)
+
+`ScopeFeedContextTests` gained the multi-reserve shapes the single-reserve
+cases could not distinguish: several reserves sharing one chain index
+(coexist, replace-within, remove-one-keep-other), removal of unknown keys
+against both single- and multi-entry arrays, collateral-ordered serving with
+in-place re-sorts, and a chainless reserve skipped by `indexes`. One mutant
+was closed by **refactor** instead: `indexReserveContext`'s leading
+`indexReserveByIndex` call became a redundant double-index when the 3rd-pass
+fix taught both `resortReserves` paths to re-index, so the call is gone and
+the mutant cannot exist.
+
+`AccountFetcherTests` gained the batching interior: empty batches dropped by
+every queueing flavour, small batchable lists queued whole, a fresh
+priority-unique consumer served, the recent-slot scan skipping null accounts,
+null contexts and zero slots without letting them overwrite a real slot, a
+callback queueing into the batch in flight (served from that same batch — one
+RPC call, shared result map), always-fetch keys restored after the cycle trim,
+and a full batch absorbing a 100%-overlapping request while deferring a
+non-overlapping one to the next cycle.
+**Count guards subsumed by range-length comparison
+(`MinGlamStateAccount.createIfChanged` 217, 235)** — `sameAssets` and
+`sameExternalPositions` each open with `count == this.section.length &&
+Arrays.equals(bytes...)`. Forcing the count operand true when the counts
+differ changes nothing: the byte ranges are computed from each side's own
+count, so `Arrays.equals` over ranges of different lengths returns false
+immediately and the flag lands false either way. The count check is a
+deliberate short-circuit that skips the byte compare — the same
+fast-path-routing family as HARDENING.md's canonical example. The nine
+branch mutants that *were* observable (per-section reuse vs reparse, the
+enabled flip, and both immutable-base-field guards) are killed by identity
+assertions: content equality cannot tell a reuse from a reparse, so the
+tests pin the array instances.
+
+## Config parse + global config validation pass (2026-07-22)
+
+`BaseDelegateServiceConfigTests` closed the section-presence guard cluster in
+`parseProperties`: an rpc-only config leaves `websocketConfig` null, present
+optional sections land on the parsed values (`defensivePolling.globalConfig`),
+and an absent `serviceBackoff` defaults to fibonacci — distinguishable from an
+empty-parsed exponential at `delay(3)` (3s vs 4s), which is what kills the
+absent-vs-empty guard pair.
+
+`GlobalConfigCacheTests` closed the `createMapChecked` rejection branches:
+cross-config decimals change (via an oracle change at the same index so the
+per-index compare flags-and-continues into the map sweep), one oracle account
+reused with a different source, a mint-cache decimals disagreement (plus its
+ERROR log), the deprecated push-source rejection log, and the same-index
+source-change log. The final per-asset `Arrays.sort` is pinned by demoting the
+existing entry in place and appending a better-priority oracle — only the sort
+can serve the appended entry first. The `MintContext` overload of
+`topPriorityForMintChecked` is pinned by identity against the `PublicKey`
+overload. This pass also surfaced and fixed a real bug: a checked lookup after
+cache invalidation dereferenced the nulled `assetMetaMap` and threw NPE;
+misses now return null until a valid config is re-accepted.
+
+**Null-state rechecks in `topPriorityForMintChecked` (148/154 EQUAL pairs) and
+invalidation `signalAll` (159)** — each `||` guard yields one killable mutant
+per operand (killed by the decimals-mismatch throw test) and one that only a
+concurrent invalidator between the read unlock and write lock could observe —
+the same in-lock race-guard family as the KaminoCache acceptances, with the
+same concurrency-harness escape. `signalAll` needs a parked waiter to observe;
+same family as the accept-path `signalAll` acceptances (694/709).
+
+## Config sections + mint cache pass (2026-07-22)
+
+Killed the section-presence guards that only a *present* section can
+distinguish: `glamStateKey`, `minCheckStateDelay`/`maxCheckStateDelay`, a
+`signingService` built through the ServiceLoader-registered
+`MemorySignerFactory`, a `notificationHooks` webhook whose `postMsg` returns
+one pending future (the noop default returns none), a `helius` section
+building `feeProviders`, and the no-rpc parse pinning `rpcClients == null`
+(the always-parse mutant builds a balancer from an empty prefix instead).
+`FulfillmentServiceConfig` now parses fields *after* a leading `softRedeem`
+(the stop-early mutant), and its properties path pins the base sections.
+`DefensivePollingConfig`'s JSON path parses all five fields distinctly and
+throws on an unknown field (the forced-match mutant silently lands unknowns in
+the last slot). `MintCacheImpl.close` is pinned by "a closed cache refuses new
+entries", and `delete` by a two-instance case: it must not report an entry
+whose persistent record was already removed by another cache over the same
+file.
+
+**Absent-vs-empty-parse equivalents (`parseProperties` 286/307/363/368 pairs)**
+— the always-parse direction on `notificationHooks`, `tableCache`,
+`accountFetcher` and `defensivePolling`: parsing an empty section produces the
+same value the absent path synthesizes (`NotifyClient.createClient([])`
+returns the same noop shape as `setDefaults`; the other three parsers default
+every field to exactly their `createDefault` values). No observable output
+distinguishes them.
+
+**Null-over-null assigns (`parseProperties` 400/405; `DefensivePollingConfig`
+60–76)** — `parseDuration(null)` returns null, so forcing the `!= null` guard
+merely re-assigns null over null; `get()`/`setDefaults` re-default nulls
+either way.
+
+**True-or-throw returns (`FulfillmentServiceConfig.test` 63)** — the base
+`test` either handles a field (returns true) or throws on unknown fields, so
+forcing the propagated return to true is indistinguishable.
+
+**Missing-key delete fast path (`MintCacheImpl.delete` 55)** — forcing the
+null-check false sends a missing key into `deleteEntry`, which scans, finds
+nothing, returns 0 and yields the same null; the guard only skips file I/O.
+
+## Batch SQL executor pass (2026-07-22)
+
+Killed 18 of the 25 `BatchSqlExecutorImpl` survivors. `parseTableName` bounds
+are pinned by keyword-only and name-at-end statements. The retry path is
+pinned by "an interrupt pending at the backoff sleep cancels the retry"
+(removing the sleep re-executes the failed batch before exiting), the
+attempt-count log by `Failed 1 times`, the remainder commit log by
+`1 out of 1`, and the two catch paths by "a clean interrupt exit logs no
+error" and "a runtime error is logged and ends the run without leaking".
+The signalling protocol is pinned deterministically — `batchComplete` is now
+package-private (same precedent as `lock`) so the test sequences the runner
+by state instead of sleeping: the first queued item must wake the parked
+runner, filling the batch must cut the delay window short, and a waiter in
+`awaitBatchComplete` is released only once the batch has fully executed
+(release-time size is asserted). The lost-signal mutants die as timeouts in
+those await paths — load-dependent by nature, but each also fails the
+5-second join asserts on a quiet machine.
+
+**Spurious-signal directions (`queue` 207 EQUAL_ELSE/ORDER_IF)** — forcing
+the signal condition true adds a lock cycle and an extra signal to a runner
+that rechecks its guards on wake; no observable difference exists.
+
+**Fast-path skips (`awaitBatchComplete` 145; `run` 72 boundary/ORDER_IF)** —
+the outer `batchComplete` check only skips a lock acquisition around a
+correctly-guarded while; entering the fill/wait block with a full batch
+pending exits the delay window immediately. Both are flicker, not behavior.
+
+**Zero-remaining re-arm (`run` 82 boundary)** — `remainingNanos > 0` vs
+`>= 0` differs only when a wait returns exactly 0, which re-arms one
+zero-nanos await and exits on its negative return.
+
+**Requeue gap guards (`run` 73 `Arrays.fill`, 122 break-on-null)** — the
+failed-batch walk breaks at the first unset slot; every in-repo
+`StatementPreparer` returns one row per item, so the walk is gapless and the
+fill/break pair is unobservable. Named escape: a multi-row preparer — at
+which point the requeue walk itself needs revisiting, since a gap drops the
+items below it from the retry.
 
 ## Untriaged debt
 

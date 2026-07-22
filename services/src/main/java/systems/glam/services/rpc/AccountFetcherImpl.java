@@ -249,7 +249,11 @@ final class AccountFetcherImpl implements AccountFetcher {
               // Should never happen because an exception is thrown on any attempt to add a batch that exceeds this limit.
               logger.log(WARNING, "Ignoring batch because it exceeds the RPC limit of " + SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS);
               iterator.remove();
-              accountBatch.mutableKeysExceededMaxSize();
+              try {
+                accountBatch.mutableKeysExceededMaxSize();
+              } catch (final RuntimeException ex) {
+                logger.log(ERROR, "Account consumer failed handling an oversized batch; continuing to poll.", ex);
+              }
               clearBatch();
               continue;
             } else {
@@ -359,7 +363,7 @@ final class AccountFetcherImpl implements AccountFetcher {
         }
 
         for (final var accountConsumer : alwaysCall) {
-          accountConsumer.accept(accounts, accountsMap);
+          dispatch(accountConsumer, accounts, accountsMap);
         }
 
         for (; ; ) {
@@ -376,9 +380,9 @@ final class AccountFetcherImpl implements AccountFetcher {
             }
           } else if (accountBatch instanceof UniqueAccountBatchRecord(_, final AccountConsumer accountConsumer)) {
             pendingUniqueConsumers.remove(accountConsumer);
-            accountConsumer.accept(accounts, accountsMap);
+            dispatch(accountConsumer, accounts, accountsMap);
           } else {
-            accountBatch.accept(accounts, accountsMap);
+            dispatch(accountBatch, accounts, accountsMap);
           }
         }
 
@@ -390,6 +394,21 @@ final class AccountFetcherImpl implements AccountFetcher {
       // exit
     } catch (final RuntimeException ex) {
       logger.log(ERROR, "Unexpected error fetching accounts.", ex);
+    }
+  }
+
+
+  /// Consumer callbacks run on the polling thread inside run()'s try, so an
+  /// unguarded throw would exit the loop and silently stop account fetching
+  /// for every service sharing this fetcher. A consumer's failure is its own:
+  /// log it and keep polling.
+  private static void dispatch(final AccountConsumer accountConsumer,
+                               final List<AccountInfo<byte[]>> accounts,
+                               final Map<PublicKey, AccountInfo<byte[]>> accountsMap) {
+    try {
+      accountConsumer.accept(accounts, accountsMap);
+    } catch (final RuntimeException ex) {
+      logger.log(ERROR, "Account consumer failed; continuing to poll.", ex);
     }
   }
 

@@ -200,4 +200,116 @@ final class ScopeFeedContextTests {
     context.removePreviousEntry(reserveB);
     assertNull(context.indexes(MINT, ORACLE, OracleType.SwitchboardOnDemand));
   }
+
+  @Test
+  void reservesSharingAChainIndexCoexistAndRemoveIndependently() {
+    final var context = context();
+    // two reserves on the SAME chain index: the index map must hold both
+    final var reserveA = reserve(101, 1_000L, 11, ORACLE);
+    final var reserveB = reserve(102, 2_000L, 11, ORACLE);
+    context.indexReserveContext(reserveA);
+    context.indexReserveContext(reserveB);
+    assertEquals(2, context.reservesForIndex(11).size());
+    assertSame(reserveA, context.reservesForIndex(11).get(reserveA.pubKey()));
+    assertSame(reserveB, context.reservesForIndex(11).get(reserveB.pubKey()));
+
+    // replacing one within a shared index keeps the other
+    final var reserveA2 = reserve(101, 5_000L, 11, ORACLE);
+    context.indexReserveContext(reserveA2);
+    assertEquals(2, context.reservesForIndex(11).size());
+    assertSame(reserveA2, context.reservesForIndex(11).get(reserveA.pubKey()));
+    assertSame(reserveB, context.reservesForIndex(11).get(reserveB.pubKey()));
+
+    // removing one keeps the other; removing the last clears the index
+    context.removePreviousEntry(reserveA2);
+    assertEquals(1, context.reservesForIndex(11).size());
+    assertSame(reserveB, context.reservesForIndex(11).get(reserveB.pubKey()));
+    context.removePreviousEntry(reserveB);
+    assertNull(context.reservesForIndex(11));
+  }
+
+  @Test
+  void removingAnUnknownReserveTouchesNothing() {
+    final var context = context();
+    final var indexed = reserve(101, 1_000L, 11, ORACLE);
+    context.indexReserveContext(indexed);
+
+    // an index holding only a DIFFERENT reserve must not be cleared
+    final var neverIndexed = reserve(102, 2_000L, 11, ORACLE);
+    context.removePreviousEntry(neverIndexed);
+    assertNotNull(context.reservesForIndex(11));
+    assertSame(indexed, context.reservesForIndex(11).get(indexed.pubKey()));
+
+    // and a reserve whose index was never populated is a no-op
+    context.removePreviousEntry(reserve(103, 3_000L, 200, ORACLE));
+    assertNotNull(context.reservesForIndex(11));
+
+    // with SEVERAL reserves on the mint, scanning for an absent key must walk
+    // off the end of the array cleanly and change nothing
+    context.indexReserveContext(reserve(104, 4_000L, 12, ORACLE));
+    context.removePreviousEntry(reserve(105, 5_000L, 13, ORACLE));
+    assertArrayEquals(
+        new short[]{12, 11, -1, -1},
+        context.indexes(MINT, ORACLE, OracleType.SwitchboardOnDemand).indexes()
+    );
+  }
+
+  @Test
+  void reservesForOneMintStayOrderedByCollateral() {
+    final var context = context();
+    // inserted ascending; served descending — the sort is doing the work
+    final var low = reserve(101, 1_000L, 11, ORACLE);
+    final var mid = reserve(102, 2_000L, 12, ORACLE);
+    final var high = reserve(103, 3_000L, 13, ORACLE);
+    context.indexReserveContext(low);
+    context.indexReserveContext(mid);
+    context.indexReserveContext(high);
+    assertArrayEquals(
+        new short[]{13, 12, 11, -1},
+        context.indexes(MINT, ORACLE, OracleType.SwitchboardOnDemand).indexes()
+    );
+
+    // a replacement that changes the ordering re-sorts in place
+    final var lowNowHighest = reserve(101, 9_000L, 11, ORACLE);
+    context.resortReserves(lowNowHighest);
+    assertArrayEquals(
+        new short[]{11, 13, 12, -1},
+        context.indexes(MINT, ORACLE, OracleType.SwitchboardOnDemand).indexes()
+    );
+
+    // removing the middle keeps the others in order
+    context.removePreviousEntry(mid);
+    assertArrayEquals(
+        new short[]{11, 13, -1, -1},
+        context.indexes(MINT, ORACLE, OracleType.SwitchboardOnDemand).indexes()
+    );
+  }
+
+  @Test
+  void aReserveWithoutPriceChainsIsSkippedByIndexes() {
+    final var context = context();
+    final var chained = reserve(101, 1_000L, 11, ORACLE);
+    // same mint, no resolved chains: contributes nothing, breaks nothing
+    final var chainless = new ReserveContext(
+        1L, new byte[0], key(102), AccountMeta.createWrite(key(102)),
+        key(7000), "R102", MINT, 5_000L, null,
+        new software.sava.idl.clients.kamino.lend.gen.types.TokenInfo(
+            new byte[software.sava.idl.clients.kamino.lend.gen.types.TokenInfo.NAME_LEN],
+            null, 0L, 0L, 0L,
+            new software.sava.idl.clients.kamino.lend.gen.types.ScopeConfiguration(
+                PRICE_FEED, new int[]{11, 65_535, 65_535, 65_535}, new int[4]
+            ),
+            null, null, 0,
+            new byte[software.sava.idl.clients.kamino.lend.gen.types.TokenInfo.RESERVED_LEN],
+            new long[software.sava.idl.clients.kamino.lend.gen.types.TokenInfo.PADDING_LEN]
+        )
+    );
+    context.indexReserveContext(chained);
+    context.indexReserveContext(chainless);
+
+    final var feedIndexes = context.indexes(MINT, ORACLE, OracleType.SwitchboardOnDemand);
+    assertNotNull(feedIndexes);
+    assertArrayEquals(new short[]{11, -1, -1, -1}, feedIndexes.indexes());
+    assertEquals(java.math.BigInteger.valueOf(1_000L), feedIndexes.liquidity());
+  }
 }
