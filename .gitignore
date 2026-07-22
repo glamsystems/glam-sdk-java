@@ -50,3 +50,7 @@ Integ.*
 /.config
 /symlinks/
 /.junie/
+
+### Mutation testing ###
+# arcmutate incremental-analysis history; machine-local state
+.pitest-history/
