@@ -1,5 +1,22 @@
 # Changelog
 
+## [25.16.1](https://github.com/glamsystems/glam-sdk-java/compare/25.16.0...25.16.1) (2026-07-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* **services:** a fetch delay under one millisecond now throws IllegalArgumentException at construction instead of polling in a tight loop.
+* delegateHasPermissions now denies a delegate that holds only part of the requested permission mask, where it previously allowed it, and returns false instead of throwing when the delegate has no grant for a required integration program. Callers relying on the previous result must re-check the permission maps they pass in. GlamAccounts#mintPDA(publicKey, 256) now throws instead of returning share class 0's PDA.
+
+### Bug Fixes
+
+* correct instruction building, permission and cache defects ([a562eea](https://github.com/glamsystems/glam-sdk-java/commit/a562eea69216b5efcfd3a70e35828896b4395015))
+* Properly handle &gt;100 account batches. ([45c6dc2](https://github.com/glamsystems/glam-sdk-java/commit/45c6dc2c93f897e93a1d2303ce80fff18d37da1d))
+* Properly track sql batch size when multiple sub-items. ([64b9244](https://github.com/glamsystems/glam-sdk-java/commit/64b924484b26e7386a6cc39102294a01ce29e812))
+* **services:** reject poll delays that round down to no delay ([5af1af6](https://github.com/glamsystems/glam-sdk-java/commit/5af1af66998aa13974df8483fa42dd162213dd1e))
+* **services:** repair three crash/staleness defects in fulfillment and kamino ([56c259c](https://github.com/glamsystems/glam-sdk-java/commit/56c259cef1c781df503c69863276793b246d1c35))
+* **srcgen:** Regenerate with fixed string length reporting. ([afd7d4d](https://github.com/glamsystems/glam-sdk-java/commit/afd7d4d8c4dec5a795bcba393495d33457e5b833))
+
 ## [25.16.0](https://github.com/glamsystems/glam-sdk-java/compare/25.15.0...25.16.0) (2026-07-17)
 
 
