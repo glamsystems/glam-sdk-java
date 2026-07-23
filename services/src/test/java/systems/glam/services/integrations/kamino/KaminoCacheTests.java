@@ -327,6 +327,72 @@ final class KaminoCacheTests {
         List.of("onNewScopeConfiguration", "onScopeConfigurationChange"),
         scopeListener.events()
     );
+
+    // the change tore the old registration down without replacing it, so the
+    // next arrival of this key is a NEW registration — a leftover stale entry
+    // would swallow it as unchanged instead
+    cache.accept(accountInfo(CONFIGURATION_KEY, 300L, changed));
+    assertEquals(
+        List.of("onNewScopeConfiguration", "onScopeConfigurationChange", "onNewScopeConfiguration"),
+        scopeListener.events()
+    );
+    assertUnlocked(cache);
+  }
+
+  @Test
+  void aSameSlotReserveChangeIsStale(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    cache.accept(accountInfo(CONFIGURATION_KEY, 100L, configurationData));
+    cache.accept(accountInfo(ORACLE_MAPPINGS_KEY, 100L, mappingsData));
+    cache.accept(accountInfo(SOL_RESERVE_KEY, 100L, reserveData));
+    final var reserveContext = cache.reserveContext(SOL_RESERVE_KEY);
+    assertNotNull(reserveContext);
+
+    // changed collateral at the SAME slot: stale, the context must not move
+    final var changed = reserveData.clone();
+    changed[software.sava.idl.clients.kamino.lend.gen.types.Reserve.COLLATERAL_OFFSET
+        + software.sava.idl.clients.kamino.lend.gen.types.ReserveCollateral.MINT_TOTAL_SUPPLY_OFFSET] ^= 0x01;
+    cache.accept(accountInfo(SOL_RESERVE_KEY, 100L, changed));
+    assertSame(reserveContext, cache.reserveContext(SOL_RESERVE_KEY));
+    assertUnlocked(cache);
+  }
+
+  @Test
+  void nullPersistencePathsDisablePersistenceQuietly(@TempDir final Path tempDir) {
+    // production supports running without configuration/mappings persistence;
+    // a "non-null" guard forced the wrong way turns that into an NPE per accept
+    final var kaminoAccounts = KaminoAccounts.MAIN_NET;
+    final var cache = new KaminoCacheImpl(
+        null, null,
+        kaminoAccounts.kLendProgram(),
+        kaminoAccounts.scopePricesProgram(),
+        kaminoAccounts.kVaultsProgram(),
+        null, null,
+        Duration.ofSeconds(1),
+        null,
+        null,
+        tempDir.resolve("reserves"),
+        Map.of(),
+        new ConcurrentHashMap<>(),
+        new ConcurrentHashMap<>(),
+        new ConcurrentHashMap<>()
+    );
+    try {
+      java.nio.file.Files.createDirectories(tempDir.resolve("reserves"));
+    } catch (final IOException e) {
+      throw new java.io.UncheckedIOException(e);
+    }
+
+    try (final var log = LogCapture.attach(KaminoCache.class.getName())) {
+      cache.accept(accountInfo(CONFIGURATION_KEY, 100L, configurationData));
+      cache.accept(accountInfo(ORACLE_MAPPINGS_KEY, 100L, mappingsData));
+      cache.accept(accountInfo(SOL_RESERVE_KEY, 100L, reserveData));
+      assertTrue(
+          log.messages().stream().noneMatch(m -> m != null && m.contains("Failed to handle Scope account")),
+          () -> log.messages().toString()
+      );
+    }
+    assertNotNull(cache.reserveContext(SOL_RESERVE_KEY));
     assertUnlocked(cache);
   }
 

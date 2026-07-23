@@ -100,12 +100,16 @@ final class GlobalConfigCacheTests {
     );
   }
 
+  // a STRONG reference: java.util.logging holds loggers weakly, so without
+  // this the logger (and our handler with it) can be garbage collected mid-run
+  private static Logger capturedLogger;
+
   @BeforeAll
   static void beforeAll() throws IOException {
-    final var logger = Logger.getLogger(GlobalConfigCache.class.getName());
-    logger.setLevel(Level.ALL);
-    logger.setUseParentHandlers(false);
-    logger.addHandler(LOG_RECORDS);
+    capturedLogger = Logger.getLogger(GlobalConfigCache.class.getName());
+    capturedLogger.setLevel(Level.ALL);
+    capturedLogger.setUseParentHandlers(false);
+    capturedLogger.addHandler(LOG_RECORDS);
     globalConfigData = ResourceUtil.readResource("accounts/glam/global/" + GLOBAL_CONFIG_KEY + ".json.gz");
   }
 
@@ -1517,5 +1521,387 @@ final class GlobalConfigCacheTests {
                                                    final AssetMetaContext b) {
       called.set("onInconsistentDecimalsWithinConfig");
     }
+  }
+
+  private static systems.glam.services.rpc.AccountFetcher scriptedFetcher(
+      final java.util.concurrent.atomic.AtomicInteger consumerQueues,
+      final List<List<PublicKey>> batchQueued,
+      final java.util.function.Supplier<systems.glam.services.rpc.AccountResult> resultSupplier) {
+    return (systems.glam.services.rpc.AccountFetcher) java.lang.reflect.Proxy.newProxyInstance(
+        systems.glam.services.rpc.AccountFetcher.class.getClassLoader(),
+        new Class<?>[]{systems.glam.services.rpc.AccountFetcher.class},
+        (proxy, method, args) -> switch (method.getName()) {
+          case "priorityQueue" -> {
+            if (method.getReturnType() == java.util.concurrent.CompletableFuture.class) {
+              yield java.util.concurrent.CompletableFuture.completedFuture(resultSupplier.get());
+            }
+            consumerQueues.incrementAndGet();
+            yield null;
+          }
+          case "priorityQueueBatchable" -> {
+            @SuppressWarnings("unchecked") final var keys = (List<PublicKey>) args[0];
+            batchQueued.add(List.copyOf(keys));
+            yield null;
+          }
+          default -> throw new UnsupportedOperationException(method.getName());
+        }
+    );
+  }
+
+  private static GlobalConfigCacheImpl createCache(final Path tempDir,
+                                                   final MintCache mintCache,
+                                                   final systems.glam.services.rpc.AccountFetcher fetcher,
+                                                   final Duration fetchDelay) {
+    final var globalConfigFile = FileUtils.resolveCompressedAccountPath(tempDir, GLOBAL_CONFIG_KEY);
+    try {
+      FileUtils.writeCompressedAccountData(tempDir, GLOBAL_CONFIG_KEY, globalConfigData);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return (GlobalConfigCacheImpl) GlobalConfigCache.initCache(
+        globalConfigFile,
+        GlamAccounts.MAIN_NET.configProgram(),
+        GLOBAL_CONFIG_KEY,
+        SolanaAccounts.MAIN_NET,
+        mintCache,
+        null,
+        fetcher,
+        fetchDelay
+    ).join();
+  }
+
+  private static void awaitTrue(final String what, final java.util.function.BooleanSupplier condition) throws InterruptedException {
+    final long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
+    while (!condition.getAsBoolean()) {
+      assertTrue(System.nanoTime() < deadline, what);
+      //noinspection BusyWait
+      Thread.sleep(1L);
+    }
+  }
+
+  private static byte[] withBaseFeeBumped(final int bump) {
+    final var globalConfig = GlobalConfig.read(globalConfigData, 0);
+    return new GlobalConfig(
+        globalConfig._address(), globalConfig.discriminator(),
+        globalConfig.admin(), globalConfig.feeAuthority(), globalConfig.referrer(),
+        globalConfig.baseFeeBps() + bump, globalConfig.flowFeeBps(),
+        globalConfig.assetMetas()
+    ).write();
+  }
+
+  @Test
+  void theRunLoopRefetchesOnTheDelayAndStopsWhenInvalidated(@TempDir final Path tempDir) throws Exception {
+    final var consumerQueues = new java.util.concurrent.atomic.AtomicInteger();
+    final var fetcher = scriptedFetcher(consumerQueues, new ArrayList<>(), () -> null);
+    final var cache = createCache(tempDir, NULL_MINT_CACHE, fetcher, Duration.ofMillis(40));
+
+    final var runner = new Thread(cache::run);
+    runner.start();
+    awaitTrue("the poll loop refetches after the delay", () -> consumerQueues.get() >= 2);
+
+    // an invalid replacement empties the cache; the loop must notice and exit
+    final var globalConfig = GlobalConfig.read(globalConfigData, 0);
+    final var metas = Arrays.copyOf(globalConfig.assetMetas(), globalConfig.assetMetas().length);
+    final var first = metas[0];
+    metas[0] = new AssetMeta(
+        first.asset(), first.decimals() + 1, first.oracle(),
+        first.oracleSource(), first.maxAgeSeconds(), first.priority(), first.padding()
+    );
+    final byte[] invalid = new GlobalConfig(
+        globalConfig._address(), globalConfig.discriminator(),
+        globalConfig.admin(), globalConfig.feeAuthority(), globalConfig.referrer(),
+        globalConfig.baseFeeBps(), globalConfig.flowFeeBps(),
+        metas
+    ).write();
+    cache.accept(accountInfo(cache.globalConfigUpdate().slot() + 1, GlamAccounts.MAIN_NET.configProgram(), invalid));
+
+    runner.join(5_000L);
+    assertFalse(runner.isAlive(), "the run loop must stop once the cache is invalidated");
+    assertNull(cache.globalConfig());
+    assertUnlocked(cache);
+  }
+
+  @Test
+  void forceCacheRefreshPullsTheNextFetchForward(@TempDir final Path tempDir) throws Exception {
+    final var consumerQueues = new java.util.concurrent.atomic.AtomicInteger();
+    final var fetcher = scriptedFetcher(consumerQueues, new ArrayList<>(), () -> null);
+    final var cache = createCache(tempDir, NULL_MINT_CACHE, fetcher, Duration.ofSeconds(30));
+
+    final var runner = new Thread(cache::run);
+    runner.start();
+    awaitTrue("the first fetch is queued on entry", () -> consumerQueues.get() == 1);
+    Thread.sleep(100L);
+    assertEquals(1, consumerQueues.get(), "the loop must park for the fetch delay");
+
+    cache.forceCacheRefresh();
+    awaitTrue("a forced refresh queues immediately", () -> consumerQueues.get() == 2);
+    // the force flag was consumed by the refetch: the loop parks again
+    Thread.sleep(150L);
+    assertEquals(2, consumerQueues.get(), "the refresh flag must reset after the fetch");
+
+    cache.forceCacheRefresh();
+    awaitTrue("a second refresh pulls another fetch", () -> consumerQueues.get() == 3);
+
+    runner.interrupt();
+    runner.join(5_000L);
+    assertFalse(runner.isAlive());
+    assertUnlocked(cache);
+  }
+
+  @Test
+  void aFetcherFailureIsLoggedAndEndsTheLoop(@TempDir final Path tempDir) {
+    final var throwing = (systems.glam.services.rpc.AccountFetcher) java.lang.reflect.Proxy.newProxyInstance(
+        systems.glam.services.rpc.AccountFetcher.class.getClassLoader(),
+        new Class<?>[]{systems.glam.services.rpc.AccountFetcher.class},
+        (proxy, method, args) -> {
+          throw new IllegalStateException("fetcher down");
+        }
+    );
+    final var cache = createCache(tempDir, NULL_MINT_CACHE, throwing, Duration.ofMillis(10));
+    cache.run();
+    assertLogged("Error queuing global config fetch");
+  }
+
+  @Test
+  void awaitNewGlobalConfigTimesOutAndSeesReplacements(@TempDir final Path tempDir) throws Exception {
+    final var cache = createCache(tempDir);
+    final var current = cache.globalConfigUpdate();
+
+    final long start = System.nanoTime();
+    assertSame(current, cache.awaitNewGlobalConfig(current, java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(80L)));
+    final long elapsedMillis = (System.nanoTime() - start) / 1_000_000L;
+    assertTrue(elapsedMillis >= 60L, () -> "waited only " + elapsedMillis + "ms");
+    assertUnlocked(cache);
+
+    final var seen = new AtomicReference<GlobalConfigUpdate>();
+    final var waiter = new Thread(() -> {
+      try {
+        seen.set(cache.awaitNewGlobalConfig(current, java.util.concurrent.TimeUnit.SECONDS.toNanos(30L)));
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    });
+    waiter.start();
+    awaitTrue("the waiter parks on the condition", () -> waiter.getState() == Thread.State.TIMED_WAITING);
+
+    final long newSlot = current.slot() + 3;
+    cache.accept(accountInfo(newSlot, GlamAccounts.MAIN_NET.configProgram(), withBaseFeeBumped(1)));
+    waiter.join(5_000L);
+    assertFalse(waiter.isAlive(), "the accepted replacement must wake the waiter");
+    assertNotNull(seen.get());
+    assertEquals(newSlot, seen.get().slot());
+  }
+
+  private static AccountInfo<byte[]> mintAccount(final PublicKey mint, final int decimals) {
+    final byte[] data = new byte[82];
+    data[44] = (byte) decimals;
+    data[45] = 1;
+    return new AccountInfo<>(
+        mint, new Context(1L, null), false, 0, SolanaAccounts.MAIN_NET.tokenProgram(),
+        BigInteger.ZERO, 0, data
+    );
+  }
+
+  @Test
+  void batchedAccountsRouteTheConfigAndMissingMints(@TempDir final Path tempDir) {
+    final var stored = new HashMap<PublicKey, MintContext>();
+    final var recording = new MintCache() {
+      @Override
+      public MintContext get(final PublicKey mintPubkey) {
+        return stored.get(mintPubkey);
+      }
+
+      @Override
+      public MintContext setGet(final MintContext mintContext) {
+        stored.put(mintContext.mint(), mintContext);
+        return mintContext;
+      }
+
+      @Override
+      public MintContext delete(final PublicKey mintPubkey) {
+        return null;
+      }
+
+      @Override
+      public void close() {
+      }
+    };
+    final var cache = createCache(tempDir, recording);
+    final var before = cache.globalConfigUpdate();
+    final long newSlot = before.slot() + 5;
+
+    final var usdc = PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+    final var msol = PublicKey.fromBase58Encoded("mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So");
+    final var accounts = new ArrayList<AccountInfo<byte[]>>();
+    accounts.add(systems.glam.services.rpc.AccountFetcher.NULL_ACCOUNT_INFO);
+    accounts.add(null);
+    // an empty-data account is a miss, not a mint
+    accounts.add(new AccountInfo<>(msol, new Context(1L, null), false, 0,
+        SolanaAccounts.MAIN_NET.tokenProgram(), BigInteger.ZERO, 0, new byte[0]));
+    accounts.add(mintAccount(usdc, 6));
+    cache.accept(
+        accounts,
+        Map.of(GLOBAL_CONFIG_KEY, accountInfo(newSlot, GlamAccounts.MAIN_NET.configProgram(), withBaseFeeBumped(1)))
+    );
+    assertEquals(newSlot, cache.globalConfigUpdate().slot());
+    assertTrue(stored.containsKey(usdc), "the fetched mint must be cached");
+    assertFalse(stored.containsKey(msol), "an empty account must not be parsed as a mint");
+    assertUnlocked(cache);
+
+    // a mint the config does not carry is never cached
+    final byte[] strangerBytes = new byte[PublicKey.PUBLIC_KEY_LENGTH];
+    strangerBytes[0] = 77;
+    final var stranger = PublicKey.createPubKey(strangerBytes);
+    cache.accept(List.of(mintAccount(stranger, 6)), Map.of());
+    assertFalse(stored.containsKey(stranger), "an unknown mint must not be cached");
+
+    // a mint already cached is not re-parsed and re-stored
+    final var cachedUsdc = stored.get(usdc);
+    cache.accept(List.of(mintAccount(usdc, 6)), Map.of());
+    assertSame(cachedUsdc, stored.get(usdc), "an already-cached mint must not be replaced");
+
+    // no config account in the map, and a sentinel one: the existing config stands
+    final var after = cache.globalConfigUpdate();
+    cache.accept(List.of(), Map.of());
+    assertSame(after, cache.globalConfigUpdate());
+    cache.accept(List.of(), Map.of(GLOBAL_CONFIG_KEY, systems.glam.services.rpc.AccountFetcher.NULL_ACCOUNT_INFO));
+    assertSame(after, cache.globalConfigUpdate());
+
+    // a mint that disagrees with the config invalidates the cache loudly
+    final var mismatch = assertThrows(IllegalStateException.class, () -> cache.accept(
+        List.of(mintAccount(SolanaAccounts.MAIN_NET.wrappedSolTokenMint(), 2)), Map.of()
+    ));
+    assertTrue(mismatch.getMessage().contains("GlobalConfig decimals for Asset does not match Mint"), mismatch::getMessage);
+    assertNull(cache.globalConfig());
+    assertUnlocked(cache);
+  }
+
+  @Test
+  void theInstanceInitCacheRoutesTheFetchResult(@TempDir final Path tempDir) {
+    final var consumerQueues = new java.util.concurrent.atomic.AtomicInteger();
+    final long newSlot;
+    final var cache = createCache(tempDir, NULL_MINT_CACHE);
+    newSlot = cache.globalConfigUpdate().slot() + 9;
+    final var result = new systems.glam.services.rpc.AccountResult(
+        List.of(),
+        Map.of(GLOBAL_CONFIG_KEY, accountInfo(newSlot, GlamAccounts.MAIN_NET.configProgram(), withBaseFeeBumped(1)))
+    );
+    final var fetcher = scriptedFetcher(consumerQueues, new ArrayList<>(), () -> result);
+    final var refetching = createCache(tempDir, NULL_MINT_CACHE, fetcher, Duration.ofSeconds(1));
+    refetching.initCache().join();
+    assertEquals(newSlot, refetching.globalConfigUpdate().slot());
+  }
+
+  @Test
+  void aNewAssetInTheConfigQueuesItsMintFetch(@TempDir final Path tempDir) throws Exception {
+    final var batchQueued = new ArrayList<List<PublicKey>>();
+    final var fetcher = scriptedFetcher(new java.util.concurrent.atomic.AtomicInteger(), batchQueued, () -> null);
+    final var cache = createCache(tempDir, NULL_MINT_CACHE, fetcher, Duration.ofSeconds(30));
+    batchQueued.clear(); // drop anything queued while initializing
+
+    final byte[] newMintBytes = new byte[PublicKey.PUBLIC_KEY_LENGTH];
+    newMintBytes[0] = 41;
+    final var newMint = PublicKey.createPubKey(newMintBytes);
+    final byte[] newOracleBytes = new byte[PublicKey.PUBLIC_KEY_LENGTH];
+    newOracleBytes[0] = 42;
+    final var newOracle = PublicKey.createPubKey(newOracleBytes);
+
+    final var globalConfig = GlobalConfig.read(globalConfigData, 0);
+    final var metas = globalConfig.assetMetas();
+    final var extended = Arrays.copyOf(metas, metas.length + 1);
+    extended[metas.length] = new AssetMeta(
+        newMint, 5, newOracle, OracleSource.PythLazer, 30, 0, metas[0].padding()
+    );
+    final byte[] changed = new GlobalConfig(
+        globalConfig._address(), globalConfig.discriminator(),
+        globalConfig.admin(), globalConfig.feeAuthority(), globalConfig.referrer(),
+        globalConfig.baseFeeBps(), globalConfig.flowFeeBps(),
+        extended
+    ).write();
+
+    final var before = cache.globalConfigUpdate();
+    cache.accept(accountInfo(before.slot() + 1, GlamAccounts.MAIN_NET.configProgram(), changed));
+    assertEquals(before.slot() + 1, cache.globalConfigUpdate().slot());
+    assertLogged("New GlobalConfig Oracle Entry");
+
+    // only the mint the previous config did not carry is fetched
+    assertEquals(1, batchQueued.size());
+    assertEquals(List.of(newMint), batchQueued.getFirst());
+    assertUnlocked(cache);
+  }
+
+  @Test
+  void aNewAssetAlreadyInTheMintCacheIsNotRefetched(@TempDir final Path tempDir) {
+    final var batchQueued = new ArrayList<List<PublicKey>>();
+    final var fetcher = scriptedFetcher(new java.util.concurrent.atomic.AtomicInteger(), batchQueued, () -> null);
+
+    final byte[] newMintBytes = new byte[PublicKey.PUBLIC_KEY_LENGTH];
+    newMintBytes[0] = 51;
+    final var newMint = PublicKey.createPubKey(newMintBytes);
+    final var knowsNewMint = new MintCache() {
+      @Override
+      public MintContext get(final PublicKey mintPubkey) {
+        return mintPubkey.equals(newMint)
+            ? MintContext.createContext(SolanaAccounts.MAIN_NET, newMint, 5, 0)
+            : null;
+      }
+
+      @Override
+      public MintContext setGet(final MintContext mintContext) {
+        return mintContext;
+      }
+
+      @Override
+      public MintContext delete(final PublicKey mintPubkey) {
+        return null;
+      }
+
+      @Override
+      public void close() {
+      }
+    };
+    final var globalConfigFile = FileUtils.resolveCompressedAccountPath(tempDir, GLOBAL_CONFIG_KEY);
+    try {
+      FileUtils.writeCompressedAccountData(tempDir, GLOBAL_CONFIG_KEY, globalConfigData);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    final var cache = (GlobalConfigCacheImpl) GlobalConfigCache.initCache(
+        globalConfigFile, GlamAccounts.MAIN_NET.configProgram(), GLOBAL_CONFIG_KEY,
+        SolanaAccounts.MAIN_NET, knowsNewMint, null, fetcher, Duration.ofSeconds(30)
+    ).join();
+    batchQueued.clear();
+
+    final byte[] newOracleBytes = new byte[PublicKey.PUBLIC_KEY_LENGTH];
+    newOracleBytes[0] = 52;
+    final var globalConfig = GlobalConfig.read(globalConfigData, 0);
+    final var metas = globalConfig.assetMetas();
+    final var extended = Arrays.copyOf(metas, metas.length + 1);
+    extended[metas.length] = new AssetMeta(
+        newMint, 5, PublicKey.createPubKey(newOracleBytes), OracleSource.PythLazer, 30, 0, metas[0].padding()
+    );
+    final byte[] changed = new GlobalConfig(
+        globalConfig._address(), globalConfig.discriminator(),
+        globalConfig.admin(), globalConfig.feeAuthority(), globalConfig.referrer(),
+        globalConfig.baseFeeBps(), globalConfig.flowFeeBps(),
+        extended
+    ).write();
+
+    final var before = cache.globalConfigUpdate();
+    cache.accept(accountInfo(before.slot() + 1, GlamAccounts.MAIN_NET.configProgram(), changed));
+    assertEquals(before.slot() + 1, cache.globalConfigUpdate().slot());
+    // the mint cache already carries it: nothing to fetch, not even an empty batch
+    assertEquals(List.of(), batchQueued);
+    assertUnlocked(cache);
+  }
+
+  @Test
+  void aFailedConfigPersistIsLoggedNotFatal(@TempDir final Path tempDir) throws IOException {
+    // the target path is an occupied directory: the write fails, the cache lives
+    final var blocked = tempDir.resolve("config.dat.gz");
+    Files.createDirectories(blocked.resolve("occupant"));
+    GlobalConfigCacheImpl.persistGlobalConfig(blocked, new byte[]{1, 2, 3});
+    assertLogged("Failed to write GlobalConfig to file");
+    assertTrue(Files.isDirectory(blocked));
   }
 }

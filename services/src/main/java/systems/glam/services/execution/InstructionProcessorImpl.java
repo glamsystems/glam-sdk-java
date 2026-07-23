@@ -133,6 +133,11 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
         throw ex;
       }
 
+      // Deliberately cleared before the error check: failed batches are
+      // DROPPED, never retried here — retries below the send belong to the
+      // InstructionService (maxRetries), and a failed result means the caller
+      // re-fetches state and rebuilds. The size-limit halving below therefore
+      // applies to the REMAINING instructions, not the dropped batch.
       ixBatch.clear();
 
       final var error = txResult.error();

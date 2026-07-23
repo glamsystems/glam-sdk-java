@@ -262,4 +262,18 @@ final class MintCacheImplTest {
       assertNotNull(cache2.get(mintKey3));
     }
   }
+
+  @Test
+  void mintContextScalesAmountsDownToRawUnits() {
+    final var context = MintContext.createContext(
+        software.sava.core.accounts.SolanaAccounts.MAIN_NET,
+        software.sava.core.accounts.PublicKey.fromBase58Encoded("So11111111111111111111111111111111111111112"),
+        6, 0
+    );
+    // setScale truncates to the mint's decimals and returns the WHOLE units
+    assertEquals(1L, context.setScale(new java.math.BigDecimal("1.23456789")));
+    assertEquals(2L, context.setScale(new java.math.BigDecimal("2.9999999")));
+    assertEquals(0L, context.setScale(new java.math.BigDecimal("0.0000009")));
+    assertEquals(MintContext.BYTES, context.l());
+  }
 }

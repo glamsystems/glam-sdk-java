@@ -312,4 +312,147 @@ final class ScopeFeedContextTests {
     assertArrayEquals(new short[]{11, -1, -1, -1}, feedIndexes.indexes());
     assertEquals(java.math.BigInteger.valueOf(1_000L), feedIndexes.liquidity());
   }
+
+  @Test
+  void deeperFeedsOrderFirst() {
+    final var meta = AccountMeta.createRead(key(1));
+    final var deep = new FeedIndexes(meta, meta, new short[]{1, -1, -1, -1}, java.math.BigInteger.valueOf(9_000L));
+    final var shallow = new FeedIndexes(meta, meta, new short[]{2, -1, -1, -1}, java.math.BigInteger.valueOf(10L));
+    // descending by liquidity: the deepest feed wins the sorted().findFirst()
+    assertTrue(deep.compareTo(shallow) < 0);
+    assertTrue(shallow.compareTo(deep) > 0);
+    assertEquals(0, deep.compareTo(deep));
+  }
+
+  @Test
+  void reservesForOneMintAreMaintainedByLiquidity() {
+    final var context = context();
+    final var small = reserve(11, 5L, 11, ORACLE);
+    final var large = reserve(12, 99L, 12, ORACLE);
+    context.indexReserveContext(small);
+    context.indexReserveContext(large);
+    // the append path sorts: deepest liquidity first
+    assertArrayEquals(new ReserveContext[]{large, small}, context.reservesByMint().get(MINT));
+
+    // the in-place replace path re-sorts: the small reserve outgrows the large
+    final var grown = reserve(11, 500L, 11, ORACLE);
+    context.resortReserves(grown);
+    assertArrayEquals(new ReserveContext[]{grown, large}, context.reservesByMint().get(MINT));
+  }
+
+  @Test
+  void chainIndexesAtTheArrayBoundaryAreIgnored() {
+    final var context = context();
+    final int boundary = software.sava.idl.clients.kamino.scope.gen.types.OracleMappings.PRICE_INFO_ACCOUNTS_LEN;
+    final var outOfRange = reserve(11, 5L, boundary, ORACLE);
+    // an index one past the mapping array must be skipped by both the
+    // indexer and the remover, never used as an array position
+    assertDoesNotThrow(() -> context.indexReserveContext(outOfRange));
+    assertDoesNotThrow(() -> context.removePreviousEntry(outOfRange));
+  }
+
+  @Test
+  void removingTheLastReserveForgetsTheMint() {
+    final var context = context();
+    final var only = reserve(11, 5L, 11, ORACLE);
+    context.indexReserveContext(only);
+    context.removePreviousEntry(only);
+    // forgotten entirely: not an empty array left behind
+    assertFalse(context.reservesByMint().containsKey(MINT));
+    // removing again is a no-op, not a null dereference
+    assertDoesNotThrow(() -> context.removePreviousEntry(only));
+  }
+
+  private static ReserveContext reserveOnForeignFeed(final int id, final int chainIndex) {
+    final var foreignFeed = key(6_000);
+    final var scopeConfiguration = new ScopeConfiguration(
+        foreignFeed,
+        new int[]{chainIndex, 65_535, 65_535, 65_535},
+        new int[]{65_535, 65_535, 65_535, 65_535}
+    );
+    final var name = java.util.Arrays.copyOf(("F" + id).getBytes(US_ASCII), TokenInfo.NAME_LEN);
+    final var tokenInfo = new TokenInfo(
+        name, null, 0L, 0L, 0L, scopeConfiguration, null, null, 0,
+        new byte[TokenInfo.RESERVED_LEN], new long[TokenInfo.PADDING_LEN]
+    );
+    final var priceChains = new PriceChainsRecord(
+        new ScopeEntry[]{new SwitchboardOnDemand(chainIndex, ORACLE, Set.of())},
+        new ScopeEntry[0]
+    );
+    final var reserveKey = key(id);
+    return new ReserveContext(
+        1L, new byte[0], reserveKey, AccountMeta.createWrite(reserveKey),
+        key(7000), "F" + id, MINT, 5L, priceChains, tokenInfo
+    );
+  }
+
+  @Test
+  void reIndexRewritesOnlyChangedChainsOnThisFeed() {
+    final var context = context();
+    final var changing = reserve(11, 5L, 11, ORACLE);
+    final var settled = reserve(12, 7L, 13, ORACLE);
+    final var foreign = reserveOnForeignFeed(14, 12);
+    context.indexReserveContext(changing);
+    context.indexReserveContext(settled);
+
+    // the mappings now chain everything at index 13
+    final var entries = new software.sava.idl.clients.kamino.scope.entries.ScopeEntries() {
+      @Override
+      public PublicKey pubKey() {
+        return ORACLE_MAPPINGS;
+      }
+
+      @Override
+      public long slot() {
+        return 22L;
+      }
+
+      @Override
+      public software.sava.idl.clients.kamino.scope.entries.PriceChains readPriceChains(
+          final software.sava.idl.clients.kamino.lend.gen.types.Reserve reserve) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public software.sava.idl.clients.kamino.scope.entries.PriceChains readPriceChains(
+          final PublicKey mintKey, final ScopeConfiguration scopeConfiguration) {
+        return new PriceChainsRecord(
+            new ScopeEntry[]{new SwitchboardOnDemand(13, ORACLE, Set.of())},
+            new ScopeEntry[0]
+        );
+      }
+
+      @Override
+      public ScopeEntry scopeEntry(final int index) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public int numEntries() {
+        return 0;
+      }
+
+      @Override
+      public java.util.List<ScopeEntry> oracleEntries(final PublicKey oracle, final OracleType oracleType) {
+        throw new UnsupportedOperationException();
+      }
+    };
+    final var mappingsContext = new MappingsContext(ORACLE_MAPPINGS, new byte[0], entries);
+
+    final var reserveContexts = new java.util.HashMap<PublicKey, ReserveContext>();
+    reserveContexts.put(changing.pubKey(), changing);
+    reserveContexts.put(settled.pubKey(), settled);
+    reserveContexts.put(foreign.pubKey(), foreign);
+
+    // exactly one rewrite: 'changing' moves 11 -> 13; 'settled' already chains
+    // at 13, and 'foreign' belongs to another price feed entirely
+    assertEquals(1, context.reIndexReserves(reserveContexts, mappingsContext));
+    final var rewritten = reserveContexts.get(changing.pubKey());
+    assertNotSame(changing, rewritten);
+    assertSame(settled, reserveContexts.get(settled.pubKey()));
+    assertSame(foreign, reserveContexts.get(foreign.pubKey()));
+    // the by-index registration (keyed by the configuration's chain ints,
+    // which did not change) now serves the rewritten context, not the stale one
+    assertSame(rewritten, context.reservesForIndex(11).get(changing.pubKey()));
+  }
 }

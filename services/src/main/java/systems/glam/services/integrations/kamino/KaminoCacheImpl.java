@@ -226,14 +226,16 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     }
     if (configurationsPath != null) {
       try {
-        Files.deleteIfExists(FileUtils.resolveAccountPath(configurationsPath, scopeFeedContext.configurationKey()));
+        // persisted compressed: deleting the uncompressed name would let the
+        // dropped configuration resurrect from disk on the next start
+        Files.deleteIfExists(FileUtils.resolveCompressedAccountPath(configurationsPath, scopeFeedContext.configurationKey()));
       } catch (final IOException e) {
         logger.log(WARNING, "Failed to delete Scope Configuration.", e);
       }
     }
     if (mappingsPath != null) {
       try {
-        Files.deleteIfExists(FileUtils.resolveAccountPath(mappingsPath, scopeFeedContext.oracleMappings()));
+        Files.deleteIfExists(FileUtils.resolveCompressedAccountPath(mappingsPath, scopeFeedContext.oracleMappings()));
       } catch (final IOException e) {
         logger.log(WARNING, "Failed to delete Scope Mappings.", e);
       }
@@ -708,6 +710,10 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   }
 
   static void persistReserve(final Path reserveContextsFilePath, final ReserveContext reserveContext) {
+    if (reserveContextsFilePath == null) {
+      // an RPC-only cache keeps nothing on disk
+      return;
+    }
     final var marketFilePath = reserveContextsFilePath.resolve(reserveContext.market().toBase58());
     try {
       if (Files.notExists(marketFilePath)) {

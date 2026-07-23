@@ -21,14 +21,14 @@ pluginManagement {
   }
   // Resolve sava-build from GitHub Packages. Uncomment only while depending on an
   // unpublished sava-build change, then publish, bump the versions below, re-comment.
-  if (settingsDir.resolve("../sava-build").isDirectory) {
-    includeBuild("../sava-build")
-  }
+//  if (settingsDir.resolve("../sava-build").isDirectory) {
+//    includeBuild("../sava-build")
+//  }
 }
 
 plugins {
-  id("software.sava.build") version "21.5.8"
-  id("software.sava.build.feature.jdk-provisioning") version "21.5.8"
+  id("software.sava.build") version "21.5.9"
+  id("software.sava.build.feature.jdk-provisioning") version "21.5.9"
 }
 
 javaModules {
@@ -42,5 +42,5 @@ javaModules {
 // granularity, tx monitor delay guards). Publish ravina, bump
 // solanaBOMVersion in gradle/sava.properties, then re-comment this.
 // See "Changing a dependency" in AGENTS.md.
-includeBuild("../ravina")
+//includeBuild("../ravina")
 //includeBuild("../idl-clients")

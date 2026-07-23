@@ -185,8 +185,10 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
       if (reserveContext.priceFeed().equals(priceFeed)) {
         final var priceChains = mappingsContext.readPriceChains(reserveContext.mint(), reserveContext.scopeConfiguration());
         if (!reserveContext.priceChains().equals(priceChains)) {
+          // withPriceChains leaves the configuration's chain ints untouched, so
+          // the rewritten context lands on the same by-index and by-mint slots;
+          // indexReserveContext replaces in place, no prior removal needed
           final var changed = reserveContext.withPriceChains(priceChains);
-          removePreviousEntry(reserveContext);
           reserveContexts.put(reserveContext.pubKey(), changed);
           indexReserveContext(changed);
           ++numChanged;

@@ -62,6 +62,223 @@ definition.
 | 2026-07-23 (global config init paths) | 968 | 843 | 187 | 1237/2268 (54%) |
 | 2026-07-23 (multiset migration) | 1030 | 843 | 187 | 1238/2268 (54%) |
 | 2026-07-23 (kamino cache) | 1011 | 835 | 176 | 1257/2268 (55%) |
+| 2026-07-23 (vault context + scope indexing) | 972 | 827 | 145 | 1295/2267 (57%) |
+| 2026-07-23 (kamino cache lifecycle gates) | 969 | 827 | 142 | 1298/2267 (57%) |
+| 2026-07-23 (synthetic direct-oracle feed) | 961 | 824 | 137 | 1306/2267 (57%) |
+| 2026-07-23 (init/load + format runtime) | 853 | 686 | 167 | 1414/2267 (62%) |
+| 2026-07-23 (cold start + integ tables) | 790 | 621 | 169 | 1477/2267 (65%) |
+| 2026-07-23 (instruction processor) | 738 | 564 | 174 | 1529/2267 (67%) |
+| 2026-07-23 (service context family) | 628 | 454 | 174 | 1639/2267 (72%) |
+| 2026-07-23 (fulfillment services) | 499 | 318 | 181 | 1768/2267 (77%) |
+| 2026-07-23 (cache run loops + io tails) | 330 | 131 | 199 | 1939/2269 (85%) |
+| 2026-07-23 (init paths + remaining tails) | 272 | 66 | 206 | 1996/2269 (87%) |
+
+The instruction-processor pass covers `InstructionProcessorImpl` against a
+scripted `InstructionService` (each call's batch recorded, the next scripted
+result returned): success drains the caller's list, size-limit failures on a
+multi-instruction batch are **dropped, never retried here** — retries below
+the send belong to the `InstructionService`, and a failed result means the
+caller re-fetches and rebuilds; that intent is now stated in the code and
+pinned by the tests, including the odd-rounds-up halving of the batch bound
+governing the *remainder* — the account-64 splitter (duplicates counted
+once, lookup-table keys counted against the limit, exactly-64 fits), the
+fatal single-instruction-over-limit page with its `numTables` accounting,
+the quiet stale-mint-price retry against its three near-misses (wrong code,
+wrong program, non-custom error — each must page), and service failures
+logged, paged and rethrown.
+
+**Accepted (6):** record-pattern destructure sibling legs on the error
+ladder, the `subList`-vs-whole-list boundary (same view, same drain), and
+defensive forced-true directions with killed twins named by the verify.
+
+The service-context-family pass covers the three context shells directly:
+`ServiceContextImpl` (token typing across owner/length/extension-byte,
+clock parsing from synthetic sysvar bytes, the `max(minDelay, backoff)`
+sleep floor asserted by elapsed lower bounds in both directions, the
+cache-path layout and every accessor including proxied
+`NotifyClient`/`RpcCaller`/`DataSource` identities),
+`ExecutionServiceContextImpl` (epoch median via a real `Epoch` record,
+scripted `InstructionProcessor` returning true-then-false, and a proxied
+`ServiceContext` reporting a *low* fee-payer balance — the only way to
+tell the delegation from a hardcoded `false`, since the real impl
+hardcodes it), the whole `BaseServiceContext` delegation surface, and
+`IntegrationServiceContextImpl` with every collaborator a recording
+`Proxy` stub (cache lookups return sentinels asserted by identity;
+program-key accessors compared against the real `MAIN_NET` account
+constants they unwrap).
+
+The fulfillment pass covers the redemption stack end-to-end against a
+synthetic staging `StateAccount` (the `priceSingleAssetVault` instruction
+is staging-only) and a scripted `ExecutionServiceContext` whose fee-payer
+script doubles as the run-loop exit. It surfaced and fixed a **real bug**:
+`BaseFulfillmentService.executeRedemptions`'s soft-state/hard-fulfill
+branch streamed the retained instructions into `fulFillInstructions::add`
+— the immutable `List.of` *field* — instead of the local list it had just
+allocated, so every counted fulfill threw `UnsupportedOperationException`
+and killed the service loop. Covered: the run loop (missing-ATA wait,
+low-fee-payer skip, NAV pricing with `supply≠holdings` so the divide and
+both `stripTrailingZeros` calls are observable, failure backoff `1,2` then
+reset-to-`1,1`), redemption accounting (seconds/slots/no-soft maturity,
+the soft-flag conjunction including zero-share directions, all three
+`executeRedemptions` instruction shapes byte-compared, `fetchAccounts`
+refetch dropping vanished accounts), construction guards (NONE-mint and
+mismatched-mint throws), `awaitChange` clamp-and-floor by elapsed bounds
+(including a mid-wait wake proving the top-up is minimum-*minus*-slept),
+and the websocket path: queue/deposit wake matrices by parked-thread
+observation, foreign account shapes ignored without log noise, malformed
+updates logged and swallowed, and the entrypoint monitor loop (services
+executed, paced connection checks, close on interrupt).
+
+**Accepted (7):** the `awaitChange` top-up boundary and its forced-true
+twin (an equal or negative top-up is a no-op sleep — `TimeUnit.sleep`
+ignores non-positive timeouts; `ORDER_ELSE` killed), the `validateMintKey`
+null-mint leg (a null mint NPEs in `StateAccountClient` escrow-PDA
+derivation before reaching the check, so only the NONE-sentinel leg is
+reachable — both its directions killed), and four `compareAndSet` witness
+retries (the re-loop only executes when another writer interleaves between
+`get` and `compareAndExchange`; unreachable deterministically, and every
+sibling leg is detected).
+
+The init-paths pass closed the last broadly coverable surfaces:
+`IntegLookupTableCache.initCache` (warm load from `.dat` files with foreign
+files ignored, only the missing keys fetched — null and null-data entries
+skipped — the fetched table persisted, and the does-not-exist warning
+raised for exactly the still-missing key), `ReserveContext` (both null-key
+spellings, the shared read/write meta caches served by identity through
+the refresh sequence, and all four oracle layouts of
+`refreshReserveAccounts`: scope-feed last slot, pyth first slot,
+switchboard middle slots, and the no-oracle fatal),
+`BaseDelegateServiceConfig.createServiceContext`/`createMintCache` from a
+parsed properties config (no hikari files → null datasource; `mints.bin`
+created under the cache directory), the default single-key
+`AccountFetcher` queues and the default `InstructionProcessor` overload
+(null lookup tables pinned through real implementing classes, since
+proxies bypass `default` bodies), `persistGlobalConfig` and `FileUtils`
+failure branches (occupied-directory targets fail the write *and* the
+cleanup delete, both logged), `ScopeAggregateIndexes` statics,
+`globalConfigCacheFile`, `MinGlamStateAccount` and serde-length tails.
+Also fixed a test-infra trap this pass exposed: `GlobalConfigCacheTests`
+attached its capturing handler to a `java.util.logging` Logger held only
+by a local — JUL references loggers weakly, so GC could silently detach
+the handler mid-run; the logger is now pinned by a static field.
+
+**Accepted (7):** the `createServiceContext` hikari null/empty legs (both
+mean "no datasource"; the non-empty direction needs real JDBC properties
+to construct a `HikariDataSource`), the table-file filter NakedReceiver
+(`path.toString()` ends with the same `.dat` suffix as
+`getFileName().toString()` — indistinguishable by any filter input), the
+two `ReserveContext` meta-cache hit legs (the static caches persist
+across mutants in a shared PIT minion, so the hit path cannot be forced
+to miss deterministically; both miss directions are killed), and the
+`setScale` NakedReceiver (`setScale(decimals, DOWN).longValue()` is
+`longValue()` for every input — DOWN and long truncation both round
+toward zero).
+
+The cache-run-loops pass swept the remaining poll/init surfaces and fixed
+two more **real bugs**: `KaminoCacheImpl.persistReserve` dereferenced a null
+`reserveDataFilePath`, so an RPC-only cache (built by the pathless
+`KaminoCache.initService`) crashed its poll loop — and killed the run
+thread — on the first feed-priced reserve it accepted (a null guard now
+mirrors `deleteScopeConfiguration`'s); and `deleteScopeConfiguration`
+deleted the *uncompressed* file names while everything is persisted
+compressed, so a dropped Scope configuration resurrected from disk on the
+next start (now deletes the `.dat.gz` names, pinned by the poll test).
+Covered: the RPC-only Kamino init (feedless-reserve-only retention pinned,
+five invalid-account rejections, `listenToAll` registration), the Kamino
+poll loop end-to-end (a reserve arriving only once the loop runs — indexed,
+notified, persisted; a fetched mappings update applying an appended oracle
+entry; vanished scope accounts dropped with their compressed files, the
+whichever-is-second bare-mappings deletion warning, and the fetch list
+shrinking; write lock released on exit), listener routing (all three
+`subscribeToAll` legs by event kind, full and single-key unsubscribes),
+`refreshVaults`, the GlobalConfig run loop (delay-paced refetch, forced
+refresh consumed-and-rearmed, invalidation exit, fetcher-failure log),
+`awaitNewGlobalConfig` (timeout by elapsed bound, waiter woken by a
+replacement), the batched accept (sentinel/null/empty entries, unknown and
+already-cached mints never re-stored, the mismatched-mint invalidation
+throw), the instance `initCache`, the new-asset mint fetch (queued only
+when the mint cache lacks it), the StakePoolCache (cold start with
+exact-minimum-length boundary, warm start from flat files without
+refetching, accept gates, append-after-close rejection, pacing of the poll
+loop over a window, failure log), and the FileUtils/MinGlamStateAccount
+tails.
+
+**Accepted (20):** four `HashMap`/`ConcurrentHashMap` capacity-hint math
+mutants; the `deleteScopeConfiguration` null-path guard leg (deletion is
+only driven through disk-backed caches; the deletion direction itself is
+detected); GlobalConfig park-loop legs (`run` 228/230, `forceCacheRefresh`
+double-check gates, `awaitNewGlobalConfig` timeout legs — in-lock timing
+directions whose siblings are detected or timing-equivalent at exactly
+zero nanos); StakePool cold-start overwrite/copy boundaries (`i > 0` and
+`copyOfRange` at exact length are no-op-equivalent), the redundant
+`containsKey` fast path ahead of `putIfAbsent`, and its CAS race-guard
+leg; and the Kamino single-chunk fetch exit plus rebuild-list and
+park-loop legs (`run` 664/669/692/697 — the chunking directions need more
+than `MAX_MULTIPLE_ACCOUNTS` scope accounts to differ, the rebuild is
+idempotent from the set, and the park directions are load-dependent).
+
+The cold-start pass built the routed-proxy harness named as the previous
+pass's escape: a `SolanaRpcClient` proxy answering `getProgramAccounts` by
+target program (vaults, reserves, configurations — each request's data slice
+and filters asserted inline) and `getAccounts` for the missing mappings.
+`initService` from an empty disk now proves: reserves fetched and routed
+(feed-priced, `NONE`-feed, and `nu11…`-sentinel-feed variants), the
+configuration fetched, parsed and persisted, the missing mappings resolved
+and persisted, and the resulting cache serving the full feed-indexed path —
+with everything on disk for the next (warm) start, which the earlier pass
+pins. `IntegLookupTableCacheImpl` is covered end-to-end: tables only grow
+deeper (equal depth kept by identity), deactivated and vanished tables are
+forgotten with their files deleted, grown tables re-persisted byte-exact,
+the polling loop drives `queueBatchable` per pass, and persistence failures
+log without dropping the in-memory update.
+
+**Accepted (residual legs):** the merge-function and persist-gate directions
+only a concurrent merge can distinguish (`integrationTables.merge` legs, the
+`result == addressLookupTable` gate), the equal-depth boundary's sibling
+directions, capacity-hint arithmetic in the init lambda, and the
+partial-persistence fork halves (persisted configs that cover only some
+needed feeds) — the one remaining init scenario, named as the next escape if
+it ever earns a harness.
+
+The init/load pass opened the service-runtime layer: `FormatUtil` end-to-end
+(instruction/simulation/result rendering incl. the glam error-table lookup,
+its unknown-code and non-custom fallbacks, sig null/blank forms, fee
+stripping, indenting, durations, fixed-length strings), direct `AccountData`
+discriminator/length gates, and `KaminoCache.initService` warm-start from
+persistence: the synthetic feed and reserve seeded as LEGACY uncompressed
+files are migrated (content round-tripped, originals removed), corrupted
+files beside them deleted or skipped without failing the boot, the sole
+network call is the sliced+filtered vault scan (request captured and
+asserted), an invalid vault account fails the future loudly, and the
+restored cache serves the full feed-indexed path and registers itself with
+the account fetcher.
+
+**Accepted (31 rows, init/load residuals):** the warm-path halves of the
+cold/warm forks (`Files.exists`, `containsAll`, config-fetch-skipped legs)
+and the reserve-request builder's fluent chain — observable only on a COLD
+start that fetches reserves and configurations over RPC; that harness (a
+multi-request routed proxy) is the named escape. The remainder are the usual
+compound-condition sibling legs (each verify hint names the killed twin),
+capacity-hint arithmetic, and defensive forced-true directions
+(`compressIfNeeded` on an already-compressed file, constructor loop legs).
+
+Remaining coverage debt is concentrated in the fulfillment services,
+`ServiceContextImpl`, `InstructionProcessorImpl` and the entrypoints
+(~300 mutants of service wiring needing stubbed RPC/websocket harnesses) —
+run `./gradlew pitestServicesDebt` for the live ranking.
+
+The direct-oracle-feed pass built the escape the feed-map acceptances had
+named since the 6th pass: `KaminoCacheDirectFeedTests` synthesizes a second
+scope feed — a zero-filled Configuration/OracleMappings pair with real
+discriminators, direct SwitchboardOnDemand entries at chain indexes 11/12/13,
+and the real SOL Reserve re-pointed at it by byte surgery. The feed-indexed
+path is distinguishable from the raw-mappings fallback by liquidity (the
+fallback reports zero; the feed path sums reserve collateral), which makes
+the previously unobservable feed-map maintenance killable through the public
+API: new reserves indexed on arrival and served depth-first, collateral
+updates re-sourcing the by-mint entry, and structural chain moves replacing
+it. `FeedIndexes.compareTo` (deepest feed wins the cross-feed sort) is pinned
+directly.
 
 The 2026-07-23 multiset migration added no new mutants: the verify's baseline
 comparison became a multiset, materializing 62 sibling-mutant copies (same
@@ -570,6 +787,70 @@ survivors are the previously documented families: in-lock rechecks, the
 `signalAll`/`numReserveChanges` concurrency window (333), slot-gate shadowed
 comparisons (457), capacity-hint arithmetic (103), and the `indexes`
 fallback-scan block pending a second-feed fixture.
+
+## Vault context + scope indexing pass (2026-07-23)
+
+**The kamino null-key acceptance family is closed by kill, and its escape
+note was wrong.** The family was accepted as "unreachable-in-harness; escape:
+hand-building 62KB VaultState images" — but zeroing the 32-byte farm and
+lookup-table keys in the existing mainnet fixture reaches every null-arm
+directly. `KaminoVaultContextTests` now drives all four key transitions
+(null→null reused, null→set, set→null, set→swapped), every compared field
+through `createIfChanged` (value changes reuse untouched key objects by
+identity — reparse-into-equal-copies is a mutant, not a refactor), and
+reserve parsing: an independently counted stop-at-first-empty-slot oracle,
+plus a fully packed allocation table with poisoned bytes *after* the table so
+an off-by-one read cannot masquerade as the empty-slot terminator.
+
+`ScopeFeedContext`: the by-mint liquidity order is pinned directly on both
+the append and replace paths (the `indexes()` output could not see those
+sorts — its own `FilteredReserve` sort re-derives the same order, which is
+also why the `FilteredReserve.compareTo`/`sorted()` mutants are accepted
+below). Boundary chain indexes (`== PRICE_INFO_ACCOUNTS_LEN`) are skipped by
+both the indexer and remover rather than used as array positions; removing
+the last reserve forgets the mint outright (no empty array left behind) and
+a double remove is a no-op. `reIndexReserves` is pinned end-to-end: exactly
+one rewrite when one reserve's chains changed, foreign-feed and
+already-settled reserves untouched by identity, the count returned, and the
+by-index slot serving the rewritten context. That test also proved the
+`removePreviousEntry` call inside `reIndexReserves` redundant by
+construction — `withPriceChains` never touches the configuration chain ints
+that key the index maps, and both index paths replace in place — so the call
+was **refactored away** rather than its mutant accepted.
+
+**Accepted (mutual-redundancy family):** `FilteredReserve.compareTo` (244)
+and the `indexes()` `sorted()` naked-receiver (266) — the source by-mint
+array is maintained in the same liquidity order the stream sort would
+impose, so removing either ordering is unobservable through `indexes()`;
+the direct by-mint order tests pin the order itself. `removePreviousEntry`
+212 pair — the `numReserves > 0` else-leg guards an empty by-index map that
+is never stored (emptied maps are nulled). `indexReserveByIndex` 162/163 —
+in-place-replace fast paths whose fallback copy path produces the same
+served content. `parseReserveKeys`/`createIfChanged` residual legs are the
+same short-circuit sibling family as elsewhere.
+
+## Kamino cache lifecycle gates pass (2026-07-23)
+
+Killed three: a changed configuration's teardown is now pinned by the key's
+NEXT arrival (the change path removes the old registration without replacing
+it, so a re-accept must register as NEW — a leftover stale entry would
+swallow it as unchanged); a changed reserve at the SAME slot is stale by
+identity; and null configuration/mappings persistence paths disable
+persistence quietly instead of NPE-ing per accept (the reserves path has no
+null guard and stays mandatory).
+
+**Accepted — length guards subsumed by a length-safe discriminator
+(`accept` 585–616, `acceptReserve` 572; 11 sibling rows):** the truncated
+(3-byte) dispatch tests proved `DISCRIMINATOR.equals(data, 0)` returns false
+on short data rather than reading out of bounds, so forcing any
+`data.length == X.BYTES` guard true routes to a discriminator check that
+rejects the account identically. The guards are pure fast-path routing —
+HARDENING.md's canonical subsumed-guard family. The remaining
+`updateIfChanged` rows (359/363/365/392 double-check guards, 395/398/399
+feed-map maintenance) and `handleMappingChange`/`handleVaultStateChange`
+residues are the previously documented in-lock, signalling, and
+feed-map-unobservable families; the feed-map escape remains a second scope
+feed fixture whose chains head with a direct oracle entry.
 
 ## Untriaged debt
 

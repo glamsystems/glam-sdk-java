@@ -41,6 +41,35 @@ recompiled root. `build.gradle.kts` is the authoritative definition.
 | 2026-07-21 (3rd pass) | 340 | 305 | 35 | 338/703 (48%) |
 | 2026-07-22 | 251 | 236 | 15 | 429/703 (61%) |
 | 2026-07-23 (multiset migration) | 292 | 277 | 15 | 456/748 (60%) |
+| 2026-07-23 (vault table builder) | 221 | 191 | 30 | 527/748 (70%) |
+
+The vault-table-builder pass closed the long-standing `VaultTableBuilderImpl`
+add\* block using the kamino mainnet snapshots shared from the services suite
+(see `src/test/resources/accounts/kamino/README.md`): the glam vault/mint
+account surface, ATA derivation gated to token-program-owned accounts (2022
+included, escrow ATA only for the base asset), the kamino vault collection
+phase (vault surface keys, allocation reserves and the vault lookup table
+queued for the second fetch), and the second phase end-to-end — reserve +
+market + the matching mainnet scope feed's prices *and* mappings accounts,
+with the vault's lookup table mapped past null and unrelated entries and
+registered under the vault key. A mintless state skips the whole mint
+surface.
+
+**Finding (recorded, not fixed): the system program can never join the
+table.** `addGlamVaultAccounts` calls `add(solanaAccounts.systemProgram())`,
+but the system program's address IS the all-zero key — identical to the
+`PublicKey.NONE` sentinel `addAccount` filters — so the call is a silent
+no-op. The test pins the current behavior with a pointer here; the
+`addGlamVaultAccounts` 188 `VoidMethodCallMutator` acceptance is this bug's
+mirror (removing an add that never lands is unobservable) and both flip
+together when the filter is fixed.
+
+**Accepted (residual sibling legs, 15):** forced-true directions of
+null-guards and short-circuit operands across the add\* branch chains —
+every row's verify hint names the killing test of its observable sibling;
+the surviving leg is the direction only a sentinel-colliding or
+already-guarded input could distinguish. Same family as the services-side
+compound-condition acceptances.
 
 The multiset migration added no new mutants: the verify's baseline comparison
 became a multiset (one row per sibling mutant of a compound condition, not one

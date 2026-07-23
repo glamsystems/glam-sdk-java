@@ -262,4 +262,282 @@ final class VaultTableBuilderTests {
     assertSame(MarinadeAccounts.MAIN_NET, builder.marinadeAccounts());
     assertSame(MeteoraAccounts.MAIN_NET, builder.meteorAccounts());
   }
+
+  // --- kamino account-collection phases, against the mainnet snapshots shared
+  // --- from the services suite (see resources/accounts/kamino/README.md)
+
+  private static final PublicKey VAULT_STATE_KEY = fromBase58Encoded("5YxwKgsvyTdT8q2CBgwA4L9BKbnKNrB66K9wUzij5wH");
+  private static final PublicKey SOL_RESERVE_KEY = fromBase58Encoded("d4A2prbA2whesmvHaL88BH6Ewn5N4bTSU2Ze8P6Bc4Q");
+
+  private static byte[] readResource(final String name) {
+    try (final var in = new java.util.zip.GZIPInputStream(
+        Objects.requireNonNull(VaultTableBuilderTests.class.getResourceAsStream("/" + name), name))) {
+      return in.readAllBytes();
+    } catch (final java.io.IOException e) {
+      throw new java.io.UncheckedIOException(e);
+    }
+  }
+
+  private static software.sava.rpc.json.http.response.AccountInfo<byte[]> accountInfo(
+      final PublicKey key, final PublicKey owner, final byte[] data) {
+    return new software.sava.rpc.json.http.response.AccountInfo<>(
+        key, new software.sava.rpc.json.http.response.Context(1L, null), false, 0,
+        owner, java.math.BigInteger.ZERO, 0, data
+    );
+  }
+
+  /// The batching helper above uses immutable maps; the collection phases
+  /// write into theirs, so they get their own builder.
+  private static VaultTableBuilderImpl kaminoBuilder() {
+    return new VaultTableBuilderImpl(
+        stateAccountClient(),
+        TABLE_PREFIX,
+        new LinkedHashSet<>(),
+        new LinkedHashSet<>(),
+        new LinkedHashSet<>(),
+        JupiterAccounts.MAIN_NET,
+        KaminoAccounts.MAIN_NET,
+        new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(),
+        MarinadeAccounts.MAIN_NET,
+        MeteoraAccounts.MAIN_NET
+    );
+  }
+
+  @Test
+  void glamVaultAccountsCoverTheProtocolAndMintSurface() {
+    final var builder = kaminoBuilder();
+    final var client = builder.stateAccountClient();
+    final var accountClient = client.accountClient();
+    builder.addGlamVaultAccounts(List.of());
+
+    final var needed = builder.accountsNeeded();
+    final var solanaAccounts = accountClient.solanaAccounts();
+    final var glamAccounts = accountClient.glamAccounts();
+    // NOTE: the impl calls add(systemProgram), but the system program's
+    // address IS the all-zero key -- identical to the PublicKey.NONE sentinel
+    // addAccount() filters -- so it never lands. Recorded as a finding; if the
+    // filter is fixed to admit it, flip this assertion.
+    assertFalse(needed.contains(solanaAccounts.systemProgram()));
+    assertTrue(needed.contains(glamAccounts.protocolProgram()));
+    assertTrue(needed.contains(glamAccounts.readSplIntegrationAuthority().publicKey()));
+    assertTrue(needed.contains(client.baseAssetMint()));
+    // the fixture state is a tokenized vault: the whole mint surface rides too
+    final var mintKey = client.mint();
+    assertTrue(needed.contains(glamAccounts.readMintIntegrationAuthority().publicKey()));
+    assertTrue(needed.contains(glamAccounts.mintEventAuthority()));
+    assertTrue(needed.contains(mintKey));
+    final var escrowKey = client.escrowAccount().publicKey();
+    assertTrue(needed.contains(escrowKey));
+    assertTrue(needed.contains(
+        accountClient.splClient().findATA(escrowKey, solanaAccounts.token2022Program(), mintKey).publicKey()));
+  }
+
+  @Test
+  void vaultTokensDeriveAtasOnlyForTokenProgramAccounts() {
+    final var builder = kaminoBuilder();
+    final var client = builder.stateAccountClient();
+    final var accountClient = client.accountClient();
+    final var solanaAccounts = accountClient.solanaAccounts();
+    final var tokenProgram = solanaAccounts.tokenProgram();
+    final var baseAssetMint = client.baseAssetMint();
+
+    final var foreign = key(9200);
+    final var mint2022 = key(9201);
+    builder.addGlamVaultTokens(Arrays.asList(
+        accountInfo(baseAssetMint, tokenProgram, new byte[0]),
+        accountInfo(mint2022, solanaAccounts.token2022Program(), new byte[0]),
+        // owned by a non-token program: no ATA may be derived for it
+        accountInfo(foreign, solanaAccounts.systemProgram(), new byte[0]),
+        null
+    ));
+
+    final var needed = builder.accountsNeeded();
+    // the 2022-owned mint gets a vault ATA, but no escrow ATA: it is not the base asset
+    assertTrue(needed.contains(accountClient.findATA(solanaAccounts.token2022Program(), mint2022).publicKey()));
+    assertFalse(needed.contains(
+            accountClient.splClient()
+                .findATA(client.escrowAccount().publicKey(), solanaAccounts.token2022Program(), mint2022)
+                .publicKey()),
+        "an escrow ATA was derived for a non-base-asset mint");
+    assertTrue(needed.contains(accountClient.findATA(tokenProgram, baseAssetMint).publicKey()),
+        "vault ATA for the base asset missing");
+    final var escrowKey = client.escrowAccount().publicKey();
+    assertTrue(needed.contains(
+            accountClient.splClient().findATA(escrowKey, tokenProgram, baseAssetMint).publicKey()),
+        "escrow base-asset ATA missing");
+    assertFalse(needed.contains(accountClient.findATA(tokenProgram, foreign).publicKey()),
+        "an ATA was derived for a non-token account");
+  }
+
+  @Test
+  void kaminoVaultStatesMapByTokenMint() {
+    final byte[] vaultStateData = readResource("accounts/kamino/" + VAULT_STATE_KEY + ".dat.gz");
+    final var map = VaultTableBuilder.mapKaminoVaultStatesByMint(
+        List.of(accountInfo(VAULT_STATE_KEY, KaminoAccounts.MAIN_NET.kVaultsProgram(), vaultStateData))
+    );
+    final var vaultState = software.sava.idl.clients.kamino.vaults.gen.types.VaultState
+        .read(VAULT_STATE_KEY, vaultStateData);
+    assertEquals(1, map.size());
+    assertEquals(VAULT_STATE_KEY, map.get(vaultState.tokenMint())._address());
+  }
+
+  @Test
+  void kaminoVaultAccountsCollectTheVaultSurfaceAndQueueReserves() {
+    final byte[] vaultStateData = readResource("accounts/kamino/" + VAULT_STATE_KEY + ".dat.gz");
+    final var vaultState = software.sava.idl.clients.kamino.vaults.gen.types.VaultState
+        .read(VAULT_STATE_KEY, vaultStateData);
+    final var builder = kaminoBuilder();
+    final var accountClient = builder.stateAccountClient().accountClient();
+    final var tokenProgram = accountClient.solanaAccounts().tokenProgram();
+    final var kaminoAccounts = KaminoAccounts.MAIN_NET;
+
+    // a token account holding the vault's deposit token, as the vault position
+    final var positionKey = key(9300);
+    final byte[] tokenAccountData = new byte[165];
+    vaultState.tokenMint().write(tokenAccountData, 0);
+    positionKey.write(tokenAccountData, 32);
+    // a token account whose mint has no vault contributes nothing
+    final var strangeMint = key(9400);
+    final byte[] strangeTokenAccount = new byte[165];
+    strangeMint.write(strangeTokenAccount, 0);
+    builder.addKaminoVaultAccounts(
+        Arrays.asList(
+            accountInfo(positionKey, tokenProgram, tokenAccountData),
+            accountInfo(key(9401), tokenProgram, strangeTokenAccount),
+            null
+        ),
+        Map.of(vaultState.tokenMint(), vaultState)
+    );
+
+    final var needed = builder.accountsNeeded();
+    assertFalse(needed.contains(key(9401)), "an unknown-mint position was collected");
+    assertTrue(needed.contains(accountClient.glamAccounts().readKaminoIntegrationAuthority().publicKey()));
+    assertTrue(needed.contains(kaminoAccounts.kVaultsProgram()));
+    assertTrue(needed.contains(kaminoAccounts.kVaultsEventAuthority()));
+    assertTrue(needed.contains(kaminoAccounts.farmsGlobalConfig()));
+    assertTrue(needed.contains(positionKey));
+    assertTrue(needed.contains(vaultState._address()));
+    assertTrue(needed.contains(vaultState.tokenVault()));
+    assertTrue(needed.contains(vaultState.tokenMint()));
+    assertTrue(needed.contains(vaultState.sharesMint()));
+    assertTrue(needed.contains(vaultState.baseVaultAuthority()));
+    assertTrue(needed.contains(accountClient.findATA(tokenProgram, vaultState.tokenMint()).publicKey()));
+
+    // the vault's own lookup table is fetched in the second phase too
+    final var secondPhase = builder.secondPhaseAccountsNeeded();
+    assertTrue(secondPhase.contains(vaultState.vaultLookupTable()));
+    boolean anyReserve = false;
+    for (final var allocation : vaultState.vaultAllocationStrategy()) {
+      final var reserve = allocation.reserve();
+      if (reserve != null && !PublicKey.NONE.equals(reserve)) {
+        anyReserve = true;
+        assertTrue(secondPhase.contains(reserve), reserve::toBase58);
+      }
+    }
+    assertTrue(anyReserve, "fixture vault should allocate to at least one reserve");
+  }
+
+  @Test
+  void kaminoVaultSecondPhaseAddsReserveAndScopeAccounts() {
+    final byte[] vaultStateData = readResource("accounts/kamino/" + VAULT_STATE_KEY + ".dat.gz");
+    final byte[] reserveData = readResource("accounts/kamino/" + SOL_RESERVE_KEY + ".dat.gz");
+    final var vaultState = software.sava.idl.clients.kamino.vaults.gen.types.VaultState
+        .read(VAULT_STATE_KEY, vaultStateData);
+    final var solReserve = software.sava.idl.clients.kamino.lend.gen.types.Reserve
+        .read(SOL_RESERVE_KEY, reserveData);
+    // the second phase only walks reserves allocated by a registered vault
+    final boolean allocated = Arrays.stream(vaultState.vaultAllocationStrategy())
+        .anyMatch(a -> SOL_RESERVE_KEY.equals(a.reserve()));
+    assertTrue(allocated, "fixture drift: the vault no longer allocates to the SOL reserve");
+
+    final var builder = kaminoBuilder();
+    final var tokenProgram = builder.stateAccountClient().accountClient().solanaAccounts().tokenProgram();
+    final var positionKey = key(9300);
+    final byte[] tokenAccountData = new byte[165];
+    vaultState.tokenMint().write(tokenAccountData, 0);
+    positionKey.write(tokenAccountData, 32);
+    builder.addKaminoVaultAccounts(
+        List.of(accountInfo(positionKey, tokenProgram, tokenAccountData)),
+        Map.of(vaultState.tokenMint(), vaultState)
+    );
+
+    // the fetched second phase carries the reserve, the vault's lookup table,
+    // a null slot, and an unrelated account the mapping must skip
+    final var tableAccounts = keys(9500, 3);
+    final var vaultTable = table(vaultState.vaultLookupTable(), tableAccounts);
+    final byte[] tableData = new byte[LOOKUP_TABLE_META_SIZE + tableAccounts.size() * PublicKey.PUBLIC_KEY_LENGTH];
+    int offset = LOOKUP_TABLE_META_SIZE;
+    for (final var account : tableAccounts) {
+      offset += account.write(tableData, offset);
+    }
+    builder.addKaminoVaultAccountsSecondPhase(Arrays.asList(
+        accountInfo(SOL_RESERVE_KEY, KaminoAccounts.MAIN_NET.kLendProgram(), reserveData),
+        accountInfo(vaultState.vaultLookupTable(),
+            builder.stateAccountClient().accountClient().solanaAccounts().addressLookupTableProgram(), tableData),
+        accountInfo(key(9600), KaminoAccounts.MAIN_NET.kLendProgram(), new byte[16]),
+        null
+    ));
+
+    final var needed = builder.accountsNeeded();
+    assertTrue(needed.contains(SOL_RESERVE_KEY));
+    assertTrue(needed.contains(solReserve.lendingMarket()));
+    // the SOL reserve prices through a mainnet scope feed the builder knows
+    final var scopeFeedPrices = solReserve.config().tokenInfo().scopeConfiguration().priceFeed();
+    assertTrue(needed.contains(scopeFeedPrices), "scope oracle prices account missing");
+    final var hubble = KaminoAccounts.MAIN_NET.scopeMainnetHubbleFeed();
+    final var klend = KaminoAccounts.MAIN_NET.scopeMainnetKLendFeed();
+    final var mappingsKey = scopeFeedPrices.equals(hubble.oraclePrices())
+        ? hubble.oracleMappings()
+        : klend.oracleMappings();
+    assertTrue(needed.contains(mappingsKey), "scope oracle mappings account missing");
+
+    // the vault's lookup table was mapped and registered under the vault key
+    final var mapped = builder.kaminoVaultLookupTables().get(vaultState._address());
+    assertNotNull(mapped, "the vault lookup table was not mapped");
+    assertEquals(vaultTable.address(), mapped.address());
+    assertEquals(vaultTable.numAccounts(), mapped.numAccounts());
+  }
+
+  @Test
+  void aStateWithoutAMintSkipsTheMintSurface() {
+    final var name = Arrays.copyOf("Mintless".getBytes(US_ASCII), StateAccount.NAME_LEN);
+    final var stateAccount = new StateAccount(
+        STATE_KEY, StateAccount.DISCRIMINATOR, AccountType.Vault, true,
+        key(9001), key(9002),
+        new byte[StateAccount.PORTFOLIO_MANAGER_NAME_LEN],
+        new CreatedModel(new byte[8], FEE_PAYER, 1_650_000_000L),
+        key(9003), 9, 0,
+        name,
+        0L, 0L,
+        PublicKey.NONE,
+        new PublicKey[0],
+        new IntegrationAcl[0],
+        new DelegateAcl[0],
+        new PublicKey[0],
+        new PricedProtocol[0],
+        new EngineField[0][]
+    );
+    final var client = StateAccountClient.createClient(stateAccount, FEE_PAYER);
+    final var builder = new VaultTableBuilderImpl(
+        client,
+        TABLE_PREFIX,
+        new LinkedHashSet<>(),
+        new LinkedHashSet<>(),
+        new LinkedHashSet<>(),
+        JupiterAccounts.MAIN_NET,
+        KaminoAccounts.MAIN_NET,
+        new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(),
+        MarinadeAccounts.MAIN_NET,
+        MeteoraAccounts.MAIN_NET
+    );
+    builder.addGlamVaultAccounts(List.of());
+
+    final var needed = builder.accountsNeeded();
+    final var glamAccounts = client.accountClient().glamAccounts();
+    assertTrue(needed.contains(glamAccounts.protocolProgram()));
+    assertTrue(needed.contains(client.baseAssetMint()));
+    // no mint: none of the mint surface may be collected
+    assertFalse(needed.contains(glamAccounts.readMintIntegrationAuthority().publicKey()));
+    assertFalse(needed.contains(glamAccounts.mintEventAuthority()));
+  }
 }

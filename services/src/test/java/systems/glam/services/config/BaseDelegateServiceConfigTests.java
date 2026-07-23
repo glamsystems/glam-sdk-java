@@ -1,6 +1,7 @@
 package systems.glam.services.config;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.util.LamportDecimal;
 import systems.comodal.jsoniter.JsonIterator;
@@ -609,5 +610,32 @@ final class BaseDelegateServiceConfigTests {
     final var propsPolling = propsConfig.defensivePollingConfig();
     assertEquals(jsonPolling.globalConfig(), propsPolling.globalConfig());
     assertEquals(jsonPolling.glamStateAccounts(), propsPolling.glamStateAccounts());
+  }
+
+  @Test
+  void theConfigBuildsTheServiceContextAndMintCache(@TempDir final Path tempDir) throws Exception {
+    final var properties = minimalRpcProperties("");
+    properties.setProperty("cacheDirectory", tempDir.toString());
+    final var config = parseProperties(properties);
+
+    final var serviceKey = PublicKey.fromBase58Encoded("F1oQY1jbdiJyxxeeuMBF2NsUckboyWo6TSXNqzJbrhxs");
+    final var context = config.createServiceContext(
+        Executors.newVirtualThreadPerTaskExecutor(), serviceKey,
+        systems.glam.sdk.GlamAccounts.MAIN_NET, systems.glam.sdk.GlamAccounts.MAIN_NET_STAGING
+    );
+    assertEquals(serviceKey, context.serviceKey());
+    assertEquals(tempDir, context.cacheDirectory());
+    assertEquals(Duration.ofSeconds(15).toNanos(), context.minCheckStateDelayNanos());
+    assertEquals(Duration.ofMinutes(5).toNanos(), context.maxCheckStateDelayNanos());
+    assertSame(systems.glam.sdk.GlamAccounts.MAIN_NET, context.glamAccounts());
+    assertSame(systems.glam.sdk.GlamAccounts.MAIN_NET_STAGING, context.glamStagingAccounts());
+    // no hikari properties files: no datasource is built
+    assertNull(context.primaryDatasource());
+    assertNotNull(context.rpcCaller());
+
+    try (final var mintCache = config.createMintCache()) {
+      assertNotNull(mintCache);
+      assertTrue(java.nio.file.Files.exists(tempDir.resolve("mints.bin")));
+    }
   }
 }

@@ -67,6 +67,28 @@ final class MinGlamStateAccountTests {
         .toArray(PublicKey[]::new);
     assertArrayEquals(expectedDelegates, minStateAccount.delegates());
 
+    assertEquals(stateAccount.assets().length, minStateAccount.numAssets());
+    assertEquals(
+        stateAccount.assets().length + stateAccount.externalPositions().length,
+        minStateAccount.numAccounts()
+    );
+    for (final var asset : sortedAssets) {
+      assertFalse(minStateAccount.doesNotContainsAsset(asset));
+    }
+    assertTrue(minStateAccount.doesNotContainsAsset(GlamAccounts.MAIN_NET.protocolProgram()));
+
+    final var solana = software.sava.core.accounts.SolanaAccounts.MAIN_NET;
+    assertEquals(0, minStateAccount.baseAssetTokenProgram());
+    assertEquals(solana.tokenProgram(), minStateAccount.tokenProgram(solana));
+    final var token2022State = new MinGlamStateAccount(
+        1L, new byte[0], GlamEnv.PRODUCTION, AccountType.TokenizedVault,
+        true, 0, 6, 1, new PublicKey[0],
+        new ProtocolIntegration[0],
+        new PublicKey[0], new PublicKey[0]
+    );
+    assertEquals(solana.token2022Program(), token2022State.tokenProgram(solana));
+    assertEquals(0, token2022State.numAccounts());
+
     final byte[] serialized = minStateAccount.serialize();
     final var deserialized = MinGlamStateAccount.deserialize(GlamEnv.PRODUCTION, serialized);
     assertEquals(minStateAccount, deserialized);

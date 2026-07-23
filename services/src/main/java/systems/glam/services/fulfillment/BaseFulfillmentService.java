@@ -178,7 +178,7 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
       } else {
         final int numInstructions = this.fulFillInstructions.size();
         fulfillInstructions = new ArrayList<>(numInstructions);
-        this.fulFillInstructions.stream().limit(numInstructions - 1).forEach(fulFillInstructions::add);
+        this.fulFillInstructions.stream().limit(numInstructions - 1).forEach(fulfillInstructions::add);
         final var fulFillIx = glamAccountClient.fulfill(
             0,
             baseAssetMintContext.mint(), baseAssetMintContext.tokenProgram(),
