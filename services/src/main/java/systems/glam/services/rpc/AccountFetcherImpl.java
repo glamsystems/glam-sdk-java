@@ -255,21 +255,36 @@ final class AccountFetcherImpl implements AccountFetcher {
                 logger.log(ERROR, "Account consumer failed handling an oversized batch; continuing to poll.", ex);
               }
               clearBatch();
-              continue;
+              if (iterator.hasNext()) {
+                continue;
+              }
+              // the dropped batch was the only queued work: fall back to the
+              // always-fetch base instead of running the iterator dry
+              break;
             } else {
-              batch.clear();
-              batch.addAll(accountBatch.keys());
-              if (numAccounts < SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS) {
-                // Add as many always fetch accounts as possible
-                final var alwaysFetchIterator = alwaysFetch.iterator();
-                for (int add = SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS - numAccounts; add > 0; ) {
-                  if (batch.add(alwaysFetchIterator.next())) {
-                    --add;
-                  }
+              // This batch and the full always-fetch set cannot share one
+              // request. Serve the batch's own keys and top up with as many
+              // always-fetch keys as fit -- without rebasing the shared batch
+              // set, whose always-fetch prefix the cycle-end clearBatch trims by.
+              // insertion order is irrelevant here: the request list and
+              // currentBatchKeys both come from one toArray snapshot
+              final var batchKeys = HashSet.<PublicKey>newHashSet(SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS);
+              batchKeys.addAll(keys);
+              int spaceAvailable = SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS - batchKeys.size();
+              for (final var alwaysFetchIterator = alwaysFetch.iterator(); spaceAvailable > 0; ) {
+                if (batchKeys.add(alwaysFetchIterator.next())) {
+                  --spaceAvailable;
                 }
               }
-              size = SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS;
-              break;
+              // the batch is being served this cycle: hand it to the dispatch
+              // loop, or its future never completes and it is refetched forever
+              iterator.remove();
+              currentBatch.addLast(accountBatch);
+              // batchKeys never escapes or changes after this point, so no
+              // immutable snapshot is needed -- unlike createBatchKeys, whose
+              // array is drawn from the constantly-mutated shared batch set
+              this.currentBatchKeys = batchKeys;
+              return Arrays.asList(batchKeys.toArray(new PublicKey[SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS]));
             }
           }
           if (iterator.hasNext()) {

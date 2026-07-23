@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -96,6 +97,8 @@ final class AccountFetcherTests {
     final List<List<PublicKey>> calls = new ArrayList<>();
     final Map<PublicKey, AccountInfo<byte[]>> universe = new HashMap<>();
     int interruptOnCall = 1;
+    long respondDelayMillis;
+    boolean returnNull;
 
     SolanaRpcClient client() {
       return (SolanaRpcClient) Proxy.newProxyInstance(
@@ -105,6 +108,12 @@ final class AccountFetcherTests {
             if (method.getName().equals("getAccounts")) {
               @SuppressWarnings("unchecked") final var keys = (List<PublicKey>) args[0];
               calls.add(List.copyOf(keys));
+              if (respondDelayMillis > 0) {
+                Thread.sleep(respondDelayMillis);
+              }
+              if (returnNull) {
+                return java.util.concurrent.CompletableFuture.completedFuture(null);
+              }
               if (calls.size() >= interruptOnCall) {
                 Thread.currentThread().interrupt();
               }
@@ -526,6 +535,7 @@ final class AccountFetcherTests {
       rpc.universe.put(accountKey, account(accountKey, 1L, new byte[]{1}));
     }
     final var overlap = List.of(bigKeys.get(0), bigKeys.get(1));
+    final var laterOverlap = List.of(bigKeys.get(2), bigKeys.get(3));
     final var distinct = key(2);
     rpc.universe.put(distinct, account(distinct, 1L, new byte[]{1}));
     rpc.interruptOnCall = 2;
@@ -533,23 +543,31 @@ final class AccountFetcherTests {
     final var fetcher = createFetcher(rpc, Set.of());
     final var bigConsumer = new RecordingConsumer();
     final var overlapConsumer = new RecordingConsumer();
+    final var laterOverlapConsumer = new RecordingConsumer();
     final var distinctConsumer = new RecordingConsumer();
     fetcher.queue(bigKeys, bigConsumer);
     fetcher.queue(overlap, overlapConsumer);
     fetcher.queue(List.of(distinct), distinctConsumer);
+    fetcher.queue(laterOverlap, laterOverlapConsumer);
     fetcher.run();
 
     assertEquals(2, rpc.calls.size());
-    // the full first batch absorbed the 100%-overlapping request...
+    // the full first batch absorbed every 100%-overlapping request, even one
+    // queued behind the non-overlapping batch...
     assertEquals(SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS, rpc.calls.getFirst().size());
     assertEquals(1, bigConsumer.received.size());
     assertEquals(1, overlapConsumer.received.size());
     assertSame(bigConsumer.received.getFirst(), overlapConsumer.received.getFirst());
+    assertEquals(1, laterOverlapConsumer.received.size());
+    assertSame(bigConsumer.received.getFirst(), laterOverlapConsumer.received.getFirst());
     // ...while the non-overlapping batch waited for the next cycle, which must
     // actually contain its key
     assertEquals(1, distinctConsumer.received.size());
     assertTrue(rpc.calls.get(1).contains(distinct));
     assertNotSame(bigConsumer.received.getFirst(), distinctConsumer.received.getFirst());
+    // and the map it was served from holds its account: being absorbed into a
+    // batch that never fetched the key would serve a hole
+    assertNotNull(distinctConsumer.received.getFirst().get(distinct));
   }
 
   @Test
@@ -605,5 +623,427 @@ final class AccountFetcherTests {
     assertEquals(1, healthy.received.size());
     assertEquals(1, secondCycle.received.size());
     assertEquals(2, rpc.calls.size());
+  }
+
+  @Test
+  void anOversizedFirstCycleServesTheBatchAndPreservesAlwaysFetch() {
+    final var rpc = new RecordingRpc();
+    rpc.interruptOnCall = 2;
+    final var alwaysFetch = new LinkedHashSet<PublicKey>();
+    for (int i = 0; i < 70; ++i) {
+      alwaysFetch.add(key(100 + i));
+    }
+    // 20 keys shared with the always-fetch set, 40 fresh: the union with the
+    // 70 always-fetch keys exceeds the 100-account RPC limit
+    final var batchKeys = new ArrayList<PublicKey>(60);
+    for (int i = 0; i < 20; ++i) {
+      batchKeys.add(key(100 + i));
+    }
+    for (int i = 0; i < 40; ++i) {
+      batchKeys.add(key(500 + i));
+    }
+    final var fetcher = createFetcher(rpc, alwaysFetch);
+
+    final var tiny = key(9_000);
+    final var secondCycle = new RecordingConsumer();
+    final var consumer = new RecordingConsumer() {
+      @Override
+      public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
+        received.add(accountMap);
+        // drive a second cycle so the always-fetch base can be inspected
+        fetcher.queue(List.of(tiny), secondCycle);
+      }
+    };
+    fetcher.priorityQueue(batchKeys, consumer);
+
+    fetcher.run();
+
+    assertEquals(2, rpc.calls.size());
+    // the first request serves the batch's own keys and tops up with as many
+    // always-fetch keys as fit
+    final var first = rpc.calls.get(0);
+    assertEquals(SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS, first.size());
+    assertTrue(first.containsAll(batchKeys));
+    final var union = new LinkedHashSet<>(alwaysFetch);
+    union.addAll(batchKeys);
+    assertTrue(union.containsAll(first));
+    // the batch was served on the cycle that fetched its keys, not starved
+    assertEquals(1, consumer.received.size());
+    // the always-fetch base survived intact into the next cycle
+    final var second = rpc.calls.get(1);
+    assertTrue(second.containsAll(alwaysFetch), "always-fetch keys were corrupted by the oversized cycle");
+    assertTrue(second.contains(tiny));
+    assertEquals(71, second.size());
+    assertEquals(1, secondCycle.received.size());
+  }
+
+  @Test
+  void theSlotTimestampEstimateSplitsTheRoundTrip() {
+    final var rpc = new RecordingRpc();
+    rpc.respondDelayMillis = 80;
+    final var present = key(1);
+    rpc.universe.put(present, account(present, 7_777L, new byte[]{1}));
+    final var fetcher = createFetcher(rpc, Set.of());
+    fetcher.queue(List.of(present), new RecordingConsumer());
+
+    final long before = System.currentTimeMillis();
+    fetcher.run();
+    final long after = System.currentTimeMillis();
+
+    // the estimate is the midpoint of an 80ms round trip: meaningfully after
+    // the request went out and meaningfully before the response landed
+    final long estimate = fetcher.recentSlot().timestamp().toEpochMilli();
+    assertTrue(estimate >= before + 30, () -> "estimate " + estimate + " vs before " + before);
+    assertTrue(estimate <= after - 30, () -> "estimate " + estimate + " vs after " + after);
+  }
+
+  private static void awaitTrue(final String what, final java.util.function.BooleanSupplier condition) throws InterruptedException {
+    for (int i = 0; i < 5_000; ++i) {
+      if (condition.getAsBoolean()) {
+        return;
+      }
+      Thread.sleep(1);
+    }
+    fail("timed out awaiting " + what);
+  }
+
+  @Test
+  void reactiveFetchersParkAndWakeOnQueueSignals() throws InterruptedException {
+    final var rpc = new RecordingRpc();
+    final var present = key(1);
+    rpc.universe.put(present, account(present, 42L, new byte[]{1}));
+    final var fetcher = AccountFetcher.createFetcher(Duration.ZERO, true, createCaller(rpc), Set.of());
+    final var consumer = new RecordingConsumer();
+
+    final var worker = new Thread(fetcher::run, "account-fetcher");
+    worker.start();
+    try {
+      // a reactive fetcher parks on the condition; it must not busy-spin
+      awaitTrue("the reactive fetcher parked", () -> worker.getState() == Thread.State.WAITING);
+
+      // queueing must signal the parked fetcher awake
+      fetcher.queue(List.of(present), consumer);
+      worker.join(5_000);
+      assertFalse(worker.isAlive(), "the queue signal never woke the reactive fetcher");
+    } finally {
+      worker.interrupt();
+    }
+    assertEquals(1, rpc.calls.size());
+    assertEquals(1, consumer.received.size());
+  }
+
+  @Test
+  void aPollingFetcherWaitsQuietlyThenServesLateWork() throws InterruptedException {
+    final var rpc = new RecordingRpc();
+    rpc.interruptOnCall = 2;
+    final var always = key(1);
+    final var late = key(2);
+    rpc.universe.put(always, account(always, 42L, new byte[]{1}));
+    rpc.universe.put(late, account(late, 43L, new byte[]{2}));
+    final var fetcher = createFetcher(rpc, Set.of(always));
+    final var consumer = new RecordingConsumer();
+    final var lateConsumer = new RecordingConsumer();
+
+    final var fresh = key(10);
+    rpc.universe.put(fresh, account(fresh, 41L, new byte[]{3}));
+    final var worker = new Thread(fetcher::run, "account-fetcher");
+    worker.start();
+    try {
+      // a fresh key: a subset of the always-fetch set would ride the current
+      // batch instead of queueing, and would not wake the poller
+      fetcher.queue(List.of(fresh), consumer);
+      awaitTrue("the first batch was fetched", () -> rpc.calls.size() == 1);
+
+      // an empty queue means waiting, not free-running cycles of the
+      // always-fetch keys
+      Thread.sleep(60);
+      assertEquals(1, rpc.calls.size(), "the poller cycled on an empty queue");
+
+      // late work is picked up by the polling sleep, no signal involved
+      fetcher.queue(List.of(late), lateConsumer);
+      worker.join(5_000);
+      assertFalse(worker.isAlive(), "the poller never picked up late work");
+    } finally {
+      worker.interrupt();
+    }
+    assertEquals(2, rpc.calls.size());
+    assertTrue(rpc.calls.get(1).contains(late));
+    assertEquals(1, lateConsumer.received.size());
+  }
+
+  @Test
+  void aMutatedOversizedBatchIsDroppedAndReported() {
+    final var rpc = new RecordingRpc();
+    final var always = key(1);
+    rpc.universe.put(always, account(always, 42L, new byte[]{1}));
+    final var fetcher = createFetcher(rpc, Set.of(always));
+    final var consumer = new RecordingConsumer();
+    // batches hold the caller's collection by reference; growing it past the
+    // RPC limit after queueing is the failure this path guards against
+    final var mutableKeys = new ArrayList<PublicKey>();
+    mutableKeys.add(key(2));
+    fetcher.queue(mutableKeys, consumer);
+    for (int i = 0; i < SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS; ++i) {
+      mutableKeys.add(key(1_000 + i));
+    }
+
+    try (final var log = systems.glam.services.tests.LogCapture.attach(AccountFetcher.class.getName())) {
+      fetcher.run();
+      log.assertLogged("Ignoring batch because it exceeds the RPC limit");
+      // dropping the only queued batch must not run the queue iterator dry
+      assertFalse(
+          log.messages().stream().anyMatch(m -> m != null && m.contains("Unexpected error fetching accounts")),
+          () -> log.messages().toString()
+      );
+    }
+
+    assertTrue(consumer.exceeded, "the batch owner was never told its batch was dropped");
+    assertEquals(0, consumer.received.size());
+    // the cycle fell back to the always-fetch base
+    assertEquals(1, rpc.calls.size());
+    assertEquals(List.of(always), rpc.calls.getFirst());
+  }
+
+  @Test
+  void aDroppedOversizedBatchLeavesTheQueueAndItsNeighborsAlone() {
+    final var rpc = new RecordingRpc();
+    rpc.interruptOnCall = 2;
+    final var always = key(1);
+    final var small = key(2);
+    final var fresh = key(4);
+    rpc.universe.put(always, account(always, 42L, new byte[]{1}));
+    rpc.universe.put(small, account(small, 43L, new byte[]{2}));
+    rpc.universe.put(fresh, account(fresh, 44L, new byte[]{3}));
+    final var fetcher = createFetcher(rpc, Set.of(always));
+    final var oversizedConsumer = new RecordingConsumer();
+    final var smallConsumer = new RecordingConsumer();
+    final var freshConsumer = new RecordingConsumer();
+    final var mutableKeys = new ArrayList<PublicKey>();
+    mutableKeys.add(key(3));
+    fetcher.queue(mutableKeys, oversizedConsumer);
+    for (int i = 0; i < SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS; ++i) {
+      mutableKeys.add(key(1_000 + i));
+    }
+    fetcher.queue(List.of(small), smallConsumer);
+    // queue more work from inside the first cycle so a second cycle runs
+    fetcher.listenToAll(new RecordingConsumer() {
+      @Override
+      public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
+        if (received.isEmpty()) {
+          fetcher.queue(List.of(fresh), freshConsumer);
+        }
+        received.add(accountMap);
+      }
+    });
+
+    try (final var log = systems.glam.services.tests.LogCapture.attach(AccountFetcher.class.getName())) {
+      fetcher.run();
+      // dropped means dropped: the oversized batch must not be reprocessed on
+      // the second cycle, so exactly one warning ever fires
+      assertEquals(1,
+          log.messages().stream().filter(m -> m != null && m.contains("Ignoring batch")).count(),
+          () -> log.messages().toString());
+    }
+
+    assertTrue(oversizedConsumer.exceeded);
+    // the batch queued behind the dropped one rides the same cycle
+    assertEquals(2, rpc.calls.size());
+    assertTrue(rpc.calls.getFirst().contains(small));
+    assertEquals(1, smallConsumer.received.size());
+    assertTrue(rpc.calls.get(1).contains(fresh));
+    assertEquals(1, freshConsumer.received.size());
+  }
+
+  @Test
+  void anOversizedUniqueBatchIsAlsoReported() {
+    final var rpc = new RecordingRpc();
+    final var always = key(1);
+    rpc.universe.put(always, account(always, 42L, new byte[]{1}));
+    final var fetcher = createFetcher(rpc, Set.of(always));
+    final var consumer = new RecordingConsumer();
+    final var mutableKeys = new ArrayList<PublicKey>();
+    mutableKeys.add(key(2));
+    fetcher.priorityQueueUnique(mutableKeys, consumer);
+    for (int i = 0; i < SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS; ++i) {
+      mutableKeys.add(key(1_000 + i));
+    }
+
+    fetcher.run();
+
+    assertTrue(consumer.exceeded, "the unique batch owner was never told its batch was dropped");
+    assertEquals(0, consumer.received.size());
+  }
+
+  @Test
+  void theLastBatchDeferringEndsTheScan() {
+    final var rpc = new RecordingRpc();
+    rpc.interruptOnCall = 2;
+    final var fetcher = createFetcher(rpc, Set.of());
+    final var a = new ArrayList<PublicKey>(60);
+    for (int i = 0; i < 60; ++i) {
+      a.add(key(500 + i));
+    }
+    final var b = new ArrayList<PublicKey>(90);
+    for (int i = 0; i < 90; ++i) {
+      b.add(key(600 + i));
+    }
+    final var aConsumer = new RecordingConsumer();
+    final var bConsumer = new RecordingConsumer();
+    fetcher.queue(a, aConsumer);
+    fetcher.queue(b, bConsumer);
+
+    fetcher.run();
+
+    // b cannot join a and nothing is queued behind it: the scan must stop
+    // cleanly and serve b whole on the next cycle
+    assertEquals(2, rpc.calls.size());
+    assertEquals(60, rpc.calls.getFirst().size());
+    assertTrue(rpc.calls.getFirst().containsAll(a));
+    assertEquals(90, rpc.calls.get(1).size());
+    assertTrue(rpc.calls.get(1).containsAll(b));
+    assertEquals(1, aConsumer.received.size());
+    assertEquals(1, bConsumer.received.size());
+  }
+
+  @Test
+  void anExactlyFullBatchIsServedNotDropped() {
+    final var rpc = new RecordingRpc();
+    final var always = key(1);
+    final var fetcher = createFetcher(rpc, Set.of(always));
+    final var consumer = new RecordingConsumer();
+    final var batchKeys = new ArrayList<PublicKey>(SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS);
+    for (int i = 0; i < SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS; ++i) {
+      batchKeys.add(key(1_000 + i));
+    }
+    fetcher.queue(batchKeys, consumer);
+
+    fetcher.run();
+
+    // exactly at the limit there is no room for always-fetch keys, but the
+    // batch itself is fetched whole and served -- not treated as oversized
+    assertEquals(1, rpc.calls.size());
+    assertEquals(SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS, rpc.calls.getFirst().size());
+    assertTrue(rpc.calls.getFirst().containsAll(batchKeys));
+    assertEquals(1, consumer.received.size());
+    assertFalse(consumer.exceeded);
+  }
+
+  @Test
+  void deferredWorkIsStillMergedBehindAnOversizedMiss() {
+    final var rpc = new RecordingRpc();
+    rpc.interruptOnCall = 2;
+    final var fetcher = createFetcher(rpc, Set.of());
+    final var a = new ArrayList<PublicKey>(60);
+    for (int i = 0; i < 60; ++i) {
+      a.add(key(500 + i));
+    }
+    final var b = new ArrayList<PublicKey>(90);
+    for (int i = 0; i < 90; ++i) {
+      b.add(key(600 + i));
+    }
+    final var c = new ArrayList<PublicKey>(30);
+    for (int i = 0; i < 30; ++i) {
+      c.add(key(700 + i));
+    }
+    final var aConsumer = new RecordingConsumer();
+    final var bConsumer = new RecordingConsumer();
+    final var cConsumer = new RecordingConsumer();
+    fetcher.queue(a, aConsumer);
+    fetcher.queue(b, bConsumer);
+    fetcher.queue(c, cConsumer);
+
+    fetcher.run();
+
+    // b does not fit next to a, but c does: deferring b must not also defer c
+    assertEquals(2, rpc.calls.size());
+    final var first = rpc.calls.getFirst();
+    assertEquals(90, first.size());
+    assertTrue(first.containsAll(a));
+    assertTrue(first.containsAll(c));
+    assertEquals(1, aConsumer.received.size());
+    assertEquals(1, cConsumer.received.size());
+    // the deferred batch is served whole on the next cycle
+    assertEquals(90, rpc.calls.get(1).size());
+    assertTrue(rpc.calls.get(1).containsAll(b));
+    assertEquals(1, bConsumer.received.size());
+  }
+
+  @Test
+  void theReactiveMinimumDelaySeparatesCycles() throws InterruptedException {
+    final var rpc = new RecordingRpc();
+    rpc.interruptOnCall = 2;
+    final var first = key(1);
+    final var second = key(2);
+    rpc.universe.put(first, account(first, 42L, new byte[]{1}));
+    rpc.universe.put(second, account(second, 43L, new byte[]{2}));
+    final var fetcher = AccountFetcher.createFetcher(Duration.ofMillis(150), true, createCaller(rpc), Set.of());
+    final var consumer = new RecordingConsumer();
+
+    final var worker = new Thread(fetcher::run, "account-fetcher");
+    worker.start();
+    try {
+      fetcher.queue(List.of(first), consumer);
+      awaitTrue("the first batch was fetched", () -> rpc.calls.size() == 1);
+      final long queuedAt = System.nanoTime();
+      fetcher.queue(List.of(second), consumer);
+      worker.join(10_000);
+      assertFalse(worker.isAlive(), "the second cycle never ran");
+      // a reactive fetcher still honors the minimum delay between cycles
+      final long elapsedMillis = (System.nanoTime() - queuedAt) / 1_000_000L;
+      assertTrue(elapsedMillis >= 120, () -> "second cycle ran after only " + elapsedMillis + "ms");
+    } finally {
+      worker.interrupt();
+    }
+    assertEquals(2, rpc.calls.size());
+    assertEquals(2, consumer.received.size());
+  }
+
+  @Test
+  void aFetchFailureIsLoggedAndEndsTheRunLoop() {
+    final var rpc = new RecordingRpc();
+    rpc.returnNull = true;
+    final var present = key(1);
+    final var fetcher = createFetcher(rpc, Set.of());
+    fetcher.queue(List.of(present), new RecordingConsumer());
+
+    try (final var log = systems.glam.services.tests.LogCapture.attach(AccountFetcher.class.getName())) {
+      // the failure must not leak to the polling thread, and must be reported
+      assertDoesNotThrow(fetcher::run);
+      log.assertLogged("Unexpected error fetching accounts");
+    }
+  }
+
+  @Test
+  void aServedUniqueConsumerMayBeQueuedAgain() throws InterruptedException {
+    final var rpc = new RecordingRpc();
+    rpc.interruptOnCall = 99;
+    final var present = key(1);
+    rpc.universe.put(present, account(present, 42L, new byte[]{1}));
+    final var fetcher = createFetcher(rpc, Set.of());
+    final var consumer = new RecordingConsumer() {
+      @Override
+      public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
+        received.add(accountMap);
+        if (received.size() == 1) {
+          // being served must clear the unique guard, or this re-queue is
+          // silently refused and the consumer starves; the keys are covered
+          // by the batch in flight, so it is served from the same cycle
+          fetcher.priorityQueueUnique(List.of(present), this);
+        }
+      }
+    };
+    fetcher.priorityQueueUnique(List.of(present), consumer);
+
+    final var worker = new Thread(fetcher::run, "account-fetcher");
+    try {
+      worker.start();
+      awaitTrue("the re-queued unique consumer was served",
+          () -> consumer.received.size() == 2);
+    } finally {
+      worker.interrupt();
+    }
+    worker.join(5_000);
+    assertFalse(worker.isAlive());
+    assertEquals(1, rpc.calls.size());
   }
 }

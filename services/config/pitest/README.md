@@ -56,6 +56,8 @@ definition.
 | 2026-07-22 (config sections + mint cache) | 1059 | 905 | 220 | 1141/2266 (50%) |
 | 2026-07-22 (batch sql executor) | 1033 | 893 | 203 | 1170/2266 (51%) |
 | 2026-07-22 (multi-row requeue fix) | 1032 | 893 | 202 | 1170/2267 (51%) |
+| 2026-07-23 (fetcher batching + reactive mode) | 993 | 861 | 194 | 1212/2267 (53%) |
+| 2026-07-23 (top-up loop rework) | 991 | 861 | 192 | 1215/2268 (53%) |
 
 The dispatch-hardening change wraps every consumer callback in
 `AccountFetcherImpl` (the always-call listeners, batch and unique consumers,
@@ -451,6 +453,60 @@ is accepted as unobservable.
 batchSize`)** — the `||` pairing means one direction only shows when rows and
 items disagree at the boundary; the multi-row and zero-row tests pin the
 observable directions, the residual direction is a redundant re-check.
+
+## Fetcher batching + reactive mode pass (2026-07-23)
+
+Killed ~40 `AccountFetcherImpl` survivors and fixed two real bugs the
+survivors pointed at:
+
+1. **Oversized-union starvation + always-fetch corruption.** When the first
+   queued batch plus the always-fetch set exceeded the RPC limit, the old code
+   rebuilt the shared `batch` set in place (`batch.clear()`), never dequeued
+   the batch, and never scheduled its dispatch: the consumer's future hung,
+   and `clearBatch`'s trailing trim then ran against a set whose always-fetch
+   prefix was gone — permanently dropping most always-fetch keys from later
+   cycles. The branch now builds its request key set separately, dequeues and
+   dispatches the batch, and leaves the shared base intact. Pinned by
+   `anOversizedFirstCycleServesTheBatchAndPreservesAlwaysFetch`.
+2. **Sole-oversized-batch crash.** Dropping a mutated oversized batch ran
+   `continue` straight into `iterator.next()` with nothing left, killing the
+   polling loop with `NoSuchElementException`. The drop now falls back to the
+   always-fetch base when the queue is empty. Pinned by the mutable-batch
+   tests, which also cover the previously unreached WARN path.
+
+New deterministic concurrency tests (state-sequenced, no timing guesses):
+reactive fetchers park on the condition and wake on the queue signal; polling
+fetchers wait quietly on an empty queue and pick up late work; the reactive
+minimum delay separates cycles (lower-bounded timing only, so load cannot
+flake it); a served unique consumer may re-queue (the guard clears). The slot
+timestamp estimate is pinned against an 80ms round trip. Batching interior:
+exactly-full batches are served not dropped, deferred batches don't block
+later mergeable ones, the overlap scan runs the whole queue, dropped
+oversized batches never reprocess, and a fetch failure logs
+`Unexpected error fetching accounts` without leaking.
+
+The top-up loop was subsequently reworked to a `spaceAvailable` countdown
+(dedup-aware: counted from the set size after adding the batch's keys, so
+duplicate keys in the caller's collection cannot over-reserve). The defensive
+`hasNext` guard and its accepted-equivalent mutant are gone — the over-limit
+precondition proves the iterator cannot run dry — and `currentBatchKeys`
+aliases the freshly built set directly: it never escapes or changes after the
+return, unlike `createBatchKeys`' snapshot of the shared mutable batch set.
+Every mutant of the reworked loop is killed by the existing tests.
+
+**Accepted equivalents:** `++numCallbacks` (293 — only its zero/nonzero
+distinction is read);
+the `size == MAX` overlap fast path (296 — the general merge loop converges
+to the same key set for both subset and non-subset neighbors); the WARN-path
+`clearBatch` (257 — later paths re-derive from key sets and the cycle-end
+trim restores the base); the reactive zero-remaining re-arm (321) and
+`unlock` in delay (329 — `await` releases and restores the full hold count,
+masking the drift); the initial-delay recheck (341 — one extra sleep tick);
+the in-lock reset recheck (383 — race-guard family).
+`UniqueAccountBatchRecord.accept` (449) stays `NO_COVERAGE`: the dispatch
+loop's `instanceof` branch always intercepts unique records, so the record's
+own delegation is unreachable by design; it must exist to satisfy the
+interface.
 
 ## Untriaged debt
 
