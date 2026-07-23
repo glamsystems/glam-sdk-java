@@ -8,8 +8,21 @@ testModuleInfo {
 }
 
 hardening {
+  // git-ignored scratch files: absent in CI, and their dependencies drift out
+  // of the classpath — excluding them from the tool recompiles restores parity
+  recompileExcludes = listOf("Integ.java")
   mutation.register("services") {
     mutators = "STRONGER,EXPERIMENTAL_NAKED_RECEIVER,EXPERIMENTAL_BIG_INTEGER,EXPERIMENTAL_BIG_DECIMAL"
+    // trialed threads = 8 on 2026-07-23: 3m32s vs ~2m04s at the 4-thread
+    // default, timed-out 67 -> 69. This suite is timing-heavy (await/signal
+    // tests), so oversubscription inflates the very tests PIT reruns most.
+    // Slowest quiet-run test is 0.58s and only one exceeds 0.5s, so PIT's
+    // 4s flat timeout floor is ~7x slack; factor 2 keeps headroom
+    // proportional to each test's own runtime under minion load. If
+    // SURVIVED->TIMED_OUT churn ever shows up in the ratchet, raise the
+    // constant before suspecting the code.
+    timeoutFactor = 2.0
+    timeoutConst = 1500L
     // catch-all by exclusion, so a new class is mutated by default instead of
     // silently skipped
     targetClasses = listOf("systems.glam.services.*")

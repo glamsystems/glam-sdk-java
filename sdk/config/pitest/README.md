@@ -16,10 +16,11 @@ A new unkilled mutant has exactly three legal outcomes:
    mutants *equivalent with respect to observable behavior*, not for "hard to
    test".
 
-Line numbers are part of the baseline key, so unrelated edits to a mutated file
-shift entries: the verify task then reports both stale and "new" rows. Confirm
-the new rows are the shifted old ones, then refresh with
-`-PupdateMutationBaseline`.
+Identical rows are sibling mutants of one compound condition — the comparison
+is a multiset; never hand-dedupe the CSV. Pure line drift from editing a
+mutated file passes on its own with a notice; refresh with
+`-PupdateMutationBaseline` at a convenient moment. Anything beyond pure drift
+(newly covered, unexplained, changed counts) is triage first, refresh after.
 
 ## Suite
 
@@ -39,6 +40,13 @@ recompiled root. `build.gradle.kts` is the authoritative definition.
 | 2026-07-21 (2nd pass) | 388 | 359 | 29 | 287/703 (40%) |
 | 2026-07-21 (3rd pass) | 340 | 305 | 35 | 338/703 (48%) |
 | 2026-07-22 | 251 | 236 | 15 | 429/703 (61%) |
+| 2026-07-23 (multiset migration) | 292 | 277 | 15 | 456/748 (60%) |
+
+The multiset migration added no new mutants: the verify's baseline comparison
+became a multiset (one row per sibling mutant of a compound condition, not one
+per unique row text), materializing previously-absorbed sibling copies. All
+fall inside already-triaged rows; baseline counts now equal the report's
+unkilled counts exactly.
 
 The 2026-07-22 pass covered `GlamStagingAccountClientImpl` /
 `StagingStateAccountClientImpl` (every staging pricing method's event-authority
@@ -79,29 +87,17 @@ All 18 new rows are `NO_COVERAGE` in classes that already carry untriaged debt
 no new survivors, so nothing here needed triage. Roughly a third of the new
 mutants were killed outright by existing tests.
 
-## Untriaged debt, in priority order
+## Untriaged debt
 
-The 2nd pass covered `lut` batching/tasks (surfacing and fixing an
-out-of-bounds crash plus dead `DynamicExtendTable` routing in
-`batchTableTasks`) and closed the `delegateHasPermissions` semantics question.
-Remaining, in priority order:
-
-1. **`lut.VaultTableBuilderImpl` add\* methods** — the kamino/jupiter account
-   collection paths (`addKaminoLendAccounts`, `addKaminoVaultAccounts`,
-   second-phase variants) need `Obligation`/`VaultState`/table fixtures
-   (~79 `NO_COVERAGE`).
-2. **`GlamStagingAccountClientImpl` / `StagingStateAccountClientImpl`** — the
-   staging mirror of the covered production client (~55).
-3. **`proxy.*`** — dynamic account factories (~13).
-5. **Remaining `GlamAccountClientImpl` methods** — the `priceDrift*`,
-   `priceKamino*`, `updateState`, `createEscrowAssociatedTokenIdempotent`
-   family (~14).
-6. **Fresh `SURVIVED` rows from newly covered code** (29 total) — includes
-   likely equivalence-family members: allocation-size `MathMutator`s in
-   `batchTableTasks`, the empty-set fast path at its head, and the
-   `!protocolPermissionsMap.isEmpty()` guard in `StateAccountClient` (an
-   empty-map entry vs an absent entry is unobservable through
-   `delegateHasPermissions`).
+For the current per-class ranking, run `./gradlew pitestSdkDebt` — a
+hand-maintained list here goes stale the same week it is written. What the
+task cannot tell you is *why* the big block is still open:
+`lut.VaultTableBuilderImpl`'s add\* methods (the kamino/jupiter account
+collection paths — `addKaminoLendAccounts`, `addKaminoVaultAccounts`,
+second-phase variants) need `Obligation`/`VaultState`/lookup-table fixtures;
+kamino mainnet fixtures already exist under
+`services/src/test/resources/accounts/kamino/` and may be shareable into the
+sdk suite.
 
 The baseline was seeded with the full pre-existing survivor population when
 the ratchet was adopted, per HARDENING.md's adoption path — triage debt made

@@ -1,10 +1,14 @@
 package systems.glam.services.state;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
+import software.sava.rpc.json.http.response.AccountInfo;
+import software.sava.rpc.json.http.response.Context;
+import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamAccounts;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.GlobalConfig;
@@ -15,26 +19,19 @@ import systems.glam.services.mints.MintCache;
 import systems.glam.services.mints.MintContext;
 import systems.glam.services.tests.ResourceUtil;
 
-import java.math.BigInteger;
-import java.nio.file.Files;
-import java.util.zip.GZIPInputStream;
-import software.sava.rpc.json.http.response.AccountInfo;
-import software.sava.rpc.json.http.response.Context;
-import java.util.ArrayList;
-import java.util.logging.Handler;
-import java.util.logging.LogRecord;
-import org.junit.jupiter.api.BeforeEach;
-import java.util.List;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigInteger;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import java.util.zip.GZIPInputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -638,7 +635,7 @@ final class GlobalConfigCacheTests {
   }
 
   @Test
-  void checkAccountValidatesOwnerAndDiscriminator(@TempDir final Path tempDir) {
+  void checkAccountValidatesOwnerAndDiscriminator() {
     final var configProgram = GlamAccounts.MAIN_NET.configProgram();
     assertTrue(GlobalConfigCacheImpl.checkAccount(
         configProgram, configProgram, 1L, GLOBAL_CONFIG_KEY, globalConfigData
@@ -686,6 +683,234 @@ final class GlobalConfigCacheTests {
         MintContext.createContext(SolanaAccounts.MAIN_NET, strange, 6, 0)
     ));
     assertUnlocked(cache);
+  }
+
+  private static final class NoopTracker extends software.sava.services.core.request_capacity.trackers.RootErrorTracker<software.sava.rpc.json.http.client.SolanaRpcClient, byte[]> {
+
+    NoopTracker(final software.sava.services.core.request_capacity.CapacityState capacityState) {
+      super(capacityState);
+    }
+
+    @Override
+    protected boolean isServerError(final software.sava.rpc.json.http.client.SolanaRpcClient response) {
+      return false;
+    }
+
+    @Override
+    protected boolean isRequestError(final software.sava.rpc.json.http.client.SolanaRpcClient response) {
+      return false;
+    }
+
+    @Override
+    protected boolean isRateLimited(final software.sava.rpc.json.http.client.SolanaRpcClient response) {
+      return false;
+    }
+
+    @Override
+    protected boolean updateGroupedErrorResponseCount(final long now,
+                                                      final software.sava.rpc.json.http.client.SolanaRpcClient response,
+                                                      final byte[] body) {
+      return false;
+    }
+
+    @Override
+    protected void logResponse(final software.sava.rpc.json.http.client.SolanaRpcClient response, final byte[] body) {
+    }
+  }
+
+  private static RpcCaller rpcCaller(final AccountInfo<byte[]> accountInfo) {
+    final var client = (software.sava.rpc.json.http.client.SolanaRpcClient) java.lang.reflect.Proxy.newProxyInstance(
+        software.sava.rpc.json.http.client.SolanaRpcClient.class.getClassLoader(),
+        new Class<?>[]{software.sava.rpc.json.http.client.SolanaRpcClient.class},
+        (proxy, method, args) -> {
+          if (method.getName().equals("getAccountInfo")) {
+            return java.util.concurrent.CompletableFuture.completedFuture(accountInfo);
+          }
+          throw new UnsupportedOperationException(method.getName());
+        }
+    );
+    final var resetDuration = Duration.ofSeconds(1);
+    final var config = new software.sava.services.core.request_capacity.CapacityConfig(
+        0, 1_000, resetDuration, 8, resetDuration, resetDuration, resetDuration, resetDuration);
+    final var monitor = config.createMonitor("test", NoopTracker::new);
+    final var item = software.sava.services.core.remote.load_balance.BalancedItem.createItem(
+        client, monitor, software.sava.services.core.remote.call.Backoff.single(java.util.concurrent.TimeUnit.MILLISECONDS, 0));
+    return new RpcCaller(
+        java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor(),
+        software.sava.services.core.remote.load_balance.LoadBalancer.createBalancer(item),
+        software.sava.services.solana.remote.call.CallWeights.createDefault()
+    );
+  }
+
+  private static systems.glam.services.rpc.AccountFetcher recordingFetcher(final List<List<PublicKey>> queued) {
+    return (systems.glam.services.rpc.AccountFetcher) java.lang.reflect.Proxy.newProxyInstance(
+        systems.glam.services.rpc.AccountFetcher.class.getClassLoader(),
+        new Class<?>[]{systems.glam.services.rpc.AccountFetcher.class},
+        (proxy, method, args) -> {
+          if (method.getName().equals("priorityQueueBatchable")) {
+            @SuppressWarnings("unchecked") final var keys = (List<PublicKey>) args[0];
+            queued.add(List.copyOf(keys));
+            return null;
+          }
+          throw new UnsupportedOperationException(method.getName());
+        }
+    );
+  }
+
+  @Test
+  void initCacheFetchesWhenTheFileIsMissing(@TempDir final Path tempDir) {
+    // a nested path: the missing parent directories must be created too
+    final var globalConfigFile = FileUtils.resolveCompressedAccountPath(tempDir.resolve("fresh"), GLOBAL_CONFIG_KEY);
+    final var queued = new ArrayList<List<PublicKey>>();
+    final var cacheFuture = GlobalConfigCache.initCache(
+        globalConfigFile,
+        GlamAccounts.MAIN_NET.configProgram(),
+        GLOBAL_CONFIG_KEY,
+        SolanaAccounts.MAIN_NET,
+        NULL_MINT_CACHE,
+        rpcCaller(accountInfo(7L, GlamAccounts.MAIN_NET.configProgram(), globalConfigData)),
+        recordingFetcher(queued),
+        Duration.ofSeconds(1)
+    );
+    final var cache = (GlobalConfigCacheImpl) cacheFuture.join();
+
+    assertEquals(7L, cache.globalConfigUpdate().slot());
+    // the fetched config was persisted for the next start
+    assertTrue(Files.exists(globalConfigFile));
+    assertArrayEquals(globalConfigData, FileUtils.readAccountData(globalConfigFile).data());
+    // every asset mint is unknown to the null cache, so all were queued
+    final var config = GlobalConfig.read(cache.globalConfigUpdate().data(), 0);
+    assertEquals(1, queued.size());
+    assertEquals(config.assetMetas().length, queued.getFirst().size());
+    // the fetched config was actually indexed, not just stored
+    assertNotNull(cache.assetMetaMap.get(config.assetMetas()[0].asset()));
+    assertUnlocked(cache);
+  }
+
+  @Test
+  void initCacheSkipsTheMintFetchWhenEveryMintIsCached(@TempDir final Path tempDir) {
+    final var config = GlobalConfig.read(globalConfigData, 0);
+    final var decimalsByMint = new java.util.HashMap<PublicKey, Integer>();
+    for (final var meta : config.assetMetas()) {
+      decimalsByMint.putIfAbsent(meta.asset(), (int) meta.decimals());
+    }
+    final var agreeing = new MintCache() {
+      @Override
+      public MintContext get(final PublicKey mintPubkey) {
+        final var decimals = decimalsByMint.get(mintPubkey);
+        return decimals == null
+            ? null
+            : MintContext.createContext(SolanaAccounts.MAIN_NET, mintPubkey, decimals, 0);
+      }
+
+      @Override
+      public MintContext setGet(final MintContext mintContext) {
+        return mintContext;
+      }
+
+      @Override
+      public MintContext delete(final PublicKey mintPubkey) {
+        return null;
+      }
+
+      @Override
+      public void close() {
+      }
+    };
+    final var globalConfigFile = FileUtils.resolveCompressedAccountPath(tempDir.resolve("fresh"), GLOBAL_CONFIG_KEY);
+    final var queued = new ArrayList<List<PublicKey>>();
+    final var cache = (GlobalConfigCacheImpl) GlobalConfigCache.initCache(
+        globalConfigFile,
+        GlamAccounts.MAIN_NET.configProgram(),
+        GLOBAL_CONFIG_KEY,
+        SolanaAccounts.MAIN_NET,
+        agreeing,
+        rpcCaller(accountInfo(7L, GlamAccounts.MAIN_NET.configProgram(), globalConfigData)),
+        recordingFetcher(queued),
+        Duration.ofSeconds(1)
+    ).join();
+
+    assertEquals(7L, cache.globalConfigUpdate().slot());
+    // nothing was missing, so no mint fetch may be queued -- not even an empty one
+    assertEquals(List.of(), queued);
+  }
+
+  @Test
+  void initCacheRejectsAForeignOwnerOnFetch(@TempDir final Path tempDir) {
+    final var globalConfigFile = FileUtils.resolveCompressedAccountPath(tempDir.resolve("fresh"), GLOBAL_CONFIG_KEY);
+    final var cacheFuture = GlobalConfigCache.initCache(
+        globalConfigFile,
+        GlamAccounts.MAIN_NET.configProgram(),
+        GLOBAL_CONFIG_KEY,
+        SolanaAccounts.MAIN_NET,
+        NULL_MINT_CACHE,
+        rpcCaller(accountInfo(7L, PublicKey.NONE, globalConfigData)),
+        recordingFetcher(new ArrayList<>()),
+        Duration.ofSeconds(1)
+    );
+    final var failure = assertThrows(java.util.concurrent.CompletionException.class, cacheFuture::join);
+    assertInstanceOf(IllegalStateException.class, failure.getCause());
+    assertTrue(failure.getCause().getMessage().contains("Unexpected GlobalConfig Account"), failure.getCause().getMessage());
+  }
+
+  @Test
+  void initCacheIgnoresAnEmptyPersistedFile(@TempDir final Path tempDir) {
+    final var globalConfigFile = FileUtils.resolveCompressedAccountPath(tempDir, GLOBAL_CONFIG_KEY);
+    GlobalConfigCacheImpl.persistGlobalConfig(globalConfigFile, new byte[0]);
+    assertTrue(Files.exists(globalConfigFile));
+
+    final var cache = (GlobalConfigCacheImpl) GlobalConfigCache.initCache(
+        globalConfigFile,
+        GlamAccounts.MAIN_NET.configProgram(),
+        GLOBAL_CONFIG_KEY,
+        SolanaAccounts.MAIN_NET,
+        NULL_MINT_CACHE,
+        rpcCaller(accountInfo(7L, GlamAccounts.MAIN_NET.configProgram(), globalConfigData)),
+        recordingFetcher(new ArrayList<>()),
+        Duration.ofSeconds(1)
+    ).join();
+
+    // an empty file is not a config: the cache came from the fetch, not disk
+    assertEquals(7L, cache.globalConfigUpdate().slot());
+  }
+
+  @Test
+  void aFileLoadedConfigSortsMultipleOraclesPerAsset(@TempDir final Path tempDir) {
+    final var config = GlobalConfig.read(globalConfigData, 0);
+    final var metas = config.assetMetas();
+    final var first = metas[0];
+    // demote the existing entry in place and append a BETTER priority under a
+    // new oracle: only the load-path per-asset sort can serve the appended first
+    final var extended = Arrays.copyOf(metas, metas.length + 1);
+    extended[0] = withPriority(first, first.priority() + 5);
+    extended[metas.length] = new AssetMeta(first.asset(), first.decimals(), PublicKey.NONE,
+        first.oracleSource(), first.maxAgeSeconds(), first.priority(), first.padding()
+    );
+    final var modified = new GlobalConfig(
+        config._address(), config.discriminator(), config.admin(), config.feeAuthority(),
+        config.referrer(), config.baseFeeBps(), config.flowFeeBps(), extended
+    );
+    final byte[] data = new byte[modified.l()];
+    modified.write(data, 0);
+
+    final var globalConfigFile = FileUtils.resolveCompressedAccountPath(tempDir, GLOBAL_CONFIG_KEY);
+    GlobalConfigCacheImpl.persistGlobalConfig(globalConfigFile, data);
+    final var cache = (GlobalConfigCacheImpl) GlobalConfigCache.initCache(
+        globalConfigFile,
+        GlamAccounts.MAIN_NET.configProgram(),
+        GLOBAL_CONFIG_KEY,
+        SolanaAccounts.MAIN_NET,
+        NULL_MINT_CACHE,
+        null,
+        null,
+        Duration.ofSeconds(1)
+    ).join();
+
+    final var entries = cache.assetMetaMap.get(first.asset());
+    assertEquals(2, entries.length, "both oracles for the asset must be indexed");
+    assertEquals(PublicKey.NONE, entries[0].oracle(), "the better priority entry is served first");
+    assertEquals(first.priority(), entries[0].priority());
+    assertEquals(first.priority() + 5, entries[1].priority());
   }
 
   private static AccountInfo<byte[]> accountInfo(final long slot, final PublicKey owner, final byte[] data) {
@@ -788,7 +1013,8 @@ final class GlobalConfigCacheTests {
     // and so do checked lookups after the invalidation
     assertNull(cache.topPriorityForMintChecked(
         MintContext.createContext(SolanaAccounts.MAIN_NET,
-            PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"), 6, 0)
+            PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"), 6, 0
+        )
     ));
   }
 
@@ -797,27 +1023,28 @@ final class GlobalConfigCacheTests {
     final var usdc = PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
 
     final var matching = createCache(tempDir, new MintCache() {
-      @Override
-      public MintContext get(final PublicKey mintPubkey) {
-        return mintPubkey.equals(usdc)
-            ? MintContext.createContext(SolanaAccounts.MAIN_NET, usdc, 6, 0)
-            : null;
-      }
+          @Override
+          public MintContext get(final PublicKey mintPubkey) {
+            return mintPubkey.equals(usdc)
+                ? MintContext.createContext(SolanaAccounts.MAIN_NET, usdc, 6, 0)
+                : null;
+          }
 
-      @Override
-      public MintContext setGet(final MintContext mintContext) {
-        return mintContext;
-      }
+          @Override
+          public MintContext setGet(final MintContext mintContext) {
+            return mintContext;
+          }
 
-      @Override
-      public MintContext delete(final PublicKey mintPubkey) {
-        return null;
-      }
+          @Override
+          public MintContext delete(final PublicKey mintPubkey) {
+            return null;
+          }
 
-      @Override
-      public void close() {
-      }
-    });
+          @Override
+          public void close() {
+          }
+        }
+    );
     final var meta = matching.topPriorityForMintChecked(usdc);
     assertNotNull(meta);
     assertEquals(usdc, meta.asset());
@@ -825,27 +1052,28 @@ final class GlobalConfigCacheTests {
     assertNotNull(matching.globalConfig());
 
     final var mismatched = createCache(tempDir, new MintCache() {
-      @Override
-      public MintContext get(final PublicKey mintPubkey) {
-        return mintPubkey.equals(usdc)
-            ? MintContext.createContext(SolanaAccounts.MAIN_NET, usdc, 9, 0)
-            : null;
-      }
+          @Override
+          public MintContext get(final PublicKey mintPubkey) {
+            return mintPubkey.equals(usdc)
+                ? MintContext.createContext(SolanaAccounts.MAIN_NET, usdc, 9, 0)
+                : null;
+          }
 
-      @Override
-      public MintContext setGet(final MintContext mintContext) {
-        return mintContext;
-      }
+          @Override
+          public MintContext setGet(final MintContext mintContext) {
+            return mintContext;
+          }
 
-      @Override
-      public MintContext delete(final PublicKey mintPubkey) {
-        return null;
-      }
+          @Override
+          public MintContext delete(final PublicKey mintPubkey) {
+            return null;
+          }
 
-      @Override
-      public void close() {
-      }
-    });
+          @Override
+          public void close() {
+          }
+        }
+    );
     final var called = new AtomicReference<String>();
     mismatched.subscribe(new TestGlobalConfigListener(called));
     // decimals disagreement is unrecoverable: throw and drop the cached config
@@ -867,7 +1095,8 @@ final class GlobalConfigCacheTests {
 
   private static AssetMeta withPriority(final AssetMeta meta, final int priority) {
     return new AssetMeta(meta.asset(), meta.decimals(), meta.oracle(), meta.oracleSource(),
-        meta.maxAgeSeconds(), priority, meta.padding());
+        meta.maxAgeSeconds(), priority, meta.padding()
+    );
   }
 
   /// The rejection paths are covered above; these are the transitions that must
@@ -884,7 +1113,8 @@ final class GlobalConfigCacheTests {
     final var ageChanged = Arrays.copyOf(metas, metas.length);
     final var first = metas[0];
     ageChanged[0] = new AssetMeta(first.asset(), first.decimals(), first.oracle(), first.oracleSource(),
-        first.maxAgeSeconds() + 5, first.priority(), first.padding());
+        first.maxAgeSeconds() + 5, first.priority(), first.padding()
+    );
 
     var called = new AtomicReference<String>();
     var result = GlobalConfigCacheImpl.createMapChecked(
@@ -937,7 +1167,8 @@ final class GlobalConfigCacheTests {
     previousMetas[0] = withPriority(metas[0], -1);
     final var rotated = Arrays.copyOf(metas, metas.length);
     rotated[0] = new AssetMeta(metas[0].asset(), metas[0].decimals(), PublicKey.NONE, metas[0].oracleSource(),
-        metas[0].maxAgeSeconds(), metas[0].priority(), metas[0].padding());
+        metas[0].maxAgeSeconds(), metas[0].priority(), metas[0].padding()
+    );
 
     final var called = new AtomicReference<String>();
     final var result = GlobalConfigCacheImpl.createMapChecked(
@@ -985,7 +1216,8 @@ final class GlobalConfigCacheTests {
 
     final var swapped = Arrays.copyOf(metas, metas.length);
     swapped[0] = new AssetMeta(first.asset(), first.decimals(), PublicKey.NONE,
-        first.oracleSource(), first.maxAgeSeconds(), first.priority(), first.padding());
+        first.oracleSource(), first.maxAgeSeconds(), first.priority(), first.padding()
+    );
     final var called = new AtomicReference<String>();
     assertNotNull(previous);
     final var result = GlobalConfigCacheImpl.createMapChecked(
@@ -1008,7 +1240,8 @@ final class GlobalConfigCacheTests {
     final var first = metas[0];
     // Pyth (push) is retired; only the pull/lazer family is valid
     metas[0] = new AssetMeta(first.asset(), first.decimals(), first.oracle(),
-        OracleSource.Pyth, first.maxAgeSeconds(), first.priority(), first.padding());
+        OracleSource.Pyth, first.maxAgeSeconds(), first.priority(), first.padding()
+    );
 
     final var called = new AtomicReference<String>();
     final var result = GlobalConfigCacheImpl.createMapChecked(
@@ -1069,7 +1302,8 @@ final class GlobalConfigCacheTests {
     // the oracle changes too, so the per-index comparison flags-and-continues
     // and the cross-config decimals sweep is what must reject the config
     metas[0] = new AssetMeta(first.asset(), first.decimals() + 1, PublicKey.NONE,
-        first.oracleSource(), first.maxAgeSeconds(), first.priority(), first.padding());
+        first.oracleSource(), first.maxAgeSeconds(), first.priority(), first.padding()
+    );
 
     final var called = new AtomicReference<String>();
     final var result = GlobalConfigCacheImpl.createMapChecked(
@@ -1098,7 +1332,8 @@ final class GlobalConfigCacheTests {
     assertTrue(j > 0, "fixture holds multiple oracle sources");
     final var reused = metas[j];
     metas[j] = new AssetMeta(reused.asset(), reused.decimals(), first.oracle(),
-        reused.oracleSource(), reused.maxAgeSeconds(), reused.priority(), reused.padding());
+        reused.oracleSource(), reused.maxAgeSeconds(), reused.priority(), reused.padding()
+    );
 
     final var called = new AtomicReference<String>();
     final var result = GlobalConfigCacheImpl.createMapChecked(
@@ -1160,7 +1395,8 @@ final class GlobalConfigCacheTests {
     final var extended = Arrays.copyOf(metas, metas.length + 1);
     extended[0] = withPriority(first, first.priority() + 5);
     extended[metas.length] = new AssetMeta(first.asset(), first.decimals(), PublicKey.NONE,
-        first.oracleSource(), first.maxAgeSeconds(), first.priority(), first.padding());
+        first.oracleSource(), first.maxAgeSeconds(), first.priority(), first.padding()
+    );
 
     final var result = GlobalConfigCacheImpl.createMapChecked(
         1L, previous.assetMetaContexts(), cache.assetMetaMap,

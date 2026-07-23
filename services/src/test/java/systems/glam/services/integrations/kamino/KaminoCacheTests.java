@@ -10,6 +10,8 @@ import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.Context;
+import software.sava.idl.clients.kamino.scope.gen.types.Configuration;
+import systems.glam.services.oracles.scope.MappingsContext;
 import systems.glam.services.oracles.scope.ScopeFeedContext;
 import systems.glam.services.tests.LogCapture;
 import systems.glam.services.tests.ResourceUtil;
@@ -60,6 +62,16 @@ final class KaminoCacheTests {
   }
 
   private static KaminoCacheImpl createCache(final Path tempDir) {
+    // production initService creates the persistence directories; constructing
+    // the impl directly must do the same, or every persist quietly fails into
+    // a WARN and the persistence paths become untestable
+    try {
+      java.nio.file.Files.createDirectories(tempDir.resolve("configurations"));
+      java.nio.file.Files.createDirectories(tempDir.resolve("mappings"));
+      java.nio.file.Files.createDirectories(tempDir.resolve("reserves"));
+    } catch (final java.io.IOException e) {
+      throw new java.io.UncheckedIOException(e);
+    }
     final var kaminoAccounts = KaminoAccounts.MAIN_NET;
     return new KaminoCacheImpl(
         null, null,
@@ -105,6 +117,30 @@ final class KaminoCacheTests {
     @Override
     public void onNewKaminoVault(final KaminoVaultContext vaultContext) {
       events.add("onNewKaminoVault");
+    }
+
+    @Override
+    public void onScopeConfigurationChange(final ScopeFeedContext witness, final ScopeFeedContext latest) {
+      events.add("onScopeConfigurationChange");
+    }
+
+    @Override
+    public void onKaminoVaultChange(final KaminoVaultContext previous, final KaminoVaultContext vaultContext) {
+      events.add("onKaminoVaultChange");
+    }
+
+    @Override
+    public void onMappingChange(final ScopeFeedContext scopeFeedContext,
+                                final MappingsContext previous,
+                                final MappingsContext latest) {
+      events.add("onMappingChange");
+    }
+
+    @Override
+    public void onReserveChange(final ReserveContext previous,
+                                final ReserveContext reserveContext,
+                                final java.util.Set<ReserveChange> changes) {
+      events.add("onReserveChange");
     }
   }
 
@@ -249,5 +285,168 @@ final class KaminoCacheTests {
 
     assertEquals(List.of(), listener.events());
     assertNotNull(cache.reserveContext(SOL_RESERVE_KEY));
+  }
+
+  @Test
+  void truncatedAccountsAreSkippedNotCrashed(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    // shorter than a discriminator: the length guards are what stand between
+    // this data and an out-of-bounds discriminator read
+    final var truncated = accountInfo(SOL_RESERVE_KEY, 100L, new byte[3]);
+
+    try (final var log = LogCapture.attach(KaminoCache.class.getName())) {
+      cache.accept(truncated);
+      log.assertLogged("Unhandled Kamino Account");
+      assertTrue(
+          log.messages().stream().noneMatch(m -> m != null && m.contains("Failed to handle Scope account")),
+          () -> log.messages().toString()
+      );
+    }
+
+    // the list path has no catch of its own; a truncated or null entry must
+    // be skipped by the guards, not crash the polling thread
+    assertDoesNotThrow(() -> cache.accept(java.util.Arrays.asList(truncated, null), Map.of()));
+    assertTrue(cache.reserveContexts().isEmpty());
+    assertUnlocked(cache);
+  }
+
+  @Test
+  void aChangedConfigurationNotifiesTheChange(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var scopeListener = new RecordingListener(1);
+    cache.subscribeToScope(scopeListener);
+
+    cache.accept(accountInfo(CONFIGURATION_KEY, 100L, configurationData));
+    assertEquals(List.of("onNewScopeConfiguration"), scopeListener.events());
+
+    // a real change inside the compared region (the admin key) at a newer slot
+    final var changed = configurationData.clone();
+    changed[Configuration.ADMIN_OFFSET] ^= 0x01;
+    cache.accept(accountInfo(CONFIGURATION_KEY, 200L, changed));
+    assertEquals(
+        List.of("onNewScopeConfiguration", "onScopeConfigurationChange"),
+        scopeListener.events()
+    );
+    assertUnlocked(cache);
+  }
+
+  @Test
+  void aRekeyedDuplicateConfigurationIsIgnored(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    cache.accept(accountInfo(CONFIGURATION_KEY, 100L, configurationData));
+
+    final var scopeListener = new RecordingListener(1);
+    cache.subscribeToScope(scopeListener);
+    // the same configuration bytes under a different account key: the price
+    // feed is already registered, so this must be recognized and dropped, not
+    // registered a second time under the new key
+    final var rekeyed = PublicKey.createPubKey(new byte[]{9, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 9});
+    cache.accept(accountInfo(rekeyed, 200L, configurationData));
+
+    assertEquals(List.of(), scopeListener.events());
+    assertUnlocked(cache);
+  }
+
+  @Test
+  void vaultUpdateGatesHoldAtTheSlotAndReserveBoundaries(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var vaultListener = new RecordingListener(1);
+    cache.subscribeToVaults(vaultListener);
+    final var sharesMint = PublicKey.readPubKey(vaultStateData, VaultState.SHARES_MINT_OFFSET);
+
+    cache.accept(accountInfo(VAULT_STATE_KEY, 103L, vaultStateData));
+    final var initial = cache.vaultForShareMint(sharesMint);
+    assertNotNull(initial);
+    assertEquals(List.of("onNewKaminoVault"), vaultListener.events());
+
+    // a changed vault at the SAME slot is stale: same context, no notification
+    final var reservesChanged = vaultStateData.clone();
+    reservesChanged[VaultState.VAULT_ALLOCATION_STRATEGY_OFFSET] ^= 0x01;
+    cache.accept(accountInfo(VAULT_STATE_KEY, 103L, reservesChanged));
+    assertSame(initial, cache.vaultForShareMint(sharesMint));
+    assertEquals(List.of("onNewKaminoVault"), vaultListener.events());
+
+    // a newer change OUTSIDE the reserves (a fee) updates the context
+    // silently: only reserve-allocation changes are worth a notification
+    final var feeChanged = vaultStateData.clone();
+    feeChanged[VaultState.PERFORMANCE_FEE_BPS_OFFSET] ^= 0x01;
+    cache.accept(accountInfo(VAULT_STATE_KEY, 104L, feeChanged));
+    final var refeed = cache.vaultForShareMint(sharesMint);
+    assertNotSame(initial, refeed);
+    assertEquals(List.of("onNewKaminoVault"), vaultListener.events());
+
+    // a newer reserve-allocation change is the notification-worthy one
+    cache.accept(accountInfo(VAULT_STATE_KEY, 105L, reservesChanged));
+    assertNotSame(refeed, cache.vaultForShareMint(sharesMint));
+    assertEquals(List.of("onNewKaminoVault", "onKaminoVaultChange"), vaultListener.events());
+    assertUnlocked(cache);
+  }
+
+  @Test
+  void aChangedConfigurationUnderANewKeySupersedesTheOld(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var scopeListener = new RecordingListener(1);
+    cache.subscribeToScope(scopeListener);
+    cache.accept(accountInfo(CONFIGURATION_KEY, 100L, configurationData));
+
+    // changed bytes under a new key: the old registration must be torn down
+    final var changed = configurationData.clone();
+    changed[Configuration.ADMIN_OFFSET] ^= 0x01;
+    final var rekeyed = PublicKey.createPubKey(new byte[]{9, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 9});
+    cache.accept(accountInfo(rekeyed, 200L, changed));
+
+    // the original key must have been removed with its config: accepting it
+    // again is a NEW registration, not a stale hit on a leftover entry
+    cache.accept(accountInfo(CONFIGURATION_KEY, 300L, configurationData));
+    assertEquals(
+        List.of("onNewScopeConfiguration", "onNewScopeConfiguration", "onNewScopeConfiguration"),
+        scopeListener.events()
+    );
+    assertUnlocked(cache);
+  }
+
+  @Test
+  void aFailedMappingsPersistIsLoggedNotFatal(@TempDir final Path tempDir) throws IOException {
+    final var cache = createCache(tempDir);
+    // break the persistence target: a file where the directory should be
+    final var mappingsDir = tempDir.resolve("mappings");
+    java.nio.file.Files.delete(mappingsDir);
+    java.nio.file.Files.createFile(mappingsDir);
+
+    cache.accept(accountInfo(CONFIGURATION_KEY, 100L, configurationData));
+    try (final var log = LogCapture.attach(KaminoCache.class.getName())) {
+      cache.accept(accountInfo(ORACLE_MAPPINGS_KEY, 100L, mappingsData));
+      // the failure must be reported, and must not take the cache down
+      log.assertLogged("Failed to persist mappings.");
+    }
+    cache.accept(accountInfo(SOL_RESERVE_KEY, 100L, reserveData));
+    assertNotNull(cache.reserveContext(SOL_RESERVE_KEY));
+    assertUnlocked(cache);
+  }
+
+  @Test
+  void acceptedAccountsArePersistedForRestart(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    cache.accept(accountInfo(CONFIGURATION_KEY, 100L, configurationData));
+    cache.accept(accountInfo(ORACLE_MAPPINGS_KEY, 100L, mappingsData));
+    cache.accept(accountInfo(SOL_RESERVE_KEY, 100L, reserveData));
+
+    final var reserveContext = cache.reserveContext(SOL_RESERVE_KEY);
+    assertNotNull(reserveContext);
+    // mappings persist flat; reserves persist under their market directory
+    assertTrue(
+        java.nio.file.Files.exists(
+            tempDir.resolve("mappings").resolve(ORACLE_MAPPINGS_KEY.toBase58() + ".dat.gz")),
+        "the accepted mappings were not persisted"
+    );
+    assertTrue(
+        java.nio.file.Files.exists(
+            tempDir.resolve("reserves")
+                .resolve(reserveContext.market().toBase58())
+                .resolve(SOL_RESERVE_KEY.toBase58() + ".dat.gz")),
+        "the accepted reserve was not persisted"
+    );
   }
 }

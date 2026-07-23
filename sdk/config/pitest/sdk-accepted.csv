@@ -50,6 +50,7 @@ systems.glam.sdk.GlamVaultAccounts,loadMappingConfigs,56,NakedReceiverMutator,NO
 systems.glam.sdk.StagingStateAccountClientImpl,lambda$new$0,25,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED
 systems.glam.sdk.StagingStateAccountClientImpl,lambda$new$0,26,VoidMethodCallMutator,SURVIVED
 systems.glam.sdk.StagingStateAccountClientImpl,protocolBitmask,88,RemoveConditionalMutator_EQUAL_IF,SURVIVED
+systems.glam.sdk.StagingStateAccountClientImpl,protocolBitmask,88,RemoveConditionalMutator_EQUAL_IF,SURVIVED
 systems.glam.sdk.StagingStateAccountClientImpl,redeemCancellationWindow,73,PrimitiveReturnsMutator,NO_COVERAGE
 systems.glam.sdk.StagingStateAccountClientImpl,redeemNoticePeriod,63,PrimitiveReturnsMutator,NO_COVERAGE
 systems.glam.sdk.StagingStateAccountClientImpl,redeemSettlementPeriod,68,PrimitiveReturnsMutator,NO_COVERAGE
@@ -78,10 +79,14 @@ systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,jupiterS
 systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,jupiterSwap,178,NakedReceiverMutator,NO_COVERAGE
 systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,swapChecked,128,RemoveConditionalMutator_EQUAL_IF,SURVIVED
 systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,swapWithProgramStateChecked,226,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,swapWithProgramStateChecked,226,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,swapWithProgramStateChecked,226,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,swapWithProgramStateChecked,226,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,swapWithProgramStateChecked,227,EmptyObjectReturnValsMutator,NO_COVERAGE
 systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,swapWithProgramStateChecked,237,EmptyObjectReturnValsMutator,NO_COVERAGE
 systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,swapWithProgramStateUnchecked,271,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,swapWithProgramStateUnchecked,271,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,swapWithProgramStateUnchecked,271,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,swapWithProgramStateUnchecked,271,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,swapWithProgramStateUnchecked,273,EmptyObjectReturnValsMutator,NO_COVERAGE
 systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,swapWithProgramStateUnchecked,279,EmptyObjectReturnValsMutator,NO_COVERAGE
@@ -117,11 +122,15 @@ systems.glam.sdk.lut.VaultTableBuilder,removeExternalProtocolTableAccounts,70,Vo
 systems.glam.sdk.lut.VaultTableBuilder,removeExternalProtocolTableAccounts,71,VoidMethodCallMutator,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,add,56,VoidMethodCallMutator,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addAccount,50,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,addAccount,50,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,addAccount,50,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addAccount,50,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultAccounts,188,VoidMethodCallMutator,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultAccounts,189,VoidMethodCallMutator,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultAccounts,190,VoidMethodCallMutator,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultAccounts,192,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultAccounts,192,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultAccounts,192,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultAccounts,192,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultAccounts,193,VoidMethodCallMutator,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultAccounts,194,VoidMethodCallMutator,NO_COVERAGE
@@ -132,6 +141,8 @@ systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultAccounts,204,VoidMethodCa
 systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultTokens,216,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultTokens,216,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultTokens,220,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultTokens,220,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultTokens,220,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultTokens,220,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultTokens,223,VoidMethodCallMutator,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultTokens,225,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
@@ -143,6 +154,8 @@ systems.glam.sdk.lut.VaultTableBuilderImpl,addKFarmAccounts,251,VoidMethodCallMu
 systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoAccountsSecondPhase,298,VoidMethodCallMutator,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoAccountsSecondPhase,300,NakedReceiverMutator,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoAccountsSecondPhase,310,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoAccountsSecondPhase,310,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoAccountsSecondPhase,310,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoAccountsSecondPhase,310,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoAccountsSecondPhase,312,VoidMethodCallMutator,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoAccountsSecondPhase,313,VoidMethodCallMutator,NO_COVERAGE
@@ -170,6 +183,8 @@ systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoVaultAccounts,336,VoidMethod
 systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoVaultAccounts,343,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoVaultAccounts,343,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoVaultAccounts,347,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoVaultAccounts,347,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoVaultAccounts,347,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoVaultAccounts,347,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoVaultAccounts,352,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,addKaminoVaultAccounts,352,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
@@ -212,8 +227,12 @@ systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoAccountsSecondPhase$0
 systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoAccountsSecondPhase$0,304,RemoveConditionalMutator_ORDER_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoAccountsSecondPhase$0,305,VoidMethodCallMutator,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoVaultAccountsSecondPhase$0,387,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoVaultAccountsSecondPhase$0,387,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoVaultAccountsSecondPhase$0,387,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoVaultAccountsSecondPhase$0,387,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoVaultAccountsSecondPhase$0,389,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoVaultAccountsSecondPhase$0,389,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoVaultAccountsSecondPhase$0,389,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoVaultAccountsSecondPhase$0,389,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoVaultAccountsSecondPhase$0,390,VoidMethodCallMutator,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoVaultAccountsSecondPhase$1,393,NullReturnValsMutator,NO_COVERAGE
@@ -223,6 +242,8 @@ systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$fetchGlamVaultTables$1,90,Null
 systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$main$0,487,NullReturnValsMutator,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$mapTable$0,68,BooleanTrueReturnValsMutator,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$mapTable$0,68,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$mapTable$0,68,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$mapTable$0,68,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$mapTable$0,68,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$mapTable$1,70,NullReturnValsMutator,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,main,418,ConditionalsBoundaryMutator,NO_COVERAGE
@@ -248,6 +269,8 @@ systems.glam.sdk.lut.VaultTableBuilderImpl,main,503,VoidMethodCallMutator,NO_COV
 systems.glam.sdk.lut.VaultTableBuilderImpl,main,506,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,main,506,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,mapTable,64,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,mapTable,64,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE
+systems.glam.sdk.lut.VaultTableBuilderImpl,mapTable,64,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,mapTable,64,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,mapTable,67,NullReturnValsMutator,NO_COVERAGE
 systems.glam.sdk.lut.VaultTableBuilderImpl,mapTable,68,NakedReceiverMutator,NO_COVERAGE

@@ -77,9 +77,10 @@ a defect traces into one of the above:
    ratchet. Run its module `test`, then the `pitest<Suite>` owning the file
    (`grep` its `build.gradle.kts` to find which suite claims the class), and
    keep its accepted baselines green.
-2. Editing a mutated file shifts line numbers, so its ratchet will report a
-   pile of "new" unkilled mutants. Confirm each has a stale counterpart at a
-   consistent offset **before** refreshing — same rule as here.
+2. Editing a mutated file shifts line numbers; pure drift now passes its
+   ratchet on its own with a notice. Anything beyond pure drift (newly
+   covered, unexplained, changed counts) is triage before refresh — same
+   rule as here.
 3. To build against the change before it is published, uncomment the matching
    `includeBuild("../<repo>")` at the bottom of `settings.gradle.kts` (Gradle
    substitutes the published module for the local project — verify with
@@ -133,7 +134,7 @@ changes here:
      template changes until the block is re-diffed — sync or ACT on each
      changed bullet (a new bullet may need code, not prose) — and the digest
      updated. -->
-<!-- hardening-template sha256:a3a73f4b95f3 -->
+<!-- hardening-template sha256:e6d8a19c3b67 -->
 
 1. **Scale verification to the change.** Iterate with the module's `test`
    task; before handing off, run only the `pitest<Suite>`(s) whose mutated
@@ -153,10 +154,20 @@ changes here:
    the line and the test could not tell — a judgment call about equivalence.
    A no-coverage mutant was never executed — mechanical work, and **never
    acceptable as "equivalent"**, because you have not observed its behaviour.
-4. **Line-number churn is the one routine exception** — editing a mutated
-   file shifts baseline entries; confirm the "new" rows are the shifted old
-   ones before refreshing.
-5. **Determinism is the whole point.** Fixed seeds, no real waits (PIT
+4. **Pure line drift passes on its own** — when every new baseline entry is a
+   same-status shift of a stale one and the per-method population is
+   unchanged, the verify passes with a notice; refresh at a convenient
+   moment. Anything mixed in (newly covered, unexplained, changed counts) is
+   triage first, refresh after. `-PnoDriftTolerance` restores strict mode for
+   certifying runs.
+5. **Iterate with `-PmutateOnly=<class-glob>`** while killing a cluster —
+   seconds instead of the full suite — then re-run unscoped before any
+   refresh; the tooling refuses to let a scoped report touch the baseline.
+6. **Identical baseline rows are sibling mutants** of one compound condition
+   and the comparison is a multiset: never hand-dedupe the CSV. When one
+   sibling survives, the verify names the killed sibling's test — the
+   survivor is the opposite branch direction; triage it as its own mutant.
+7. **Determinism is the whole point.** Fixed seeds, no real waits (PIT
    re-runs covering tests once per mutant, so one sleep is multiplied by the
    mutant count), and no reliance on PIT's timeout: `TIMED_OUT` counts as
    detected but is load-dependent — the same mutant can report `SURVIVED`
@@ -164,22 +175,22 @@ changes here:
    union only rows observed to flip. A flaky harness is worse than recorded
    debt — if an interleaving cannot be made deterministic, accept the mutant
    with a written reason.
-6. **A suite's percentage is not a target.** An accepted mutant with a
+8. **A suite's percentage is not a target.** An accepted mutant with a
    written reason is finished work, not debt. Before trying to raise a
    number, check whether the remainder is `NO_COVERAGE` (real work) or
    documented equivalents (already closed).
-7. **Allocation and timing harnesses are a last resort**, reserved for
+9. **Allocation and timing harnesses are a last resort**, reserved for
    properties that are a stated design goal; they need a `volatile` sink and
    flap when margins are thin.
-8. When a test you believe in will not go green, **suspect the code before
+10. When a test you believe in will not go green, **suspect the code before
    you soften the assertion** — that is where this process finds real bugs.
-9. **A wandering unkilled count is a defect, not noise** — chase it before
+11. **A wandering unkilled count is a defect, not noise** — chase it before
    refreshing any baseline. Known causes: real waits, `TIMED_OUT` load flips,
    `@Execution`/`@TestInstance` on an abstract base not reaching concrete
    classes (JUnit-version-dependent; `javap` the resolved jar), and coverage
    attributed to field initializers — exercise factories from inside a
    `@Test`.
-10. **Kill rates are bounded by the mutator set.** `BigInteger`/`BigDecimal`
+12. **Kill rates are bounded by the mutator set.** `BigInteger`/`BigDecimal`
     arithmetic is method calls, invisible to the default arithmetic mutators —
     fixed-point and fee math needs `EXPERIMENTAL_BIG_INTEGER` (pitest ≥
     1.25.8) — and fluent calls returning their receiver are expressions,
@@ -187,35 +198,35 @@ changes here:
     `EXPERIMENTAL_NAKED_RECEIVER`. Trial per suite, enable only what fires,
     and record the numbers in `config/pitest/README.md`. Both suites here run
     `STRONGER,EXPERIMENTAL_NAKED_RECEIVER`; the trial numbers are recorded.
-12. **PIT minions run on the class path**, even though this repo's tasks run
+13. **PIT minions run on the class path**, even though this repo's tasks run
     on the module path: `module-info` services are invisible to them, and a
     test-resources `META-INF/services` is invisible to the module-path `test`
     task. Real services are declared in both places; a harness whose result
     depends on which task ran it is never committed. This repo currently
     declares no services and uses no `ServiceLoader` (audited 2026-07-22), so
     there is nothing to keep in sync — re-check when adding one.
-11. **Exclusions must cover the test source set, not a naming convention**:
+14. **Exclusions must cover the test source set, not a naming convention**:
     shared fakes named `RecordingFoo` / `StubFoo` match no `*Test*` pattern.
     After registering or widening a suite, list the mutated classes and
     confirm none live under `src/test` (`pitest<Suite>Verify` warns, naming
     them).
-12. **Verify by the absence of failures, not the presence of passes.** A
+15. **Verify by the absence of failures, not the presence of passes.** A
     green build can mean the task was up-to-date rather than that tests ran;
     check the failure count and that the task executed. A *failed* PIT run
     leaves the previous report in `build/reports/pitest/<suite>/`, so the
     summary you read can describe a run that never happened — trust the exit
     code, and delete report directories when comparing runs.
-13. **A suite that got faster without getting narrower is a bug report** —
+16. **A suite that got faster without getting narrower is a bug report** —
     unless the summary carries the `[history]` marker (arcmutate incremental
     reuse, where fast is expected; the pre-release gate still runs
     `-PnoMutationHistory` to re-earn every status from scratch).
-14. **Transient infra failures are not results.** PIT `MINION_DIED` fails
+17. **Transient infra failures are not results.** PIT `MINION_DIED` fails
     before writing a report — re-run the suite; a Gradle-worker
     `EOFException` death is the same shape, and per-mutant `RUN_ERROR` under
     load the same shape smaller (not counted as detected). The daemon log
     (`~/.gradle/daemon/<version>/daemon-<pid>.out.log`) keeps a failed
     build's full output even when the shell discarded it.
-15. **Fuzz findings become a committed seed input and a named regression
+18. **Fuzz findings become a committed seed input and a named regression
     test**, never just a fix — and the committed corpus is replayed by a unit
     test inside `check`, so it cannot rot between fuzz runs. **When one thing
     has two representations, fuzz the differential** — assert the two agree

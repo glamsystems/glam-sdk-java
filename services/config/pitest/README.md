@@ -16,10 +16,11 @@ A new unkilled mutant has exactly three legal outcomes:
    mutants *equivalent with respect to observable behavior*, not for "hard to
    test".
 
-Line numbers are part of the baseline key, so unrelated edits to a mutated file
-shift entries: the verify task then reports both stale and "new" rows. Confirm
-the new rows are the shifted old ones, then refresh with
-`-PupdateMutationBaseline`.
+Identical rows are sibling mutants of one compound condition — the comparison
+is a multiset; never hand-dedupe the CSV. Pure line drift from editing a
+mutated file passes on its own with a notice; refresh with
+`-PupdateMutationBaseline` at a convenient moment. Anything beyond pure drift
+(newly covered, unexplained, changed counts) is triage first, refresh after.
 
 ## Suite
 
@@ -58,6 +59,17 @@ definition.
 | 2026-07-22 (multi-row requeue fix) | 1032 | 893 | 202 | 1170/2267 (51%) |
 | 2026-07-23 (fetcher batching + reactive mode) | 993 | 861 | 194 | 1212/2267 (53%) |
 | 2026-07-23 (top-up loop rework) | 991 | 861 | 192 | 1215/2268 (53%) |
+| 2026-07-23 (global config init paths) | 968 | 843 | 187 | 1237/2268 (54%) |
+| 2026-07-23 (multiset migration) | 1030 | 843 | 187 | 1238/2268 (54%) |
+| 2026-07-23 (kamino cache) | 1011 | 835 | 176 | 1257/2268 (55%) |
+
+The 2026-07-23 multiset migration added no new mutants: the verify's baseline
+comparison became a multiset, materializing 62 sibling-mutant copies (same
+`class,method,line,mutator` coordinates, distinct mutants of compound
+conditions) that the old set-dedup had silently absorbed into their accepted
+twins' rows. All 62 fall inside already-triaged families — the in-lock race
+guards and the kamino null-key `createIfChanged` arms. Baseline row counts
+now equal the report's unkilled counts exactly.
 
 The dispatch-hardening change wraps every consumer callback in
 `AccountFetcherImpl` (the always-call listeners, batch and unique consumers,
@@ -508,18 +520,78 @@ loop's `instanceof` branch always intercepts unique records, so the record's
 own delegation is unreachable by design; it must exist to satisfy the
 interface.
 
+## Global config init paths pass (2026-07-23)
+
+`GlobalConfigCache.initCache`'s three entry conditions are now all pinned: a
+missing file goes to the RPC fetch (nested parents created, the fetched
+config persisted and re-readable, every unknown mint queued to the account
+fetcher, the map actually indexed); an empty persisted file is ignored in
+favor of the fetch; and a fetched account with a foreign owner fails the
+future with `Unexpected GlobalConfig Account`. A mint cache that already
+knows every asset suppresses the mint fetch entirely — not even an empty
+queue call. The RPC side runs through a real `RpcCaller` over a
+Proxy-backed `SolanaRpcClient` (same harness as the fetcher tests), and the
+`AccountFetcher` is a recording proxy.
+
+The interface's file-load `createMap` is pinned by a synthesized config: the
+fixture is all single-oracle assets, so the test demotes the first asset's
+meta in place, appends a better-priority oracle for the same asset,
+serializes the modified `GlobalConfig` through its generated `write`, and
+persists it with `persistGlobalConfig` — the load path must index both
+entries and serve the better priority first, which only its per-asset sort
+can do.
+
+## Kamino cache pass (2026-07-23)
+
+Fixed the test harness before the mutants: `KaminoCacheTests.createCache` had
+never created the persistence directories (production `initService` does), so
+every persist quietly failed into a WARN — the stack trace repeated in every
+PIT run, and the persistence mutants were unkillable by construction. With
+the directories in place, persistence is asserted (mappings flat, reserves
+under their market directory), the WARN path has its own broken-target test,
+and the noise is gone at its source.
+
+Killed ~20: the truncated-account guards on both dispatch paths (sub-8-byte
+data is what stands between the length checks and an out-of-bounds
+discriminator read — the existing 16-byte wrong-shape case couldn't see
+them), the null-entry skip in the list path, configuration change
+notification (the recording listener never overrode the change callbacks, so
+every change event was invisible to every test), the rekeyed-duplicate drop,
+the rekeyed-supersede teardown (`removeConfig` — a leftover registration
+must not absorb the original key's re-acceptance), the same-slot vault gate,
+and the reserves-only vault notification boundary (a fee change updates the
+context silently; only allocation changes notify).
+
+**Accepted:** `handleConfigurationChange` 275 EQUAL_IF — the in-lock
+`putIfAbsent` double-check's converging direction, same race-guard family as
+the existing `handleMappingChange`/`updateIfChanged` acceptances; its sibling
+is killed by the rekeyed-duplicate test. The remaining KaminoCacheImpl
+survivors are the previously documented families: in-lock rechecks, the
+`signalAll`/`numReserveChanges` concurrency window (333), slot-gate shadowed
+comparisons (457), capacity-hint arithmetic (103), and the `indexes`
+fallback-scan block pending a second-feed fixture.
+
 ## Untriaged debt
 
 The baseline was seeded with the full pre-existing survivor population when
 the ratchet was adopted, per HARDENING.md's adoption path — **triage debt made
-explicit, not acceptance**. Largest untested blocks, in priority order:
-`integrations/kamino/KaminoCacheImpl` (~214), `rpc/AccountFetcherImpl`
-(~152), `state/GlobalConfigCacheImpl` (~119), `oracles/scope/ScopeFeedContext`
-(~107), `db/sql/BatchSqlExecutorImpl` (~87).
+explicit, not acceptance**. For the current per-class ranking, run
+`./gradlew pitestServicesDebt` — a hand-maintained list here goes stale the
+same week it is written.
 
 Shrinking the baseline is always an improvement; growing it requires a reason
 written here.
 
 ## Triaged equivalent mutants (accepted with reasons)
 
-None yet.
+Recorded inline in the dated pass sections above, as **bold family
+paragraphs** next to the work that triaged them — each names the family, the
+rows, the equivalence argument, and (where applicable) the escape that would
+make the mutants killable. The recurring families here: in-lock race guards
+(single-threaded tests cannot interleave a writer between an optimistic read
+and its locked recheck), `signalAll`/waiter notifications needing a parked
+thread to observe, fast-path count guards subsumed by later comparisons,
+absent-vs-empty-parse equivalence in config sections, null-over-null assigns,
+GC-hygiene calls, capacity-hint arithmetic, and unreachable-by-construction
+defensive guards. New acceptances continue this pattern: document in the pass
+section that does the triage, not here.
