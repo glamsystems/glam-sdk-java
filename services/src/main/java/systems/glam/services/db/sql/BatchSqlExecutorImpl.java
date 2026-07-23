@@ -67,7 +67,10 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
     try {
       //noinspection unchecked
       final T[] batch = (T[]) Array.newInstance(componentType, batchSize);
-      int numItems = 0, numInserted, subBatchSize;
+      // batch[] is indexed by item, densely; numRows drives the executed
+      // threshold. Multi-row preparers must not leave gaps in batch[], or the
+      // failure requeue below would stop early and drop items from the retry.
+      int numItems = 0, numRows, numInserted;
       for (long errorCount = 0, remainingNanos; ; ) {
         if (pending.size() < batchSize) {
           Arrays.fill(batch, null);
@@ -88,7 +91,7 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
         }
         try (final var connection = datasource.getConnection()) {
           try (final var ps = connection.prepareStatement(statement)) {
-            for (numItems = 0; ; ) {
+            for (numItems = 0, numRows = 0; ; ) {
               final var item = pending.pollFirst();
               if (item == null) {
                 if (numItems > 0) {
@@ -96,33 +99,31 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
                   connection.commit();
                   logger.log(INFO,
                       "Inserted {0} out of {1} {2} rows into {3}.",
-                      numInserted, numItems, componentType.getSimpleName(), table
+                      numInserted, numRows, componentType.getSimpleName(), table
                   );
                   numItems = 0;
+                  numRows = 0;
                 }
                 break;
               }
-              batch[numItems] = item;
-              subBatchSize = statementPreparer.prepare(ps, item);
-              numItems += subBatchSize;
-              if (numItems >= batchSize) {
+              batch[numItems++] = item;
+              numRows += statementPreparer.prepare(ps, item);
+              if (numRows >= batchSize || numItems == batch.length) {
                 numInserted = batchExecutionCount(ps.executeBatch());
                 connection.commit();
                 logger.log(INFO,
                     "Inserted {0} out of {1} {2} rows into {3}.",
-                    numInserted, numItems, componentType.getSimpleName(), table
+                    numInserted, numRows, componentType.getSimpleName(), table
                 );
                 numItems = 0;
+                numRows = 0;
               }
             }
           }
         } catch (final SQLException e) {
+          // every slot below numItems holds an item from the failed batch
           for (int i = numItems - 1; i >= 0; --i) {
-            final var item = batch[i];
-            if (item == null) {
-              break;
-            }
-            pending.addFirst(item);
+            pending.addFirst(batch[i]);
           }
           final var sqlState = e.getSQLState();
           logger.log(ERROR, "Failed {0} times to write {1}: [ state => {2}, errorCode => {3}, cause => {4}, message => {5} ]",

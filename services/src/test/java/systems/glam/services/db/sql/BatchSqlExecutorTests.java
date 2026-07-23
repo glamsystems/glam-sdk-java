@@ -283,6 +283,70 @@ final class BatchSqlExecutorTests {
   }
 
   @Test
+  void aFailedMultiRowBatchRequeuesEveryItem() {
+    final var jdbc = new FakeJdbc();
+    jdbc.failFirst = 1;
+    jdbc.interruptOnExecution = 2;
+    final var prepared = new ArrayList<String>();
+    // each item expands to two rows: the row count reaches the batch size
+    // after two items, and a failure must requeue both of them
+    final var executor = BatchSqlExecutor.create(
+        String.class,
+        jdbc.dataSource(),
+        "INSERT INTO items (v) VALUES (?)",
+        4,
+        (ps, item) -> {
+          prepared.add(item);
+          return 2;
+        },
+        Duration.ZERO,
+        Backoff.single(MILLISECONDS, 0)
+    );
+    executor.queue("a");
+    executor.queue("b");
+    executor.queue("c");
+
+    executor.run();
+
+    // the failed two-item batch is retried whole, then the remainder flushes
+    assertEquals(List.of("a", "b", "a", "b", "c"), prepared);
+    assertEquals(3, jdbc.executions);
+    assertEquals(2, jdbc.commits);
+  }
+
+  @Test
+  void zeroRowItemsStillFlushWithoutOverflowingTheBatch() {
+    final var jdbc = new FakeJdbc();
+    jdbc.interruptOnExecution = 2;
+    final var prepared = new ArrayList<String>();
+    // a preparer may add no rows for an item (e.g. filtered out); more items
+    // than the batch size must still cycle through without overflowing batch[]
+    final var executor = BatchSqlExecutor.create(
+        String.class,
+        jdbc.dataSource(),
+        "INSERT INTO items (v) VALUES (?)",
+        2,
+        (ps, item) -> {
+          prepared.add(item);
+          return 0;
+        },
+        Duration.ZERO,
+        Backoff.single(MILLISECONDS, 0)
+    );
+    executor.queue("a");
+    executor.queue("b");
+    executor.queue("c");
+
+    try (final var log = LogCapture.attach(BatchSqlExecutor.class.getName())) {
+      executor.run();
+      assertTrue(log.messages().stream().noneMatch(m -> m.contains("Unexpected error")),
+          () -> String.join("\n", log.messages()));
+    }
+    assertEquals(List.of("a", "b", "c"), prepared);
+    assertEquals(2, jdbc.executions);
+  }
+
+  @Test
   void anUnexpectedRuntimeErrorIsLoggedAndEndsTheRun() {
     final var badDataSource = (DataSource) Proxy.newProxyInstance(
         DataSource.class.getClassLoader(),

@@ -55,6 +55,7 @@ definition.
 | 2026-07-22 (config parse + global config validation) | 1082 | 908 | 240 | 1118/2266 (49%) |
 | 2026-07-22 (config sections + mint cache) | 1059 | 905 | 220 | 1141/2266 (50%) |
 | 2026-07-22 (batch sql executor) | 1033 | 893 | 203 | 1170/2266 (51%) |
+| 2026-07-22 (multi-row requeue fix) | 1032 | 893 | 202 | 1170/2267 (51%) |
 
 The dispatch-hardening change wraps every consumer callback in
 `AccountFetcherImpl` (the always-call listeners, batch and unique consumers,
@@ -434,12 +435,22 @@ pending exits the delay window immediately. Both are flicker, not behavior.
 `>= 0` differs only when a wait returns exactly 0, which re-arms one
 zero-nanos await and exits on its negative return.
 
-**Requeue gap guards (`run` 73 `Arrays.fill`, 122 break-on-null)** — the
-failed-batch walk breaks at the first unset slot; every in-repo
-`StatementPreparer` returns one row per item, so the walk is gapless and the
-fill/break pair is unobservable. Named escape: a multi-row preparer — at
-which point the requeue walk itself needs revisiting, since a gap drops the
-items below it from the retry.
+**Requeue gap guards — RESOLVED by fix.** The failed-batch walk used to break
+at the first unset slot, and a multi-row `StatementPreparer` (the `int`
+return contract allows it) left index gaps that silently dropped items from
+the retry. `run()` now tracks items and rows separately: `batch[]` is indexed
+densely by item, `numRows` drives the execute threshold, and the walk requeues
+every slot below `numItems` unconditionally. Pinned by a two-rows-per-item
+failure test (the whole batch retries) and a zero-rows-per-item test (the
+`numItems == batch.length` guard prevents overflow when rows never
+accumulate). The remaining `Arrays.fill` mutant (`run` 76) is now pure GC
+hygiene — it releases references while the runner parks between cycles — and
+is accepted as unobservable.
+
+**Batch-length equality guard (`run` 111 EQUAL_ELSE on `numRows >=
+batchSize`)** — the `||` pairing means one direction only shows when rows and
+items disagree at the boundary; the multi-row and zero-row tests pin the
+observable directions, the residual direction is a redundant re-check.
 
 ## Untriaged debt
 
