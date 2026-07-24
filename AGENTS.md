@@ -142,7 +142,7 @@ changes here:
      template changes until the block is re-diffed — sync or ACT on each
      changed bullet (a new bullet may need code, not prose) — and the digest
      updated. -->
-<!-- hardening-template sha256:cdac2e3852a9 -->
+<!-- hardening-template sha256:7f9eb869ee7e -->
 
 1. **Scale verification to the change.** Iterate with the module's `test`
    task; before handing off, run only the `pitest<Suite>`(s) whose mutated
@@ -274,10 +274,27 @@ changes here:
     answer. Minimize a corpus with `fuzz<Target>Minimize` (libFuzzer
     `-merge=1`; `-PadoptLocalCorpus` opts in locally found inputs), never by
     hand — review the diff and update the corpus provenance README.
+20. **Stubs and fixtures return distinguishable, non-default values.** A stub
+    or proxy returning `null`/`0`/`""`/`true`/empty makes the matching
+    return-value mutant equivalent by accident of the fixture — the same trap
+    as a test clock starting at 0. Give recording proxies (the `SolanaRpcClient`
+    / `AccountFetcher` proxies here) return values a real assertion can tell
+    from the mutated default.
+21. **Copy-on-write clusters split by direction.** For a method returning an
+    unmodifiable view (`List.copyOf(...)`, `List.of(...)` — e.g.
+    `KaminoCacheImpl.vaultContexts`), assert the immutability
+    (`assertThrows(UnsupportedOperationException, ...)`) as well as the
+    contents: the mutable-escape direction is a kill, and only the
+    content-equal siblings are family-accepted equivalents.
 
 When adding a parser, algorithm or strategy: add unit tests, put it in a
 mutation suite (the wildcard targeting already mutates new classes by
 default), and add a fuzz harness if it consumes external input.
+
+Every `# <family>` label on an accepted baseline row must be named in the
+module's `config/pitest/README.md` (a "Family labels" glossary) — the verify
+and debt tasks warn on any label with no `# <label>` mention there, so a
+typo or an orphaned argument surfaces instead of silently opening a bucket.
 
 ## Gotchas & invariants worth knowing
 

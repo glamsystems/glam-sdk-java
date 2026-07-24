@@ -33,13 +33,13 @@ systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,64,Re
 systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,68,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
 systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,72,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
 systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,76,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,146,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent — see README
-systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,208,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # accepted equivalent — see README
-systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,208,RemoveConditionalMutator_ORDER_IF,SURVIVED # accepted equivalent — see README
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,75,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent — see README
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,75,RemoveConditionalMutator_ORDER_IF,SURVIVED # accepted equivalent — see README
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,76,VoidMethodCallMutator,SURVIVED # accepted equivalent — see README
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,85,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent — see README
+systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,146,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent
+systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,208,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # accepted equivalent
+systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,208,RemoveConditionalMutator_ORDER_IF,SURVIVED # accepted equivalent
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,75,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,75,RemoveConditionalMutator_ORDER_IF,SURVIVED # accepted equivalent
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,76,VoidMethodCallMutator,SURVIVED # accepted equivalent
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,85,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent
 systems.glam.services.execution.ExecutionServiceContext,createContext,22,NullReturnValsMutator,NO_COVERAGE # untriaged
 systems.glam.services.execution.FormatUtil,formatInstructionException,64,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
 systems.glam.services.execution.FormatUtil,formatTransactionResult,105,NakedReceiverMutator,SURVIVED # untriaged
@@ -198,15 +198,15 @@ systems.glam.services.rpc.AccountFetcher,priorityQueue,43,VoidMethodCallMutator,
 systems.glam.services.rpc.AccountFetcher,queue,55,VoidMethodCallMutator,NO_COVERAGE # untriaged
 systems.glam.services.rpc.AccountFetcherImpl$UniqueAccountBatchRecord,accept,455,VoidMethodCallMutator,NO_COVERAGE # untriaged
 systems.glam.services.rpc.AccountFetcherImpl,createBatch,255,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.rpc.AccountFetcherImpl,createBatch,299,IncrementsMutator,SURVIVED # accepted equivalent — see README
-systems.glam.services.rpc.AccountFetcherImpl,createBatch,302,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # accepted equivalent — see README
-systems.glam.services.rpc.AccountFetcherImpl,delay,327,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent — see README
-systems.glam.services.rpc.AccountFetcherImpl,delay,335,VoidMethodCallMutator,SURVIVED # accepted equivalent — see README
-systems.glam.services.rpc.AccountFetcherImpl,lockedQueue,96,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent — see README
+systems.glam.services.rpc.AccountFetcherImpl,createBatch,299,IncrementsMutator,SURVIVED # accepted equivalent
+systems.glam.services.rpc.AccountFetcherImpl,createBatch,302,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # accepted equivalent
+systems.glam.services.rpc.AccountFetcherImpl,delay,327,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent
+systems.glam.services.rpc.AccountFetcherImpl,delay,335,VoidMethodCallMutator,SURVIVED # accepted equivalent
+systems.glam.services.rpc.AccountFetcherImpl,lockedQueue,96,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent
 systems.glam.services.rpc.AccountFetcherImpl,priorityQueueBatchable,163,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,146,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent — see README
-systems.glam.services.rpc.AccountFetcherImpl,run,347,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent — see README
-systems.glam.services.rpc.AccountFetcherImpl,run,389,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent — see README
+systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,146,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent
+systems.glam.services.rpc.AccountFetcherImpl,run,347,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent
+systems.glam.services.rpc.AccountFetcherImpl,run,389,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent
 systems.glam.services.state.GlobalConfigCache,createMap,116,ConditionalsBoundaryMutator,SURVIVED # untriaged
 systems.glam.services.state.GlobalConfigCache,createMap,116,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged
 systems.glam.services.state.GlobalConfigCacheImpl,accept,659,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged

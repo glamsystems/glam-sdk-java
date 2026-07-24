@@ -925,13 +925,47 @@ Shrinking the baseline is always an improvement; growing it requires a reason
 written here.
 
 Row labels: back-filled 2026-07-23 from the pass sections above — every
-`SURVIVED` row tied to a documented family carries its label
-(`# in-lock race guard`, `# subsumed length guard`, `# capacity-hint`, …),
-`# seamless bootstrap` marks the entrypoint's config-driven wiring (escape:
-a seam refactor), and everything unattributable stayed `# untriaged` — the
-honest default; refine labels when a row's family is pinned down, and
-refreshes seed `# untriaged` on new rows. The 128 untriaged rows are the
-real remaining triage debt, now a printed number.
+`SURVIVED` row tied to a documented family carries its label, and everything
+unattributable stayed `# untriaged` — the honest default; refine labels when
+a row's family is pinned down, and refreshes seed `# untriaged` on new rows.
+The untriaged rows are the real remaining triage debt, now a printed number.
+
+### Family labels
+
+Each accepted row carries a `# <family>` label whose argument is the pass
+section above that triaged it; the verify and debt tasks warn on any label not
+named here. The families:
+
+- `# in-lock race guard` — an optimistic read rechecked under a lock; a
+  single-threaded test cannot interleave a writer between the two.
+- `# race-guard family` — the `GlobalConfigCacheImpl` variant of the above
+  (null-state rechecks between an unlock and the write lock).
+- `# signalAll waiter` — a `signalAll`/`await` notification only a parked
+  thread could observe.
+- `# subsumed length guard` — a `data.length == X.BYTES` guard whose forced
+  direction routes to a length-safe discriminator check that rejects
+  identically (accept-path dispatch).
+- `# subsumed count guard` — a `count == section.length` short-circuit before
+  an `Arrays.equals` over ranges computed from each side's own count.
+- `# capacity-hint` — arithmetic sizing a `HashMap`/array capacity
+  (`newHashMap(n*3)`, `highestOneBit(n) << 1`); no observable output.
+- `# residual sibling legs` — the forced-true direction of a compound
+  condition whose observable sibling has a named killing test.
+- `# mutual-redundancy family` — `ScopeFeedContext` orderings the source array
+  already maintains, so removing them is invisible through `indexes()`.
+- `# single-feed unobservable` — the `indexes()` `.sorted()` over a single
+  fixture feed: a no-op in-harness, killable with a second feed.
+- `# hashcode mixing` — `MinGlamStateAccount.hashCode` mixing arithmetic;
+  every mutant preserves the equal-hash contract.
+- `# durability unobservable` — `force()`/`close()` durability calls no
+  in-process assertion can see.
+- `# accepted equivalent` — `AccountFetcherImpl`/`BatchSqlExecutorImpl`
+  equivalents argued in their pass sections (spurious-signal directions,
+  fast-path skips, GC-hygiene `Arrays.fill`).
+- `# seamless bootstrap` — the fulfillment entrypoint's config-driven wiring
+  with no injection seam; escape is a seam refactor.
+- `# flip insurance` — a load-dependent kill unioned back after it resurfaced
+  `SURVIVED`; never prune it (see the delegate-gate pass).
 
 ## Triaged equivalent mutants (accepted with reasons)
 
