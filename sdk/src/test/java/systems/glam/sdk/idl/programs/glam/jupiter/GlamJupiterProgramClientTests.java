@@ -246,4 +246,138 @@ final class GlamJupiterProgramClientTests {
     assertEquals(1, explicitSingle.size());
     assertNotNull(explicitSingle.get(outputATA));
   }
+
+  private static void assertSameInstruction(final String name, final Instruction expected, final Instruction actual) {
+    assertEquals(expected.programId().publicKey(), actual.programId().publicKey(), name);
+    assertEquals(expected.accounts(), actual.accounts(), name);
+    assertArrayEquals(expected.data(), actual.data(), name);
+  }
+
+  private static void assertSameInstructions(final String name,
+                                             final java.util.List<Instruction> expected,
+                                             final java.util.List<Instruction> actual) {
+    assertEquals(expected.size(), actual.size(), name);
+    for (int i = 0; i < expected.size(); ++i) {
+      assertSameInstruction(name + "[" + i + "]", expected.get(i), actual.get(i));
+    }
+  }
+
+  /// Every convenience overload must produce exactly its fully-explicit
+  /// form — this delegation family already produced a real dropped-argument
+  /// bug (priceExternalPositions), so each hop is pinned.
+  @Test
+  void convenienceOverloadsMatchTheirExplicitForms() {
+    final var client = createClient();
+    final var tokenProgram = SOLANA_ACCOUNTS.tokenProgram();
+    final var in = key(21);
+    final var out = key(22);
+    final long amount = 1_234L;
+    final var route = routeIx();
+    final var inState = key(23);
+    final var outState = key(24);
+
+    final var checked = client.swapWithProgramStateChecked(
+        null, in, tokenProgram, null, out, tokenProgram, amount, route, false);
+    final var checkedWrap = client.swapWithProgramStateChecked(
+        null, in, tokenProgram, null, out, tokenProgram, amount, route, true);
+    final var unchecked = client.swapWithProgramStateUnchecked(
+        null, in, tokenProgram, null, out, tokenProgram, amount, route, false);
+    final var uncheckedWrap = client.swapWithProgramStateUnchecked(
+        null, in, tokenProgram, null, out, tokenProgram, amount, route, true);
+    final var noWrap = client.swapWithProgramStateUncheckedAndNoWrap(
+        null, in, tokenProgram, null, out, tokenProgram, route);
+
+    assertSameInstructions("swapChecked/7",
+        client.swapChecked(in, tokenProgram, out, tokenProgram, amount, route, false), checked);
+    assertSameInstructions("swapChecked/5",
+        client.swapChecked(in, out, amount, route, false), checked);
+    assertSameInstructions("swapChecked/4 defaults to wrap",
+        client.swapChecked(in, out, amount, route), checkedWrap);
+    assertSameInstruction("swapUncheckedAndNoWrap/5",
+        client.swapUncheckedAndNoWrap(in, tokenProgram, out, tokenProgram, route), noWrap);
+    assertSameInstruction("swapUncheckedAndNoWrap/3",
+        client.swapUncheckedAndNoWrap(in, out, route), noWrap);
+    assertSameInstructions("swapUnchecked/7",
+        client.swapUnchecked(in, tokenProgram, out, tokenProgram, amount, route, false), unchecked);
+    assertSameInstructions("swapUnchecked/5",
+        client.swapUnchecked(in, out, amount, route, false), unchecked);
+    assertSameInstructions("swapUnchecked/4 defaults to wrap",
+        client.swapUnchecked(in, out, amount, route), uncheckedWrap);
+
+    // the program-state keys must survive the token-program-defaulting hops
+    final var stateChecked = client.swapWithProgramStateChecked(
+        inState, in, tokenProgram, outState, out, tokenProgram, amount, route, false);
+    assertSameInstructions("swapWithProgramStateChecked/7",
+        client.swapWithProgramStateChecked(inState, in, outState, out, amount, route, false), stateChecked);
+    assertSameInstructions("swapWithProgramStateChecked/6 defaults to wrap",
+        client.swapWithProgramStateChecked(inState, in, outState, out, amount, route),
+        client.swapWithProgramStateChecked(inState, in, tokenProgram, outState, out, tokenProgram, amount, route, true));
+    final var stateUnchecked = client.swapWithProgramStateUnchecked(
+        inState, in, tokenProgram, outState, out, tokenProgram, amount, route, false);
+    assertSameInstructions("swapWithProgramStateUnchecked/7",
+        client.swapWithProgramStateUnchecked(inState, in, outState, out, amount, route, false), stateUnchecked);
+    assertSameInstructions("swapWithProgramStateUnchecked/6 defaults to wrap",
+        client.swapWithProgramStateUnchecked(inState, in, outState, out, amount, route),
+        client.swapWithProgramStateUnchecked(inState, in, tokenProgram, outState, out, tokenProgram, amount, route, true));
+    assertSameInstruction("swapWithProgramStateUncheckedAndNoWrap/5",
+        client.swapWithProgramStateUncheckedAndNoWrap(inState, in, outState, out, route),
+        client.swapWithProgramStateUncheckedAndNoWrap(inState, in, tokenProgram, outState, out, tokenProgram, route));
+
+    // and they actually land in the CPI: with vs without must differ
+    assertNotEquals(checked.getLast().accounts(), stateChecked.getLast().accounts(),
+        "the program-state keys never reached the checked swap CPI");
+    assertNotEquals(unchecked.getLast().accounts(), stateUnchecked.getLast().accounts(),
+        "the program-state keys never reached the unchecked swap CPI");
+
+    // the route's accounts ride the CPI as extra accounts — Instruction is
+    // immutable, so a dropped extraAccounts() result loses the whole route
+    // (the wrapSOL variant of this was a real bug)
+    assertTrue(noWrap.accounts().contains(createRead(key(11))),
+        "the route accounts never reached the swap CPI");
+
+    // a non-wSOL input must not trigger the wrap prelude even when allowed
+    assertEquals(2, checkedWrap.size(), "wrap prelude added for a non-wSOL input");
+    assertEquals(1, uncheckedWrap.size(), "wrap prelude added for a non-wSOL input");
+  }
+
+  /// The program-state swap variants share the wrap gate: a wSOL input plus
+  /// wrapSOL prepends the fund-and-sync prelude; either alone must not.
+  @Test
+  void programStateSwapsWrapOnlyWrappedSolInputs() {
+    final var client = createClient();
+    final var tokenProgram = SOLANA_ACCOUNTS.tokenProgram();
+    final var wSol = SOLANA_ACCOUNTS.wrappedSolTokenMint();
+    final var out = key(22);
+    final long amount = 1_234L;
+    final var route = routeIx();
+    final var inState = key(23);
+    final var outState = key(24);
+
+    final var checkedWrapped = client.swapWithProgramStateChecked(
+        inState, wSol, tokenProgram, outState, out, tokenProgram, amount, route, true);
+    // create input ATA, fund it, sync, create output ATA, swap
+    assertEquals(5, checkedWrapped.size());
+    final var checkedUnwrapped = client.swapWithProgramStateChecked(
+        inState, wSol, tokenProgram, outState, out, tokenProgram, amount, route, false);
+    assertEquals(2, checkedUnwrapped.size(), "wrapSOL=false must skip the prelude");
+
+    final var uncheckedWrapped = client.swapWithProgramStateUnchecked(
+        inState, wSol, tokenProgram, outState, out, tokenProgram, amount, route, true);
+    // fund the wSOL PDA, sync, swap
+    assertEquals(3, uncheckedWrapped.size());
+    assertEquals(1, client.swapWithProgramStateUnchecked(
+            inState, wSol, tokenProgram, outState, out, tokenProgram, amount, route, false).size(),
+        "wrapSOL=false must skip the prelude");
+
+    // the prelude funds the vault's wSOL account with exactly the swap amount
+    final var transfer = checkedWrapped.get(1);
+    assertEquals(GlamAccounts.MAIN_NET.protocolProgram(), transfer.programId().publicKey());
+  }
+
+  @Test
+  void contextBuilderProgramStateSettersReturnTheBuilder() {
+    final var builder = contextBuilder(key(21));
+    assertSame(builder, builder.inputProgramStateKey(key(23)));
+    assertSame(builder, builder.outputProgramStateKey(key(24)));
+  }
 }

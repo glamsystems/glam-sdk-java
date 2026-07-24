@@ -279,6 +279,8 @@ final class KaminoCacheDirectFeedTests {
     systems.glam.services.io.FileUtils.writeCompressedAccountData(mappingsPath, key(91), new byte[]{1, 2, 3});
     systems.glam.services.io.FileUtils.writeCompressedAccountData(
         reservesPath.resolve(reserveContext.market().toBase58()), key(92), new byte[]{1, 2, 3});
+    // a stray plain file among the market directories: skipped, not listed into
+    Files.writeString(reservesPath.resolve("notes.txt"), "not a market dir");
 
     // the only network the warm start needs is the vault state scan
     final var vaultStateData = ResourceUtil.readResource(
@@ -354,6 +356,156 @@ final class KaminoCacheDirectFeedTests {
     assertFalse(Files.exists(marketPath.resolve(RESERVE_A_KEY.toBase58() + ".dat")));
     // junk mappings and reserves were passed over, not fatal
     assertNull(cache.reserveContext(key(92)));
+    // and deleted, so they are not re-read and re-failed on every start
+    assertFalse(Files.exists(mappingsPath.resolve(key(91).toBase58() + ".dat.gz")),
+        "the corrupted mappings file was not deleted");
+    assertFalse(Files.exists(reservesPath.resolve(reserveContext.market().toBase58())
+            .resolve(key(92).toBase58() + ".dat.gz")),
+        "the corrupted reserve file was not deleted");
+  }
+
+  /// A cold start whose reserve scan comes back empty must still create the
+  /// reserve directory instead of crashing on the missing path.
+  @Test
+  void anEmptyColdStartCreatesTheReserveDirectory(@TempDir final Path tempDir) throws IOException {
+    final var kaminoAccounts = KaminoAccounts.MAIN_NET;
+    final var vaultStateData = Arrays.copyOf(readVaultFixture(), KaminoCacheImpl.MIN_VAULT_STATE_LENGTH);
+    final var vaultKey = fromBase58Encoded("5YxwKgsvyTdT8q2CBgwA4L9BKbnKNrB66K9wUzij5wH");
+    final var client = (software.sava.rpc.json.http.client.SolanaRpcClient) java.lang.reflect.Proxy.newProxyInstance(
+        software.sava.rpc.json.http.client.SolanaRpcClient.class.getClassLoader(),
+        new Class<?>[]{software.sava.rpc.json.http.client.SolanaRpcClient.class},
+        (proxy, method, args) -> {
+          if (method.getName().equals("getProgramAccounts")) {
+            final var request = (software.sava.rpc.json.http.client.ProgramAccountsRequest<?>) args[0];
+            return java.util.concurrent.CompletableFuture.completedFuture(
+                request.programId().equals(kaminoAccounts.kVaultsProgram())
+                    ? java.util.List.of(accountInfo(vaultKey, 100L, vaultStateData))
+                    : java.util.List.of());
+          }
+          throw new UnsupportedOperationException(method.getName());
+        }
+    );
+
+    final var fetcher = (systems.glam.services.rpc.AccountFetcher) java.lang.reflect.Proxy.newProxyInstance(
+        systems.glam.services.rpc.AccountFetcher.class.getClassLoader(),
+        new Class<?>[]{systems.glam.services.rpc.AccountFetcher.class},
+        (proxy, method, args) -> method.getName().equals("listenToAll") ? null
+            : Void.class.cast(new UnsupportedOperationException(method.getName()))
+    );
+    final var cache = KaminoCache.initService(
+        tempDir, callerFor(client), fetcher, kaminoAccounts, Duration.ofSeconds(1)
+    ).join();
+
+    assertTrue(cache.reserveContexts().isEmpty());
+    assertTrue(Files.isDirectory(tempDir.resolve("reserves")),
+        "the reserve directory was not created for the next start");
+  }
+
+  /// When the persisted configurations already cover every feed the fetched
+  /// reserves price through, the scope-configuration scan is skipped — and
+  /// no-feed reserves (all-zero or the nu11 sentinel) must not force it.
+  @Test
+  void warmConfigsColdReservesSkipTheConfigurationFetch(@TempDir final Path tempDir) throws IOException {
+    final var configurationsPath = tempDir.resolve("scope").resolve("configurations");
+    final var mappingsPath = tempDir.resolve("scope").resolve("mappings");
+    Files.createDirectories(configurationsPath);
+    Files.createDirectories(mappingsPath);
+    systems.glam.services.io.FileUtils.writeCompressedAccountData(configurationsPath, CONFIG2_KEY, config2Data);
+    systems.glam.services.io.FileUtils.writeCompressedAccountData(mappingsPath, MAPPINGS2_KEY, mappings2Data);
+
+    final var kaminoAccounts = KaminoAccounts.MAIN_NET;
+    final var vaultStateData = Arrays.copyOf(readVaultFixture(), KaminoCacheImpl.MIN_VAULT_STATE_LENGTH);
+    final var vaultKey = fromBase58Encoded("5YxwKgsvyTdT8q2CBgwA4L9BKbnKNrB66K9wUzij5wH");
+    final var pricedReserve = Arrays.copyOf(reserveOn(11, 1_000L), KaminoCacheImpl.MIN_RESERVE_LENGTH);
+    final var feedlessData = reserveOn(11, 5L);
+    java.util.Arrays.fill(feedlessData,
+        SCOPE_CONFIG_BASE + ScopeConfiguration.PRICE_FEED_OFFSET,
+        SCOPE_CONFIG_BASE + ScopeConfiguration.PRICE_FEED_OFFSET + PublicKey.PUBLIC_KEY_LENGTH,
+        (byte) 0);
+    final var feedlessKey = key(47);
+    final var nilData = reserveOn(11, 7L);
+    KaminoAccounts.NULL_KEY.write(nilData, SCOPE_CONFIG_BASE + ScopeConfiguration.PRICE_FEED_OFFSET);
+    final var nilKey = key(48);
+
+    final var client = (software.sava.rpc.json.http.client.SolanaRpcClient) java.lang.reflect.Proxy.newProxyInstance(
+        software.sava.rpc.json.http.client.SolanaRpcClient.class.getClassLoader(),
+        new Class<?>[]{software.sava.rpc.json.http.client.SolanaRpcClient.class},
+        (proxy, method, args) -> {
+          if (method.getName().equals("getProgramAccounts")) {
+            final var request = (software.sava.rpc.json.http.client.ProgramAccountsRequest<?>) args[0];
+            final var program = request.programId();
+            if (program.equals(kaminoAccounts.kVaultsProgram())) {
+              return java.util.concurrent.CompletableFuture.completedFuture(
+                  java.util.List.of(accountInfo(vaultKey, 100L, vaultStateData)));
+            } else if (program.equals(kaminoAccounts.kLendProgram())) {
+              return java.util.concurrent.CompletableFuture.completedFuture(java.util.List.of(
+                  accountInfo(RESERVE_A_KEY, 100L, pricedReserve),
+                  accountInfo(feedlessKey, 100L, Arrays.copyOf(feedlessData, KaminoCacheImpl.MIN_RESERVE_LENGTH)),
+                  accountInfo(nilKey, 100L, Arrays.copyOf(nilData, KaminoCacheImpl.MIN_RESERVE_LENGTH))));
+            }
+            throw new AssertionError(
+                "the scope configurations were refetched despite full on-disk coverage: " + program);
+          }
+          throw new UnsupportedOperationException(method.getName());
+        }
+    );
+
+    final var fetcher = (systems.glam.services.rpc.AccountFetcher) java.lang.reflect.Proxy.newProxyInstance(
+        systems.glam.services.rpc.AccountFetcher.class.getClassLoader(),
+        new Class<?>[]{systems.glam.services.rpc.AccountFetcher.class},
+        (proxy, method, args) -> method.getName().equals("listenToAll") ? null
+            : Void.class.cast(new UnsupportedOperationException(method.getName()))
+    );
+    final var cache = KaminoCache.initService(
+        tempDir, callerFor(client), fetcher, kaminoAccounts, Duration.ofSeconds(1)
+    ).join();
+
+    // every reserve landed and the persisted feed serves the priced one
+    final var priced = cache.reserveContext(RESERVE_A_KEY);
+    assertNotNull(priced);
+    assertNotNull(cache.reserveContext(feedlessKey));
+    assertNotNull(cache.reserveContext(nilKey));
+    final var feed = cache.indexes(priced.mint(), ORACLE, OracleType.SwitchboardOnDemand);
+    assertNotNull(feed, "the persisted feed was not wired to the fetched reserve");
+    assertEquals(BigInteger.valueOf(1_000L), feed.liquidity());
+  }
+
+  /// A mappings account the configurations reference that the RPC cannot
+  /// serve is a named fatal error, not a null dereference later.
+  @Test
+  void aMissingMappingsAccountFailsTheInitByName(@TempDir final Path tempDir) throws IOException {
+    final var configurationsPath = tempDir.resolve("scope").resolve("configurations");
+    Files.createDirectories(configurationsPath);
+    Files.createDirectories(tempDir.resolve("scope").resolve("mappings"));
+    Files.createDirectories(tempDir.resolve("reserves"));
+    systems.glam.services.io.FileUtils.writeCompressedAccountData(configurationsPath, CONFIG2_KEY, config2Data);
+
+    final var kaminoAccounts = KaminoAccounts.MAIN_NET;
+    final var vaultStateData = Arrays.copyOf(readVaultFixture(), KaminoCacheImpl.MIN_VAULT_STATE_LENGTH);
+    final var vaultKey = fromBase58Encoded("5YxwKgsvyTdT8q2CBgwA4L9BKbnKNrB66K9wUzij5wH");
+    final var client = (software.sava.rpc.json.http.client.SolanaRpcClient) java.lang.reflect.Proxy.newProxyInstance(
+        software.sava.rpc.json.http.client.SolanaRpcClient.class.getClassLoader(),
+        new Class<?>[]{software.sava.rpc.json.http.client.SolanaRpcClient.class},
+        (proxy, method, args) -> switch (method.getName()) {
+          case "getProgramAccounts" -> java.util.concurrent.CompletableFuture.completedFuture(
+              java.util.List.of(accountInfo(vaultKey, 100L, vaultStateData)));
+          case "getAccounts" -> java.util.concurrent.CompletableFuture.completedFuture(
+              java.util.Collections.singletonList(null));
+          default -> throw new UnsupportedOperationException(method.getName());
+        }
+    );
+    final var fetcher = (systems.glam.services.rpc.AccountFetcher) java.lang.reflect.Proxy.newProxyInstance(
+        systems.glam.services.rpc.AccountFetcher.class.getClassLoader(),
+        new Class<?>[]{systems.glam.services.rpc.AccountFetcher.class},
+        (proxy, method, args) -> null
+    );
+
+    final var future = KaminoCache.initService(
+        tempDir, callerFor(client), fetcher, kaminoAccounts, Duration.ofSeconds(1)
+    );
+    final var failure = assertThrows(java.util.concurrent.CompletionException.class, future::join);
+    assertTrue(failure.getCause().getMessage().contains("Oracle Mappings account not found"),
+        failure.getCause().getMessage());
   }
 
   @Test
@@ -404,9 +556,11 @@ final class KaminoCacheDirectFeedTests {
             } else if (program.equals(kaminoAccounts.scopePricesProgram())) {
               assertEquals(KaminoCacheImpl.MIN_CONFIGURATION_LENGTH, request.dataSliceLength());
               assertFalse(request.filters().isEmpty());
-              yield java.util.concurrent.CompletableFuture.completedFuture(java.util.List.of(
+              // a null slot in the response is skipped, not dereferenced
+              yield java.util.concurrent.CompletableFuture.completedFuture(java.util.Arrays.asList(
                   accountInfo(CONFIG2_KEY, 100L,
-                      Arrays.copyOf(config2Data, KaminoCacheImpl.MIN_CONFIGURATION_LENGTH))));
+                      Arrays.copyOf(config2Data, KaminoCacheImpl.MIN_CONFIGURATION_LENGTH)),
+                  null));
             }
             throw new UnsupportedOperationException("getProgramAccounts for " + program);
           }

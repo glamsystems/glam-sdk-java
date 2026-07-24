@@ -72,6 +72,7 @@ definition.
 | 2026-07-23 (fulfillment services) | 499 | 318 | 181 | 1768/2267 (77%) |
 | 2026-07-23 (cache run loops + io tails) | 330 | 131 | 199 | 1939/2269 (85%) |
 | 2026-07-23 (init paths + remaining tails) | 272 | 66 | 206 | 1996/2269 (87%) |
+| 2026-07-23 (delegate gate + init hygiene) | 255 | 57 | 198 | 2014/2269 (88%) |
 
 The instruction-processor pass covers `InstructionProcessorImpl` against a
 scripted `InstructionService` (each call's batch recorded, the next scripted
@@ -852,6 +853,46 @@ residues are the previously documented in-lock, signalling, and
 feed-map-unobservable families; the feed-map escape remains a second scope
 feed fixture whose chains head with a direct oracle entry.
 
+## Delegate gate + init hygiene pass (2026-07-23)
+
+`SingleAssetFulfillmentServiceEntrypoint.validateDelegatePermissions` was
+widened to package-private (same precedent as the package-private locks —
+`createService` offers no seam for a stub client) and its nine mutants are
+killed directly: a missing state account and an ungranted delegate are
+refused **and reported** (LogCapture pins both ERROR lines; a misconfigured
+delegate must never fail silently into a dead run loop), and the granted
+delegate passes without noise. The remaining `main`/`createService`
+`NO_COVERAGE` rows are config-driven bootstrap wiring — the config builds
+its own RPC clients, so there is no injection seam; kill requires a seam
+refactor (escape recorded here), not a cleverer test.
+
+`KaminoCache.initService` hygiene, all through real `initService` runs over
+Proxy-backed clients: corrupted mappings/reserve files are **deleted**, not
+just skipped (`Files::delete` 420/453 — a file left in place is re-read and
+re-failed on every start); a stray plain file among the market directories
+is skipped; an empty cold-start reserve scan still creates the reserve
+directory (`loadReserves` 400 — the guard is only reachable when RPC
+returns zero reserves); a null slot in the configuration response is
+skipped, not dereferenced; a missing mappings account fails init **by
+name** (`Oracle Mappings account not found`, not an NPE downstream); and
+warm on-disk configurations covering every fetched feed suppress the
+configuration re-scan — which no-feed reserves (all-zero or nu11 sentinel)
+must not defeat (239/242: the mutant queues the sentinel as a real feed and
+forces the fetch, which the proxy fails loudly).
+
+**Accepted (families already documented):** the six `initService` capacity
+hints (`MathMutator` on `newHashMap(n*3)` / `highestOneBit(n) << 1`), and
+the nine residual operand legs at 258/273/306/324/336 — each is the
+forced-true direction of a guard whose observable sibling has a named
+killing test in the verify hint; only an input that fails one operand while
+already failing the other could distinguish them.
+
+**Blocked note:** the coverage pass currently requires the local
+`includeBuild("../ravina")` — published `ravina-kms-core` jars have no
+`META-INF/services` entry, so PIT's class-path minions cannot ServiceLoader
+the `MemorySignerFactory` the signing-config test needs (fixed in ravina
+`bde97ec`, unreleased). See AGENTS.md bullet 14.
+
 ## Untriaged debt
 
 The baseline was seeded with the full pre-existing survivor population when
@@ -862,6 +903,10 @@ same week it is written.
 
 Shrinking the baseline is always an improvement; growing it requires a reason
 written here.
+
+Row labels: the sdk baseline is labeled per family (see its README); this
+module's back-fill is pending — refreshes seed `# untriaged` on new rows, so
+labels accrue from here even before the back-fill pass.
 
 ## Triaged equivalent mutants (accepted with reasons)
 

@@ -120,4 +120,73 @@ final class GlamVaultAccountsTests {
         vaultAccounts.vaultTablePrefixKeys()
     );
   }
+
+  /// The system-program ix-mapper config (glam/mapping-configs-v1 shape),
+  /// inlined so the test does not depend on the untracked download.
+  private static final String SYSTEM_MAPPING_JSON = """
+      {
+        "program_id": "11111111111111111111111111111111",
+        "proxy_program_id": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
+        "instructions": [
+          {
+            "src_ix_name": "transfer",
+            "src_discriminator": [2, 0, 0, 0],
+            "dst_ix_name": "system_transfer",
+            "dst_discriminator": [167, 164, 195, 155, 219, 152, 191, 230],
+            "dynamic_accounts": [
+              {"name": "glam_state", "index": 0, "writable": false, "signer": false},
+              {"name": "glam_vault", "index": 1, "writable": true, "signer": false},
+              {"name": "glam_signer", "index": 2, "writable": true, "signer": true}
+            ],
+            "static_accounts": [
+              {"account": "11111111111111111111111111111111", "index": 3, "writable": false, "signer": false}
+            ],
+            "index_map": [-1, 4]
+          }
+        ]
+      }""";
+
+  @Test
+  void loadMappingConfigsParsesOnlyReadableTopLevelJsonFiles(
+      @org.junit.jupiter.api.io.TempDir final java.nio.file.Path dir) throws java.io.IOException {
+    java.nio.file.Files.writeString(dir.resolve("system.json"), SYSTEM_MAPPING_JSON);
+    // not a mapping config: wrong extension
+    java.nio.file.Files.writeString(dir.resolve("README.txt"), "not a mapping");
+    // the walk is depth 1 and regular-file only: a DIRECTORY whose name ends
+    // in .json must be filtered before the parser reads it as a file
+    java.nio.file.Files.createDirectory(dir.resolve("nested.json"));
+    java.nio.file.Files.writeString(dir.resolve("nested.json").resolve("nested.json"), SYSTEM_MAPPING_JSON);
+    // unreadable json is filtered, not crashed on
+    final var locked = dir.resolve("locked.json");
+    java.nio.file.Files.writeString(locked, SYSTEM_MAPPING_JSON);
+    java.nio.file.Files.setPosixFilePermissions(locked, java.util.Set.of());
+    try {
+      final var configs = GlamVaultAccounts.loadMappingConfigs(dir);
+      assertEquals(1, configs.size());
+      final var config = configs.getFirst();
+      final var systemProgram = fromBase58Encoded("11111111111111111111111111111111");
+      assertTrue(
+          config.programs().stream().anyMatch(meta -> meta.publicKey().equals(systemProgram)),
+          "the mapped source program was not parsed");
+      assertEquals(1, config.ixMapConfigs().size());
+    } finally {
+      java.nio.file.Files.setPosixFilePermissions(
+          locked, java.nio.file.attribute.PosixFilePermissions.fromString("rw-r--r--"));
+    }
+  }
+
+  @Test
+  void createMapperBuildsFromAMappingsDirectory(
+      @org.junit.jupiter.api.io.TempDir final java.nio.file.Path dir) throws java.io.IOException {
+    java.nio.file.Files.writeString(dir.resolve("system.json"), SYSTEM_MAPPING_JSON);
+    final var invokedProxy = AccountMeta.createInvoked(
+        fromBase58Encoded("GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"));
+    final var factory = systems.glam.sdk.proxy.DynamicGlamAccountFactory.createFactory(java.util.Map.of(), 8);
+    assertNotNull(factory);
+    final var mapper = GlamVaultAccounts.createMapper(invokedProxy, dir, factory);
+    assertNotNull(mapper, "the directory overload did not build a mapper");
+    final var direct = GlamVaultAccounts.createMapper(
+        invokedProxy, GlamVaultAccounts.loadMappingConfigs(dir), factory);
+    assertNotNull(direct, "the config-list overload did not build a mapper");
+  }
 }

@@ -1,10 +1,8 @@
 package systems.glam.sdk.lut;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.accounts.Signer;
 import software.sava.core.accounts.lookup.AddressLookupTable;
 import software.sava.core.accounts.token.TokenAccount;
-import software.sava.core.tx.Transaction;
 import software.sava.idl.clients.jupiter.JupiterAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
 import software.sava.idl.clients.kamino.lend.gen.types.Obligation;
@@ -12,25 +10,17 @@ import software.sava.idl.clients.kamino.lend.gen.types.Reserve;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
 import software.sava.idl.clients.marinade.stake_pool.MarinadeAccounts;
 import software.sava.idl.clients.meteora.MeteoraAccounts;
-import software.sava.idl.clients.spl.compute_budget.gen.ComputeBudgetProgram;
 import software.sava.idl.clients.spl.lut.gen.AddressLookupTableProgram;
-import software.sava.rpc.json.http.SolanaNetwork;
 import software.sava.rpc.json.http.client.SolanaRpcClient;
 import software.sava.rpc.json.http.response.AccountInfo;
-import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.StateAccountClient;
-import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 
-import java.net.URI;
-import java.net.http.HttpClient;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static software.sava.core.accounts.lookup.AddressLookupTable.*;
 import static software.sava.core.rpc.Filter.createMemCompFilter;
-import static software.sava.idl.clients.spl.compute_budget.ComputeBudgetUtil.MAX_COMPUTE_BUDGET;
-import static software.sava.rpc.json.http.request.Commitment.CONFIRMED;
 
 record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
                              List<PublicKey> tablePrefix,
@@ -185,7 +175,9 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
     final var accountClient = stateAccountClient.accountClient();
     final var solanaAccounts = accountClient.solanaAccounts();
     final var glamAccounts = accountClient.glamAccounts();
-    add(solanaAccounts.systemProgram());
+    // the system program IS the all-zero key that addAccount filters as the
+    // unset sentinel; it is always a real account, so it bypasses the filter
+    this.accountsNeeded.add(solanaAccounts.systemProgram());
     add(glamAccounts.protocolProgram());
     add(glamAccounts.readSplIntegrationAuthority().publicKey());
     final var mintKey = stateAccountClient.mint();
@@ -264,8 +256,12 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
     add(glamAccounts.readKaminoIntegrationAuthority().publicKey());
     addKFarmAccounts();
 
+    // the RPC response may omit the main-market table; without it the
+    // accounts it covers are simply not removed from the glam table later
     final var mainMarketTable = mapTable(accountsNeeded, this.kaminoAccounts.mainMarketLUT());
-    kaminoLookupTables.put(mainMarketTable.address(), mainMarketTable);
+    if (mainMarketTable != null) {
+      kaminoLookupTables.put(mainMarketTable.address(), mainMarketTable);
+    }
 
     final var kLendProgram = this.kaminoAccounts.kLendProgram();
 
@@ -347,7 +343,13 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
       if (!program.equals(tokenProgram) && !program.equals(token2022Program)) {
         continue;
       }
-      final var tokenAccount = TokenAccount.read(accountInfo.pubKey(), accountInfo.data());
+      final byte[] data = accountInfo.data();
+      if (data.length != TokenAccount.BYTES) {
+        // mint accounts are token-program-owned too, and the first phase
+        // always fetches the state's mints — they are not vault positions
+        continue;
+      }
+      final var tokenAccount = TokenAccount.read(accountInfo.pubKey(), data);
       final var vaultState = vaultStatesByMint.get(tokenAccount.mint());
       if (vaultState != null) {
         kaminoVaults.put(tokenAccount.address(), vaultState);
@@ -410,104 +412,6 @@ record VaultTableBuilderImpl(StateAccountClient stateAccountClient,
             add(scopeFeed.oracleMappings());
           }
         }
-      }
-    }
-  }
-
-  static void main(final String[] args) {
-    final var rpcEndpoint = args.length > 0 ? URI.create(args[0]) : SolanaNetwork.MAIN_NET.getEndpoint();
-
-    final Signer signer = null;
-    final var feePayer = signer.publicKey();
-    final var glamStateKey = PublicKey.fromBase58Encoded("");
-
-    try (final var httpClient = HttpClient.newHttpClient()) {
-      final var rpcClient = SolanaRpcClient.build()
-          .httpClient(httpClient)
-          .endpoint(rpcEndpoint)
-          .createClient();
-
-      final var vaultTableBuilderBuilder = VaultTableBuilder.build();
-      // These Kamino VaultState's can be re-used if managing multiple GLAM vault's.
-      // But still would need to be refreshed periodically.
-      final var kaminoVaultsFuture = vaultTableBuilderBuilder.kaminoAccounts().fetchVaults(rpcClient);
-
-      final var stateAccountInfoFuture = rpcClient.getAccountInfo(glamStateKey);
-
-      final var glamAccountClient = GlamAccountClient.createClient(feePayer, glamStateKey);
-
-      final var stateAccount = StateAccount.read(stateAccountInfoFuture.join());
-      final var stateAccountClient = StateAccountClient.createClient(stateAccount, glamAccountClient);
-      final var vaultTableBuilder = vaultTableBuilderBuilder.create(stateAccountClient);
-      var accountsNeededFuture = vaultTableBuilder.fetchAccountsNeeded(rpcClient);
-
-      final var glamVaultTablesFuture = vaultTableBuilder.fetchGlamVaultTables(rpcClient);
-
-      final var kaminoVaults = kaminoVaultsFuture.join();
-      final var kVaultsByMint = VaultTableBuilder.mapKaminoVaultStatesByMint(kaminoVaults);
-
-      final var accountsNeeded = accountsNeededFuture.join();
-      vaultTableBuilder.addAccounts(accountsNeeded, kVaultsByMint);
-
-      accountsNeededFuture = vaultTableBuilder.fetchSecondPhaseAccountsNeeded(rpcClient);
-      vaultTableBuilder.addAccountsSecondPhase(accountsNeededFuture.join());
-
-      vaultTableBuilder.removeExternalProtocolTableAccounts();
-
-      final var glamVaultTables = glamVaultTablesFuture.join();
-      final var tableTasks = vaultTableBuilder.batchTableTasks(glamVaultTables);
-
-
-      // Execute Create & Extend Table Instructions
-      final var computeBudgetProgram = glamAccountClient.solanaAccounts().invokedComputeBudgetProgram();
-      final var simulationCUInstructions = List.of(
-          ComputeBudgetProgram.setComputeUnitLimit(computeBudgetProgram, MAX_COMPUTE_BUDGET),
-          ComputeBudgetProgram.setComputeUnitPrice(computeBudgetProgram, 0)
-      );
-
-      long recentSlot = -1;
-      final var taskIterator = tableTasks.iterator();
-      for (var tableTask = taskIterator.next(); ; ) {
-        final var simulationTx = Transaction.createTx(glamAccountClient.feePayer(), simulationCUInstructions);
-        if (tableTask.needsSlot() && recentSlot < 0) {
-          recentSlot = rpcClient.getSlot(CONFIRMED).join();
-        }
-        final var instructions = tableTask.instructions(recentSlot);
-        simulationTx.appendInstructions(instructions);
-        var base64EncodedTx = simulationTx.base64EncodeToString();
-        final var simulationResponse = rpcClient.simulateTransaction(CONFIRMED, base64EncodedTx, true).join();
-        if (simulationResponse.error() != null) {
-          // TODO: handle error and retry.
-          recentSlot = -1;
-          continue;
-        }
-
-        final int cuBudget = simulationResponse
-            .unitsConsumed()
-            .orElseThrow(() -> new IllegalStateException("RPC server did not provide a CU budget:" + simulationResponse));
-        // Typically fetch from Helius.
-        final long cuPrice = 12345;
-
-        final var transaction = Transaction.createTx(
-            glamAccountClient.feePayer(),
-            List.of(
-                ComputeBudgetProgram.setComputeUnitLimit(computeBudgetProgram, cuBudget),
-                ComputeBudgetProgram.setComputeUnitPrice(computeBudgetProgram, cuPrice)
-            )
-        );
-        transaction.appendInstructions(instructions);
-        transaction.setRecentBlockHash(simulationResponse.replacementBlockHash().blockhash());
-        transaction.sign(signer);
-        base64EncodedTx = transaction.base64EncodeToString();
-        final var txId = rpcClient.sendTransaction(base64EncodedTx).join();
-        System.out.println("Sent transaction: " + txId);
-        // TODO: Confirmation logic.
-
-        if (!taskIterator.hasNext()) {
-          break;
-        }
-        recentSlot = simulationResponse.context().slot();
-        tableTask = taskIterator.next();
       }
     }
   }

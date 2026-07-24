@@ -27,8 +27,8 @@ pluginManagement {
 }
 
 plugins {
-  id("software.sava.build") version "21.5.9"
-  id("software.sava.build.feature.jdk-provisioning") version "21.5.9"
+  id("software.sava.build") version "21.5.12"
+  id("software.sava.build.feature.jdk-provisioning") version "21.5.12"
 }
 
 javaModules {
@@ -38,9 +38,11 @@ javaModules {
   }
 }
 
-// TEMPORARY: depends on unpublished ravina changes (BackoffConfig delay
-// granularity, tx monitor delay guards). Publish ravina, bump
-// solanaBOMVersion in gradle/sava.properties, then re-comment this.
-// See "Changing a dependency" in AGENTS.md.
-//includeBuild("../ravina")
+// TEMPORARY: depends on unpublished ravina bde97ec ("restore classpath
+// service discovery" — kms-core's META-INF/services entry). Without it the
+// PIT class-path minions cannot ServiceLoader the MemorySignerFactory and
+// pitestServices' coverage pass fails on aSigningServiceSectionIsParsed.
+// Publish ravina, bump solanaBOMVersion in gradle/sava.properties, then
+// re-comment this. See "Changing a dependency" in AGENTS.md.
+//includeBuild("../ravina")  // re-enable for pitestServices once ../sava-build is stable (it is substituted transitively)
 //includeBuild("../idl-clients")

@@ -184,9 +184,11 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
     return new SingleAssetFulfillmentServiceEntrypoint(webSocketManager, epochInfoService, fulfillmentService);
   }
 
-  private static boolean validateDelegatePermissions(final Map<PublicKey, ProtocolPermissions> requiredPermissions,
-                                                     final PublicKey delegateKey,
-                                                     final StateAccountClient stateAccountClient) {
+  // package-private so tests can drive the gate directly (same precedent as
+  // the package-private locks); createService has no seam for a stub client
+  static boolean validateDelegatePermissions(final Map<PublicKey, ProtocolPermissions> requiredPermissions,
+                                             final PublicKey delegateKey,
+                                             final StateAccountClient stateAccountClient) {
     if (stateAccountClient == null) {
       logger.log(ERROR, "Glam account does not exist, exiting.");
       return false;

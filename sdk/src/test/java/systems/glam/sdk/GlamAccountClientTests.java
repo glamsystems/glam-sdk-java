@@ -251,6 +251,128 @@ final class GlamAccountClientTests {
     assertEquals(noCpiIx.accounts(), client.priceVaultTokens(solOracle, baseOracle, aggIndexes).accounts());
   }
 
+  /// Every remaining pricing method shares one contract: the convenience
+  /// overload is exactly the no-CPI instruction (same accounts — this family
+  /// already produced a real dropped-oracle-keys bug), and the CPI branch
+  /// swaps the mint program slot for the mint event authority.
+  @Test
+  void pricingOverloadsMatchTheirNoCpiBranch() {
+    final var client = createClient();
+    final var sol = key(21);
+    final var base = key(22);
+    final var eventAuthority = createRead(GlamAccounts.MAIN_NET.mintEventAuthority());
+
+    record Case(String name, Instruction cpi, Instruction noCpi, Instruction byDefault) {
+    }
+    final var kLendProgram = key(23);
+    final var productionCases = List.of(
+        new Case("priceDriftUsers",
+            client.priceDriftUsers(sol, base, 3, true),
+            client.priceDriftUsers(sol, base, 3, false),
+            client.priceDriftUsers(sol, base, 3)),
+        new Case("priceDriftVaultDepositors",
+            client.priceDriftVaultDepositors(sol, base, 3, 2, 1, true),
+            client.priceDriftVaultDepositors(sol, base, 3, 2, 1, false),
+            client.priceDriftVaultDepositors(sol, base, 3, 2, 1)),
+        new Case("priceKaminoObligations",
+            client.priceKaminoObligations(kLendProgram, sol, base, true),
+            client.priceKaminoObligations(kLendProgram, sol, base, false),
+            client.priceKaminoObligations(kLendProgram, sol, base)),
+        new Case("priceKaminoVaultShares",
+            client.priceKaminoVaultShares(sol, base, 4, true),
+            client.priceKaminoVaultShares(sol, base, 4, false),
+            client.priceKaminoVaultShares(sol, base, 4))
+    );
+    // the rest of the pricing surface is staging-only; the interface defaults
+    // route identically, just through the staging implementation
+    final var staging = GlamAccountClient.createClient(
+        SOLANA_ACCOUNTS, GlamAccounts.MAIN_NET_STAGING, FEE_PAYER, STATE_KEY);
+    final var stagingCases = List.of(
+        new Case("priceExternalPositions",
+            staging.priceExternalPositions(sol, base, true),
+            staging.priceExternalPositions(sol, base, false),
+            staging.priceExternalPositions(sol, base)),
+        new Case("priceLoopscaleLoans",
+            staging.priceLoopscaleLoans(sol, base, true),
+            staging.priceLoopscaleLoans(sol, base, false),
+            staging.priceLoopscaleLoans(sol, base)),
+        new Case("priceLoopscaleStrategies",
+            staging.priceLoopscaleStrategies(sol, base, true),
+            staging.priceLoopscaleStrategies(sol, base, false),
+            staging.priceLoopscaleStrategies(sol, base)),
+        new Case("priceLoopscaleVaultPositions",
+            staging.priceLoopscaleVaultPositions(sol, base, 5, true),
+            staging.priceLoopscaleVaultPositions(sol, base, 5, false),
+            staging.priceLoopscaleVaultPositions(sol, base, 5)),
+        new Case("priceOrcaWhirlpoolPositions",
+            staging.priceOrcaWhirlpoolPositions(sol, base, 6, true),
+            staging.priceOrcaWhirlpoolPositions(sol, base, 6, false),
+            staging.priceOrcaWhirlpoolPositions(sol, base, 6)),
+        new Case("priceStakeAccounts",
+            staging.priceStakeAccounts(sol, base, true),
+            staging.priceStakeAccounts(sol, base, false),
+            staging.priceStakeAccounts(sol, base)),
+        new Case("priceMarginfiAccounts",
+            staging.priceMarginfiAccounts(sol, base, true),
+            staging.priceMarginfiAccounts(sol, base, false),
+            staging.priceMarginfiAccounts(sol, base)),
+        new Case("pricePhoenixTraders",
+            staging.pricePhoenixTraders(sol, base, true),
+            staging.pricePhoenixTraders(sol, base, false),
+            staging.pricePhoenixTraders(sol, base)),
+        new Case("priceBridgeManagedTransfers",
+            staging.priceBridgeManagedTransfers(sol, base, true),
+            staging.priceBridgeManagedTransfers(sol, base, false),
+            staging.priceBridgeManagedTransfers(sol, base))
+    );
+    for (final var priced : productionCases) {
+      assertTrue(priced.cpi.accounts().contains(eventAuthority),
+          () -> priced.name + ": the CPI branch does not carry the mint event authority");
+      assertFalse(priced.noCpi.accounts().contains(eventAuthority),
+          () -> priced.name + ": the no-CPI branch must not carry the event authority");
+    }
+    final var allCases = new java.util.ArrayList<>(productionCases);
+    allCases.addAll(stagingCases);
+    for (final var priced : allCases) {
+      assertEquals(priced.noCpi.accounts(), priced.byDefault.accounts(),
+          () -> priced.name + ": the convenience overload drifted from the no-CPI instruction");
+      assertNotEquals(priced.noCpi.accounts(), priced.cpi.accounts(),
+          () -> priced.name + ": the CPI branch changed nothing");
+      // the oracle keys ride on every variant — the historical bug dropped them
+      assertTrue(priced.byDefault.accounts().contains(createRead(sol)), priced.name);
+      assertTrue(priced.byDefault.accounts().contains(createRead(base)), priced.name);
+    }
+  }
+
+  @Test
+  void accountCreationAndStateUpdateWiring() {
+    final var client = createClient();
+    final var systemProgram = SOLANA_ACCOUNTS.systemProgram();
+
+    final var created = client.createAccount(key(41), 1_000_000L, 165L, key(42));
+    assertEquals(systemProgram, created.programId().publicKey());
+
+    final var withSeed = software.sava.core.accounts.AccountWithSeed.createAccount(
+        FEE_PAYER, key(43), "glam-test".getBytes(java.nio.charset.StandardCharsets.US_ASCII), key(44));
+    final var createdWithSeed = client.createAccountWithSeed(withSeed, 1_000_000L, 165L, key(44));
+    assertEquals(systemProgram, createdWithSeed.programId().publicKey());
+
+    final var escrowAta = client.createEscrowAssociatedTokenIdempotent(
+        key(45), key(46), key(47), SOLANA_ACCOUNTS.tokenProgram());
+    assertEquals(SOLANA_ACCOUNTS.associatedTokenAccountProgram(), escrowAta.programId().publicKey());
+    // funded by the fee payer, created for the escrow
+    assertEquals(createWritableSigner(FEE_PAYER), escrowAta.accounts().getFirst());
+
+    final var updated = client.updateState(
+        systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateModel.createRecord(
+            null, null, null, Boolean.TRUE, null, null, null, null, null, OptionalLong.empty(), null, null));
+    assertEquals(GlamAccounts.MAIN_NET.protocolProgram(), updated.programId().publicKey());
+    assertEquals(
+        List.of(createWrite(STATE_KEY), createWritableSigner(FEE_PAYER)),
+        updated.accounts()
+    );
+  }
+
   @Test
   void fulfill() {
     final var client = createClient();
