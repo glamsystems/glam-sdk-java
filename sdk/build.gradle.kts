@@ -23,6 +23,13 @@ hardening {
     )
     targetTests = "systems.glam.sdk.*Test*"
   }
+  fuzz.register("mappingConfig") {
+    targetClass = "systems.glam.sdk.proxy.MappingConfigFuzz"
+    seedCorpus = layout.projectDirectory.dir("src/test/resources/fuzz/mappingConfig")
+    // config files are a few KB of JSON; headroom lets the mutator probe deep
+    // nesting and long literals without clipping the real seeds
+    maxLen = 65536
+  }
 }
 
 tasks.named<Jar>("jar") {

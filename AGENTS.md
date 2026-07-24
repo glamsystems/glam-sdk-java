@@ -122,9 +122,17 @@ its unkilled mutants against the accepted baseline in the module's
 `config/pitest/` and fails on anything new. The baselines were **seeded with
 the full pre-existing survivor population** — that is untriaged debt made
 explicit, not acceptance; the per-module `config/pitest/README.md` tracks the
-triage state. No fuzz targets are registered yet: adding harnesses for the
-external-input parsers (account readers, mapping configs) is planned work —
-register them in the module's `hardening` block when they land.
+triage state. Fuzzing is underway — five targets, all seeded from mainnet
+snapshots, corpora replayed inside `check`: `services:fuzzAccountData` (the
+compressed persistence format — decode + write/read differential; found and
+fixed an unbounded-decompression hang), `services:fuzzScopeFeedContext` (the
+Scope `Configuration` reader), `services:fuzzReserveContext` (the Reserve
+reader + price-chain resolution, the composite-`MostRecentOf` path),
+`services:fuzzKaminoVaultContext` (the `VaultState` reader +
+allocation-table walk), and `sdk:fuzzMappingConfig` (the ix-mapper config
+JSON via `ProgramMapConfig.parseConfig`). Register new harnesses in the
+owning module's `hardening` block with `targetClass` AND `seedCorpus` (both
+are required — a missing `seedCorpus` silently skips the replay test).
 
 The full policy is sava-build's `HARDENING.md`; the process contract for
 changes here:

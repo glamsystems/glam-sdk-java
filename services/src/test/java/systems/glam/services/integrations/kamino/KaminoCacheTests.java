@@ -173,12 +173,27 @@ final class KaminoCacheTests {
     assertNotNull(priceChains);
     assertTrue(priceChains.priceChain().length > 0);
 
-    // the snapshot's SOL chain heads with a MostRecentOf COMPOSITE, and
-    // indexes() only matches direct OracleEntry members — nested oracle types
-    // are a documented gap in ScopeFeedContext.indexes, so the agg-index query
-    // cannot serve this reserve. If this assertion flips after re-snapshotting,
-    // the chain became direct and the branch below should assert real indexes.
+    // the snapshot's SOL chain heads with a MostRecentOf COMPOSITE whose
+    // sources are a Chainlink (index 1) and a PythLazer (index 2). indexes()
+    // now recurses into the composite and serves each source through the
+    // feed-indexed path with the reserve's real liquidity (previously this
+    // fell through to the zero-liquidity mappings scan).
     assertFalse(priceChains.priceChain()[0] instanceof OracleEntry);
+    final var chainlinkOracle = fromBase58Encoded("14HefJnxgiYQ6qiGL5b6GVZVUSAFpmehRdBJRaZ6GKx");
+    final var pythLazerOracle = fromBase58Encoded("HFn8GnPADiny6XqUoWE8uRPPxb29ikn4yTuPa9MF2fWJ");
+    final var collateral = BigInteger.valueOf(reserveContext.totalCollateral());
+
+    final var chainlinkFeed = cache.indexes(SOL_MINT, chainlinkOracle, OracleType.Chainlink);
+    assertNotNull(chainlinkFeed, "the composite's Chainlink source is not served");
+    assertArrayEquals(new short[]{1, -1, -1, -1}, chainlinkFeed.indexes());
+    assertEquals(collateral, chainlinkFeed.liquidity(), "served through the zero-liquidity fallback, not the feed path");
+
+    final var pythFeed = cache.indexes(SOL_MINT, pythLazerOracle, OracleType.PythLazer);
+    assertNotNull(pythFeed, "the composite's PythLazer source is not served");
+    assertArrayEquals(new short[]{2, -1, -1, -1}, pythFeed.indexes());
+    assertEquals(collateral, pythFeed.liquidity());
+
+    // an oracle the composite does not read is still unserved
     assertNull(cache.indexes(SOL_MINT, PRICE_FEED_KEY, OracleType.Chainlink));
     // the read lock taken by the query is handed back
     assertUnlocked(cache);

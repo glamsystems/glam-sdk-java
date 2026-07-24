@@ -2,7 +2,14 @@ package systems.glam.services.oracles.scope;
 
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
+import software.sava.idl.clients.kamino.scope.entries.CappedFloored;
+import software.sava.idl.clients.kamino.scope.entries.CappedMostRecentOf;
+import software.sava.idl.clients.kamino.scope.entries.Conditional;
+import software.sava.idl.clients.kamino.scope.entries.MostRecentOf;
+import software.sava.idl.clients.kamino.scope.entries.MostRecentOfEntry;
+import software.sava.idl.clients.kamino.scope.entries.MultiplicationChain;
 import software.sava.idl.clients.kamino.scope.entries.OracleEntry;
+import software.sava.idl.clients.kamino.scope.entries.ScopeEntry;
 import software.sava.idl.clients.kamino.scope.gen.types.Configuration;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleMappings;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
@@ -17,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.function.IntConsumer;
 
 public record ScopeFeedContext(long slot, byte[] configurationData,
                                PublicKey configurationKey,
@@ -239,6 +247,83 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
     }
   }
 
+  /// Walk a reserve's price-chain entry, invoking `onMatch` with the scope index
+  /// of every `OracleEntry` matching (`oracle`, `oracleType`) that the entry
+  /// reads — directly, or as a source of a composite.
+  ///
+  /// A Scope composite (`MostRecentOf`, `CappedFloored`, `Conditional`,
+  /// `MultiplicationChain`) does not hold prices itself: on-chain it reads the
+  /// already-refreshed price at each source's own scope index
+  /// (`oracle_prices.prices[source_index]`; confirmed against
+  /// `Kamino-Finance/scope` `most_recent_of.rs`). So every source must be
+  /// refreshed at its own index for the composite to produce a value, and the
+  /// index a caller refreshes for a given oracle is that oracle's leaf index —
+  /// not the composite's. Before this walk, a reserve whose chain headed with a
+  /// composite (SOL's mainnet chain is a `MostRecentOf`) matched nothing here
+  /// and fell through to the raw-mappings scan, which serves zero liquidity.
+  ///
+  /// `visited` guards against re-walking a slot reached by more than one path
+  /// within one reserve's chain (the parser already breaks reference cycles to
+  /// null, so the entry graph is finite).
+  // package-private for direct unit testing over hand-built entry graphs
+  static void collectMatchingIndices(final ScopeEntry entry,
+                                     final PublicKey oracle,
+                                     final OracleType oracleType,
+                                     final IntConsumer onMatch,
+                                     final boolean[] visited) {
+    if (entry == null) {
+      return;
+    }
+    // a parsed entry's index is always a valid price slot — the parser resolves
+    // out-of-range references to null before they reach here — so it is a safe
+    // index into visited (sized to the slot count). Dedup a slot reached by more
+    // than one path within one reserve's chain.
+    final int index = entry.index();
+    if (visited[index]) {
+      return;
+    }
+    visited[index] = true;
+    switch (entry) {
+      case OracleEntry oracleEntry -> {
+        // a leaf oracle: it reads its own price account, no child sources
+        if (oracleEntry.oracleType() == oracleType && oracleEntry.oracle().equals(oracle)) {
+          onMatch.accept(oracleEntry.index());
+        }
+      }
+      case MostRecentOf mostRecentOf -> {
+        for (final var source : mostRecentOf.sources()) {
+          collectMatchingIndices(source, oracle, oracleType, onMatch, visited);
+        }
+        // the auxiliary references are prices too — they must be fresh for the
+        // composite to compute, so an oracle appearing only there still needs
+        // refreshing at its own index
+        switch (mostRecentOf) {
+          case MostRecentOfEntry mre -> collectMatchingIndices(mre.refPrice(), oracle, oracleType, onMatch, visited);
+          case CappedMostRecentOf capped -> collectMatchingIndices(capped.capEntry(), oracle, oracleType, onMatch, visited);
+        }
+      }
+      case CappedFloored capped -> {
+        collectMatchingIndices(capped.sourceEntry(), oracle, oracleType, onMatch, visited);
+        collectMatchingIndices(capped.capEntry(), oracle, oracleType, onMatch, visited);
+        collectMatchingIndices(capped.flooredEntry(), oracle, oracleType, onMatch, visited);
+      }
+      case Conditional conditional -> {
+        for (final var source : conditional.sources()) {
+          collectMatchingIndices(source, oracle, oracleType, onMatch, visited);
+        }
+      }
+      case MultiplicationChain mul -> {
+        for (final var source : mul.sourceEntries()) {
+          collectMatchingIndices(source, oracle, oracleType, onMatch, visited);
+        }
+      }
+      default -> {
+        // non-oracle leaves (FixedPrice, DiscountToMaturity, ScopeTwap, ...):
+        // no oracle account and no child price sources to refresh
+      }
+    }
+  }
+
   private record FilteredReserve(int index, long collateral) implements Comparable<FilteredReserve> {
 
     @Override
@@ -256,13 +341,13 @@ public record ScopeFeedContext(long slot, byte[] configurationData,
     final var topReserves = Arrays.stream(reservesForMint).<FilteredReserve>mapMulti((reserveContext, consumer) -> {
       final var priceChains = reserveContext.priceChains();
       if (priceChains != null) {
-        final var priceChain = priceChains.priceChain();
-        for (final var scopeEntry : priceChain) {
-          if (scopeEntry instanceof OracleEntry oracleEntry) {
-            if (oracleEntry.oracleType() == oracleType && oracleEntry.oracle().equals(oracle)) {
-              consumer.accept(new FilteredReserve(oracleEntry.index(), reserveContext.totalCollateral()));
-            } // else Handle nested OracleTypes, e.g., a MostRecentOf holding the desired type.
-          }
+        final long collateral = reserveContext.totalCollateral();
+        // one scope slot may be reached through several composite paths within a
+        // reserve's chain; count each slot at most once per reserve
+        final boolean[] visited = new boolean[OracleMappings.PRICE_INFO_ACCOUNTS_LEN];
+        final IntConsumer onMatch = index -> consumer.accept(new FilteredReserve(index, collateral));
+        for (final var scopeEntry : priceChains.priceChain()) {
+          collectMatchingIndices(scopeEntry, oracle, oracleType, onMatch, visited);
         }
       }
     }).sorted().limit(4).toArray(FilteredReserve[]::new);

@@ -18,6 +18,9 @@ public final class FileUtils {
 
   public static final String ACCOUNT_FILE_EXTENSION = ".dat";
   public static final String COMPRESSED_ACCOUNT_FILE_EXTENSION = ".dat.gz";
+  /// Solana caps account data at 10MiB; a compressed file expanding past it is
+  /// corrupt (or hostile — found by AccountDataFuzz as an unbounded-decompression hang).
+  public static final int MAX_ACCOUNT_DATA_LENGTH = 10 * 1024 * 1024;
 
   public static Path resolveAccountPath(final Path path, final PublicKey pubKey) {
     return path.resolve(pubKey.toBase58() + ACCOUNT_FILE_EXTENSION);
@@ -45,7 +48,13 @@ public final class FileUtils {
     if (fileName.endsWith(COMPRESSED_ACCOUNT_FILE_EXTENSION)) {
       final var entryName = fileName.substring(0, fileName.length() - ".gz".length());
       try (final var gzipInputStream = new GZIPInputStream(Files.newInputStream(path))) {
-        return AccountData.createData(entryName, gzipInputStream.readAllBytes());
+        // bounded: a corrupted or hostile file can gzip-expand without limit,
+        // and no Solana account exceeds 10MiB — anything larger is corrupt
+        final byte[] data = gzipInputStream.readNBytes(MAX_ACCOUNT_DATA_LENGTH + 1);
+        if (data.length > MAX_ACCOUNT_DATA_LENGTH) {
+          throw new IOException("decompressed account data exceeds " + MAX_ACCOUNT_DATA_LENGTH + " bytes");
+        }
+        return AccountData.createData(entryName, data);
       } catch (final IOException e) {
         logger.log(System.Logger.Level.WARNING, "Failed to read compressed account data: " + path, e);
         try {

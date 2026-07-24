@@ -321,12 +321,26 @@ The 6th pass covered `integrations/kamino/KaminoCacheImpl` using checked-in
 mainnet snapshots (`src/test/resources/accounts/kamino/`, provenance in its
 README): the accept dispatch for all four account shapes, feed→mappings→reserve
 dependency ordering, staleness/idempotence, listeners, persistence, and vault
-state handling. One behavior gap pinned by the fixture: the SOL reserve's
-price chain heads with a `MostRecentOf` composite, and
-`ScopeFeedContext.indexes()` matches only direct `OracleEntry`s (the code's
-own comment marks nested types as unhandled) — so the agg-index query serves
-nothing for composite-only chains. If SOL pricing via scope agg indexes
-matters in production, that gap needs closing.
+state handling.
+
+~~One behavior gap pinned by the fixture: the SOL reserve's price chain heads
+with a `MostRecentOf` composite, and `ScopeFeedContext.indexes()` matches only
+direct `OracleEntry`s.~~ **Closed 2026-07-24 (composite-chain support).**
+`ScopeFeedContext.indexes()` now recurses through composite entries
+(`MostRecentOf`/`CappedMostRecentOf`, `CappedFloored`, `Conditional`,
+`MultiplicationChain`) and matches the requested oracle among a composite's
+child prices, returning that child's own scope index. Confirmed against
+`Kamino-Finance/scope` `most_recent_of.rs`: a composite reads
+`oracle_prices.prices[source_index]` from already-refreshed data, so each
+source (and cap/floor/refPrice bound) must be refreshed at its own index —
+which is exactly the index the query returns. The real mainnet SOL chain (a
+`MostRecentOfEntry` over a Chainlink at index 1 and a PythLazer at index 2)
+is now served with the reserve's real liquidity instead of falling through to
+the zero-liquidity mappings scan; pinned by `KaminoCacheTests` (real data) and
+`ScopeCompositeIndexTests` (every composite shape, over hand-built graphs).
+Accepted: the recursion's `index < visited.length` upper bound
+(`# defensive bound` — a scope index never reaches the array length, so the
+boundary is unobservable).
 
 The 5th pass extended `GlobalConfigCacheTests` into the streaming paths the
 disk-init tests never reached: `accept` transitions (unchanged/older/foreign
@@ -887,11 +901,17 @@ forced-true direction of a guard whose observable sibling has a named
 killing test in the verify hint; only an input that fails one operand while
 already failing the other could distinguish them.
 
-**Blocked note:** the coverage pass currently requires the local
-`includeBuild("../ravina")` — published `ravina-kms-core` jars have no
-`META-INF/services` entry, so PIT's class-path minions cannot ServiceLoader
-the `MemorySignerFactory` the signing-config test needs (fixed in ravina
-`bde97ec`, unreleased). See AGENTS.md bullet 14.
+~~**Blocked note:** the coverage pass currently requires the local
+`includeBuild("../ravina")`.~~ **Resolved:** ravina published the
+`META-INF/services` entry (kms-core ≥ 25.5.2, BOM 25.28.3); the suite runs
+green against published artifacts.
+
+**Flip insurance:** `KaminoCacheImpl.persistReserve` 719 `EQUAL_IF` was
+pruned as killed in one run and resurfaced `SURVIVED` in the next — the
+mutant forces `createDirectories` on a directory that already exists, a
+no-op, so its "kill" was load-dependent. Unioned back with a
+`# flip insurance` label; do not prune it on a run that happens to detect
+it.
 
 ## Untriaged debt
 
@@ -904,9 +924,14 @@ same week it is written.
 Shrinking the baseline is always an improvement; growing it requires a reason
 written here.
 
-Row labels: the sdk baseline is labeled per family (see its README); this
-module's back-fill is pending — refreshes seed `# untriaged` on new rows, so
-labels accrue from here even before the back-fill pass.
+Row labels: back-filled 2026-07-23 from the pass sections above — every
+`SURVIVED` row tied to a documented family carries its label
+(`# in-lock race guard`, `# subsumed length guard`, `# capacity-hint`, …),
+`# seamless bootstrap` marks the entrypoint's config-driven wiring (escape:
+a seam refactor), and everything unattributable stayed `# untriaged` — the
+honest default; refine labels when a row's family is pinned down, and
+refreshes seed `# untriaged` on new rows. The 128 untriaged rows are the
+real remaining triage debt, now a printed number.
 
 ## Triaged equivalent mutants (accepted with reasons)
 

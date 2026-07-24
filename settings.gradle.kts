@@ -21,9 +21,9 @@ pluginManagement {
   }
   // Resolve sava-build from GitHub Packages. Uncomment only while depending on an
   // unpublished sava-build change, then publish, bump the versions below, re-comment.
-//  if (settingsDir.resolve("../sava-build").isDirectory) {
-//    includeBuild("../sava-build")
-//  }
+  if (settingsDir.resolve("../sava-build").isDirectory) {
+    includeBuild("../sava-build")
+  }
 }
 
 plugins {
@@ -38,11 +38,5 @@ javaModules {
   }
 }
 
-// TEMPORARY: depends on unpublished ravina bde97ec ("restore classpath
-// service discovery" — kms-core's META-INF/services entry). Without it the
-// PIT class-path minions cannot ServiceLoader the MemorySignerFactory and
-// pitestServices' coverage pass fails on aSigningServiceSectionIsParsed.
-// Publish ravina, bump solanaBOMVersion in gradle/sava.properties, then
-// re-comment this. See "Changing a dependency" in AGENTS.md.
-//includeBuild("../ravina")  // re-enable for pitestServices once ../sava-build is stable (it is substituted transitively)
+//includeBuild("../ravina")
 //includeBuild("../idl-clients")

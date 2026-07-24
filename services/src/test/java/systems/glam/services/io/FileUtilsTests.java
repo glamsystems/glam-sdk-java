@@ -148,4 +148,34 @@ final class FileUtilsTests {
     }
     assertTrue(Files.exists(gzDir));
   }
+
+  /// Found by AccountDataFuzz: a small compressed file expanding without limit
+  /// hung the reader in allocation until memory died. The 10MiB Solana account
+  /// cap bounds the read; past it the file is corrupt — logged and deleted,
+  /// like any other unreadable account file.
+  @org.junit.jupiter.api.Test
+  void aDecompressionBombIsRejectedNotInflated(@org.junit.jupiter.api.io.TempDir final java.nio.file.Path dir)
+      throws java.io.IOException {
+    final var key = software.sava.core.accounts.PublicKey.createPubKey(new byte[32]);
+    final var bomb = dir.resolve(key.toBase58() + ".dat.gz");
+    try (final var in = FileUtilsTests.class.getResourceAsStream("/fuzz/accountData/bomb-16m-zeros.gz")) {
+      java.nio.file.Files.copy(java.util.Objects.requireNonNull(in), bomb);
+    }
+    final var result = FileUtils.readAccountData(bomb);
+    org.junit.jupiter.api.Assertions.assertSame(AccountData.EMPTY, result);
+    org.junit.jupiter.api.Assertions.assertFalse(java.nio.file.Files.exists(bomb),
+        "the oversized file was not deleted");
+  }
+
+  /// The cap is a boundary, not a blanket shrink: data at exactly the Solana
+  /// account limit still round-trips.
+  @org.junit.jupiter.api.Test
+  void dataAtExactlyTheAccountCapRoundTrips(@org.junit.jupiter.api.io.TempDir final java.nio.file.Path dir)
+      throws java.io.IOException {
+    final var key = software.sava.core.accounts.PublicKey.createPubKey(new byte[32]);
+    final byte[] max = new byte[FileUtils.MAX_ACCOUNT_DATA_LENGTH];
+    FileUtils.writeCompressedAccountData(dir, key, max);
+    final var read = FileUtils.readAccountData(FileUtils.resolveCompressedAccountPath(dir, key));
+    org.junit.jupiter.api.Assertions.assertEquals(max.length, read.data().length);
+  }
 }
