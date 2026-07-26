@@ -1,67 +1,77 @@
-.gradle
-build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
-.kotlin
+# Deny by default.
+# Nothing is tracked unless explicitly unblocked below. Build output (build/,
+# out/, bin/), tool state (.gradle/, .idea/, .kotlin/, .pitest-history/),
+# local config (.config/, .configs/, .local/), scratch checkouts (glam/,
+# idl-clients/, symlinks/), Jazzer crash reproducers and JVM dumps all fall
+# through this rule with no further mention.
+#
+# To track a new directory you must unblock the directory itself *and* its
+# contents, e.g. `!/mod/src/` followed by `!/mod/src/**` -- git will not
+# descend into an ignored directory to find re-included files.
+*
 
-### IntelliJ IDEA ###
-.idea
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
-*.iws
-*.iml
-*.ipr
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
+### Root files ###
+!/.gitignore
+!/.release-please-manifest.json
+!/AGENTS.md
+!/CHANGELOG.md
+!/LICENSE
+!/README.md
+!/downloadMappings.sh
+!/gradle.properties
+!/gradlew
+!/gradlew.bat
+!/main_net_programs.json
+!/release-please-config.json
+!/settings.gradle.kts
+!/syncMappings.sh
 
-### Eclipse ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
+### CI ###
+!/.github/
+!/.github/**
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
+### Runtime config ###
+!/conf/
+!/conf/**
 
-### VS Code ###
-.vscode/
+### Gradle ###
+!/gradle/
+!/gradle/*.properties
+!/gradle/aggregation/
+!/gradle/aggregation/build.gradle.kts
+!/gradle/wrapper/
+!/gradle/wrapper/gradle-wrapper.jar
+!/gradle/wrapper/gradle-wrapper.properties
 
-### Mac OS ###
-.DS_Store
+### examples ###
+!/examples/
+!/examples/build.gradle.kts
+!/examples/src/
+!/examples/src/**
 
+### sdk ###
+!/sdk/
+!/sdk/build.gradle.kts
+!/sdk/config/
+!/sdk/config/**
+!/sdk/src/
+!/sdk/src/**
+
+### services ###
+!/services/
+!/services/build.gradle.kts
+!/services/config/
+!/services/config/**
+!/services/src/
+!/services/src/**
+
+### Re-blocked inside the unblocked trees above (last match wins) ###
+# Local integration scratch classes
 Integ.*
-/.local/
-/idl-clients
-/services/.**
-/.config
-/symlinks/
-/.junie/
-
-### Mutation testing ###
-# arcmutate incremental-analysis history; machine-local state
-.pitest-history/
-
-### Fuzzing ###
-# Jazzer drops reproducer artifacts at the invocation root on a finding
-/crash-*
-/Crash_*.java
-/*/crash-*
-/*/Crash_*.java
-
-### JVM crash/heap dumps ###
+# macOS Finder metadata
+.DS_Store
+# Jazzer reproducers and JVM crash/heap dumps, wherever they land
+crash-*
+Crash_*.java
 *.hprof
 hs_err_pid*.log

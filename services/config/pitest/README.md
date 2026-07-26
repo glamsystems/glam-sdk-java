@@ -364,9 +364,10 @@ loop double-incremented and skipped every other matching reserve, and
 `resortReserves`' replacement path returned before re-indexing by chain
 index, leaving `reservesByIndex` serving stale contexts). The `SURVIVED`
 count rose because newly covered code carries untriaged survivors — that is
-the next phase's work. This suite now reports ~26 load-dependent `TIMED_OUT`
-mutants (AccountFetcher's loops); per HARDENING.md, verify solo-vs-gate
-before trusting any flip, and union only observed flips.
+the next phase's work. This suite reports a load-dependent `TIMED_OUT`
+population (135 as of 2026-07-26 — see "Timed-out mutants (audited set)"
+below for the per-row structural causes); per HARDENING.md, verify
+solo-vs-gate before trusting any flip, and union only observed flips.
 
 Triage note for `ScopeFeedContext.indexReserveByIndex`: the loop over
 `priceChainIndexes()` returns after handling the *first* index in two of its
@@ -980,3 +981,170 @@ absent-vs-empty-parse equivalence in config sections, null-over-null assigns,
 GC-hygiene calls, capacity-hint arithmetic, and unreachable-by-construction
 defensive guards. New acceptances continue this pattern: document in the pass
 section that does the triage, not here.
+
+## Timed-out mutants (audited set, 2026-07-26)
+
+Per HARDENING.md: a timeout-detected mutant was observed for *slowness, not
+wrongness* — the watchdog fires whatever the covering assertion says, so for
+these rows the ratchet cannot see a weakened test. The compensating control
+is this listing: `N timed out (load-dependent)` in the verify summary is an
+audited set, not a count, and a **new member outside these families is
+something to look at**, not absorb. Membership churns with load —
+`KILLED <-> TIMED_OUT` drift is benign (both are *detected*, neither is ever
+written to a baseline; the verify prints the drift each run, e.g. this
+snapshot's "3 newly timed out, 5 no longer", and `KeyedFlatFileImpl`'s
+member has moved between `appendEntry` and `overwriteFile` across runs).
+`SURVIVED -> TIMED_OUT` is the flip that matters — the verify names those
+separately; never refresh them out on the strength of one loaded run.
+Snapshot: the 2026-07-26 `qualityGate -PnoMutationHistory` run on plugin
+21.5.15 — 135 rows.
+
+All rows share one meta-shape: mutants inside service loops and
+lock/condition protocols, where the only observable failure is a thread that
+stops making progress (or spins without it) until PIT's watchdog. Structural
+causes by class:
+
+### `db.sql.BatchSqlExecutorImpl` — 28
+
+The producer-consumer batch window. Lost signals (`signalAll`/`signal`
+removed: run:81, queue:212, queue:214) park `awaitBatchComplete` callers
+forever; inverted window gates (`pending.isEmpty()`, `batchComplete`,
+the `awaitNanos` bound loop: run:75/79/85, awaitBatchComplete:146/149,
+queue:208/211) trap a wait that no signal ends or turn the bounded delay
+window unbounded; removed waits (run:82, awaitBatchComplete:150) become
+in-lock hot spins; a removed `addLast` (queue:207) starves the consumer the
+test is awaiting; the failure-requeue mutants (run:125/126) drop retried
+items the test waits to see durably inserted. Lock-call removals
+(awaitBatchComplete:147) kill the waiting thread with
+`IllegalMonitorStateException` under load-dependent timing.
+
+```
+awaitBatchComplete:146 EQUAL_ELSE; :147 VoidMethodCall; :149 EQUAL_ELSE; :149 EQUAL_IF; :150 VoidMethodCall
+queue:207 VoidMethodCall; :208 ConditionalsBoundary; :208 EQUAL_IF; :208 ORDER_ELSE; :211 EQUAL_ELSE; :211 EQUAL_IF; :212 VoidMethodCall; :214 VoidMethodCall
+run:75 ORDER_ELSE; :79 EQUAL_ELSE; :79 EQUAL_IF; :81 VoidMethodCall; :82 VoidMethodCall; :85 ConditionalsBoundary; :85 ORDER_ELSE x2; :85 ORDER_IF x2; :96 EQUAL_ELSE; :96 EQUAL_IF; :97 ORDER_ELSE; :125 ORDER_ELSE; :126 VoidMethodCall
+```
+
+### `rpc.AccountFetcherImpl` — 36
+
+The harness drives `run()` deterministically and interrupts the thread on
+its *final* batch — so any mutant that keeps the loop from consuming batches
+in order also keeps the exit interrupt from ever firing. Starvation shapes:
+removed enqueue/`signal` or mis-routed batches (lockedQueue:88-97,
+queue:120/138/140/197, queueUnique:105-109, priorityQueue:173,
+priorityQueueUnique:178, validBatch:133 forced-false, createBatch:305);
+removed loop exits (queueBatchable:150 — the `to >= numAccounts` chunk-loop
+exit; :149/157/168 skipped chunk submissions starve downstream); trapped or
+unbounded waits in `delay` (321-340: the reactive `awaitNanos`/`await` loops
+and the non-reactive `sleep` spin); run-loop dispatch/reset guards
+(run:347/348/386/389/396) that leave `currentBatch` never draining.
+
+```
+createBatch:305 EQUAL_IF
+delay:321 EQUAL_ELSE; :321 EQUAL_IF; :323 VoidMethodCall; :327 ORDER_ELSE; :331 EQUAL_ELSE; :331 EQUAL_IF; :332 VoidMethodCall; :339 VoidMethodCall; :340 EQUAL_ELSE
+lockedQueue:88 EQUAL_IF; :92 VoidMethodCall; :94 VoidMethodCall; :96 EQUAL_ELSE; :97 VoidMethodCall
+priorityQueue:173 VoidMethodCall
+priorityQueueUnique:178 VoidMethodCall
+queue:120 VoidMethodCall; :138 EQUAL_ELSE; :140 VoidMethodCall; :197 VoidMethodCall
+queueBatchable:149 VoidMethodCall; :150 ConditionalsBoundary; :150 ORDER_ELSE; :150 ORDER_IF; :157 VoidMethodCall; :168 VoidMethodCall
+queueUnique:105 EQUAL_ELSE; :108 EQUAL_ELSE; :109 VoidMethodCall
+run:347 EQUAL_ELSE; :348 VoidMethodCall; :386 EQUAL_ELSE; :389 EQUAL_ELSE; :396 EQUAL_ELSE
+validBatch:133 BooleanFalseReturnVals
+```
+
+### `fulfillment.SingleAssetFulfillmentService` — 21
+
+Two shapes. (a) `accept`'s guards decide whether to `wakeUp()` the
+fulfillment thread; a suppressed wake leaves it parked in `awaitChange`
+while the test waits on fulfillment progress (accept:141-153, including the
+`wakeUp` calls at :142/:153). (b) The slot-ordered CAS loops: flipping
+`witness == null` / `witness == previous` (compareAndSet:166-198) turns a
+bounded compare-and-exchange retry into an infinite spin; the two
+`NullReturnVals` (:169/:176) feed `accept`'s `previousAmount` gates and
+suppress the wake the same way.
+
+```
+accept:141 EQUAL_ELSE x2; :142 VoidMethodCall; :144 EQUAL_ELSE x2; :146 EQUAL_ELSE; :150 ORDER_ELSE; :152 EQUAL_ELSE; :152 ORDER_ELSE; :153 VoidMethodCall
+compareAndSet:166 EQUAL_ELSE; :166 EQUAL_IF; :168 EQUAL_ELSE; :169 NullReturnVals; :173 ORDER_ELSE; :175 EQUAL_ELSE; :176 NullReturnVals; :189 EQUAL_ELSE; :189 EQUAL_IF; :191 EQUAL_ELSE; :198 EQUAL_ELSE
+```
+
+### `integrations.kamino.KaminoCacheImpl` — 21
+
+The cache's `run()` loop and its lock discipline. Stalled chunk progression
+(run:642 `from + MAX` arithmetic, :664 removed `to == numAccounts` exit)
+makes the sublist walk infinite; the polling window (run:692/:697 and the
+change-count reset) turns unbounded; removed accept/update/delete calls
+(run:654/660/686, deleteScopeConfiguration:220) or forced deletion legs
+(deleteScopeConfiguration:227/236 — the wrong leg NPEs the cache thread)
+leave the test looping on state that will never arrive; a leaked read lock
+(indexes:213 — removed `unlock` in the finally) blocks the writer; the
+optimistic-recheck flip (updateIfChanged:388) spins the retry loop under
+the write lock; the rpc supplier `NullReturnVals` (lambda:635/675) kill the
+cache thread through the `join`.
+
+```
+deleteScopeConfiguration:220 VoidMethodCall; :227 EQUAL_ELSE; :236 EQUAL_ELSE
+indexes:213 VoidMethodCall
+lambda$run$0:635 NullReturnVals
+lambda$run$1:675 NullReturnVals
+run:642 Math; :649 EQUAL_ELSE; :649 EQUAL_IF; :653 EQUAL_ELSE; :653 EQUAL_IF; :654 VoidMethodCall; :660 VoidMethodCall; :664 EQUAL_ELSE; :686 VoidMethodCall; :689 VoidMethodCall; :692 ConditionalsBoundary; :692 ORDER_IF; :697 ORDER_ELSE
+updateIfChanged:388 EQUAL_ELSE; :388 EQUAL_IF
+```
+
+### `state.GlobalConfigCacheImpl` — 13
+
+The refresh window and its waiters. A removed `priorityQueue` (run:222)
+never feeds `accept`, and the null-state exit gate (run:228) plus window
+bounds (run:230) either exit the service early (the test then awaits updates
+that never come) or park it unbounded; `forceCacheRefresh`'s double-check
+gate and `signal` (203/208/212/214) lose the early-break the test is
+waiting on; `accept`'s `signalAll` (:709) and the `awaitNewGlobalConfig`
+elapsed-bound loop (:722/:724) are the waiter side of the same protocol.
+
+```
+accept:709 VoidMethodCall
+awaitNewGlobalConfig:722 EQUAL_IF; :724 ORDER_ELSE
+forceCacheRefresh:203 EQUAL_IF; :208 EQUAL_IF; :212 VoidMethodCall; :214 VoidMethodCall
+run:222 VoidMethodCall; :223 VoidMethodCall; :228 EQUAL_ELSE; :228 EQUAL_IF; :230 EQUAL_ELSE; :230 ORDER_IF
+```
+
+### `fulfillment.BaseFulfillmentService` — 5
+
+The await/wake protocol itself: a removed `signalAll` (wakeUp:129) is a lost
+wake-up; removed `lock`/`unlock` pairs (wakeUp:127/131, awaitChange:138/146)
+either leak the lock every later locker blocks on or kill the service thread
+with `IllegalMonitorStateException` mid-await.
+
+```
+awaitChange:138 VoidMethodCall; :146 VoidMethodCall
+wakeUp:127 VoidMethodCall; :129 VoidMethodCall; :131 VoidMethodCall
+```
+
+### `state.MinGlamStateAccount` — 3
+
+The length-prefixed byte walk: a mutated loop bound or offset increment
+(externalPositionsOffset:124/:132, createRecord:156 `i += ...` arithmetic)
+makes later `val()` reads land on garbage lengths, and the nested walk
+iterates effectively unbounded. `:132 ORDER_IF` is the long-stable member
+(documented since adoption; deterministic detection preferred over timeout
+if ever triaged).
+
+```
+createRecord:156 Math
+externalPositionsOffset:124 ORDER_ELSE; :132 ORDER_IF
+```
+
+### Singles — 8
+
+- `ServiceContextImpl.executeTask:143`, `execution.BaseServiceContext.executeTask:55`
+  (`VoidMethodCall`) — the removed call *is* the task submission; the test
+  awaits the task's effect and only the watchdog can end that.
+- `fulfillment.SingleAssetFulfillmentServiceEntrypoint.run:206/:207`
+  (`VoidMethodCall`) — the removed `execute` never starts the
+  epoch-info/fulfillment sub-service the test awaits; `:216` — removed
+  `Thread.sleep(3_000)` turns the `checkConnection` loop into a busy spin.
+- `integrations.IntegLookupTableCacheImpl.run:55/:57` (`VoidMethodCall`) —
+  removed `queueBatchable` starves the fetch loop; removed sleep spins it;
+  either way the driver never reaches its terminal interrupt.
+- `io.KeyedFlatFileImpl.overwriteFile:118` (`VoidMethodCall`) — the removed
+  call is `lock.unlock()` in the finally: the leaked lock blocks every
+  subsequent operation on the file (the "leaked unlock" shape verbatim).

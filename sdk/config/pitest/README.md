@@ -236,3 +236,30 @@ in context because the map's values are always `IntegrationAcl` — the only
 observable branch is the null (absent program) case, which is covered. The
 staging twin (`StagingStateAccountClientImpl.protocolBitmask`) will earn the
 same acceptance when its class is covered.
+
+## Timed-out mutants (audited set, 2026-07-26)
+
+Per HARDENING.md: a timeout-detected mutant was observed for *slowness, not
+wrongness*, so the ratchet cannot see a weakened covering assertion for it —
+the compensating control is naming each one with its structural cause, so
+`5 timed out (load-dependent)` in the verify summary is an audited set and a
+new member is something a reviewer notices. `KILLED <-> TIMED_OUT` drift is
+benign (both are detected, neither is ever baselined); `SURVIVED ->
+TIMED_OUT` is the flip the verify names separately. Snapshot: the 2026-07-26
+`qualityGate -PnoMutationHistory` run on plugin 21.5.15.
+
+### `lut.VaultTableBuilderImpl.batchTableTasks` — 5
+
+All five are the same structural cause: the chunking loop's index `i`
+advances only through the per-chunk inner loops, so any mutant that stalls
+chunk formation makes `batchTableTasks` never return. `:119` (the outer
+`i < accounts.length` bound), `:138` (`to = i + add` arithmetic and the
+inner-loop bound — a non-positive `add` yields an empty chunk and `i` stops
+moving), and `:158` (the `tableSpace == 0` rollover — skipping it drives
+`tableSpace` negative, so every later `Math.min(tableSpace, ...)` chunk is
+empty). Watchdog-detected infinite loops, not load-slowed kills — expected
+to be stable members.
+
+```
+batchTableTasks:119 ConditionalsBoundary; :119 ORDER_IF; :138 Math; :138 ORDER_ELSE; :158 EQUAL_ELSE
+```
