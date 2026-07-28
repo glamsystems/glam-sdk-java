@@ -1,0 +1,9 @@
+# Audited timed-out mutants (HARDENING.md "audited set" bullet): one line-less
+# class,method,mutator key per member; structural causes live in README.md under
+# "Timed-out mutants (audited set)". Line numbers ride in comments only — drift
+# must not churn membership. Snapshot: 2026-07-26 qualityGate reports.
+systems.glam.sdk.lut.VaultTableBuilderImpl,batchTableTasks,ConditionalsBoundaryMutator
+systems.glam.sdk.lut.VaultTableBuilderImpl,batchTableTasks,MathMutator
+systems.glam.sdk.lut.VaultTableBuilderImpl,batchTableTasks,RemoveConditionalMutator_EQUAL_ELSE
+systems.glam.sdk.lut.VaultTableBuilderImpl,batchTableTasks,RemoveConditionalMutator_ORDER_ELSE
+systems.glam.sdk.lut.VaultTableBuilderImpl,batchTableTasks,RemoveConditionalMutator_ORDER_IF

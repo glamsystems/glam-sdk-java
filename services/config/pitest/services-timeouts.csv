@@ -1,0 +1,83 @@
+# Audited timed-out mutants (HARDENING.md "audited set" bullet): one line-less
+# class,method,mutator key per member; structural causes live in README.md under
+# "Timed-out mutants (audited set)". Line numbers ride in comments only — drift
+# must not churn membership. Snapshot: 2026-07-26 qualityGate reports.
+systems.glam.services.ServiceContextImpl,executeTask,VoidMethodCallMutator
+systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,RemoveConditionalMutator_EQUAL_ELSE
+systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,RemoveConditionalMutator_EQUAL_IF
+systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,VoidMethodCallMutator
+systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,ConditionalsBoundaryMutator
+systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,RemoveConditionalMutator_EQUAL_ELSE
+systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,RemoveConditionalMutator_EQUAL_IF
+systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,RemoveConditionalMutator_ORDER_ELSE
+systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,VoidMethodCallMutator
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,ConditionalsBoundaryMutator
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,IncrementsMutator # line 109; KILLED<->TIMED_OUT drifter, admitted 2026-07-28
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,RemoveConditionalMutator_EQUAL_ELSE
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,RemoveConditionalMutator_EQUAL_IF
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,RemoveConditionalMutator_ORDER_ELSE
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,RemoveConditionalMutator_ORDER_IF
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,VoidMethodCallMutator
+systems.glam.services.execution.BaseServiceContext,executeTask,VoidMethodCallMutator
+systems.glam.services.fulfillment.BaseFulfillmentService,awaitChange,VoidMethodCallMutator
+systems.glam.services.fulfillment.BaseFulfillmentService,wakeUp,VoidMethodCallMutator
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,accept,RemoveConditionalMutator_EQUAL_ELSE
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,accept,RemoveConditionalMutator_ORDER_ELSE
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,accept,VoidMethodCallMutator
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,NullReturnValsMutator
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_ELSE
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_IF
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_ORDER_ELSE
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,run,VoidMethodCallMutator
+systems.glam.services.integrations.IntegLookupTableCacheImpl,run,VoidMethodCallMutator
+systems.glam.services.integrations.kamino.KaminoCacheImpl,deleteScopeConfiguration,RemoveConditionalMutator_EQUAL_ELSE
+systems.glam.services.integrations.kamino.KaminoCacheImpl,deleteScopeConfiguration,VoidMethodCallMutator
+systems.glam.services.integrations.kamino.KaminoCacheImpl,indexes,VoidMethodCallMutator
+systems.glam.services.integrations.kamino.KaminoCacheImpl,lambda$run$0,NullReturnValsMutator
+systems.glam.services.integrations.kamino.KaminoCacheImpl,lambda$run$1,NullReturnValsMutator
+systems.glam.services.integrations.kamino.KaminoCacheImpl,run,ConditionalsBoundaryMutator
+systems.glam.services.integrations.kamino.KaminoCacheImpl,run,MathMutator
+systems.glam.services.integrations.kamino.KaminoCacheImpl,run,RemoveConditionalMutator_EQUAL_ELSE
+systems.glam.services.integrations.kamino.KaminoCacheImpl,run,RemoveConditionalMutator_EQUAL_IF
+systems.glam.services.integrations.kamino.KaminoCacheImpl,run,RemoveConditionalMutator_ORDER_ELSE
+systems.glam.services.integrations.kamino.KaminoCacheImpl,run,RemoveConditionalMutator_ORDER_IF
+systems.glam.services.integrations.kamino.KaminoCacheImpl,run,VoidMethodCallMutator
+systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,RemoveConditionalMutator_EQUAL_ELSE
+systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,RemoveConditionalMutator_EQUAL_IF
+systems.glam.services.io.KeyedFlatFileImpl,overwriteFile,VoidMethodCallMutator
+systems.glam.services.rpc.AccountFetcherImpl,createBatch,RemoveConditionalMutator_EQUAL_IF
+systems.glam.services.rpc.AccountFetcherImpl,delay,RemoveConditionalMutator_EQUAL_ELSE
+systems.glam.services.rpc.AccountFetcherImpl,delay,RemoveConditionalMutator_EQUAL_IF
+systems.glam.services.rpc.AccountFetcherImpl,delay,RemoveConditionalMutator_ORDER_ELSE
+systems.glam.services.rpc.AccountFetcherImpl,delay,VoidMethodCallMutator
+systems.glam.services.rpc.AccountFetcherImpl,lockedQueue,RemoveConditionalMutator_EQUAL_ELSE
+systems.glam.services.rpc.AccountFetcherImpl,lockedQueue,RemoveConditionalMutator_EQUAL_IF
+systems.glam.services.rpc.AccountFetcherImpl,lockedQueue,VoidMethodCallMutator
+systems.glam.services.rpc.AccountFetcherImpl,priorityQueue,VoidMethodCallMutator
+systems.glam.services.rpc.AccountFetcherImpl,priorityQueueUnique,VoidMethodCallMutator
+systems.glam.services.rpc.AccountFetcherImpl,queue,RemoveConditionalMutator_EQUAL_ELSE
+systems.glam.services.rpc.AccountFetcherImpl,queue,VoidMethodCallMutator
+systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,ConditionalsBoundaryMutator
+systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,RemoveConditionalMutator_ORDER_ELSE
+systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,RemoveConditionalMutator_ORDER_IF
+systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,VoidMethodCallMutator
+systems.glam.services.rpc.AccountFetcherImpl,queueUnique,RemoveConditionalMutator_EQUAL_ELSE
+systems.glam.services.rpc.AccountFetcherImpl,queueUnique,VoidMethodCallMutator
+systems.glam.services.rpc.AccountFetcherImpl,run,RemoveConditionalMutator_EQUAL_ELSE
+systems.glam.services.rpc.AccountFetcherImpl,run,VoidMethodCallMutator
+systems.glam.services.rpc.AccountFetcherImpl,validBatch,BooleanFalseReturnValsMutator
+systems.glam.services.state.GlobalConfigCacheImpl,accept,VoidMethodCallMutator
+systems.glam.services.state.GlobalConfigCacheImpl,awaitNewGlobalConfig,RemoveConditionalMutator_EQUAL_IF
+systems.glam.services.state.GlobalConfigCacheImpl,awaitNewGlobalConfig,RemoveConditionalMutator_ORDER_ELSE
+systems.glam.services.state.GlobalConfigCacheImpl,forceCacheRefresh,RemoveConditionalMutator_EQUAL_IF
+systems.glam.services.state.GlobalConfigCacheImpl,forceCacheRefresh,VoidMethodCallMutator
+systems.glam.services.state.GlobalConfigCacheImpl,run,RemoveConditionalMutator_EQUAL_ELSE
+systems.glam.services.state.GlobalConfigCacheImpl,run,RemoveConditionalMutator_EQUAL_IF
+systems.glam.services.state.GlobalConfigCacheImpl,run,RemoveConditionalMutator_ORDER_IF
+systems.glam.services.state.GlobalConfigCacheImpl,run,VoidMethodCallMutator
+systems.glam.services.state.MinGlamStateAccount,createRecord,MathMutator
+systems.glam.services.state.MinGlamStateAccount,externalPositionsOffset,RemoveConditionalMutator_ORDER_ELSE
+systems.glam.services.state.MinGlamStateAccount,externalPositionsOffset,RemoveConditionalMutator_ORDER_IF
+# KeyedFlatFileImpl's member oscillates between appendEntry and overwriteFile
+# across runs (same leaked-unlock shape, README singles section) — audit both.
+systems.glam.services.io.KeyedFlatFileImpl,appendEntry,VoidMethodCallMutator

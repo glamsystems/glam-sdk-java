@@ -86,8 +86,15 @@ a defect traces into one of the above:
    substitutes the published module for the local project — verify with
    `./gradlew :services:dependencies --configuration runtimeClasspath`, which
    should show `-> project ':ravina:...'`). `sava-build` is different: it is
-   resolved in `pluginManagement`, so uncomment the guarded `includeBuild`
-   block there instead.
+   resolved in `pluginManagement` via its local test repo — run sava-build's
+   `publishSavaBuildTestPublicationToSavaTestRepoRepository`, then build here
+   with `-PsavaBuildLocalRepo=../sava-build/build/sava-test-repo` (the
+   settings block warns loudly and prints the last-publish age). That publish
+   is not automatic: re-run it after every sava-build edit, and a *forgotten*
+   publish is silent under configuration-cache reuse — if behaviour looks
+   stale, check the test repo's `maven-metadata.xml` timestamp directly. The
+   property lives on the CLI or in `~/.gradle/gradle.properties`, never in
+   the file, so unlike an `includeBuild` there is nothing to un-ship.
 4. **The `includeBuild` line is temporary and must not ship.** CI has no
    sibling checkout, and leaving it in silently builds every developer against
    whatever they happen to have on disk. Publish the dependency, bump
@@ -142,7 +149,7 @@ changes here:
      template changes until the block is re-diffed — sync or ACT on each
      changed bullet (a new bullet may need code, not prose) — and the digest
      updated. -->
-<!-- hardening-template sha256:7f9eb869ee7e -->
+<!-- hardening-template sha256:f6dea3f41ab7 -->
 
 1. **Scale verification to the change.** Iterate with the module's `test`
    task; before handing off, run only the `pitest<Suite>`(s) whose mutated
@@ -201,22 +208,35 @@ changes here:
    union only rows observed to flip. A flaky harness is worse than recorded
    debt — if an interleaving cannot be made deterministic, accept the mutant
    with a written reason.
-8. **A suite's percentage is not a target.** An accepted mutant with a
+8. **A new timed-out mutant is a reviewer-stop, not detection noise.** For
+   exactly these mutants the ratchet cannot see a weakened covering
+   assertion — a timeout keeps "detecting" whatever the test asserts — so
+   each suite's timeouts are an audited set, not a count:
+   `config/pitest/<suite>-timeouts.csv` holds line-less
+   `class,method,mutator` keys, and the README's "Timed-out mutants
+   (audited set)" section the structural cause per member (the stalled
+   chunking loop, the lost signal, the leaked unlock). The verify warns on
+   any timeout outside the set — paste the printed row, then write the
+   cause — and on members matching no mutant; admit a newcomer only with
+   its cause written. The key is the check's resolution: a new timed-out
+   mutant in an already-audited method+mutator draws no warning, so name
+   the line in the README cause and re-read it when that code changes.
+9. **A suite's percentage is not a target.** An accepted mutant with a
    written reason is finished work, not debt. Before trying to raise a
    number, check whether the remainder is `NO_COVERAGE` (real work) or
    documented equivalents (already closed).
-9. **Allocation and timing harnesses are a last resort**, reserved for
+10. **Allocation and timing harnesses are a last resort**, reserved for
    properties that are a stated design goal; they need a `volatile` sink and
    flap when margins are thin.
-10. When a test you believe in will not go green, **suspect the code before
+11. When a test you believe in will not go green, **suspect the code before
    you soften the assertion** — that is where this process finds real bugs.
-11. **A wandering unkilled count is a defect, not noise** — chase it before
+12. **A wandering unkilled count is a defect, not noise** — chase it before
    refreshing any baseline. Known causes: real waits, `TIMED_OUT` load flips,
    `@Execution`/`@TestInstance` on an abstract base not reaching concrete
    classes (JUnit-version-dependent; `javap` the resolved jar), and coverage
    attributed to field initializers — exercise factories from inside a
    `@Test`.
-12. **Build the subject under test inside the test body, not in a field.**
+13. **Build the subject under test inside the test body, not in a field.**
     Under `PER_CLASS` lifecycle a field-initialized client's construction
     coverage attaches to whichever test runs first, so wiring mutants can
     never pair with the test that drives what they wire — they survive even
@@ -226,7 +246,7 @@ changes here:
     `@TestInstance(PER_CLASS)` in either module, audited 2026-07-23), so
     field initializers re-run per test — but prefer building in the test
     body anyway, and re-audit if a test class adopts `PER_CLASS`.
-13. **Kill rates are bounded by the mutator set.** `BigInteger`/`BigDecimal`
+14. **Kill rates are bounded by the mutator set.** `BigInteger`/`BigDecimal`
     arithmetic is method calls, invisible to the default arithmetic mutators —
     fixed-point and fee math needs `EXPERIMENTAL_BIG_INTEGER` (pitest ≥
     1.25.8) — and fluent calls returning their receiver are expressions,
@@ -234,7 +254,7 @@ changes here:
     `EXPERIMENTAL_NAKED_RECEIVER`. Trial per suite, enable only what fires,
     and record the numbers in `config/pitest/README.md`. Both suites here run
     `STRONGER,EXPERIMENTAL_NAKED_RECEIVER`; the trial numbers are recorded.
-14. **PIT minions run on the class path**, even though this repo's tasks run
+15. **PIT minions run on the class path**, even though this repo's tasks run
     on the module path: `module-info` services are invisible to them, and a
     test-resources `META-INF/services` is invisible to the module-path `test`
     task. Real services are declared in both places; a harness whose result
@@ -245,28 +265,28 @@ changes here:
     declares the service only in `module-info` — hit 2026-07-23; ravina fixed
     it in `bde97ec` ("restore classpath service discovery"), and glam's
     `pitestServices` needs a ravina release carrying it.
-15. **Exclusions must cover the test source set, not a naming convention**:
+16. **Exclusions must cover the test source set, not a naming convention**:
     shared fakes named `RecordingFoo` / `StubFoo` match no `*Test*` pattern.
     After registering or widening a suite, list the mutated classes and
     confirm none live under `src/test` (`pitest<Suite>Verify` warns, naming
     them).
-16. **Verify by the absence of failures, not the presence of passes.** A
+17. **Verify by the absence of failures, not the presence of passes.** A
     green build can mean the task was up-to-date rather than that tests ran;
     check the failure count and that the task executed. A *failed* PIT run
     leaves the previous report in `build/reports/pitest/<suite>/`, so the
     summary you read can describe a run that never happened — trust the exit
     code, and delete report directories when comparing runs.
-17. **A suite that got faster without getting narrower is a bug report** —
+18. **A suite that got faster without getting narrower is a bug report** —
     unless the summary carries the `[history]` marker (arcmutate incremental
     reuse, where fast is expected; the pre-release gate still runs
     `-PnoMutationHistory` to re-earn every status from scratch).
-18. **Transient infra failures are not results.** PIT `MINION_DIED` fails
+19. **Transient infra failures are not results.** PIT `MINION_DIED` fails
     before writing a report — re-run the suite; a Gradle-worker
     `EOFException` death is the same shape, and per-mutant `RUN_ERROR` under
     load the same shape smaller (not counted as detected). The daemon log
     (`~/.gradle/daemon/<version>/daemon-<pid>.out.log`) keeps a failed
     build's full output even when the shell discarded it.
-19. **Fuzz findings become a committed seed input and a named regression
+20. **Fuzz findings become a committed seed input and a named regression
     test**, never just a fix — and the committed corpus is replayed by a unit
     test inside `check`, so it cannot rot between fuzz runs. **When one thing
     has two representations, fuzz the differential** — assert the two agree
@@ -274,13 +294,13 @@ changes here:
     answer. Minimize a corpus with `fuzz<Target>Minimize` (libFuzzer
     `-merge=1`; `-PadoptLocalCorpus` opts in locally found inputs), never by
     hand — review the diff and update the corpus provenance README.
-20. **Stubs and fixtures return distinguishable, non-default values.** A stub
+21. **Stubs and fixtures return distinguishable, non-default values.** A stub
     or proxy returning `null`/`0`/`""`/`true`/empty makes the matching
     return-value mutant equivalent by accident of the fixture — the same trap
     as a test clock starting at 0. Give recording proxies (the `SolanaRpcClient`
     / `AccountFetcher` proxies here) return values a real assertion can tell
     from the mutated default.
-21. **Copy-on-write clusters split by direction.** For a method returning an
+22. **Copy-on-write clusters split by direction.** For a method returning an
     unmodifiable view (`List.copyOf(...)`, `List.of(...)` — e.g.
     `KaminoCacheImpl.vaultContexts`), assert the immutability
     (`assertThrows(UnsupportedOperationException, ...)`) as well as the

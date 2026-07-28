@@ -1004,7 +1004,7 @@ lock/condition protocols, where the only observable failure is a thread that
 stops making progress (or spins without it) until PIT's watchdog. Structural
 causes by class:
 
-### `db.sql.BatchSqlExecutorImpl` — 28
+### `db.sql.BatchSqlExecutorImpl` — 29
 
 The producer-consumer batch window. Lost signals (`signalAll`/`signal`
 removed: run:81, queue:212, queue:214) park `awaitBatchComplete` callers
@@ -1016,12 +1016,18 @@ in-lock hot spins; a removed `addLast` (queue:207) starves the consumer the
 test is awaiting; the failure-requeue mutants (run:125/126) drop retried
 items the test waits to see durably inserted. Lock-call removals
 (awaitBatchComplete:147) kill the waiting thread with
-`IllegalMonitorStateException` under load-dependent timing.
+`IllegalMonitorStateException` under load-dependent timing. The batch
+cursor's post-increment (run:109 Increments, admitted 2026-07-28 as a
+`KILLED <-> TIMED_OUT` drifter) mutated to a decrement indexes `batch[-1]`
+on the second polled item; the `ArrayIndexOutOfBoundsException` kills the
+executor thread outside the `SQLException` requeue path, so
+`awaitBatchComplete` waiters never see `batchComplete` and only the
+watchdog ends the test.
 
 ```
 awaitBatchComplete:146 EQUAL_ELSE; :147 VoidMethodCall; :149 EQUAL_ELSE; :149 EQUAL_IF; :150 VoidMethodCall
 queue:207 VoidMethodCall; :208 ConditionalsBoundary; :208 EQUAL_IF; :208 ORDER_ELSE; :211 EQUAL_ELSE; :211 EQUAL_IF; :212 VoidMethodCall; :214 VoidMethodCall
-run:75 ORDER_ELSE; :79 EQUAL_ELSE; :79 EQUAL_IF; :81 VoidMethodCall; :82 VoidMethodCall; :85 ConditionalsBoundary; :85 ORDER_ELSE x2; :85 ORDER_IF x2; :96 EQUAL_ELSE; :96 EQUAL_IF; :97 ORDER_ELSE; :125 ORDER_ELSE; :126 VoidMethodCall
+run:75 ORDER_ELSE; :79 EQUAL_ELSE; :79 EQUAL_IF; :81 VoidMethodCall; :82 VoidMethodCall; :85 ConditionalsBoundary; :85 ORDER_ELSE x2; :85 ORDER_IF x2; :96 EQUAL_ELSE; :96 EQUAL_IF; :97 ORDER_ELSE; :109 Increments; :125 ORDER_ELSE; :126 VoidMethodCall
 ```
 
 ### `rpc.AccountFetcherImpl` — 36
