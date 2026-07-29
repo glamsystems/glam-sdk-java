@@ -1096,7 +1096,7 @@ run:642 Math; :649 EQUAL_ELSE; :649 EQUAL_IF; :653 EQUAL_ELSE; :653 EQUAL_IF; :6
 updateIfChanged:388 EQUAL_ELSE; :388 EQUAL_IF
 ```
 
-### `state.GlobalConfigCacheImpl` — 13
+### `state.GlobalConfigCacheImpl` — 14
 
 The refresh window and its waiters. A removed `priorityQueue` (run:222)
 never feeds `accept`, and the null-state exit gate (run:228) plus window
@@ -1105,12 +1105,19 @@ that never come) or park it unbounded; `forceCacheRefresh`'s double-check
 gate and `signal` (203/208/212/214) lose the early-break the test is
 waiting on; `accept`'s `signalAll` (:709) and the `awaitNewGlobalConfig`
 elapsed-bound loop (:722/:724) are the waiter side of the same protocol.
+`topPriorityForMintChecked`'s removed `readLock.unlock()` in the finally
+(:145) leaks the read lock: the decimals-mismatch path then parks the same
+thread on `writeLock.lock()` (a read→write upgrade is impossible on a
+`ReentrantReadWriteLock`), and every later writer parks behind the leaked
+hold (admitted 2026-07-29, first surfaced by `-PstrictTimeoutAudit` under
+gate load; a KILLED↔TIMED_OUT drifter of the leaked-unlock family).
 
 ```
 accept:709 VoidMethodCall
 awaitNewGlobalConfig:722 EQUAL_IF; :724 ORDER_ELSE
 forceCacheRefresh:203 EQUAL_IF; :208 EQUAL_IF; :212 VoidMethodCall; :214 VoidMethodCall
 run:222 VoidMethodCall; :223 VoidMethodCall; :228 EQUAL_ELSE; :228 EQUAL_IF; :230 EQUAL_ELSE; :230 ORDER_IF
+topPriorityForMintChecked:145 VoidMethodCall
 ```
 
 ### `fulfillment.BaseFulfillmentService` — 5

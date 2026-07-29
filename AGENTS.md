@@ -88,13 +88,15 @@ a defect traces into one of the above:
    should show `-> project ':ravina:...'`). `sava-build` is different: it is
    resolved in `pluginManagement` via its local test repo — run sava-build's
    `publishSavaBuildTestPublicationToSavaTestRepoRepository`, then build here
-   with `-PsavaBuildLocalRepo=../sava-build/build/sava-test-repo` (the
-   settings block warns loudly and prints the last-publish age). That publish
-   is not automatic: re-run it after every sava-build edit, and a *forgotten*
-   publish is silent under configuration-cache reuse — if behaviour looks
-   stale, check the test repo's `maven-metadata.xml` timestamp directly. The
-   property lives on the CLI or in `~/.gradle/gradle.properties`, never in
-   the file, so unlike an `includeBuild` there is nothing to un-ship.
+   with `-PsavaBuildLocalRepo=../sava-build/build/sava-test-repo`. The plugin
+   itself announces local-repo resolution (with the last-publish age) at the
+   end of every such build — including configuration-cache hits — so a build
+   that prints no notice did NOT run 0.0.0-test. That publish is not
+   automatic: re-run it after every sava-build edit, or chain the two
+   (`(cd ../sava-build && ./gradlew publish...) && ./gradlew check -P...`) so
+   the stale case is unreachable. The property lives on the CLI or in
+   `~/.gradle/gradle.properties`, never in the file, so unlike an
+   `includeBuild` there is nothing to un-ship.
 4. **The `includeBuild` line is temporary and must not ship.** CI has no
    sibling checkout, and leaving it in silently builds every developer against
    whatever they happen to have on disk. Publish the dependency, bump

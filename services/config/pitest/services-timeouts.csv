@@ -75,6 +75,7 @@ systems.glam.services.state.GlobalConfigCacheImpl,run,RemoveConditionalMutator_E
 systems.glam.services.state.GlobalConfigCacheImpl,run,RemoveConditionalMutator_EQUAL_IF
 systems.glam.services.state.GlobalConfigCacheImpl,run,RemoveConditionalMutator_ORDER_IF
 systems.glam.services.state.GlobalConfigCacheImpl,run,VoidMethodCallMutator
+systems.glam.services.state.GlobalConfigCacheImpl,topPriorityForMintChecked,VoidMethodCallMutator
 systems.glam.services.state.MinGlamStateAccount,createRecord,MathMutator
 systems.glam.services.state.MinGlamStateAccount,externalPositionsOffset,RemoveConditionalMutator_ORDER_ELSE
 systems.glam.services.state.MinGlamStateAccount,externalPositionsOffset,RemoveConditionalMutator_ORDER_IF
