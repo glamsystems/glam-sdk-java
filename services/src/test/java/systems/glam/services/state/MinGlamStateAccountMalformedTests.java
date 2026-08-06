@@ -6,6 +6,7 @@ import software.sava.core.encoding.ByteUtil;
 import systems.glam.sdk.GlamEnv;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -94,5 +95,50 @@ final class MinGlamStateAccountMalformedTests {
         "one past the bytes remaining must be rejected by the length-prefix guard, was: "
             + pastBoundFailure.getMessage()
     );
+  }
+
+  /// Fuzz finding (minGlamStateAccount target, 2026-08-06, first campaign).
+  /// `Arrays.binarySearch` returns `-(insertion point) - 1` for an absent key,
+  /// and the record stores that index for `baseAssetMint()` to index `assets`
+  /// with. A base asset missing from its own assets vector therefore parsed
+  /// cleanly and produced a record that threw
+  /// `ArrayIndexOutOfBoundsException: Index -3 out of bounds for length 5` on
+  /// first use -- a landmine at a distance from its cause. It must be rejected
+  /// at parse instead.
+  @Test
+  void aBaseAssetMissingFromTheAssetsVectorIsRejectedAtParse() {
+    final byte[] data = MinGlamStateAccountTests.fixtureData();
+    // flip the base-asset mint to a key that cannot be in the assets vector
+    final byte[] absent = new byte[PublicKey.PUBLIC_KEY_LENGTH];
+    absent[0] = (byte) 0xFE;
+    absent[PublicKey.PUBLIC_KEY_LENGTH - 1] = (byte) 0xFE;
+    System.arraycopy(absent, 0, data, StateAccount.BASE_ASSET_MINT_OFFSET, absent.length);
+
+    final var failure = assertThrows(
+        IllegalStateException.class,
+        () -> MinGlamStateAccount.createRecord(GlamEnv.PRODUCTION, data, SLOT)
+    );
+    assertTrue(
+        String.valueOf(failure.getMessage()).contains("not among the state account's"),
+        "expected the base-asset membership rejection, was: " + failure.getMessage()
+    );
+  }
+
+  /// The membership guard rejects only *absent* keys. `assets` is sorted, so a
+  /// base asset that happens to sort first sits at index 0 — a legitimate and
+  /// ordinary account that must be accepted. Only this case separates the
+  /// absent-key bound from one that also rejects the first asset.
+  @Test
+  void aBaseAssetAtIndexZeroIsAccepted() {
+    final var parsed = MinGlamStateAccount.createRecord(
+        GlamEnv.PRODUCTION, MinGlamStateAccountTests.fixtureData(), SLOT);
+    final var firstAsset = parsed.assets()[0];
+
+    final byte[] data = MinGlamStateAccountTests.fixtureData();
+    firstAsset.write(data, StateAccount.BASE_ASSET_MINT_OFFSET);
+
+    final var record = MinGlamStateAccount.createRecord(GlamEnv.PRODUCTION, data, SLOT);
+    assertEquals(firstAsset, record.baseAssetMint(),
+        "the lowest-sorting asset is a valid base asset at index 0");
   }
 }

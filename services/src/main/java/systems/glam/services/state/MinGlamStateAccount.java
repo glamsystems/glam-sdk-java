@@ -185,7 +185,19 @@ public record MinGlamStateAccount(long slot,
     final var accountType = AccountType.values()[data[StateAccount.ACCOUNT_TYPE_OFFSET] & 0xFF];
     final boolean enabled = data[StateAccount.ENABLED_OFFSET] == 1;
     final var baseAssetMint = PublicKey.readPubKey(data, StateAccount.BASE_ASSET_MINT_OFFSET);
+    // binarySearch returns -(insertion point) - 1 when the key is absent. The
+    // record stores the index and baseAssetMint() indexes assets with it, so a
+    // base asset missing from its own assets vector produces a record that
+    // constructs cleanly and then throws ArrayIndexOutOfBoundsException at a
+    // negative index on first use. Reject it here instead: any account this
+    // refuses is one whose baseAssetMint() could only have thrown.
     final int baseAssetIndex = Arrays.binarySearch(assets, baseAssetMint);
+    if (baseAssetIndex < 0) {
+      throw new IllegalStateException(
+          "Base asset " + baseAssetMint + " is not among the state account's "
+              + assets.length + " asset(s)."
+      );
+    }
     final int baseAssetDecimals = data[StateAccount.BASE_ASSET_DECIMALS_OFFSET] & 0xFF;
     final int baseAssetTokenProgram = data[StateAccount.BASE_ASSET_TOKEN_PROGRAM_OFFSET] & 0xFF;
 

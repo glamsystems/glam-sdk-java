@@ -37,6 +37,13 @@ hardening {
     // VaultState is a fixed 62552-byte account; headroom for over-long probes
     maxLen = 65536
   }
+  fuzz.register("minGlamStateAccount") {
+    targetClass = "systems.glam.services.state.MinGlamStateAccountFuzz"
+    seedCorpus = layout.projectDirectory.dir("src/test/resources/fuzz/minGlamStateAccount")
+    // the mainnet state account is 8200 bytes; headroom lets the mutator grow
+    // the nested ACL sections and probe over-long length prefixes
+    maxLen = 16384
+  }
   mutation.register("services") {
     mutators = "STRONGER,EXPERIMENTAL_NAKED_RECEIVER,EXPERIMENTAL_BIG_INTEGER,EXPERIMENTAL_BIG_DECIMAL"
     // trialed threads = 8 on 2026-07-23: 3m32s vs ~2m04s at the 4-thread
