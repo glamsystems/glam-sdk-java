@@ -53,6 +53,15 @@ final class KaminoCachePollingTests {
   private static final int COLLATERAL_SUPPLY_OFFSET =
       Reserve.COLLATERAL_OFFSET + software.sava.idl.clients.kamino.lend.gen.types.ReserveCollateral.MINT_TOTAL_SUPPLY_OFFSET;
 
+  /// A fixture's own deadline must expire *inside* PIT's watchdog budget
+  /// (`timeoutConst` 1500ms + 2x this test's runtime, so ~1.6-2.8s here), or a
+  /// mutant that stalls the poll loop is reported `TIMED_OUT` instead of failing
+  /// the assertion below it — and the ratchet cannot see a weakened assertion
+  /// behind a timeout. The cache polls every 30ms, so 1s is ~33 cycles of
+  /// headroom; raise these two together if that ever proves tight.
+  private static final long FIXTURE_DEADLINE_NANOS = java.util.concurrent.TimeUnit.SECONDS.toNanos(1);
+  private static final long FIXTURE_JOIN_MILLIS = 1_000L;
+
   private static byte[] reserveFixture;
   private static byte[] vaultFixture;
   private static byte[] config2Data;
@@ -392,6 +401,11 @@ final class KaminoCachePollingTests {
                                 final Set<ReserveChange> changes) {
       events.add(new Recorded("reserveChange", reserveContext.pubKey()));
     }
+
+    @Override
+    public void onReserveUpdate(final AccountInfo<byte[]> accountInfo) {
+      events.add(new Recorded("reserveUpdate", accountInfo.pubKey()));
+    }
   }
 
   /// A disk-backed cache (so deletions are observable as file removals) whose
@@ -476,7 +490,7 @@ final class KaminoCachePollingTests {
     runner.start();
 
     // the polled reserve joins the cache with its feed indexes and liquidity
-    final long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
+    final long deadline = System.nanoTime() + FIXTURE_DEADLINE_NANOS;
     while (cache.reserveContext(RESERVE_A_KEY) == null) {
       assertTrue(System.nanoTime() < deadline, "the poll loop never applied the reserve");
       //noinspection BusyWait
@@ -487,6 +501,10 @@ final class KaminoCachePollingTests {
     assertNotNull(feed);
     assertEquals(BigInteger.valueOf(2_000L), feed.liquidity());
     assertTrue(listener.events.contains(new Recorded("newReserve", RESERVE_A_KEY)));
+    // the polled reserve sweep is an observed write like any other: raw account
+    // activity is reported on every ingestion path, not only the websocket ones
+    assertTrue(listener.events.contains(new Recorded("reserveUpdate", RESERVE_A_KEY)),
+        "the poll loop's reserve sweep must report the observed write");
     // the fetched mappings update flowed through accept: the appended oracle
     // entry at chain index 14 is now served on the mappings fallback
     while (true) {
@@ -502,7 +520,7 @@ final class KaminoCachePollingTests {
     final var persistedReserve = tempDir.resolve("reserves")
         .resolve(reserve.market().toBase58())
         .resolve(RESERVE_A_KEY.toBase58() + ".dat.gz");
-    final long persistDeadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
+    final long persistDeadline = System.nanoTime() + FIXTURE_DEADLINE_NANOS;
     while (!Files.exists(persistedReserve)) {
       assertTrue(System.nanoTime() < persistDeadline, "the polled reserve was never persisted");
       //noinspection BusyWait
@@ -535,11 +553,15 @@ final class KaminoCachePollingTests {
     assertEquals(List.of(), requestedKeys.getLast(), "dropped scope accounts must leave the fetch list");
 
     // one of the two vanished accounts is always reported as a bare mappings
-    // deletion: whichever is processed second finds its feed context gone
-    logs.assertLogged("has been deleted");
+    // deletion: whichever is processed second finds its feed context already
+    // dropped by the first one's deleteScopeConfiguration. Assert the whole
+    // message, not a fragment — a bare "has been deleted" also matches other
+    // deletion logs on this logger, which let the warning be removed entirely
+    // without failing anything.
+    logs.assertLogged("Scope OracleMappings account has been deleted");
 
     runner.interrupt();
-    runner.join(5_000L);
+    runner.join(FIXTURE_JOIN_MILLIS);
     assertFalse(runner.isAlive());
     assertFalse(cache.lock.isWriteLocked(), "the poll loop must release the write lock on exit");
     assertEquals(0, cache.lock.getReadLockCount());

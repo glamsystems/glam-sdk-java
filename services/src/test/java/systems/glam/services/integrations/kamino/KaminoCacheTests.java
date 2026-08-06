@@ -142,6 +142,71 @@ final class KaminoCacheTests {
                                 final java.util.Set<ReserveChange> changes) {
       events.add("onReserveChange");
     }
+
+    @Override
+    public void onReserveUpdate(final AccountInfo<byte[]> accountInfo) {
+      events.add("onReserveUpdate");
+    }
+
+    long updates() {
+      return events.stream().filter("onReserveUpdate"::equals).count();
+    }
+  }
+
+  /// `onReserveUpdate` reports raw account activity, so its contract is one
+  /// call per *observed* Reserve write on every ingestion path, before any
+  /// change filtering. `onReserveChange` only fires for the fields
+  /// `ReserveChange` tracks, so a reserve republished with a fresh price but no
+  /// tracked change never reaches it — closing that gap is why the raw hook
+  /// exists, and a hook that inherited the filtering would be worthless for it.
+  @Test
+  void everyObservedReserveWriteIsReportedBeforeChangeFiltering(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var allReserves = new RecordingListener(4);
+    final var thisReserve = new RecordingListener(5);
+    cache.subscribeToReserves(allReserves);
+    cache.subscribeToReserve(SOL_RESERVE_KEY, thisReserve);
+
+    // no scope feed is indexed yet, so the cache drops this write without
+    // storing it — the raw hook must still report that it was observed
+    cache.accept(accountInfo(SOL_RESERVE_KEY, 100L, reserveData));
+    assertNull(cache.reserveContext(SOL_RESERVE_KEY), "the feed is unknown, nothing may be cached yet");
+    assertEquals(List.of("onReserveUpdate"), allReserves.events());
+    assertEquals(List.of("onReserveUpdate"), thisReserve.events(), "a reserve-specific listener sees it too");
+    assertUnlocked(cache);
+
+    cache.accept(accountInfo(CONFIGURATION_KEY, 101L, configurationData));
+    cache.accept(accountInfo(ORACLE_MAPPINGS_KEY, 102L, mappingsData));
+
+    // now the feed exists: the same write both reports and lands
+    cache.accept(accountInfo(SOL_RESERVE_KEY, 103L, reserveData));
+    assertNotNull(cache.reserveContext(SOL_RESERVE_KEY));
+    assertEquals(List.of("onReserveUpdate", "onReserveUpdate", "onNewReserve"), allReserves.events(),
+        "the raw hook precedes the filtered event for one write");
+
+    // a republish with no tracked change: invisible to onReserveChange, which
+    // is exactly the activity onReserveUpdate exists to expose
+    cache.accept(accountInfo(SOL_RESERVE_KEY, 104L, reserveData));
+    assertEquals(3, allReserves.updates());
+    assertFalse(allReserves.events().contains("onReserveChange"),
+        "an otherwise-unchanged refresh must not be reported as a change");
+
+    // the remaining ingestion paths report the same way
+    cache.acceptReserve(accountInfo(SOL_RESERVE_KEY, 105L, reserveData));
+    assertEquals(4, allReserves.updates(), "acceptReserve is an observed write");
+
+    cache.accept(List.of(accountInfo(SOL_RESERVE_KEY, 106L, reserveData)), Map.of());
+    assertEquals(5, allReserves.updates(), "the batch path is an observed write");
+
+    assertEquals(5, thisReserve.updates(), "every path reaches the reserve-specific listener");
+    assertUnlocked(cache);
+
+    // an unsubscribed listener stops receiving raw activity
+    cache.unSubscribeToReserve(SOL_RESERVE_KEY, thisReserve);
+    cache.accept(accountInfo(SOL_RESERVE_KEY, 107L, reserveData));
+    assertEquals(6, allReserves.updates());
+    assertEquals(5, thisReserve.updates());
+    assertUnlocked(cache);
   }
 
   @Test
@@ -162,7 +227,8 @@ final class KaminoCacheTests {
 
     final var reserveContext = cache.reserveContext(SOL_RESERVE_KEY);
     assertNotNull(reserveContext);
-    assertEquals(List.of("onNewReserve"), reserveListener.events());
+    // the raw observed-write hook precedes the filtered new-reserve event
+    assertEquals(List.of("onReserveUpdate", "onNewReserve"), reserveListener.events());
     assertEquals(1, cache.reserveContexts().size());
     assertEquals(SOL_MINT, reserveContext.mint());
     assertEquals(MAIN_MARKET_KEY, reserveContext.market());

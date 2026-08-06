@@ -412,6 +412,18 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     }
   }
 
+  private void notifyReserveUpdate(final AccountInfo<byte[]> accountInfo) {
+    for (final var listener : reserveListeners.values()) {
+      listener.onReserveUpdate(accountInfo);
+    }
+    final var listeners = this.specificReserveListeners.get(accountInfo.pubKey());
+    if (listeners != null) {
+      for (final var listener : listeners.values()) {
+        listener.onReserveUpdate(accountInfo);
+      }
+    }
+  }
+
   private void notifyNewReserve(final ReserveContext reserveContext) {
     for (final var listener : reserveListeners.values()) {
       listener.onNewReserve(reserveContext);
@@ -573,6 +585,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     final byte[] data = accountInfo.data();
     if (data.length == Reserve.BYTES && Reserve.DISCRIMINATOR.equals(data, 0)) {
       final var reserveContext = ReserveContext.createContext(accountInfo, mappingsContextMap);
+      notifyReserveUpdate(accountInfo);
       updateIfChanged(reserveContext);
       return reserveContext;
     } else {
@@ -586,6 +599,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
       final byte[] data = accountInfo.data();
       if (data.length == Reserve.BYTES && Reserve.DISCRIMINATOR.equals(data, 0)) {
         final var reserveContext = ReserveContext.createContext(accountInfo, mappingsContextMap);
+        notifyReserveUpdate(accountInfo);
         updateIfChanged(reserveContext);
       } else if (data.length == VaultState.BYTES && VaultState.DISCRIMINATOR.equals(data, 0)) {
         handleVaultStateChange(accountInfo);
@@ -610,6 +624,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
       final byte[] data = accountInfo.data();
       if (data.length == Reserve.BYTES && Reserve.DISCRIMINATOR.equals(data, 0)) {
         final var reserveContext = ReserveContext.createContext(accountInfo, mappingsContextMap);
+        notifyReserveUpdate(accountInfo);
         updateIfChanged(reserveContext);
       } else if (data.length == VaultState.BYTES && VaultState.DISCRIMINATOR.equals(data, 0)) {
         handleVaultStateChange(accountInfo);
@@ -683,6 +698,7 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
         final var reserveAccounts = reserveAccountsFutures.join();
         for (final var accountInfo : reserveAccounts) {
           final var reserveContext = ReserveContext.createContext(accountInfo, mappingsContextMap);
+          notifyReserveUpdate(accountInfo);
           updateIfChanged(reserveContext);
         }
 
