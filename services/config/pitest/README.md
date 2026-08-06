@@ -998,14 +998,27 @@ was previously reported `TIMED_OUT` and became visible as `SURVIVED` once the
 fixture deadlines were brought inside the watchdog budget — so it was never
 genuinely detected; the watchdog was standing in for an assertion.
 
-`thePollLoopAppliesUpdatesAndDropsVanishedScopeAccounts` does assert that
-warning, and its assertion was tightened from the fragment `has been deleted`
-(which also matches other deletion logs on this logger) to the full message.
-That did not kill the mutant: PIT reports `numberOfTestsRun=1` for this line and
-the covering test it selects is evidently not the polling test. **This is not
-explained yet** — it is untriaged debt, not an accepted equivalence, and the
-open question is which test PIT attributes to line 672 and why the polling
-test's coverage of that branch is not recorded.
+**It is a PIT coverage-attribution artifact, not a missing assertion.** Verified
+2026-08-06 by applying the mutant by hand in a throwaway git worktree and
+running the covering test directly:
+
+```
+KaminoCachePollingTests > thePollLoopAppliesUpdatesAndDropsVanishedScopeAccounts FAILED
+  expected a log record containing "Scope OracleMappings account has been deleted", got []
+```
+
+The test kills it. PIT nonetheless reports `SURVIVED` with
+`numberOfTestsRun=1`, so the single test it attributes to this line is not the
+polling test — even though line 672's immediate neighbours (668, 669, in the
+same `if/else`) also show `numberOfTestsRun=1` and *are* killed by that test.
+The branch runs on the spawned `runner` thread, which is the most likely reason
+attribution differs for this line, but that was not confirmed.
+
+Consequence: the row must stay in the baseline, because PIT will keep reporting
+it `SURVIVED` — but it is **not** a coverage or assertion gap in this repo, and
+it should not be "fixed" by adding another test. Do not delete the assertion in
+`thePollLoopAppliesUpdatesAndDropsVanishedScopeAccounts`; it is the thing
+actually holding this behaviour.
 
 ## Timed-out mutants (audited set, reclassified 2026-08-06)
 

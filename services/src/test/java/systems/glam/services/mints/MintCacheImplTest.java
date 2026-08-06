@@ -151,6 +151,12 @@ final class MintCacheImplTest {
         });
       }
 
+      // 2s, not 5s: this fixture's deadline must expire inside PIT's watchdog
+      // budget (timeoutConst 1500ms + 2x this test's runtime, ~2.8s here) or a
+      // mutant that stalls these writers is reported TIMED_OUT instead of
+      // failing this assertion, and the ratchet cannot see a weakened assertion
+      // behind a timeout. The real work is ~600ms, so 2s is ~3x headroom while
+      // staying under the budget. Raise it only together with timeoutConst.
       assertTrue(latch.await(2, TimeUnit.SECONDS));
 
       if (!errors.isEmpty()) {
