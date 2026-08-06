@@ -1,8 +1,8 @@
 package systems.glam.services.tests;
 
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -19,7 +19,12 @@ public final class LogCapture extends Handler implements AutoCloseable {
   private final Logger logger;
   private final Level previousLevel;
   private final boolean previousUseParentHandlers;
-  private final List<LogRecord> records = new ArrayList<>();
+  /// Services log from their own threads — a cache poll loop, a fetcher worker —
+  /// so records arrive concurrently with the test thread reading them. A plain
+  /// `ArrayList` here can drop or corrupt a record, and under PIT that reads as a
+  /// mutant surviving rather than as a broken fixture.
+  private final List<LogRecord> records = new CopyOnWriteArrayList<>();
+  private volatile boolean closed;
 
   public static LogCapture attach(final String loggerName) {
     return new LogCapture(Logger.getLogger(loggerName));
@@ -70,8 +75,14 @@ public final class LogCapture extends Handler implements AutoCloseable {
     );
   }
 
+  /// Idempotent: a test that closes in a finally block after an assertion already
+  /// closed it must not restore stale state over a later capture.
   @Override
   public void close() {
+    if (closed) {
+      return;
+    }
+    closed = true;
     logger.removeHandler(this);
     logger.setLevel(previousLevel);
     logger.setUseParentHandlers(previousUseParentHandlers);

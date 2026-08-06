@@ -485,8 +485,13 @@ final class KaminoCachePollingTests {
     cache.subscribeToAll(listener);
 
     running.set(true);
-    final var logs = LogCapture.attach(KaminoCache.class.getName());
+    // Cleanup must be unconditional. PIT runs many mutants in one minion JVM, so a
+    // test that fails before interrupting the runner or detaching the handler leaks
+    // both into every later mutant: a still-polling cache keeps logging, and a later
+    // mutant's assertLogged then passes on a previous test's records. That reads as
+    // the mutant surviving when it is really fixture contamination.
     final var runner = new Thread(cache::run);
+    try (final var logs = LogCapture.attach(KaminoCache.class.getName())) {
     runner.start();
 
     // the polled reserve joins the cache with its feed indexes and liquidity
@@ -565,7 +570,10 @@ final class KaminoCachePollingTests {
     assertFalse(runner.isAlive());
     assertFalse(cache.lock.isWriteLocked(), "the poll loop must release the write lock on exit");
     assertEquals(0, cache.lock.getReadLockCount());
-    logs.close();
+    } finally {
+      runner.interrupt();
+      runner.join(FIXTURE_JOIN_MILLIS);
+    }
   }
 
   @Test

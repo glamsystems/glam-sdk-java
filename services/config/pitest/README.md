@@ -990,35 +990,48 @@ GC-hygiene calls, capacity-hint arithmetic, and unreachable-by-construction
 defensive guards. New acceptances continue this pattern: document in the pass
 section that does the triage, not here.
 
-## Newly exposed debt (2026-08-06)
+## Test-lifecycle contamination, and the survivor it manufactured (2026-08-06)
 
 `KaminoCacheImpl.run` `VoidMethodCallMutator` (line 672, the "Scope
-OracleMappings account has been deleted" warning) is seeded `# untriaged`. It
-was previously reported `TIMED_OUT` and became visible as `SURVIVED` once the
-fixture deadlines were brought inside the watchdog budget — so it was never
-genuinely detected; the watchdog was standing in for an assertion.
+OracleMappings account has been deleted" warning) was reported `SURVIVED` and
+briefly recorded here as a PIT coverage-attribution artifact. **That conclusion
+was wrong.** The mutant is killed by
+`KaminoCachePollingTests.thePollLoopAppliesUpdatesAndDropsVanishedScopeAccounts`;
+what made it survive was the fixture leaking state between mutants.
 
-**It is a PIT coverage-attribution artifact, not a missing assertion.** Verified
-2026-08-06 by applying the mutant by hand in a throwaway git worktree and
-running the covering test directly:
+`-PisolateMutants` gives the controlled evidence. Same scope, same history-free
+run, only mutation-unit size differing:
 
-```
-KaminoCachePollingTests > thePollLoopAppliesUpdatesAndDropsVanishedScopeAccounts FAILED
-  expected a log record containing "Scope OracleMappings account has been deleted", got []
-```
+| run | mutation test units | SURVIVED |
+|---|---|---|
+| normal batched | 1 | 41 |
+| `-PisolateMutants` | 252 | **40** |
 
-The test kills it. PIT nonetheless reports `SURVIVED` with
-`numberOfTestsRun=1`, so the single test it attributes to this line is not the
-polling test — even though line 672's immediate neighbours (668, 669, in the
-same `if/else`) also show `numberOfTestsRun=1` and *are* killed by that test.
-The branch runs on the spawned `runner` thread, which is the most likely reason
-attribution differs for this line, but that was not confirmed.
+Exactly one mutant flipped, and it was this one. A single mutant changing status
+purely because it stopped sharing a JVM with its neighbours is inter-mutant
+contamination by definition.
 
-Consequence: the row must stay in the baseline, because PIT will keep reporting
-it `SURVIVED` — but it is **not** a coverage or assertion gap in this repo, and
-it should not be "fixed" by adding another test. Do not delete the assertion in
-`thePollLoopAppliesUpdatesAndDropsVanishedScopeAccounts`; it is the thing
-actually holding this behaviour.
+The mechanism: the test started its poll thread and attached its `LogCapture`,
+then ran every assertion *before* `runner.interrupt()` and `logs.close()`. PIT
+runs many mutants in one minion JVM, so each of the ~200 mutants this test kills
+left behind a still-polling cache thread and a still-attached log handler. A
+later mutant's `assertLogged` then matched a record produced by a **previous**
+test's leaked runner, so the removed log call was invisible. `LogCapture` also
+collected records into a plain `ArrayList` while service threads published into
+it concurrently.
+
+Fixed by making the lifecycle unconditional (the runner is interrupted and
+joined in a `finally`, the capture is a try-with-resources) and by making
+`LogCapture` thread-safe (`CopyOnWriteArrayList`, idempotent `close()`). After
+the fix the ordinary batched scoped run kills it — `testsRun=1`, killed by the
+polling test — and batched now agrees with isolated at 40 survivors.
+
+**The lesson generalises beyond this row.** Any fixture that cleans up after its
+assertions rather than in a `finally` leaks into every later mutant in the same
+minion, and the symptom is a survivor that no amount of reading the code
+explains. Suspect fixture lifecycle before writing an equivalence argument, and
+use `-PisolateMutants` to confirm — it is diagnostic evidence only and must
+never support a baseline decision.
 
 ## Timed-out mutants (audited set, reclassified 2026-08-06)
 
@@ -1170,18 +1183,29 @@ awaitChange:138 VoidMethodCall; :146 VoidMethodCall
 wakeUp:127 VoidMethodCall; :129 VoidMethodCall; :131 VoidMethodCall
 ```
 
-### `state.MinGlamStateAccount` — 3
+### `state.MinGlamStateAccount` — 2
 
-The length-prefixed byte walk: a mutated loop bound or offset increment
-(externalPositionsOffset:124/:132, createRecord:156 `i += ...` arithmetic)
-makes later `val()` reads land on garbage lengths, and the nested walk
-iterates effectively unbounded. `:132 ORDER_IF` is the long-stable member
-(documented since adoption; deterministic detection preferred over timeout
-if ever triaged).
+The length-prefixed byte walk. `delegateAclsOffset` and
+`externalPositionsOffset` each iterate `for (j = 0; j < len; ++j)` over a count
+read from the account; `RemoveConditionalMutator_ORDER_ELSE` removes that outer
+loop's exit jump, so the walk never terminates. Both are synchronous pure
+computations reached directly from `createIfChanged` — no fixture deadline could
+fail first, no clock or budget reaches the mutated path, and the method never
+returns, so there is no synchronous state to read. The watchdog is the only
+possible detector.
+
+`delegateAclsOffset` first appeared under gate load (2026-08-06 certification,
+both suites serialized) while staying quiet on solo runs — the audited set is
+per-key, not per-load, so it is a member regardless of which load surfaces it.
+
+`createRecord`'s `Math` member and `externalPositionsOffset`'s `ORDER_IF` were
+retired after the O(1) permission-block fix: the walk no longer iterates an
+unvalidated count one constant-sized step at a time, so those paths are finite
+and now die deterministically.
 
 ```
-createRecord:156 Math
-externalPositionsOffset:124 ORDER_ELSE; :132 ORDER_IF
+delegateAclsOffset:91 ORDER_ELSE
+externalPositionsOffset:124 ORDER_ELSE
 ```
 
 ### Singles — 8
