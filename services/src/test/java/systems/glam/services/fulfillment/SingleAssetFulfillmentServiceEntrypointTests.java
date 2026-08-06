@@ -175,7 +175,7 @@ final class SingleAssetFulfillmentServiceEntrypointTests {
 
     runner.interrupt();
     assertTrue(closed.await(5, SECONDS), "the websocket manager was not closed on exit");
-    runner.join(5_000L);
+    runner.join(1_000L);
     assertFalse(runner.isAlive());
   }
 }

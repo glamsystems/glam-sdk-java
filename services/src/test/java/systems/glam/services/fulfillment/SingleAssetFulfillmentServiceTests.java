@@ -602,7 +602,7 @@ final class SingleAssetFulfillmentServiceTests {
       }
     });
     thread.start();
-    final long deadline = System.nanoTime() + SECONDS.toNanos(5);
+    final long deadline = System.nanoTime() + SECONDS.toNanos(1);
     while (thread.getState() != Thread.State.TIMED_WAITING) {
       assertTrue(System.nanoTime() < deadline, "waiter never parked");
       //noinspection BusyWait

@@ -173,6 +173,6 @@ final class ServiceContextTests {
     assertNotNull(withExecutor.taskExecutor());
     final var ran = new java.util.concurrent.CountDownLatch(1);
     withExecutor.executeTask(ran::countDown);
-    assertDoesNotThrow(() -> assertTrue(ran.await(5, TimeUnit.SECONDS)));
+    assertDoesNotThrow(() -> assertTrue(ran.await(1, TimeUnit.SECONDS)));
   }
 }

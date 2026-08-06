@@ -286,7 +286,7 @@ final class StakePoolCacheTests {
       running.set(true);
       final var runner = new Thread(cache::run);
       runner.start();
-      final long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
+      final long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(1);
       while (polled.size() < 3 || polled.values().stream().anyMatch(count -> count < 2)) {
         assertTrue(System.nanoTime() < deadline, () -> "programs polled: " + polled);
         //noinspection BusyWait
@@ -302,7 +302,7 @@ final class StakePoolCacheTests {
           () -> "the poll loop is spinning: " + polled + " after " + counted);
 
       runner.interrupt();
-      runner.join(5_000L);
+      runner.join(1_000L);
       assertFalse(runner.isAlive());
     }
   }

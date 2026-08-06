@@ -152,7 +152,7 @@ final class ExecutionServiceContextTests {
 
     final var ran = new java.util.concurrent.CountDownLatch(1);
     context.executeTask(ran::countDown);
-    assertDoesNotThrow(() -> assertTrue(ran.await(5, TimeUnit.SECONDS)));
+    assertDoesNotThrow(() -> assertTrue(ran.await(1, TimeUnit.SECONDS)));
 
     // removing the delegated backoff call would return immediately
     final long start = System.nanoTime();

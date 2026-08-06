@@ -151,7 +151,7 @@ final class MintCacheImplTest {
         });
       }
 
-      assertTrue(latch.await(5, TimeUnit.SECONDS));
+      assertTrue(latch.await(2, TimeUnit.SECONDS));
 
       if (!errors.isEmpty()) {
         errors.getFirst().printStackTrace();

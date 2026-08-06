@@ -1571,7 +1571,7 @@ final class GlobalConfigCacheTests {
   }
 
   private static void awaitTrue(final String what, final java.util.function.BooleanSupplier condition) throws InterruptedException {
-    final long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
+    final long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(1);
     while (!condition.getAsBoolean()) {
       assertTrue(System.nanoTime() < deadline, what);
       //noinspection BusyWait
@@ -1615,7 +1615,7 @@ final class GlobalConfigCacheTests {
     ).write();
     cache.accept(accountInfo(cache.globalConfigUpdate().slot() + 1, GlamAccounts.MAIN_NET.configProgram(), invalid));
 
-    runner.join(5_000L);
+    runner.join(1_000L);
     assertFalse(runner.isAlive(), "the run loop must stop once the cache is invalidated");
     assertNull(cache.globalConfig());
     assertUnlocked(cache);
@@ -1643,7 +1643,7 @@ final class GlobalConfigCacheTests {
     awaitTrue("a second refresh pulls another fetch", () -> consumerQueues.get() == 3);
 
     runner.interrupt();
-    runner.join(5_000L);
+    runner.join(1_000L);
     assertFalse(runner.isAlive());
     assertUnlocked(cache);
   }
@@ -1686,7 +1686,7 @@ final class GlobalConfigCacheTests {
 
     final long newSlot = current.slot() + 3;
     cache.accept(accountInfo(newSlot, GlamAccounts.MAIN_NET.configProgram(), withBaseFeeBumped(1)));
-    waiter.join(5_000L);
+    waiter.join(1_000L);
     assertFalse(waiter.isAlive(), "the accepted replacement must wake the waiter");
     assertNotNull(seen.get());
     assertEquals(newSlot, seen.get().slot());
