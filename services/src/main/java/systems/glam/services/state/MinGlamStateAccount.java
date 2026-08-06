@@ -129,9 +129,11 @@ public record MinGlamStateAccount(long slot,
         i += IntegrationPermissions.PROTOCOL_PERMISSIONS_OFFSET;
         final int numPermissions = SerDeUtil.val(4, data, i);
         i += 4;
-        for (int l = 0; l < numPermissions; ++l) {
-          i += ProtocolPermissions.BYTES;
-        }
+        // the permission block is a fixed stride: advance by the whole block
+        // rather than iterating an unvalidated on-chain count, which a corrupt
+        // account could drive through billions of no-op additions. This is the
+        // same step readDelegateAcls takes for the same walk.
+        i += numPermissions * ProtocolPermissions.BYTES;
       }
       i += Long.BYTES; // expiresAt
     }
@@ -143,6 +145,23 @@ public record MinGlamStateAccount(long slot,
     return createRecord(GlamEnv.from(accountInfo.owner()), accountInfo.data(), accountInfo.context().slot());
   }
 
+  /// `SerDeUtil.val` is a raw read: the vector helpers bounds-check their length
+  /// prefix, but a bare count does not. A corrupt account must be rejected the
+  /// same way the vector reads reject one, not surface a raw
+  /// `NegativeArraySizeException` from the allocation below.
+  private static int checkCount(final int count, final byte[] data, final int offset) {
+    final int remaining = data.length - offset;
+    // unsigned widening folds the negative case into the bound: a negative
+    // count reads as a value far above any remaining byte count, so one
+    // comparison covers both. Zero is a legitimate count and must pass.
+    if (Integer.toUnsignedLong(count) > remaining) {
+      throw new IndexOutOfBoundsException(
+          "Length prefix " + count + " exceeds the " + remaining + " bytes remaining."
+      );
+    }
+    return count;
+  }
+
   public static MinGlamStateAccount createRecord(final GlamEnv env, final byte[] data, final long slot) {
     final var assets = SerDeUtil.readPublicKeyVector(4, data, StateAccount.ASSETS_OFFSET);
     Arrays.sort(assets);
@@ -151,13 +170,13 @@ public record MinGlamStateAccount(long slot,
 
     final int numIntegrations = SerDeUtil.val(4, data, i);
     i += 4;
-    final var protocolIntegrations = new ProtocolIntegration[numIntegrations];
+    final var protocolIntegrations = new ProtocolIntegration[checkCount(numIntegrations, data, i)];
     final var protocolIntegrationBytes = readIntegrationAcls(data, i, protocolIntegrations);
     i += protocolIntegrationBytes;
 
     final int numDelegates = SerDeUtil.val(4, data, i);
     i += 4;
-    final var delegates = new PublicKey[numDelegates];
+    final var delegates = new PublicKey[checkCount(numDelegates, data, i)];
     i = readDelegateAcls(data, i, delegates);
 
     final var externalPositions = SerDeUtil.readPublicKeyVector(4, data, i);
