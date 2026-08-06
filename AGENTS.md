@@ -146,177 +146,294 @@ are required — a missing `seedCorpus` silently skips the replay test).
 The full policy is sava-build's `HARDENING.md`; the process contract for
 changes here:
 
-<!-- This section adapts the agent-instructions template in sava-build's
-     HARDENING.md; `agentsTemplateInSync` (wired into `check`) fails when the
-     template changes until the block is re-diffed — sync or ACT on each
-     changed bullet (a new bullet may need code, not prose) — and the digest
-     updated. -->
-<!-- hardening-template sha256:f6dea3f41ab7 -->
+<!-- The block below is the agent-instructions template generated verbatim by
+     sava-build's `hardeningAgentTemplate`, pinned by the digest that closes it;
+     `agentsTemplateInSync` (wired into `check`) flags it when the installed
+     plugin's template changes. Re-diff and ACT on each changed bullet (a new
+     bullet may need code, not prose), then move the digest. Do not paraphrase or
+     extend it in place — GLAM-specific ownership, measurements and evidence go
+     under "GLAM-local hardening facts" below it. -->
 
-1. **Scale verification to the change.** Iterate with the module's `test`
-   task; before handing off, run only the `pitest<Suite>`(s) whose mutated
-   code the change can reach — `pitestServices` also covers changes to sdk
-   APIs it calls, and test-only edits still owe the owning suite (a weakened
-   test is exactly what the ratchet catches). Doc, comment and build-script
-   changes owe no suite. `qualityGate` (every suite, serialized) is the
-   pre-release check, not the inner loop; it is owned by the **local release
-   checklist** — CI deliberately runs only `check`, so run the gate locally
-   before deciding to release.
-2. **A new unkilled mutant has exactly three legal outcomes**: kill it with a
-   test that asserts the property it breaks (not one restating the
-   implementation), refactor it out of existence, or accept it with a written
-   reason in the module's `config/pitest/README.md` **and a short family
-   label on the row itself** — refreshes seed new rows `# untriaged`, and
-   triage means replacing that label, so the baseline always says which rows
-   are argued and which are debt. Never run `-PupdateMutationBaseline` just
-   to make the build pass.
-3. **`SURVIVED` and `NO_COVERAGE` are different problems.** A survivor ran
-   the line and the test could not tell — a judgment call about equivalence.
-   A no-coverage mutant was never executed — mechanical work, and **never
-   acceptable as "equivalent"**, because you have not observed its behaviour.
-4. **Pure line drift passes on its own** — when every new baseline entry is a
-   same-status shift of a stale one and the per-method population is
-   unchanged, the verify passes with a notice; refresh at a convenient
-   moment. Anything mixed in (newly covered, unexplained, changed counts) is
-   triage first, refresh after. `-PnoDriftTolerance` restores strict mode for
-   certifying runs. When stale rows are all since-killed and nothing is new,
-   `-PpruneMutationBaseline` is the safe shrink-only refresh: it drops rows
-   matching nothing this run and never adds or rewrites (`TIMED_OUT`
-   coordinates and pending coverage flips are kept, named in the output).
-   The three refresh flags are mutually exclusive; the verify's stale-entry
-   hint names the safe one per case — prefer it over any hand-rolled cleanup.
-   A full `-PupdateMutationBaseline` across a status flip carries the old
-   row's `# note` onto the new row, annotated for re-reading — a reason
-   written for an unreached mutant is not automatically a reason once its
-   behaviour is observable.
-5. **Iterate with `-PmutateOnly=<class-glob>`** while killing a cluster —
-   seconds instead of the full suite — then re-run unscoped before any
-   refresh; the tooling refuses to let a scoped report touch the baseline.
-6. **Identical baseline rows are sibling mutants** of one compound condition
-   and the comparison is a multiset: never hand-dedupe the CSV. When one
-   sibling survives, the verify names the killed sibling's test — the
-   survivor is the opposite branch direction; triage it as its own mutant.
-   A "new" row identical to an accepted row is classified by the verify as
-   a sibling surfaced by the multiset comparison (what upgrading an older
-   set-based baseline materializes) — pre-existing debt made visible, to
-   accept into its documented family or kill, not a regression. And status
-   is part of the row: a `NO_COVERAGE -> SURVIVED` flip is two different
-   rows at one coordinate — another reason scripts must never touch the CSV.
-7. **Determinism is the whole point.** Fixed seeds, no real waits (PIT
-   re-runs covering tests once per mutant, so one sleep is multiplied by the
-   mutant count), and no reliance on PIT's timeout: `TIMED_OUT` counts as
-   detected but is load-dependent — the same mutant can report `SURVIVED`
-   alone and `TIMED_OUT` under `qualityGate`. Verify baselines in both modes;
-   union only rows observed to flip. A flaky harness is worse than recorded
-   debt — if an interleaving cannot be made deterministic, accept the mutant
-   with a written reason.
-8. **A new timed-out mutant is a reviewer-stop, not detection noise.** For
-   exactly these mutants the ratchet cannot see a weakened covering
-   assertion — a timeout keeps "detecting" whatever the test asserts — so
-   each suite's timeouts are an audited set, not a count:
-   `config/pitest/<suite>-timeouts.csv` holds line-less
-   `class,method,mutator` keys, and the README's "Timed-out mutants
-   (audited set)" section the structural cause per member (the stalled
-   chunking loop, the lost signal, the leaked unlock). The verify warns on
-   any timeout outside the set — paste the printed row, then write the
-   cause — and on members matching no mutant; admit a newcomer only with
-   its cause written. The key is the check's resolution: a new timed-out
-   mutant in an already-audited method+mutator draws no warning, so name
-   the line in the README cause and re-read it when that code changes.
-9. **A suite's percentage is not a target.** An accepted mutant with a
-   written reason is finished work, not debt. Before trying to raise a
-   number, check whether the remainder is `NO_COVERAGE` (real work) or
-   documented equivalents (already closed).
-10. **Allocation and timing harnesses are a last resort**, reserved for
-   properties that are a stated design goal; they need a `volatile` sink and
-   flap when margins are thin.
-11. When a test you believe in will not go green, **suspect the code before
-   you soften the assertion** — that is where this process finds real bugs.
-12. **A wandering unkilled count is a defect, not noise** — chase it before
-   refreshing any baseline. Known causes: real waits, `TIMED_OUT` load flips,
-   `@Execution`/`@TestInstance` on an abstract base not reaching concrete
-   classes (JUnit-version-dependent; `javap` the resolved jar), and coverage
-   attributed to field initializers — exercise factories from inside a
-   `@Test`.
-13. **Build the subject under test inside the test body, not in a field.**
-    Under `PER_CLASS` lifecycle a field-initialized client's construction
-    coverage attaches to whichever test runs first, so wiring mutants can
-    never pair with the test that drives what they wire — they survive even
-    under a harness that asserts every request; one test that constructs
-    the client in the test method and drives each configured path restores
-    the pairing. This repo's tests use the default per-method lifecycle (no
-    `@TestInstance(PER_CLASS)` in either module, audited 2026-07-23), so
-    field initializers re-run per test — but prefer building in the test
-    body anyway, and re-audit if a test class adopts `PER_CLASS`.
-14. **Kill rates are bounded by the mutator set.** `BigInteger`/`BigDecimal`
-    arithmetic is method calls, invisible to the default arithmetic mutators —
-    fixed-point and fee math needs `EXPERIMENTAL_BIG_INTEGER` (pitest ≥
-    1.25.8) — and fluent calls returning their receiver are expressions,
-    invisible to `VoidMethodCallMutator`, so builder-style writes need
-    `EXPERIMENTAL_NAKED_RECEIVER`. Trial per suite, enable only what fires,
-    and record the numbers in `config/pitest/README.md`. Both suites here run
-    `STRONGER,EXPERIMENTAL_NAKED_RECEIVER`; the trial numbers are recorded.
-15. **PIT minions run on the class path**, even though this repo's tasks run
-    on the module path: `module-info` services are invisible to them, and a
-    test-resources `META-INF/services` is invisible to the module-path `test`
-    task. Real services are declared in both places; a harness whose result
-    depends on which task ran it is never committed. This repo declares no
-    services of its own (audited 2026-07-22), but the trap reaches through
-    **dependencies** too: a test that ServiceLoads a factory from a dependency
-    jar (ravina's `MemorySignerFactory`) fails under PIT when that jar
-    declares the service only in `module-info` — hit 2026-07-23; ravina fixed
-    it in `bde97ec` ("restore classpath service discovery"), and glam's
-    `pitestServices` needs a ravina release carrying it.
-16. **Exclusions must cover the test source set, not a naming convention**:
-    shared fakes named `RecordingFoo` / `StubFoo` match no `*Test*` pattern.
-    After registering or widening a suite, list the mutated classes and
-    confirm none live under `src/test` (`pitest<Suite>Verify` warns, naming
-    them).
-17. **Verify by the absence of failures, not the presence of passes.** A
-    green build can mean the task was up-to-date rather than that tests ran;
-    check the failure count and that the task executed. A *failed* PIT run
-    leaves the previous report in `build/reports/pitest/<suite>/`, so the
-    summary you read can describe a run that never happened — trust the exit
-    code, and delete report directories when comparing runs.
-18. **A suite that got faster without getting narrower is a bug report** —
-    unless the summary carries the `[history]` marker (arcmutate incremental
-    reuse, where fast is expected; the pre-release gate still runs
-    `-PnoMutationHistory` to re-earn every status from scratch).
-19. **Transient infra failures are not results.** PIT `MINION_DIED` fails
-    before writing a report — re-run the suite; a Gradle-worker
-    `EOFException` death is the same shape, and per-mutant `RUN_ERROR` under
-    load the same shape smaller (not counted as detected). The daemon log
-    (`~/.gradle/daemon/<version>/daemon-<pid>.out.log`) keeps a failed
-    build's full output even when the shell discarded it.
-20. **Fuzz findings become a committed seed input and a named regression
-    test**, never just a fix — and the committed corpus is replayed by a unit
-    test inside `check`, so it cannot rot between fuzz runs. **When one thing
-    has two representations, fuzz the differential** — assert the two agree
-    rather than that neither crashes; crash-only fuzzing cannot see a wrong
-    answer. Minimize a corpus with `fuzz<Target>Minimize` (libFuzzer
-    `-merge=1`; `-PadoptLocalCorpus` opts in locally found inputs), never by
-    hand — review the diff and update the corpus provenance README.
-21. **Stubs and fixtures return distinguishable, non-default values.** A stub
-    or proxy returning `null`/`0`/`""`/`true`/empty makes the matching
-    return-value mutant equivalent by accident of the fixture — the same trap
-    as a test clock starting at 0. Give recording proxies (the `SolanaRpcClient`
-    / `AccountFetcher` proxies here) return values a real assertion can tell
-    from the mutated default.
-22. **Copy-on-write clusters split by direction.** For a method returning an
-    unmodifiable view (`List.copyOf(...)`, `List.of(...)` — e.g.
-    `KaminoCacheImpl.vaultContexts`), assert the immutability
-    (`assertThrows(UnsupportedOperationException, ...)`) as well as the
-    contents: the mutable-escape direction is a kill, and only the
-    content-equal siblings are family-accepted equivalents.
+- **Scale verification to the change.** Iterate with the module's `test`
+  task; before handing off, run only the `pitest<Suite>`(s) whose mutated
+  code the change can reach — including suites in dependent modules that
+  call a changed API, and the owning suite for test-only edits (a weakened
+  test is exactly what the ratchet catches). The full `hardeningCertify` — every
+  suite freshly observed, serialized, provenance-bound, diffed against
+  `config/pitest/`, with strict timeout and ownership audits — is the pre-release
+  check, owned by CI or by the release checklist (this repo records which); it is
+  not the inner loop.
+- A new unkilled mutant has exactly three legal outcomes: **kill it** with a
+  test (prefer asserting the property it breaks over restating the
+  implementation), **refactor** it out of existence, or **accept it** with a
+  written reason in `config/pitest/README.md` **and a short family label on
+  the row itself** — refreshes seed new rows `# untriaged`, and triage means
+  replacing that label, so the baseline always says which rows are argued
+  and which are debt. Never run a baseline-update task just to make the build
+  pass.
+- **A mutant is a question, not a specification.** Before writing a killing
+  test, state the externally intended property and an oracle independent of the
+  current implementation: public contract, protocol specification, caller
+  invariant, reference implementation, or domain rule. If it contradicts current
+  behavior, first demonstrate the bug with a regression test that fails against
+  the unmutated code, then fix production; never add a passing assertion that
+  merely locks in the bug. At PR or handoff, report each nontrivial behavioral
+  cluster — not each mutant — as `Property: ... | Oracle: ... | Outcome: missing
+  assertion / production bug / accepted equivalent`. Test names and assertions
+  normally carry the durable property; comment only when the oracle or unusual
+  setup would otherwise be lost, and never embed PIT coordinates or line numbers.
+- Baseline keys are line-less (`class,method,mutator,STATUS`) — editing
+  above a mutated method churns nothing, and `# line` tags are review
+  metadata. A new mutant replacing a killed one at the same key can inherit
+  its acceptance, so treat a line-drift advisory whose written argument no
+  longer fits the code as that swap until shown otherwise. Use the installed
+  plugin's named writer tasks and heed their candidate previews; never hand-edit
+  record structure or provenance stamps. A PIT, PIT-plugin/tool-artifact,
+  ArcMutate-base, or certificate change uses `pitest<Suite>BaselineRebase`: it
+  preserves every old row, seeds new rows `# untriaged`, and stamps the reviewed
+  toolchain only after a successful fresh observation. Perform a schema
+  migration/rollback only with a fleet pin plan. A `[history]` report may check
+  the ratchet but cannot support adding, removing, or relabelling
+  accepted/timeout records; run `pitest<Suite> -PnoMutationHistory` first.
+- Consumer hardening notes contain only local ownership, measurements, acceptance
+  reasons, and provenance. `AGENTS.md` may carry this exact generated,
+  digest-pinned template plus those local facts, but no independently maintained
+  copy of plugin task semantics; use `hardeningHelp` and
+  `hardeningAgentTemplate` as the installed-version authorities.
+- **Iterate with `-PmutateOnly=<class-glob>`** while killing a cluster —
+  seconds instead of the full suite — then re-run unscoped with
+  `-PnoMutationHistory` before any record decision; the tooling refuses to let
+  a scoped report touch the baseline.
+- Identical baseline rows are sibling mutants of one compound condition and
+  the comparison is a multiset: never hand-dedupe. When one sibling
+  survives, the verify names the killed sibling's test — the survivor is
+  the opposite branch direction; triage it as its own mutant.
+- **Stubs and fixtures return distinguishable, non-default values.** A stub
+  returning null/0/""/true/empty makes the matching return-value mutant
+  equivalent by accident of the fixture — the clock non-zero-origin rule
+  generalized to every stubbed return.
+- **Copy-on-write clusters split by direction.** Assert immutability of
+  returned collections (`assertThrows(UnsupportedOperationException, ...)`)
+  at every size: the mutable-escape direction is a kill, not an acceptance;
+  only the content-equal siblings are family-accepted equivalents.
+- **Randomized tests use fixed seeds, and never sleep**: the ratchet needs
+  deterministic kills, and PIT re-runs the suite per mutant, so one real wait
+  costs minutes. Exploration belongs to the fuzz targets.
+- **Do not rely on PIT's timeout to detect a mutant.** `TIMED_OUT` counts as
+  detected and is not written to the baseline, and it is load-dependent — the
+  same mutant can report `SURVIVED` alone and `TIMED_OUT` under
+  `qualityGate`. Verify a baseline in both modes; union only rows observed to
+  flip, never every `TIMED_OUT` row.
+- **A new timed-out mutant is a reviewer-stop, not detection noise.** For
+  exactly these mutants the ratchet cannot see a weakened covering
+  assertion — a timeout keeps "detecting" whatever the test asserts — so
+  each suite's timeouts are an audited set, not a count:
+  `config/pitest/<suite>-timeouts.csv` holds line-less `class,method,mutator`
+  keys plus a comment category; `# line` tags are diagnostic metadata only. Only
+  `cause:liveness` is admissible watchdog detection after deterministic
+  seams/budgets are exhausted: the mutated path has no path-owned finite
+  completion guarantee. A fixture's emergency exit does not demote that
+  liveness loss to resource work; record the fixture bound in the README. Before
+  admitting liveness, prove the mutated path receives the clock/budget the test
+  observes, and check for a synchronous state reader that can expose the defect
+  without waiting. A `TestClock` on a collaborator cannot observe a subject using
+  the system clock. Seeded
+  `cause:untriaged`, missing/unknown categories, and finite `cause:resource`
+  work are reviewer-stops. Resource behavior gets a deterministic contract
+  test/fix when promised, otherwise a stable `SURVIVED` equivalence argument —
+  never silent timeout membership. Liveness authorizes valid `TIMED_OUT`
+  evidence only, never `MEMORY_ERROR`: if a non-advancing loop races the heap
+  against the watchdog, make every covering path fail deterministically without
+  relying on PIT test order, or refactor the manual progress mutation site out
+  while preserving the tested contract.
+  `config/pitest/README.md` still holds the
+  full structural cause per member. The verify warns on any timeout outside
+  the set — paste the printed row, classify it, then write the cause — and on
+  members matching no mutant. Membership and cause are key-level, which leaves a
+  known blind spot when a liveness mutant and a finite sibling share the same key.
+  Positive multiplicity drift prints all current line-full candidates for review;
+  source-line movement itself never warns, fails, or requires re-anchoring. Adding
+  a method, moving imports, or reflowing an expression is not a hardening record
+  change. Strict workflows run the
+  committed-file half before PIT; use `pitest<Suite>Debt` for the same quick
+  manual preview. `TimeoutAuditInit` deliberately seeds an uncertifiable file —
+  classify every row before certification. Proving a row can be retired requires
+  `pitest<Suite> -PnoMutationHistory`; assisted reports are previews and do not
+  advance timeout status or quiet-run evidence.
+- **A flaky harness is worse than recorded debt.** If an interleaving or a
+  boundary cannot be made deterministic, accept the mutant with a written
+  reason rather than chasing it with sleeps or spin-waits.
+- **A suite's percentage is not a target.** An accepted mutant with a written
+  reason is finished work, not debt. Before trying to raise a number, check
+  whether the remainder is `NO_COVERAGE` (real work) or documented
+  equivalents (already closed).
+- **Allocation and timing harnesses are a last resort for thin constant-factor
+  differences**, reserved for properties that are a stated design goal. A
+  removed growth/capacity/amortisation guard that changes complexity class is
+  not “allocation-size only”: use a small input with an orders-of-magnitude
+  margin and the correct path through the mutated code. Harnesses re-run once
+  per mutant, need a `volatile` sink so escape analysis cannot delete what they
+  measure, and flap when the margin is thin.
+- When a test you believe in will not go green, **suspect the code before you
+  soften the assertion** — that is where this process finds real bugs.
+- **A wandering unkilled count is a defect, not noise** — chase it before
+  changing any baseline. Reproduce it under the relevant solo/gate loads,
+  inspect per-mutant coordinates, remove real waits, and move construction
+  coverage into the test body before deciding whether it is a product defect,
+  a load-dependent timeout, or a harness defect.
+- **Build the subject under test inside the test body, not in a field.**
+  Under `PER_CLASS` lifecycle a field-initialized client's construction
+  coverage attaches to whichever test runs first, so wiring mutants can
+  never pair with the test that drives what they wire — they survive even
+  under a harness that asserts every request. One test that constructs the
+  client in the test method and drives each configured URL restores the
+  pairing.
+- **Kill rates are bounded by the mutator set.** `BigInteger`/`BigDecimal`
+  arithmetic and receiver-returning fluent calls can be invisible to the
+  enabled defaults. Follow the plugin's trial advice per suite, enable only
+  mutators proved to fire, and record the measured numbers and declines.
+- Module-path and mutation-test service discovery can differ. Declare real
+  services in every runtime representation the project supports, probe the
+  active environment in test-only scaffolding, and never commit a harness
+  whose pass/fail result depends on which task launched it.
+- `SURVIVED` and `NO_COVERAGE` are different problems: the first is a
+  judgment call about equivalence, the second is usually an untested line
+  and is mechanical. Never accept a `NO_COVERAGE` mutant as "equivalent" —
+  you have not observed its behaviour. One structural exception: a block
+  that always exits by throw reads `NO_COVERAGE` forever, executed or not
+  (PIT probes a block at its end), and its return-value mutants can never
+  change status. Such a line is owed a test asserting the throw's contract,
+  not coverage — and never leave one untested fearing a covered-line
+  `SURVIVED` conversion, which would require the block to complete.
+- Exclusions must cover the **test source set**, not a naming convention:
+  shared fakes are named `RecordingFoo` / `StubFoo` and match no `*Test*`
+  pattern. After registering or widening a suite, list the mutated classes and
+  confirm none live under `src/test`.
+- **Verify by the absence of failures, not the presence of passes.** Counting
+  `PASSED` lines hides a failure sitting next to them, and a green
+  `clean build` can mean the build cache short-circuited rather than that
+  tests ran. Check the failure count and confirm the task actually executed.
+  A mutation run has a second version of this: a *failed* PIT run leaves the
+  previous run's report in place, so the summary you read can describe a run
+  that never happened. Trust the exit code, and delete report directories
+  when comparing runs.
+- **A suite that got faster without getting narrower is a bug report.** Real
+  speedups come from fewer mutants or faster covering tests; an unexplained
+  one usually means the run did less than you think. Read the task's evidence
+  markers and scope; only a fresh full certification may support a release.
+  The process itself needs no ArcMutate licence and applies to any Java package.
+- **Invalid execution outcomes are not results.** PIT `MINION_DIED` fails
+  before writing a report, so it cannot corrupt one — re-run the suite; a
+  Gradle-worker `EOFException` death is the same shape, and a per-mutant
+  `RUN_ERROR` often first observed in a multi-suite run is the same
+  shape smaller (load average itself proves nothing; the hardening parser refuses
+  the report rather than certifying PIT's detected score). The refusal and
+  `pitest<Suite>Debt` name every offending row; retain the coordinate before a
+  quiet re-run replaces the report. A repeat at the same coordinate is not evidence
+  of load: investigate the mutated bytecode, its covering tests, and the tool failure.
+  The daemon log
+  (`~/.gradle/daemon/<version>/daemon-<pid>.out.log`) keeps a failed build's
+  full output even when the shell discarded it — read it before calling a
+  failure unexplained.
+- Fuzz findings become a committed seed input **and** a named regression
+  test, never just a fix — and the committed corpus is replayed by a unit
+  test inside `check`, so it cannot rot between fuzz runs.
+- **Run fuzz campaigns explicitly and locally.** `fuzzAll` is derived from every
+  registered target, so it cannot drift from a hand-written workflow task list;
+  set and record `-PmaxFuzzTime=<seconds>` and
+  `-PmaxParallelFuzzTargets=<count>` before release. Scheduled GitHub fuzz
+  workflows are optional and are not release evidence.
+- **When one thing has two representations, fuzz the differential.** Two
+  parsers for one config, an encode/decode round trip, a fast path beside a
+  reference path: assert the two *agree* rather than that neither crashes.
+  Crash-only fuzzing cannot see a wrong answer.
+- **Time-dependent code takes a clock**, so tests advance time instead of
+  waiting. Give test clocks a non-zero origin — a clock starting at 0 makes
+  every "start timestamp mutated to 0" mutant equivalent by accident.
+<!-- hardening-template sha256:027179fdb28f -->
+
+### GLAM-local hardening facts
+
+Only local ownership, measurements, acceptance reasons and provenance belong
+here; `hardeningHelp` and `hardeningAgentTemplate` are the authorities on task
+semantics for the installed plugin version.
+
+**Ownership.** The pre-release `hardeningCertify` is owned by the **local
+release checklist**, not CI — CI deliberately runs only `check`, so certify
+locally before deciding to release. `pitestServices` also covers `:sdk` API
+changes it calls, so a change under `sdk/` that `services` reaches owes both
+suites.
+
+**ArcMutate.** GLAM is outside the Sava ArcMutate certificate — it does not
+cover `systems.glam.*` — so both suites run open-source PIT, no `[history]`
+report is available here, and no history-assisted exception ever applies to a
+GLAM result.
+
+**Mutators.** `pitestSdk` runs `STRONGER,EXPERIMENTAL_NAKED_RECEIVER`;
+`pitestServices` adds `EXPERIMENTAL_BIG_INTEGER,EXPERIMENTAL_BIG_DECIMAL`,
+which fire only there — `services` carries the money math (`BigDecimal` share
+sums, `BigInteger` liquidity totals) those mutators can express and `sdk`
+generates none. Both trials, with their measured numbers, are recorded in each
+module's `config/pitest/README.md`. `pitestServices` also sets
+`timeoutFactor = 2.0` / `timeoutConst = 1500` and was trialed at 8 threads;
+the reasoning is in `services/build.gradle.kts`.
+
+**Test lifecycle.** Neither module uses `@TestInstance(PER_CLASS)` (audited
+2026-07-23), so field initializers re-run per test — still build the subject
+under test in the test body, and re-audit if a test class adopts `PER_CLASS`.
+
+**Service discovery.** This repo's Gradle tasks run on the **module path** while
+PIT minions run on the **class path**, so `module-info` services are invisible
+to the minions and a test-resources `META-INF/services` is invisible to the
+module-path `test` task. This repo declares no services of its own (audited
+2026-07-22), but the trap reached it through a dependency: a test that
+ServiceLoads ravina's `MemorySignerFactory` failed under PIT while that jar
+declared the service only in `module-info` (hit 2026-07-23). Ravina fixed it in
+`bde97ec` ("restore classpath service discovery"); `pitestServices` needs a
+ravina release carrying that fix.
+
+**A wandering count, locally.** Causes already seen here: real waits,
+`TIMED_OUT` load flips, coverage attributed to field initializers, and
+`@Execution` / `@TestInstance` on an abstract base not reaching concrete
+subclasses (JUnit-version-dependent — `javap` the resolved jar rather than
+trusting the source).
+
+**Fuzz corpora.** Minimize with `fuzz<Target>Minimize` rather than by hand,
+review the resulting corpus diff, and update the corpus provenance notes in
+`src/test/resources/fuzz/` when seeds change.
+
+**Local instances of the generic rules.** The recording proxies here are
+`SolanaRpcClient` / `AccountFetcher` — give them return values a real assertion
+can tell from a mutated default. `KaminoCacheImpl.vaultContexts` is the local
+copy-on-write cluster: assert the `UnsupportedOperationException` as well as the
+contents.
+
+**Family labels.** Every `# <family>` label on an accepted row must be named in
+the owning module's `config/pitest/README.md` "Family labels" glossary, so a
+typo or an orphaned argument surfaces instead of silently opening a bucket.
+
+**Timeout audit.** Both suites' audited timeout sets and their `cause:*`
+classifications live in `config/pitest/<suite>-timeouts.csv`, with the
+structural argument per member under "Timed-out mutants (audited set)" in the
+owning `config/pitest/README.md`.
+
+**Fixture deadlines must sit inside the watchdog budget.** `pitestServices` sets
+`timeoutConst = 1500` and `timeoutFactor = 2.0`, so a covering test's PIT budget
+is `1500ms + 2x its own runtime` — roughly 1.6–2.8s here. A fixture that waits
+longer than that never gets to fail its own assertion: the watchdog fires first
+and reports `TIMED_OUT`, which is the one status the ratchet cannot see a
+weakened assertion behind. This suite carried fourteen 5s fixture deadlines
+against that budget; lowering them (1s, and 2s for `MintCacheImplTest`, which
+does ~600ms of real work across 128 virtual threads) converted watchdog
+"detections" into real kills and exposed assertions that had never actually been
+testing anything. **Before classifying any timeout, check this arithmetic first** —
+a bounded fixture that outlives the budget is a harness defect, not liveness.
+Keep new fixture deadlines well under 1.5s, and prefer a synchronous state
+reader (`lock.getReadLockCount()`, a cache accessor) over any wait at all.
 
 When adding a parser, algorithm or strategy: add unit tests, put it in a
-mutation suite (the wildcard targeting already mutates new classes by
-default), and add a fuzz harness if it consumes external input.
-
-Every `# <family>` label on an accepted baseline row must be named in the
-module's `config/pitest/README.md` (a "Family labels" glossary) — the verify
-and debt tasks warn on any label with no `# <label>` mention there, so a
-typo or an orphaned argument surfaces instead of silently opening a bucket.
+mutation suite (the wildcard targeting already mutates new classes by default),
+and add a fuzz harness if it consumes external input.
 
 ## Gotchas & invariants worth knowing
 

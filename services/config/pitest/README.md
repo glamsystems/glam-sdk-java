@@ -2,25 +2,33 @@
 
 Each `pitest<Suite>` run is finalized by `pitest<Suite>Verify`, which diffs the
 run's unkilled mutants (`SURVIVED` and `NO_COVERAGE`) against the accepted
-baseline in `<suite>-accepted.csv` and **fails on anything new**. Baseline row
-format: `class,method,line,mutator,status`. The canonical policy is sava-build's
-`HARDENING.md`; this file records what is accepted *here* and why.
+baseline in `<suite>-accepted.csv` and **fails on anything new**. Baseline keys
+are line-less (`class,method,mutator,STATUS`); `# line` tags are review
+metadata, so source movement alone churns nothing. The canonical policy is
+sava-build's `HARDENING.md`, and `hardeningHelp` is the authority on the
+installed plugin's task names; this file records what is accepted *here* and
+why.
 
 A new unkilled mutant has exactly three legal outcomes:
 
 1. **Kill it** — add or strengthen a test. Prefer asserting the property the
    mutant breaks over restating the implementation.
 2. **Refactor** — restructure so the mutant cannot exist.
-3. **Accept it knowingly** — re-run with `-PupdateMutationBaseline` and record
-   the reason under "Triaged equivalent mutants" below. Acceptance is for
-   mutants *equivalent with respect to observable behavior*, not for "hard to
-   test".
+3. **Accept it knowingly** — record the reason under "Triaged equivalent
+   mutants" below, give the row a short `# <family>` label named in the
+   "Family labels" glossary, and write the record with the named task
+   (`pitestServicesBaselineUpdate` / `Union` / `Prune` / `Rebase` as the
+   verify's hint directs). Acceptance is for mutants *equivalent with respect
+   to observable behavior*, not for "hard to test".
 
 Identical rows are sibling mutants of one compound condition — the comparison
-is a multiset; never hand-dedupe the CSV. Pure line drift from editing a
-mutated file passes on its own with a notice; refresh with
-`-PupdateMutationBaseline` at a convenient moment. Anything beyond pure drift
-(newly covered, unexplained, changed counts) is triage first, refresh after.
+is a multiset; never hand-dedupe the CSV, and never hand-edit record structure
+or provenance stamps. A new mutant replacing a killed one at the same key can
+inherit its acceptance, so treat a line-drift advisory whose written argument
+no longer fits the code as that swap until shown otherwise. Anything beyond
+drift (newly covered, unexplained, changed counts) is triage first, record
+after. Any run that supports a record decision must be history-free
+(`-PnoMutationHistory`).
 
 ## Suite
 
@@ -982,7 +990,24 @@ GC-hygiene calls, capacity-hint arithmetic, and unreachable-by-construction
 defensive guards. New acceptances continue this pattern: document in the pass
 section that does the triage, not here.
 
-## Timed-out mutants (audited set, 2026-07-26)
+## Newly exposed debt (2026-08-06)
+
+`KaminoCacheImpl.run` `VoidMethodCallMutator` (line 672, the "Scope
+OracleMappings account has been deleted" warning) is seeded `# untriaged`. It
+was previously reported `TIMED_OUT` and became visible as `SURVIVED` once the
+fixture deadlines were brought inside the watchdog budget — so it was never
+genuinely detected; the watchdog was standing in for an assertion.
+
+`thePollLoopAppliesUpdatesAndDropsVanishedScopeAccounts` does assert that
+warning, and its assertion was tightened from the fragment `has been deleted`
+(which also matches other deletion logs on this logger) to the full message.
+That did not kill the mutant: PIT reports `numberOfTestsRun=1` for this line and
+the covering test it selects is evidently not the polling test. **This is not
+explained yet** — it is untriaged debt, not an accepted equivalence, and the
+open question is which test PIT attributes to line 672 and why the polling
+test's coverage of that branch is not recorded.
+
+## Timed-out mutants (audited set, reclassified 2026-08-06)
 
 Per HARDENING.md: a timeout-detected mutant was observed for *slowness, not
 wrongness* — the watchdog fires whatever the covering assertion says, so for

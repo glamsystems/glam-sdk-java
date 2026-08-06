@@ -8,6 +8,9 @@ testModuleInfo {
 }
 
 hardening {
+  // 'Integ.java' is a git-ignored scratch file: present on a dev machine and
+  // absent in CI, and it sits in systems.glam directly, which no suite targets
+  recompileExcludes = listOf("Integ.java")
   mutation.register("sdk") {
     mutators = "STRONGER,EXPERIMENTAL_NAKED_RECEIVER"
     // catch-all by exclusion, so a new hand-written class is mutated by
@@ -22,6 +25,13 @@ hardening {
       "systems.glam.sdk.*Fuzz*"
     )
     targetTests = "systems.glam.sdk.*Test*"
+    declineExclusionAudit(
+      "systems.glam.sdk.idl.*.gen.*",
+      "Generated per-program IDL bindings. Their correctness is owned by " +
+          "idl-src-gen, which generates and tests the emitter; mutating the " +
+          "boilerplate here would measure the generator's output rather than " +
+          "this repo's hand-written code, and would bury the hand-written signal."
+    )
   }
   fuzz.register("mappingConfig") {
     targetClass = "systems.glam.sdk.proxy.MappingConfigFuzz"

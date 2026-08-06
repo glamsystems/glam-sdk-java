@@ -1,38 +1,39 @@
-systems.glam.sdk.GlamAccounts,createMapper,70,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.sdk.GlamAccounts,main,170,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.sdk.GlamAccountsBuilder,createKey,57,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.sdk.GlamAccountsBuilder,driftIntegrationProgram,157,NakedReceiverMutator,NO_COVERAGE # untriaged
-systems.glam.sdk.GlamAccountsBuilder,driftIntegrationProgram,157,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.sdk.GlamAccountsBuilder,putIfNotNull,63,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.sdk.GlamStagingAccountClientImpl,createStateAccountClient,57,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.sdk.GlamVaultAccounts,lambda$loadMappingConfigs$1,55,NakedReceiverMutator,SURVIVED # equivalent path-suffix
-systems.glam.sdk.StagingStateAccountClientImpl,lambda$new$0,25,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.sdk.StagingStateAccountClientImpl,lambda$new$0,26,VoidMethodCallMutator,SURVIVED # untriaged
-systems.glam.sdk.StagingStateAccountClientImpl,protocolBitmask,88,RemoveConditionalMutator_EQUAL_IF,SURVIVED # unreachable type-check arm
-systems.glam.sdk.StagingStateAccountClientImpl,protocolBitmask,88,RemoveConditionalMutator_EQUAL_IF,SURVIVED # unreachable type-check arm
-systems.glam.sdk.StagingStateAccountClientImpl,redeemCancellationWindow,73,PrimitiveReturnsMutator,NO_COVERAGE # untriaged
-systems.glam.sdk.StagingStateAccountClientImpl,redeemNoticePeriod,63,PrimitiveReturnsMutator,NO_COVERAGE # untriaged
-systems.glam.sdk.StagingStateAccountClientImpl,redeemSettlementPeriod,68,PrimitiveReturnsMutator,NO_COVERAGE # untriaged
-systems.glam.sdk.StagingStateAccountClientImpl,redeemWindowInSeconds,78,BooleanTrueReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.sdk.StagingStateAccountClientImpl,redeemWindowInSeconds,78,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # untriaged
-systems.glam.sdk.StagingStateAccountClientImpl,redeemWindowInSeconds,78,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # untriaged
-systems.glam.sdk.StagingStateAccountClientImpl,softRedeem,83,BooleanTrueReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.sdk.StagingStateAccountClientImpl,softRedeem,83,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # untriaged
-systems.glam.sdk.StagingStateAccountClientImpl,softRedeem,83,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # untriaged
-systems.glam.sdk.StateAccountClient,createClient,55,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.sdk.StateAccountClientImpl,protocolBitmask,88,RemoveConditionalMutator_EQUAL_IF,SURVIVED # unreachable type-check arm
-systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,swapChecked,128,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.sdk.lut.VaultTableBuilder$Builder,create,152,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.sdk.lut.VaultTableBuilderImpl,addAccount,40,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultAccounts,184,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultTokens,212,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # residual sibling legs
-systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultTokens,212,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultTokens,217,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.sdk.lut.VaultTableBuilderImpl,batchTableTasks,109,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # residual sibling legs
-systems.glam.sdk.lut.VaultTableBuilderImpl,batchTableTasks,117,MathMutator,SURVIVED # residual sibling legs
-systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoVaultAccountsSecondPhase$0,389,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoVaultAccountsSecondPhase$0,391,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoVaultAccountsSecondPhase$0,391,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$mapTable$0,58,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.sdk.lut.VaultTableBuilderImpl,mapTable,54,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # residual sibling legs
-systems.glam.sdk.lut.VaultTableBuilderImpl,mapTable,54,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
+!sava-hardening-baseline-schema,1
+systems.glam.sdk.GlamAccounts,createMapper,NullReturnValsMutator,NO_COVERAGE # untriaged # line 70
+systems.glam.sdk.GlamAccounts,main,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 170
+systems.glam.sdk.GlamAccountsBuilder,createKey,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 57
+systems.glam.sdk.GlamAccountsBuilder,driftIntegrationProgram,NakedReceiverMutator,NO_COVERAGE # untriaged # line 157
+systems.glam.sdk.GlamAccountsBuilder,driftIntegrationProgram,NullReturnValsMutator,NO_COVERAGE # untriaged # line 157
+systems.glam.sdk.GlamAccountsBuilder,putIfNotNull,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 63
+systems.glam.sdk.GlamStagingAccountClientImpl,createStateAccountClient,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 57
+systems.glam.sdk.GlamVaultAccounts,lambda$loadMappingConfigs$1,NakedReceiverMutator,SURVIVED # equivalent path-suffix # line 55
+systems.glam.sdk.StagingStateAccountClientImpl,lambda$new$0,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 25
+systems.glam.sdk.StagingStateAccountClientImpl,lambda$new$0,VoidMethodCallMutator,SURVIVED # untriaged # line 26
+systems.glam.sdk.StagingStateAccountClientImpl,protocolBitmask,RemoveConditionalMutator_EQUAL_IF,SURVIVED # unreachable type-check arm # line 88
+systems.glam.sdk.StagingStateAccountClientImpl,protocolBitmask,RemoveConditionalMutator_EQUAL_IF,SURVIVED # unreachable type-check arm # line 88
+systems.glam.sdk.StagingStateAccountClientImpl,redeemCancellationWindow,PrimitiveReturnsMutator,NO_COVERAGE # untriaged # line 73
+systems.glam.sdk.StagingStateAccountClientImpl,redeemNoticePeriod,PrimitiveReturnsMutator,NO_COVERAGE # untriaged # line 63
+systems.glam.sdk.StagingStateAccountClientImpl,redeemSettlementPeriod,PrimitiveReturnsMutator,NO_COVERAGE # untriaged # line 68
+systems.glam.sdk.StagingStateAccountClientImpl,redeemWindowInSeconds,BooleanTrueReturnValsMutator,NO_COVERAGE # untriaged # line 78
+systems.glam.sdk.StagingStateAccountClientImpl,redeemWindowInSeconds,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # untriaged # line 78
+systems.glam.sdk.StagingStateAccountClientImpl,redeemWindowInSeconds,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # untriaged # line 78
+systems.glam.sdk.StagingStateAccountClientImpl,softRedeem,BooleanTrueReturnValsMutator,NO_COVERAGE # untriaged # line 83
+systems.glam.sdk.StagingStateAccountClientImpl,softRedeem,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # untriaged # line 83
+systems.glam.sdk.StagingStateAccountClientImpl,softRedeem,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # untriaged # line 83
+systems.glam.sdk.StateAccountClient,createClient,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 55
+systems.glam.sdk.StateAccountClientImpl,protocolBitmask,RemoveConditionalMutator_EQUAL_IF,SURVIVED # unreachable type-check arm # line 88
+systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,swapChecked,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 128
+systems.glam.sdk.lut.VaultTableBuilder$Builder,create,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 152
+systems.glam.sdk.lut.VaultTableBuilderImpl,addAccount,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 40
+systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultAccounts,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 184
+systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultTokens,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # residual sibling legs # line 212
+systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultTokens,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 212
+systems.glam.sdk.lut.VaultTableBuilderImpl,addGlamVaultTokens,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 217
+systems.glam.sdk.lut.VaultTableBuilderImpl,batchTableTasks,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # residual sibling legs # line 109
+systems.glam.sdk.lut.VaultTableBuilderImpl,batchTableTasks,MathMutator,SURVIVED # residual sibling legs # line 117
+systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoVaultAccountsSecondPhase$0,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 389
+systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoVaultAccountsSecondPhase$0,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 391
+systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$addKaminoVaultAccountsSecondPhase$0,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 391
+systems.glam.sdk.lut.VaultTableBuilderImpl,lambda$mapTable$0,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 58
+systems.glam.sdk.lut.VaultTableBuilderImpl,mapTable,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # residual sibling legs # line 54
+systems.glam.sdk.lut.VaultTableBuilderImpl,mapTable,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 54

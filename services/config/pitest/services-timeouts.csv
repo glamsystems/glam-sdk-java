@@ -1,84 +1,76 @@
-# Audited timed-out mutants (HARDENING.md "audited set" bullet): one line-less
-# class,method,mutator key per member; structural causes live in README.md under
-# "Timed-out mutants (audited set)". Line numbers ride in comments only — drift
-# must not churn membership. Snapshot: 2026-07-26 qualityGate reports.
-systems.glam.services.ServiceContextImpl,executeTask,VoidMethodCallMutator
-systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,RemoveConditionalMutator_EQUAL_ELSE
-systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,RemoveConditionalMutator_EQUAL_IF
-systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,VoidMethodCallMutator
-systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,ConditionalsBoundaryMutator
-systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,RemoveConditionalMutator_EQUAL_ELSE
-systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,RemoveConditionalMutator_EQUAL_IF
-systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,RemoveConditionalMutator_ORDER_ELSE
-systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,VoidMethodCallMutator
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,ConditionalsBoundaryMutator
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,IncrementsMutator # line 109; KILLED<->TIMED_OUT drifter, admitted 2026-07-28
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,RemoveConditionalMutator_EQUAL_ELSE
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,RemoveConditionalMutator_EQUAL_IF
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,RemoveConditionalMutator_ORDER_ELSE
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,RemoveConditionalMutator_ORDER_IF
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,VoidMethodCallMutator
-systems.glam.services.execution.BaseServiceContext,executeTask,VoidMethodCallMutator
-systems.glam.services.fulfillment.BaseFulfillmentService,awaitChange,VoidMethodCallMutator
-systems.glam.services.fulfillment.BaseFulfillmentService,wakeUp,VoidMethodCallMutator
-systems.glam.services.fulfillment.SingleAssetFulfillmentService,accept,RemoveConditionalMutator_EQUAL_ELSE
-systems.glam.services.fulfillment.SingleAssetFulfillmentService,accept,RemoveConditionalMutator_ORDER_ELSE
-systems.glam.services.fulfillment.SingleAssetFulfillmentService,accept,VoidMethodCallMutator
-systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,NullReturnValsMutator
-systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_ELSE
-systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_IF
-systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_ORDER_ELSE
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,run,VoidMethodCallMutator
-systems.glam.services.integrations.IntegLookupTableCacheImpl,run,VoidMethodCallMutator
-systems.glam.services.integrations.kamino.KaminoCacheImpl,deleteScopeConfiguration,RemoveConditionalMutator_EQUAL_ELSE
-systems.glam.services.integrations.kamino.KaminoCacheImpl,deleteScopeConfiguration,VoidMethodCallMutator
-systems.glam.services.integrations.kamino.KaminoCacheImpl,indexes,VoidMethodCallMutator
-systems.glam.services.integrations.kamino.KaminoCacheImpl,lambda$run$0,NullReturnValsMutator
-systems.glam.services.integrations.kamino.KaminoCacheImpl,lambda$run$1,NullReturnValsMutator
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,ConditionalsBoundaryMutator
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,MathMutator
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,RemoveConditionalMutator_EQUAL_ELSE
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,RemoveConditionalMutator_EQUAL_IF
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,RemoveConditionalMutator_ORDER_ELSE
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,RemoveConditionalMutator_ORDER_IF
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,VoidMethodCallMutator
-systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,RemoveConditionalMutator_EQUAL_ELSE
-systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,RemoveConditionalMutator_EQUAL_IF
-systems.glam.services.io.KeyedFlatFileImpl,overwriteFile,VoidMethodCallMutator
-systems.glam.services.rpc.AccountFetcherImpl,createBatch,RemoveConditionalMutator_EQUAL_IF
-systems.glam.services.rpc.AccountFetcherImpl,delay,RemoveConditionalMutator_EQUAL_ELSE
-systems.glam.services.rpc.AccountFetcherImpl,delay,RemoveConditionalMutator_EQUAL_IF
-systems.glam.services.rpc.AccountFetcherImpl,delay,RemoveConditionalMutator_ORDER_ELSE
-systems.glam.services.rpc.AccountFetcherImpl,delay,VoidMethodCallMutator
-systems.glam.services.rpc.AccountFetcherImpl,lockedQueue,RemoveConditionalMutator_EQUAL_ELSE
-systems.glam.services.rpc.AccountFetcherImpl,lockedQueue,RemoveConditionalMutator_EQUAL_IF
-systems.glam.services.rpc.AccountFetcherImpl,lockedQueue,VoidMethodCallMutator
-systems.glam.services.rpc.AccountFetcherImpl,priorityQueue,VoidMethodCallMutator
-systems.glam.services.rpc.AccountFetcherImpl,priorityQueueUnique,VoidMethodCallMutator
-systems.glam.services.rpc.AccountFetcherImpl,queue,RemoveConditionalMutator_EQUAL_ELSE
-systems.glam.services.rpc.AccountFetcherImpl,queue,VoidMethodCallMutator
-systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,ConditionalsBoundaryMutator
-systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,RemoveConditionalMutator_ORDER_ELSE
-systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,RemoveConditionalMutator_ORDER_IF
-systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,VoidMethodCallMutator
-systems.glam.services.rpc.AccountFetcherImpl,queueUnique,RemoveConditionalMutator_EQUAL_ELSE
-systems.glam.services.rpc.AccountFetcherImpl,queueUnique,VoidMethodCallMutator
-systems.glam.services.rpc.AccountFetcherImpl,run,RemoveConditionalMutator_EQUAL_ELSE
-systems.glam.services.rpc.AccountFetcherImpl,run,VoidMethodCallMutator
-systems.glam.services.rpc.AccountFetcherImpl,validBatch,BooleanFalseReturnValsMutator
-systems.glam.services.state.GlobalConfigCacheImpl,accept,VoidMethodCallMutator
-systems.glam.services.state.GlobalConfigCacheImpl,awaitNewGlobalConfig,RemoveConditionalMutator_EQUAL_IF
-systems.glam.services.state.GlobalConfigCacheImpl,awaitNewGlobalConfig,RemoveConditionalMutator_ORDER_ELSE
-systems.glam.services.state.GlobalConfigCacheImpl,forceCacheRefresh,RemoveConditionalMutator_EQUAL_IF
-systems.glam.services.state.GlobalConfigCacheImpl,forceCacheRefresh,VoidMethodCallMutator
-systems.glam.services.state.GlobalConfigCacheImpl,run,RemoveConditionalMutator_EQUAL_ELSE
-systems.glam.services.state.GlobalConfigCacheImpl,run,RemoveConditionalMutator_EQUAL_IF
-systems.glam.services.state.GlobalConfigCacheImpl,run,RemoveConditionalMutator_ORDER_IF
-systems.glam.services.state.GlobalConfigCacheImpl,run,VoidMethodCallMutator
-systems.glam.services.state.GlobalConfigCacheImpl,topPriorityForMintChecked,VoidMethodCallMutator
-systems.glam.services.state.MinGlamStateAccount,createRecord,MathMutator
-systems.glam.services.state.MinGlamStateAccount,externalPositionsOffset,RemoveConditionalMutator_ORDER_ELSE
-systems.glam.services.state.MinGlamStateAccount,externalPositionsOffset,RemoveConditionalMutator_ORDER_IF
-# KeyedFlatFileImpl's member oscillates between appendEntry and overwriteFile
-# across runs (same leaked-unlock shape, README singles section) — audit both.
-systems.glam.services.io.KeyedFlatFileImpl,appendEntry,VoidMethodCallMutator
+# Audited timed-out mutants: one line-less class,method,mutator key per member,
+# each carrying an admissible cause. Only cause:liveness may remain in the set —
+# the mutated path must have no path-owned finite completion guarantee. The
+# structural argument per member lives in README.md under "Timed-out mutants
+# (audited set)". Line numbers ride in comments only — drift must not churn
+# membership.
+#
+# Reclassified 2026-08-06 against the current rule, from a history-free
+# pitestServices observation. Every member below was observed TIMED_OUT in that
+# run and is covered by a harness with no bounded failure path: the service loop
+# is driven on the calling thread and stopped only by a collaborator's interrupt,
+# so a mutant that starves the loop leaves nothing to end the wait.
+#
+# 26 former members were removed: their covering fixtures carried 5s deadlines
+# that outlived PIT's watchdog budget (timeoutConst 1500ms + 2x runtime), so a
+# bounded assertion failure was being relabelled TIMED_OUT. Lowering those
+# deadlines turned them into deterministic kills — see AGENTS.md "Fixture
+# deadlines must sit inside the watchdog budget".
+#
+# The two leaked-unlock members below were briefly retired on a single quiet
+# observation and re-added when the next run fired them: both are KILLED <->
+# TIMED_OUT drifters, so one quiet run is not retirement evidence.
+systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,RemoveConditionalMutator_EQUAL_ELSE # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
+systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,RemoveConditionalMutator_EQUAL_IF # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
+systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,VoidMethodCallMutator # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
+systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,ConditionalsBoundaryMutator # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
+systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,RemoveConditionalMutator_EQUAL_ELSE # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
+systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,RemoveConditionalMutator_EQUAL_IF # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
+systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,RemoveConditionalMutator_ORDER_ELSE # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
+systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,VoidMethodCallMutator # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,ConditionalsBoundaryMutator # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,IncrementsMutator # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,RemoveConditionalMutator_EQUAL_ELSE # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,RemoveConditionalMutator_EQUAL_IF # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,RemoveConditionalMutator_ORDER_ELSE # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,RemoveConditionalMutator_ORDER_IF # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,VoidMethodCallMutator # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
+systems.glam.services.fulfillment.BaseFulfillmentService,wakeUp,VoidMethodCallMutator # cause:liveness the await/wake protocol itself: a removed signalAll is a lost wake-up with no bound
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,accept,RemoveConditionalMutator_EQUAL_ELSE # cause:liveness a suppressed wakeUp leaves the fulfillment thread parked in awaitChange, and the slot-ordered CAS retry spins unbounded on a flipped witness comparison
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,accept,RemoveConditionalMutator_ORDER_ELSE # cause:liveness a suppressed wakeUp leaves the fulfillment thread parked in awaitChange, and the slot-ordered CAS retry spins unbounded on a flipped witness comparison
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,accept,VoidMethodCallMutator # cause:liveness a suppressed wakeUp leaves the fulfillment thread parked in awaitChange, and the slot-ordered CAS retry spins unbounded on a flipped witness comparison
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,NullReturnValsMutator # cause:liveness a suppressed wakeUp leaves the fulfillment thread parked in awaitChange, and the slot-ordered CAS retry spins unbounded on a flipped witness comparison
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_ELSE # cause:liveness a suppressed wakeUp leaves the fulfillment thread parked in awaitChange, and the slot-ordered CAS retry spins unbounded on a flipped witness comparison
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_IF # cause:liveness a suppressed wakeUp leaves the fulfillment thread parked in awaitChange, and the slot-ordered CAS retry spins unbounded on a flipped witness comparison
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_ORDER_ELSE # cause:liveness a suppressed wakeUp leaves the fulfillment thread parked in awaitChange, and the slot-ordered CAS retry spins unbounded on a flipped witness comparison
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,run,VoidMethodCallMutator # cause:liveness the removed execute never starts the sub-service the test awaits
+systems.glam.services.integrations.IntegLookupTableCacheImpl,run,VoidMethodCallMutator # cause:liveness removed queueBatchable starves the fetch loop so the driver never reaches its terminal interrupt
+systems.glam.services.integrations.kamino.KaminoCacheImpl,indexes,VoidMethodCallMutator # cause:liveness the poll loop's chunk progression and lock discipline: a stalled sublist walk or a leaked lock never completes
+systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,RemoveConditionalMutator_EQUAL_ELSE # cause:liveness the poll loop's chunk progression and lock discipline: a stalled sublist walk or a leaked lock never completes
+systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,RemoveConditionalMutator_EQUAL_IF # cause:liveness the poll loop's chunk progression and lock discipline: a stalled sublist walk or a leaked lock never completes
+systems.glam.services.io.KeyedFlatFileImpl,overwriteFile,VoidMethodCallMutator # cause:liveness removed lock.unlock() in the finally leaks the lock; the assertion fires but close() then blocks on it during unwinding, so nothing bounded ends the test line 118
+systems.glam.services.rpc.AccountFetcherImpl,createBatch,RemoveConditionalMutator_EQUAL_IF # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,delay,RemoveConditionalMutator_EQUAL_ELSE # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,delay,RemoveConditionalMutator_EQUAL_IF # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,delay,RemoveConditionalMutator_ORDER_ELSE # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,delay,VoidMethodCallMutator # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,lockedQueue,RemoveConditionalMutator_EQUAL_ELSE # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,lockedQueue,RemoveConditionalMutator_EQUAL_IF # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,lockedQueue,VoidMethodCallMutator # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,priorityQueue,VoidMethodCallMutator # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,priorityQueueUnique,VoidMethodCallMutator # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,queue,RemoveConditionalMutator_EQUAL_ELSE # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,queue,VoidMethodCallMutator # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,ConditionalsBoundaryMutator # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,RemoveConditionalMutator_ORDER_ELSE # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,RemoveConditionalMutator_ORDER_IF # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,VoidMethodCallMutator # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,queueUnique,RemoveConditionalMutator_EQUAL_ELSE # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,queueUnique,VoidMethodCallMutator # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,run,RemoveConditionalMutator_EQUAL_ELSE # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,run,VoidMethodCallMutator # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.rpc.AccountFetcherImpl,validBatch,BooleanFalseReturnValsMutator # cause:liveness harness drives run() on the calling thread; the fake rpc interrupts only after the Nth batch lands, so a starved queue means the interrupt never fires and run() never returns
+systems.glam.services.state.GlobalConfigCacheImpl,awaitNewGlobalConfig,RemoveConditionalMutator_ORDER_ELSE # cause:liveness the refresh window's waiter protocol: a lost signal parks awaitNewGlobalConfig with no bound
+systems.glam.services.state.GlobalConfigCacheImpl,run,VoidMethodCallMutator # cause:liveness the refresh window's waiter protocol: a lost signal parks awaitNewGlobalConfig with no bound
+systems.glam.services.state.GlobalConfigCacheImpl,topPriorityForMintChecked,VoidMethodCallMutator # cause:liveness removed readLock.unlock() in the finally leaks the read lock; the decimals-mismatch path then parks the same thread on writeLock.lock(), and a read-to-write upgrade is impossible on a ReentrantReadWriteLock line 145
+systems.glam.services.state.MinGlamStateAccount,externalPositionsOffset,RemoveConditionalMutator_ORDER_ELSE # cause:liveness removes the outer delegate-walk loop's exit jump, so the walk never terminates line 124

@@ -2,25 +2,33 @@
 
 Each `pitest<Suite>` run is finalized by `pitest<Suite>Verify`, which diffs the
 run's unkilled mutants (`SURVIVED` and `NO_COVERAGE`) against the accepted
-baseline in `<suite>-accepted.csv` and **fails on anything new**. Baseline row
-format: `class,method,line,mutator,status`. The canonical policy is sava-build's
-`HARDENING.md`; this file records what is accepted *here* and why.
+baseline in `<suite>-accepted.csv` and **fails on anything new**. Baseline keys
+are line-less (`class,method,mutator,STATUS`); `# line` tags are review
+metadata, so source movement alone churns nothing. The canonical policy is
+sava-build's `HARDENING.md`, and `hardeningHelp` is the authority on the
+installed plugin's task names; this file records what is accepted *here* and
+why.
 
 A new unkilled mutant has exactly three legal outcomes:
 
 1. **Kill it** — add or strengthen a test. Prefer asserting the property the
    mutant breaks over restating the implementation.
 2. **Refactor** — restructure so the mutant cannot exist.
-3. **Accept it knowingly** — re-run with `-PupdateMutationBaseline` and record
-   the reason under "Triaged equivalent mutants" below. Acceptance is for
-   mutants *equivalent with respect to observable behavior*, not for "hard to
-   test".
+3. **Accept it knowingly** — record the reason under "Triaged equivalent
+   mutants" below, give the row a short `# <family>` label named in the
+   "Family labels" glossary, and write the record with the named task
+   (`pitestSdkBaselineUpdate` / `Union` / `Prune` / `Rebase` as the verify's
+   hint directs). Acceptance is for mutants *equivalent with respect to
+   observable behavior*, not for "hard to test".
 
 Identical rows are sibling mutants of one compound condition — the comparison
-is a multiset; never hand-dedupe the CSV. Pure line drift from editing a
-mutated file passes on its own with a notice; refresh with
-`-PupdateMutationBaseline` at a convenient moment. Anything beyond pure drift
-(newly covered, unexplained, changed counts) is triage first, refresh after.
+is a multiset; never hand-dedupe the CSV, and never hand-edit record structure
+or provenance stamps. A new mutant replacing a killed one at the same key can
+inherit its acceptance, so treat a line-drift advisory whose written argument
+no longer fits the code as that swap until shown otherwise. Anything beyond
+drift (newly covered, unexplained, changed counts) is triage first, record
+after. Any run that supports a record decision must be history-free
+(`-PnoMutationHistory`).
 
 ## Suite
 
@@ -74,7 +82,7 @@ compound-condition acceptances.
 
 The kamino-lend + fetch pass (2026-07-23) closed the remaining
 `VaultTableBuilderImpl` collection paths — 52 baseline rows dropped by the
-first `-PpruneMutationBaseline` run. The obligation fixture is synthesized
+first shrink-only prune. The obligation fixture is synthesized
 (a zero-filled `Obligation` image with the real discriminator, market and
 deposit/borrow reserve keys written at the generated offsets; empty slots
 hold the all-zero key the collectors must filter as `NONE`), the deposit
@@ -239,14 +247,26 @@ same acceptance when its class is covered.
 
 ## Timed-out mutants (audited set, 2026-07-26)
 
-Per HARDENING.md: a timeout-detected mutant was observed for *slowness, not
-wrongness*, so the ratchet cannot see a weakened covering assertion for it —
-the compensating control is naming each one with its structural cause, so
-`5 timed out (load-dependent)` in the verify summary is an audited set and a
-new member is something a reviewer notices. `KILLED <-> TIMED_OUT` drift is
-benign (both are detected, neither is ever baselined); `SURVIVED ->
-TIMED_OUT` is the flip the verify names separately. Snapshot: the 2026-07-26
-`qualityGate -PnoMutationHistory` run on plugin 21.5.15.
+For exactly these mutants the ratchet cannot see a weakened covering assertion —
+a timeout keeps "detecting" whatever the test asserts — so each member carries an
+admissible cause, and only `cause:liveness` may remain in the set: the mutated
+path must have no path-owned finite completion guarantee. `KILLED <-> TIMED_OUT`
+drift is benign (both are detected, neither is ever baselined); `SURVIVED ->
+TIMED_OUT` is the flip the verify names separately.
+
+All five members below qualify on the strict reading, and the reason is worth
+stating because it is what separates them from a timeout that is really a
+harness artifact: `batchTableTasks` is a synchronous pure computation. The test
+calls it directly, so there is **no fixture deadline that could have failed
+first**, no clock or budget the mutated path receives, and no synchronous state
+reader — the method simply never returns. The watchdog is the only possible
+detector. Contrast the `services` suite, where several timeouts came from
+fixtures whose own deadline outlived PIT's watchdog budget; those were bounded
+failures being relabelled, not liveness, and were fixed by shortening the
+fixture rather than by classifying the mutant.
+
+Classified 2026-08-06; observed on a history-free `pitestSdk` run against
+sava-build `0.0.0-test`.
 
 ### `lut.VaultTableBuilderImpl.batchTableTasks` — 5
 

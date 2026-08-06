@@ -1,255 +1,257 @@
-systems.glam.services.BaseDelegateService,glamAccountClient,19,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.BaseDelegateService,key,27,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.BaseDelegateService,stateAccount,23,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.BaseDelegateService,vaultKey,31,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.config.AccountFetcherConfig$Parser,parseProperties,45,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.config.AccountFetcherConfig$Parser,test,63,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,lambda$parseProperties$11,363,BooleanTrueReturnValsMutator,SURVIVED # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,lambda$parseProperties$12,368,BooleanTrueReturnValsMutator,SURVIVED # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,lambda$parseProperties$3,286,BooleanTrueReturnValsMutator,SURVIVED # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,lambda$parseProperties$4,307,BooleanTrueReturnValsMutator,SURVIVED # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,lambda$setDefaults$0,439,EmptyObjectReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parseProperties,286,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parseProperties,307,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parseProperties,363,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parseProperties,368,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parseProperties,400,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parseProperties,405,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig,createAccountFetcher,215,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig,createEpochInfoService,153,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig,createExecutionServiceContext,205,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig,createInstructionProcessor,159,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig,createLookupTableCache,106,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig,createServiceContext,175,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig,createServiceContext,175,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig,createServiceContext,175,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig,createTransactionProcessor,119,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig,createTxMonitorService,138,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig,createWebSocketManager,92,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig,lambda$createExecutionServiceContext$0,209,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.config.BaseDelegateServiceConfig,lambda$createWebSocketManager$0,98,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,60,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,64,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,68,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,72,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,76,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,146,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent
-systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,208,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # accepted equivalent
-systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,208,RemoveConditionalMutator_ORDER_IF,SURVIVED # accepted equivalent
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,75,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,75,RemoveConditionalMutator_ORDER_IF,SURVIVED # accepted equivalent
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,76,VoidMethodCallMutator,SURVIVED # accepted equivalent
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,85,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent
-systems.glam.services.execution.ExecutionServiceContext,createContext,22,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.execution.FormatUtil,formatInstructionException,64,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.services.execution.FormatUtil,formatTransactionResult,105,NakedReceiverMutator,SURVIVED # untriaged
-systems.glam.services.execution.FormatUtil,formatTransactionResult,113,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.execution.FormatUtil,formatTransactionResult,138,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.execution.FormatUtil,formatTransactionResult,141,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.services.execution.FormatUtil,formatTransactionResult,141,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.services.execution.FormatUtil,formatTransactionResult,141,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.execution.InstructionProcessor,createProcessor,23,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.execution.InstructionProcessorImpl,processInstructions,154,MathMutator,NO_COVERAGE # untriaged
-systems.glam.services.execution.InstructionProcessorImpl,processInstructions,154,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.execution.InstructionProcessorImpl,processInstructions,157,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.execution.InstructionProcessorImpl,processInstructions,158,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.execution.InstructionProcessorImpl,processInstructions,65,ConditionalsBoundaryMutator,SURVIVED # untriaged
-systems.glam.services.execution.InstructionProcessorImpl,processInstructions,94,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.services.fulfillment.BaseFulfillmentService,awaitChange,142,ConditionalsBoundaryMutator,SURVIVED # untriaged
-systems.glam.services.fulfillment.BaseFulfillmentService,awaitChange,142,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged
-systems.glam.services.fulfillment.BaseFulfillmentService,run,119,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.fulfillment.FulfillmentService,validateMintKey,63,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,168,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,175,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,191,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,198,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,112,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,112,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,121,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,121,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,135,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,182,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,184,NullReturnValsMutator,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,77,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,89,NakedReceiverMutator,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,90,NakedReceiverMutator,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,lambda$createService$0,102,NullReturnValsMutator,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,lambda$createService$1,127,NullReturnValsMutator,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,39,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,39,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,40,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,43,NakedReceiverMutator,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,46,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,46,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,47,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,52,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap
-systems.glam.services.fulfillment.config.FulfillmentServiceConfig$Parser,test,63,BooleanTrueReturnValsMutator,SURVIVED # untriaged
-systems.glam.services.fulfillment.config.FulfillmentServiceConfig,loadConfig,27,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.integrations.IntegLookupTableCache,lambda$initCache$0,37,NakedReceiverMutator,SURVIVED # untriaged
-systems.glam.services.integrations.IntegLookupTableCacheImpl,accept,114,ConditionalsBoundaryMutator,SURVIVED # untriaged
-systems.glam.services.integrations.IntegLookupTableCacheImpl,accept,114,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged
-systems.glam.services.integrations.IntegLookupTableCacheImpl,accept,119,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.integrations.IntegLookupTableCacheImpl,deleteTableFile,71,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.integrations.IntegLookupTableCacheImpl,lambda$accept$0,117,ConditionalsBoundaryMutator,SURVIVED # untriaged
-systems.glam.services.integrations.IntegLookupTableCacheImpl,lambda$accept$0,117,RemoveConditionalMutator_ORDER_ELSE,SURVIVED # untriaged
-systems.glam.services.integrations.IntegLookupTableCacheImpl,run,62,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.integrations.IntegrationServiceContext,createContext,44,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.integrations.IntegrationServiceContext,readClockSysVar,64,NullReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$0,111,MathMutator,SURVIVED # capacity-hint
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$0,139,MathMutator,SURVIVED # capacity-hint
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$0,158,MathMutator,SURVIVED # capacity-hint
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$0,91,MathMutator,SURVIVED # capacity-hint
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,232,MathMutator,SURVIVED # capacity-hint
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,258,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,258,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,273,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # residual sibling legs
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,273,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,306,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # residual sibling legs
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,306,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,324,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,333,MathMutator,SURVIVED # capacity-hint
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,336,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # residual sibling legs
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,336,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.services.integrations.kamino.KaminoCacheImpl,<init>,103,MathMutator,SURVIVED # capacity-hint
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,587,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,590,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,592,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,594,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,600,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,611,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,614,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,616,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,616,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,618,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,acceptReserve,574,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,acceptReserve,574,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,deleteScopeConfiguration,227,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.services.integrations.kamino.KaminoCacheImpl,deleteScopeConfiguration,233,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.integrations.kamino.KaminoCacheImpl,deleteScopeConfiguration,236,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs
-systems.glam.services.integrations.kamino.KaminoCacheImpl,deleteScopeConfiguration,240,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,314,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,318,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,318,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,326,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,330,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,330,RemoveConditionalMutator_EQUAL_IF,SURVIVED # in-lock race guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,335,ConditionalsBoundaryMutator,SURVIVED # in-lock race guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,335,RemoveConditionalMutator_ORDER_ELSE,SURVIVED # in-lock race guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,335,RemoveConditionalMutator_ORDER_IF,SURVIVED # in-lock race guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,337,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleVaultStateChange,451,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,indexes,180,NakedReceiverMutator,SURVIVED # single-feed unobservable
-systems.glam.services.integrations.kamino.KaminoCacheImpl,indexes,192,RemoveConditionalMutator_EQUAL_IF,SURVIVED # single-feed unobservable
-systems.glam.services.integrations.kamino.KaminoCacheImpl,lambda$handleVaultStateChange$0,459,ConditionalsBoundaryMutator,SURVIVED # untriaged
-systems.glam.services.integrations.kamino.KaminoCacheImpl,lambda$handleVaultStateChange$0,459,RemoveConditionalMutator_ORDER_ELSE,SURVIVED # untriaged
-systems.glam.services.integrations.kamino.KaminoCacheImpl,persistReserve,719,RemoveConditionalMutator_EQUAL_IF,SURVIVED # flip insurance (load-dependent kill; forced re-create of an existing dir is a no-op)
-systems.glam.services.integrations.kamino.KaminoCacheImpl,persistReserve,726,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,664,RemoveConditionalMutator_EQUAL_IF,SURVIVED # signalAll waiter
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,669,ConditionalsBoundaryMutator,SURVIVED # signalAll waiter
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,669,RemoveConditionalMutator_ORDER_IF,SURVIVED # signalAll waiter
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,680,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,692,RemoveConditionalMutator_ORDER_ELSE,SURVIVED # signalAll waiter
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,697,ConditionalsBoundaryMutator,SURVIVED # signalAll waiter
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,697,RemoveConditionalMutator_ORDER_IF,SURVIVED # signalAll waiter
-systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,361,RemoveConditionalMutator_EQUAL_IF,SURVIVED # in-lock race guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,365,RemoveConditionalMutator_EQUAL_IF,SURVIVED # in-lock race guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,367,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,394,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard
-systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,400,VoidMethodCallMutator,SURVIVED # in-lock race guard
-systems.glam.services.integrations.kamino.ReserveContext,readPriceChains,75,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.services.integrations.kamino.ReserveContext,readPriceChains,75,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.integrations.kamino.ReserveContext,readPriceFeedMeta,32,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.services.integrations.kamino.ReserveContext,writeMarketMeta,41,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.services.io.AccountData,isAccount,22,BooleanFalseReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.io.AccountData,isAccount,22,BooleanTrueReturnValsMutator,NO_COVERAGE # untriaged
-systems.glam.services.io.FileUtils,compressIfNeeded,85,NakedReceiverMutator,SURVIVED # untriaged
-systems.glam.services.io.KeyedFlatFileImpl,appendEntry,43,VoidMethodCallMutator,SURVIVED # durability unobservable
-systems.glam.services.io.KeyedFlatFileImpl,close,126,RemoveConditionalMutator_EQUAL_IF,SURVIVED # durability unobservable
-systems.glam.services.io.KeyedFlatFileImpl,deleteEntry,56,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # durability unobservable
-systems.glam.services.io.KeyedFlatFileImpl,deleteEntry,57,PrimitiveReturnsMutator,SURVIVED # durability unobservable
-systems.glam.services.io.KeyedFlatFileImpl,deleteEntry,69,ConditionalsBoundaryMutator,SURVIVED # durability unobservable
-systems.glam.services.io.KeyedFlatFileImpl,deleteEntry,69,RemoveConditionalMutator_ORDER_IF,SURVIVED # durability unobservable
-systems.glam.services.io.KeyedFlatFileImpl,deleteEntry,75,NakedReceiverMutator,SURVIVED # durability unobservable
-systems.glam.services.io.KeyedFlatFileImpl,deleteEntry,81,VoidMethodCallMutator,SURVIVED # durability unobservable
-systems.glam.services.io.KeyedFlatFileImpl,overwriteFile,114,VoidMethodCallMutator,SURVIVED # durability unobservable
-systems.glam.services.mints.AssetMetaContextRecord,compareTo,21,ConditionalsBoundaryMutator,SURVIVED # untriaged
-systems.glam.services.mints.AssetMetaContextRecord,compareTo,21,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged
-systems.glam.services.mints.AssetMetaContextRecord,toJson,35,EmptyObjectReturnValsMutator,SURVIVED # untriaged
-systems.glam.services.mints.MintCacheImpl,delete,55,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.services.mints.MintContext,setScale,86,NakedReceiverMutator,SURVIVED # untriaged
-systems.glam.services.mints.MintContext,write,108,PrimitiveReturnsMutator,SURVIVED # untriaged
-systems.glam.services.mints.StakePoolCache,lambda$initCache$0,88,ConditionalsBoundaryMutator,SURVIVED # untriaged
-systems.glam.services.mints.StakePoolCache,lambda$initCache$0,88,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged
-systems.glam.services.mints.StakePoolCache,lambda$initCache$0,89,ConditionalsBoundaryMutator,SURVIVED # untriaged
-systems.glam.services.mints.StakePoolCache,lambda$initCache$0,89,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged
-systems.glam.services.mints.StakePoolCacheImpl,accept,83,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.services.mints.StakePoolCacheImpl,accept,89,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.oracles.scope.ScopeFeedContext$FilteredReserve,compareTo,331,PrimitiveReturnsMutator,SURVIVED # mutual-redundancy family
-systems.glam.services.oracles.scope.ScopeFeedContext,createContext,47,ConditionalsBoundaryMutator,SURVIVED # mutual-redundancy family
-systems.glam.services.oracles.scope.ScopeFeedContext,createContext,47,RemoveConditionalMutator_ORDER_IF,SURVIVED # mutual-redundancy family
-systems.glam.services.oracles.scope.ScopeFeedContext,indexReserveByIndex,170,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # mutual-redundancy family
-systems.glam.services.oracles.scope.ScopeFeedContext,indexReserveByIndex,171,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # mutual-redundancy family
-systems.glam.services.oracles.scope.ScopeFeedContext,indexes,337,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # mutual-redundancy family
-systems.glam.services.oracles.scope.ScopeFeedContext,indexes,353,NakedReceiverMutator,SURVIVED # mutual-redundancy family
-systems.glam.services.oracles.scope.ScopeFeedContext,removePreviousEntry,222,ConditionalsBoundaryMutator,SURVIVED # mutual-redundancy family
-systems.glam.services.oracles.scope.ScopeFeedContext,removePreviousEntry,222,RemoveConditionalMutator_ORDER_IF,SURVIVED # mutual-redundancy family
-systems.glam.services.rpc.AccountFetcher,isNull,20,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.rpc.AccountFetcher,priorityQueue,43,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.rpc.AccountFetcher,queue,55,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.rpc.AccountFetcherImpl$UniqueAccountBatchRecord,accept,455,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.rpc.AccountFetcherImpl,createBatch,255,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.rpc.AccountFetcherImpl,createBatch,299,IncrementsMutator,SURVIVED # accepted equivalent
-systems.glam.services.rpc.AccountFetcherImpl,createBatch,302,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # accepted equivalent
-systems.glam.services.rpc.AccountFetcherImpl,delay,327,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent
-systems.glam.services.rpc.AccountFetcherImpl,delay,335,VoidMethodCallMutator,SURVIVED # accepted equivalent
-systems.glam.services.rpc.AccountFetcherImpl,lockedQueue,96,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent
-systems.glam.services.rpc.AccountFetcherImpl,priorityQueueBatchable,163,VoidMethodCallMutator,NO_COVERAGE # untriaged
-systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,146,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent
-systems.glam.services.rpc.AccountFetcherImpl,run,347,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent
-systems.glam.services.rpc.AccountFetcherImpl,run,389,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent
-systems.glam.services.state.GlobalConfigCache,createMap,116,ConditionalsBoundaryMutator,SURVIVED # untriaged
-systems.glam.services.state.GlobalConfigCache,createMap,116,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged
-systems.glam.services.state.GlobalConfigCacheImpl,accept,659,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.services.state.GlobalConfigCacheImpl,accept,663,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.services.state.GlobalConfigCacheImpl,accept,669,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.services.state.GlobalConfigCacheImpl,accept,669,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.state.GlobalConfigCacheImpl,accept,676,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.services.state.GlobalConfigCacheImpl,accept,694,VoidMethodCallMutator,SURVIVED # untriaged
-systems.glam.services.state.GlobalConfigCacheImpl,awaitNewGlobalConfig,724,ConditionalsBoundaryMutator,SURVIVED # untriaged
-systems.glam.services.state.GlobalConfigCacheImpl,awaitNewGlobalConfig,724,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged
-systems.glam.services.state.GlobalConfigCacheImpl,createMapChecked,446,MathMutator,SURVIVED # untriaged
-systems.glam.services.state.GlobalConfigCacheImpl,createMapChecked,563,ConditionalsBoundaryMutator,SURVIVED # untriaged
-systems.glam.services.state.GlobalConfigCacheImpl,createMapChecked,563,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged
-systems.glam.services.state.GlobalConfigCacheImpl,forceCacheRefresh,203,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.services.state.GlobalConfigCacheImpl,forceCacheRefresh,208,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged
-systems.glam.services.state.GlobalConfigCacheImpl,getByIndex,96,VoidMethodCallMutator,SURVIVED # untriaged
-systems.glam.services.state.GlobalConfigCacheImpl,run,228,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # race-guard family
-systems.glam.services.state.GlobalConfigCacheImpl,run,228,RemoveConditionalMutator_EQUAL_IF,SURVIVED # race-guard family
-systems.glam.services.state.GlobalConfigCacheImpl,run,230,ConditionalsBoundaryMutator,SURVIVED # race-guard family
-systems.glam.services.state.GlobalConfigCacheImpl,run,230,RemoveConditionalMutator_EQUAL_IF,SURVIVED # race-guard family
-systems.glam.services.state.GlobalConfigCacheImpl,run,230,RemoveConditionalMutator_ORDER_ELSE,SURVIVED # race-guard family
-systems.glam.services.state.GlobalConfigCacheImpl,topPriorityForMintChecked,148,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # race-guard family
-systems.glam.services.state.GlobalConfigCacheImpl,topPriorityForMintChecked,148,RemoveConditionalMutator_EQUAL_IF,SURVIVED # race-guard family
-systems.glam.services.state.GlobalConfigCacheImpl,topPriorityForMintChecked,154,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # race-guard family
-systems.glam.services.state.GlobalConfigCacheImpl,topPriorityForMintChecked,154,RemoveConditionalMutator_EQUAL_IF,SURVIVED # race-guard family
-systems.glam.services.state.GlobalConfigCacheImpl,topPriorityForMintChecked,159,VoidMethodCallMutator,SURVIVED # race-guard family
-systems.glam.services.state.MinGlamStateAccount,createIfChanged,217,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed count guard
-systems.glam.services.state.MinGlamStateAccount,createIfChanged,235,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed count guard
-systems.glam.services.state.MinGlamStateAccount,createRecord,167,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.state.MinGlamStateAccount,disabled,29,BooleanTrueReturnValsMutator,SURVIVED # untriaged
-systems.glam.services.state.MinGlamStateAccount,disabled,29,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.state.MinGlamStateAccount,equals,315,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.state.MinGlamStateAccount,equals,316,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.state.MinGlamStateAccount,equals,317,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.state.MinGlamStateAccount,equals,318,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged
-systems.glam.services.state.MinGlamStateAccount,hashCode,339,MathMutator,SURVIVED # hashcode mixing
-systems.glam.services.state.MinGlamStateAccount,hashCode,340,MathMutator,SURVIVED # hashcode mixing
-systems.glam.services.state.MinGlamStateAccount,hashCode,341,MathMutator,SURVIVED # hashcode mixing
-systems.glam.services.state.MinGlamStateAccount,hashCode,342,MathMutator,SURVIVED # hashcode mixing
-systems.glam.services.state.MinGlamStateAccount,hashCode,343,MathMutator,SURVIVED # hashcode mixing
-systems.glam.services.state.MinGlamStateAccount,hashCode,344,MathMutator,SURVIVED # hashcode mixing
-systems.glam.services.state.MinGlamStateAccount,hashCode,345,MathMutator,SURVIVED # hashcode mixing
-systems.glam.services.state.MinGlamStateAccount,hashCode,346,MathMutator,SURVIVED # hashcode mixing
-systems.glam.services.state.MinGlamStateAccount,hashCode,347,MathMutator,SURVIVED # hashcode mixing
-systems.glam.services.state.MinGlamStateAccount,readIntegrationAcls,84,VoidMethodCallMutator,SURVIVED # untriaged
-systems.glam.services.state.ProtocolIntegration,compareTo,10,PrimitiveReturnsMutator,SURVIVED # untriaged
+!sava-hardening-baseline-schema,1
+systems.glam.services.BaseDelegateService,glamAccountClient,NullReturnValsMutator,NO_COVERAGE # untriaged # line 19
+systems.glam.services.BaseDelegateService,key,NullReturnValsMutator,NO_COVERAGE # untriaged # line 27
+systems.glam.services.BaseDelegateService,stateAccount,NullReturnValsMutator,NO_COVERAGE # untriaged # line 23
+systems.glam.services.BaseDelegateService,vaultKey,NullReturnValsMutator,NO_COVERAGE # untriaged # line 31
+systems.glam.services.config.AccountFetcherConfig$Parser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 45
+systems.glam.services.config.AccountFetcherConfig$Parser,test,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 63
+systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,lambda$parseProperties$11,BooleanTrueReturnValsMutator,SURVIVED # untriaged # line 363
+systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,lambda$parseProperties$12,BooleanTrueReturnValsMutator,SURVIVED # untriaged # line 368
+systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,lambda$parseProperties$3,BooleanTrueReturnValsMutator,SURVIVED # untriaged # line 286
+systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,lambda$parseProperties$4,BooleanTrueReturnValsMutator,SURVIVED # untriaged # line 307
+systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,lambda$setDefaults$0,EmptyObjectReturnValsMutator,NO_COVERAGE # untriaged # line 439
+systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 286
+systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 307
+systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 363
+systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 368
+systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 400
+systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 405
+systems.glam.services.config.BaseDelegateServiceConfig,createAccountFetcher,NullReturnValsMutator,NO_COVERAGE # untriaged # line 215
+systems.glam.services.config.BaseDelegateServiceConfig,createEpochInfoService,NullReturnValsMutator,NO_COVERAGE # untriaged # line 153
+systems.glam.services.config.BaseDelegateServiceConfig,createExecutionServiceContext,NullReturnValsMutator,NO_COVERAGE # untriaged # line 205
+systems.glam.services.config.BaseDelegateServiceConfig,createInstructionProcessor,NullReturnValsMutator,NO_COVERAGE # untriaged # line 159
+systems.glam.services.config.BaseDelegateServiceConfig,createLookupTableCache,NullReturnValsMutator,NO_COVERAGE # untriaged # line 106
+systems.glam.services.config.BaseDelegateServiceConfig,createServiceContext,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 175
+systems.glam.services.config.BaseDelegateServiceConfig,createServiceContext,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 175
+systems.glam.services.config.BaseDelegateServiceConfig,createServiceContext,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 175
+systems.glam.services.config.BaseDelegateServiceConfig,createTransactionProcessor,NullReturnValsMutator,NO_COVERAGE # untriaged # line 119
+systems.glam.services.config.BaseDelegateServiceConfig,createTxMonitorService,NullReturnValsMutator,NO_COVERAGE # untriaged # line 138
+systems.glam.services.config.BaseDelegateServiceConfig,createWebSocketManager,NullReturnValsMutator,NO_COVERAGE # untriaged # line 92
+systems.glam.services.config.BaseDelegateServiceConfig,lambda$createExecutionServiceContext$0,NullReturnValsMutator,NO_COVERAGE # untriaged # line 209
+systems.glam.services.config.BaseDelegateServiceConfig,lambda$createWebSocketManager$0,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 98
+systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 60
+systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 64
+systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 68
+systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 72
+systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 76
+systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent # line 146
+systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # accepted equivalent # line 208
+systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,RemoveConditionalMutator_ORDER_IF,SURVIVED # accepted equivalent # line 208
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent # line 75
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,RemoveConditionalMutator_ORDER_IF,SURVIVED # accepted equivalent # line 75
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,VoidMethodCallMutator,SURVIVED # accepted equivalent # line 76
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent # line 85
+systems.glam.services.execution.ExecutionServiceContext,createContext,NullReturnValsMutator,NO_COVERAGE # untriaged # line 22
+systems.glam.services.execution.FormatUtil,formatInstructionException,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 64
+systems.glam.services.execution.FormatUtil,formatTransactionResult,NakedReceiverMutator,SURVIVED # untriaged # line 105
+systems.glam.services.execution.FormatUtil,formatTransactionResult,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 113
+systems.glam.services.execution.FormatUtil,formatTransactionResult,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 138
+systems.glam.services.execution.FormatUtil,formatTransactionResult,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 141
+systems.glam.services.execution.FormatUtil,formatTransactionResult,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 141
+systems.glam.services.execution.FormatUtil,formatTransactionResult,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 141
+systems.glam.services.execution.InstructionProcessor,createProcessor,NullReturnValsMutator,NO_COVERAGE # untriaged # line 23
+systems.glam.services.execution.InstructionProcessorImpl,processInstructions,MathMutator,NO_COVERAGE # untriaged # line 154
+systems.glam.services.execution.InstructionProcessorImpl,processInstructions,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 154
+systems.glam.services.execution.InstructionProcessorImpl,processInstructions,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 157
+systems.glam.services.execution.InstructionProcessorImpl,processInstructions,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 158
+systems.glam.services.execution.InstructionProcessorImpl,processInstructions,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 65
+systems.glam.services.execution.InstructionProcessorImpl,processInstructions,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 94
+systems.glam.services.fulfillment.BaseFulfillmentService,awaitChange,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 142
+systems.glam.services.fulfillment.BaseFulfillmentService,awaitChange,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged # line 142
+systems.glam.services.fulfillment.BaseFulfillmentService,run,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 119
+systems.glam.services.fulfillment.FulfillmentService,validateMintKey,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 63
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 168
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 175
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 191
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 198
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap # line 112
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap # line 112
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap # line 121
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap # line 121
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 135
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 182
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,NullReturnValsMutator,NO_COVERAGE # seamless bootstrap # line 184
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 77
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,NakedReceiverMutator,NO_COVERAGE # seamless bootstrap # line 89
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,NakedReceiverMutator,NO_COVERAGE # seamless bootstrap # line 90
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,lambda$createService$0,NullReturnValsMutator,NO_COVERAGE # seamless bootstrap # line 102
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,lambda$createService$1,NullReturnValsMutator,NO_COVERAGE # seamless bootstrap # line 127
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap # line 39
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap # line 39
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 40
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,NakedReceiverMutator,NO_COVERAGE # seamless bootstrap # line 43
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap # line 46
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap # line 46
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 47
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 52
+systems.glam.services.fulfillment.config.FulfillmentServiceConfig$Parser,test,BooleanTrueReturnValsMutator,SURVIVED # untriaged # line 63
+systems.glam.services.fulfillment.config.FulfillmentServiceConfig,loadConfig,NullReturnValsMutator,NO_COVERAGE # untriaged # line 27
+systems.glam.services.integrations.IntegLookupTableCache,lambda$initCache$0,NakedReceiverMutator,SURVIVED # untriaged # line 37
+systems.glam.services.integrations.IntegLookupTableCacheImpl,accept,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 114
+systems.glam.services.integrations.IntegLookupTableCacheImpl,accept,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged # line 114
+systems.glam.services.integrations.IntegLookupTableCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 119
+systems.glam.services.integrations.IntegLookupTableCacheImpl,deleteTableFile,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 71
+systems.glam.services.integrations.IntegLookupTableCacheImpl,lambda$accept$0,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 117
+systems.glam.services.integrations.IntegLookupTableCacheImpl,lambda$accept$0,RemoveConditionalMutator_ORDER_ELSE,SURVIVED # untriaged # line 117
+systems.glam.services.integrations.IntegLookupTableCacheImpl,run,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 62
+systems.glam.services.integrations.IntegrationServiceContext,createContext,NullReturnValsMutator,NO_COVERAGE # untriaged # line 44
+systems.glam.services.integrations.IntegrationServiceContext,readClockSysVar,NullReturnValsMutator,NO_COVERAGE # untriaged # line 64
+systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$0,MathMutator,SURVIVED # capacity-hint # line 111
+systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$0,MathMutator,SURVIVED # capacity-hint # line 139
+systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$0,MathMutator,SURVIVED # capacity-hint # line 158
+systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$0,MathMutator,SURVIVED # capacity-hint # line 91
+systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,MathMutator,SURVIVED # capacity-hint # line 232
+systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 258
+systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 258
+systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # residual sibling legs # line 273
+systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 273
+systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # residual sibling legs # line 306
+systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 306
+systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 324
+systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,MathMutator,SURVIVED # capacity-hint # line 333
+systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # residual sibling legs # line 336
+systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 336
+systems.glam.services.integrations.kamino.KaminoCacheImpl,<init>,MathMutator,SURVIVED # capacity-hint # line 103
+systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 587
+systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 590
+systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 592
+systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 594
+systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 600
+systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 611
+systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 614
+systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 616
+systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 616
+systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 618
+systems.glam.services.integrations.kamino.KaminoCacheImpl,acceptReserve,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 574
+systems.glam.services.integrations.kamino.KaminoCacheImpl,acceptReserve,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 574
+systems.glam.services.integrations.kamino.KaminoCacheImpl,deleteScopeConfiguration,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 227
+systems.glam.services.integrations.kamino.KaminoCacheImpl,deleteScopeConfiguration,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 233
+systems.glam.services.integrations.kamino.KaminoCacheImpl,deleteScopeConfiguration,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 236
+systems.glam.services.integrations.kamino.KaminoCacheImpl,deleteScopeConfiguration,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 240
+systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard # line 314
+systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard # line 318
+systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard # line 318
+systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard # line 326
+systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard # line 330
+systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,RemoveConditionalMutator_EQUAL_IF,SURVIVED # in-lock race guard # line 330
+systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,ConditionalsBoundaryMutator,SURVIVED # in-lock race guard # line 335
+systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,RemoveConditionalMutator_ORDER_ELSE,SURVIVED # in-lock race guard # line 335
+systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,RemoveConditionalMutator_ORDER_IF,SURVIVED # in-lock race guard # line 335
+systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 337
+systems.glam.services.integrations.kamino.KaminoCacheImpl,handleVaultStateChange,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard # line 451
+systems.glam.services.integrations.kamino.KaminoCacheImpl,indexes,NakedReceiverMutator,SURVIVED # single-feed unobservable # line 180
+systems.glam.services.integrations.kamino.KaminoCacheImpl,indexes,RemoveConditionalMutator_EQUAL_IF,SURVIVED # single-feed unobservable # line 192
+systems.glam.services.integrations.kamino.KaminoCacheImpl,lambda$handleVaultStateChange$0,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 459
+systems.glam.services.integrations.kamino.KaminoCacheImpl,lambda$handleVaultStateChange$0,RemoveConditionalMutator_ORDER_ELSE,SURVIVED # untriaged # line 459
+systems.glam.services.integrations.kamino.KaminoCacheImpl,persistReserve,RemoveConditionalMutator_EQUAL_IF,SURVIVED # flip insurance (load-dependent kill; forced re-create of an existing dir is a no-op) # line 719
+systems.glam.services.integrations.kamino.KaminoCacheImpl,persistReserve,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 726
+systems.glam.services.integrations.kamino.KaminoCacheImpl,run,RemoveConditionalMutator_EQUAL_IF,SURVIVED # signalAll waiter # line 664
+systems.glam.services.integrations.kamino.KaminoCacheImpl,run,ConditionalsBoundaryMutator,SURVIVED # signalAll waiter # line 669
+systems.glam.services.integrations.kamino.KaminoCacheImpl,run,RemoveConditionalMutator_ORDER_IF,SURVIVED # signalAll waiter # line 669
+systems.glam.services.integrations.kamino.KaminoCacheImpl,run,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 680
+systems.glam.services.integrations.kamino.KaminoCacheImpl,run,RemoveConditionalMutator_ORDER_ELSE,SURVIVED # signalAll waiter # line 692
+systems.glam.services.integrations.kamino.KaminoCacheImpl,run,ConditionalsBoundaryMutator,SURVIVED # signalAll waiter # line 697
+systems.glam.services.integrations.kamino.KaminoCacheImpl,run,RemoveConditionalMutator_ORDER_IF,SURVIVED # signalAll waiter # line 697
+systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,RemoveConditionalMutator_EQUAL_IF,SURVIVED # in-lock race guard # line 361
+systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,RemoveConditionalMutator_EQUAL_IF,SURVIVED # in-lock race guard # line 365
+systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard # line 367
+systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard # line 394
+systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,VoidMethodCallMutator,SURVIVED # in-lock race guard # line 400
+systems.glam.services.integrations.kamino.ReserveContext,readPriceChains,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 75
+systems.glam.services.integrations.kamino.ReserveContext,readPriceChains,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 75
+systems.glam.services.integrations.kamino.ReserveContext,readPriceFeedMeta,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 32
+systems.glam.services.integrations.kamino.ReserveContext,writeMarketMeta,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 41
+systems.glam.services.io.AccountData,isAccount,BooleanFalseReturnValsMutator,NO_COVERAGE # untriaged # line 22
+systems.glam.services.io.AccountData,isAccount,BooleanTrueReturnValsMutator,NO_COVERAGE # untriaged # line 22
+systems.glam.services.io.FileUtils,compressIfNeeded,NakedReceiverMutator,SURVIVED # untriaged # line 85
+systems.glam.services.io.KeyedFlatFileImpl,appendEntry,VoidMethodCallMutator,SURVIVED # durability unobservable # line 43
+systems.glam.services.io.KeyedFlatFileImpl,close,RemoveConditionalMutator_EQUAL_IF,SURVIVED # durability unobservable # line 126
+systems.glam.services.io.KeyedFlatFileImpl,deleteEntry,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # durability unobservable # line 56
+systems.glam.services.io.KeyedFlatFileImpl,deleteEntry,PrimitiveReturnsMutator,SURVIVED # durability unobservable # line 57
+systems.glam.services.io.KeyedFlatFileImpl,deleteEntry,ConditionalsBoundaryMutator,SURVIVED # durability unobservable # line 69
+systems.glam.services.io.KeyedFlatFileImpl,deleteEntry,RemoveConditionalMutator_ORDER_IF,SURVIVED # durability unobservable # line 69
+systems.glam.services.io.KeyedFlatFileImpl,deleteEntry,NakedReceiverMutator,SURVIVED # durability unobservable # line 75
+systems.glam.services.io.KeyedFlatFileImpl,deleteEntry,VoidMethodCallMutator,SURVIVED # durability unobservable # line 81
+systems.glam.services.io.KeyedFlatFileImpl,overwriteFile,VoidMethodCallMutator,SURVIVED # durability unobservable # line 114
+systems.glam.services.mints.AssetMetaContextRecord,compareTo,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 21
+systems.glam.services.mints.AssetMetaContextRecord,compareTo,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged # line 21
+systems.glam.services.mints.AssetMetaContextRecord,toJson,EmptyObjectReturnValsMutator,SURVIVED # untriaged # line 35
+systems.glam.services.mints.MintCacheImpl,delete,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 55
+systems.glam.services.mints.MintContext,setScale,NakedReceiverMutator,SURVIVED # untriaged # line 86
+systems.glam.services.mints.MintContext,write,PrimitiveReturnsMutator,SURVIVED # untriaged # line 108
+systems.glam.services.mints.StakePoolCache,lambda$initCache$0,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 88
+systems.glam.services.mints.StakePoolCache,lambda$initCache$0,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged # line 88
+systems.glam.services.mints.StakePoolCache,lambda$initCache$0,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 89
+systems.glam.services.mints.StakePoolCache,lambda$initCache$0,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged # line 89
+systems.glam.services.mints.StakePoolCacheImpl,accept,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 83
+systems.glam.services.mints.StakePoolCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 89
+systems.glam.services.oracles.scope.ScopeFeedContext$FilteredReserve,compareTo,PrimitiveReturnsMutator,SURVIVED # mutual-redundancy family # line 331
+systems.glam.services.oracles.scope.ScopeFeedContext,createContext,ConditionalsBoundaryMutator,SURVIVED # mutual-redundancy family # line 47
+systems.glam.services.oracles.scope.ScopeFeedContext,createContext,RemoveConditionalMutator_ORDER_IF,SURVIVED # mutual-redundancy family # line 47
+systems.glam.services.oracles.scope.ScopeFeedContext,indexReserveByIndex,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # mutual-redundancy family # line 170
+systems.glam.services.oracles.scope.ScopeFeedContext,indexReserveByIndex,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # mutual-redundancy family # line 171
+systems.glam.services.oracles.scope.ScopeFeedContext,indexes,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # mutual-redundancy family # line 337
+systems.glam.services.oracles.scope.ScopeFeedContext,indexes,NakedReceiverMutator,SURVIVED # mutual-redundancy family # line 353
+systems.glam.services.oracles.scope.ScopeFeedContext,removePreviousEntry,ConditionalsBoundaryMutator,SURVIVED # mutual-redundancy family # line 222
+systems.glam.services.oracles.scope.ScopeFeedContext,removePreviousEntry,RemoveConditionalMutator_ORDER_IF,SURVIVED # mutual-redundancy family # line 222
+systems.glam.services.rpc.AccountFetcher,isNull,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 20
+systems.glam.services.rpc.AccountFetcher,priorityQueue,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 43
+systems.glam.services.rpc.AccountFetcher,queue,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 55
+systems.glam.services.rpc.AccountFetcherImpl$UniqueAccountBatchRecord,accept,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 455
+systems.glam.services.rpc.AccountFetcherImpl,createBatch,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 255
+systems.glam.services.rpc.AccountFetcherImpl,createBatch,IncrementsMutator,SURVIVED # accepted equivalent # line 299
+systems.glam.services.rpc.AccountFetcherImpl,createBatch,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # accepted equivalent # line 302
+systems.glam.services.rpc.AccountFetcherImpl,delay,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent # line 327
+systems.glam.services.rpc.AccountFetcherImpl,delay,VoidMethodCallMutator,SURVIVED # accepted equivalent # line 335
+systems.glam.services.rpc.AccountFetcherImpl,lockedQueue,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent # line 96
+systems.glam.services.rpc.AccountFetcherImpl,priorityQueueBatchable,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 163
+systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent # line 146
+systems.glam.services.rpc.AccountFetcherImpl,run,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent # line 347
+systems.glam.services.rpc.AccountFetcherImpl,run,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent # line 389
+systems.glam.services.state.GlobalConfigCache,createMap,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 116
+systems.glam.services.state.GlobalConfigCache,createMap,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged # line 116
+systems.glam.services.state.GlobalConfigCacheImpl,accept,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 659
+systems.glam.services.state.GlobalConfigCacheImpl,accept,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 663
+systems.glam.services.state.GlobalConfigCacheImpl,accept,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 669
+systems.glam.services.state.GlobalConfigCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 669
+systems.glam.services.state.GlobalConfigCacheImpl,accept,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 676
+systems.glam.services.state.GlobalConfigCacheImpl,accept,VoidMethodCallMutator,SURVIVED # untriaged # line 694
+systems.glam.services.state.GlobalConfigCacheImpl,awaitNewGlobalConfig,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 724
+systems.glam.services.state.GlobalConfigCacheImpl,awaitNewGlobalConfig,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged # line 724
+systems.glam.services.state.GlobalConfigCacheImpl,createMapChecked,MathMutator,SURVIVED # untriaged # line 446
+systems.glam.services.state.GlobalConfigCacheImpl,createMapChecked,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 563
+systems.glam.services.state.GlobalConfigCacheImpl,createMapChecked,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged # line 563
+systems.glam.services.state.GlobalConfigCacheImpl,forceCacheRefresh,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 203
+systems.glam.services.state.GlobalConfigCacheImpl,forceCacheRefresh,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 208
+systems.glam.services.state.GlobalConfigCacheImpl,getByIndex,VoidMethodCallMutator,SURVIVED # untriaged # line 96
+systems.glam.services.state.GlobalConfigCacheImpl,run,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # race-guard family # line 228
+systems.glam.services.state.GlobalConfigCacheImpl,run,RemoveConditionalMutator_EQUAL_IF,SURVIVED # race-guard family # line 228
+systems.glam.services.state.GlobalConfigCacheImpl,run,ConditionalsBoundaryMutator,SURVIVED # race-guard family # line 230
+systems.glam.services.state.GlobalConfigCacheImpl,run,RemoveConditionalMutator_EQUAL_IF,SURVIVED # race-guard family # line 230
+systems.glam.services.state.GlobalConfigCacheImpl,run,RemoveConditionalMutator_ORDER_ELSE,SURVIVED # race-guard family # line 230
+systems.glam.services.state.GlobalConfigCacheImpl,topPriorityForMintChecked,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # race-guard family # line 148
+systems.glam.services.state.GlobalConfigCacheImpl,topPriorityForMintChecked,RemoveConditionalMutator_EQUAL_IF,SURVIVED # race-guard family # line 148
+systems.glam.services.state.GlobalConfigCacheImpl,topPriorityForMintChecked,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # race-guard family # line 154
+systems.glam.services.state.GlobalConfigCacheImpl,topPriorityForMintChecked,RemoveConditionalMutator_EQUAL_IF,SURVIVED # race-guard family # line 154
+systems.glam.services.state.GlobalConfigCacheImpl,topPriorityForMintChecked,VoidMethodCallMutator,SURVIVED # race-guard family # line 159
+systems.glam.services.state.MinGlamStateAccount,createIfChanged,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed count guard # line 217
+systems.glam.services.state.MinGlamStateAccount,createIfChanged,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed count guard # line 235
+systems.glam.services.state.MinGlamStateAccount,createRecord,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 167
+systems.glam.services.state.MinGlamStateAccount,disabled,BooleanTrueReturnValsMutator,SURVIVED # untriaged # line 29
+systems.glam.services.state.MinGlamStateAccount,disabled,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 29
+systems.glam.services.state.MinGlamStateAccount,equals,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 315
+systems.glam.services.state.MinGlamStateAccount,equals,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 316
+systems.glam.services.state.MinGlamStateAccount,equals,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 317
+systems.glam.services.state.MinGlamStateAccount,equals,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 318
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 339
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 340
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 341
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 342
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 343
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 344
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 345
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 346
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 347
+systems.glam.services.state.MinGlamStateAccount,readIntegrationAcls,VoidMethodCallMutator,SURVIVED # untriaged # line 84
+systems.glam.services.state.ProtocolIntegration,compareTo,PrimitiveReturnsMutator,SURVIVED # untriaged # line 10
+systems.glam.services.integrations.kamino.KaminoCacheImpl,run,VoidMethodCallMutator,SURVIVED # untriaged # line 672
