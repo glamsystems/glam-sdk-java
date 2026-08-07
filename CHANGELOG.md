@@ -1,5 +1,19 @@
 # Changelog
 
+## [25.17.1](https://github.com/glamsystems/glam-sdk-java/compare/25.17.0...25.17.1) (2026-08-07)
+
+
+### Features
+
+* **kamino:** report raw reserve writes on every ingestion path ([8eef619](https://github.com/glamsystems/glam-sdk-java/commit/8eef6194436421066ec04be85f28f7f9e10f3fda))
+
+
+### Bug Fixes
+
+* 4,285,597 runs, no findings. ([28f4815](https://github.com/glamsystems/glam-sdk-java/commit/28f4815cc6c4462bb0e998e01de3d4dfce5d435a))
+* **state:** reject malformed state-account counts, drop an O(n) walk ([1400043](https://github.com/glamsystems/glam-sdk-java/commit/140004341d148c9a03ff1d4459add04e0db29a65))
+* **test:** make poll-loop fixture lifecycle unconditional and capture thread-safe ([0759f92](https://github.com/glamsystems/glam-sdk-java/commit/0759f92cc48a20de50a4c8a368b0be9c6ae94e26))
+
 ## [25.17.0](https://github.com/glamsystems/glam-sdk-java/compare/25.16.0...25.17.0) (2026-07-24)
 
 
