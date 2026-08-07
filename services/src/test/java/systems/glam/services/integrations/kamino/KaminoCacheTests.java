@@ -10,6 +10,7 @@ import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.Context;
+import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.idl.clients.kamino.scope.gen.types.Configuration;
 import software.sava.idl.clients.kamino.scope.gen.types.OraclePrices;
 import systems.glam.services.oracles.scope.MappingsContext;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static software.sava.core.accounts.PublicKey.fromBase58Encoded;
@@ -663,5 +665,74 @@ final class KaminoCacheTests {
     assertDoesNotThrow(() -> cache.accept(List.of(reserve), Map.of(SOL_RESERVE_KEY, reserve)));
     assertEquals(1, survivor.updates(), "the surviving listener must still be delivered to");
     assertUnlocked(cache);
+  }
+
+  /// The program sweep is the fallback for a websocket which stopped delivering, so what has to
+  /// be pinned is the failure direction: silence must bring it back. Crucially that includes the
+  /// case the fallback exists for — a socket still open but no longer delivering, which is
+  /// indistinguishable from a dead one and has to be treated as one.
+  @Test
+  void theSweepIsDeferredOnlyWhileTheWebsocketIsAudible(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final long pollingDelayMillis = Duration.ofSeconds(1).toMillis();
+    final long now = 1_000_000L;
+
+    // nothing heard yet: bootstrap sweeps
+    assertFalse(cache.deferSweep(now), "a cache which has heard nothing may not defer");
+
+    // heard just now, swept just now: defer
+    cache.lastWebSocketMessage = now;
+    cache.lastSweep = now;
+    assertTrue(cache.deferSweep(now));
+
+    // still audible, but the sweep is overdue: the deferral is a delay, not a cancellation, so
+    // deletion detection and reconciliation still happen on a healthy connection
+    cache.lastSweep = now - (pollingDelayMillis * KaminoCacheImpl.HEALTHY_WEBSOCKET_SWEEP_FACTOR);
+    assertFalse(cache.deferSweep(now), "a healthy websocket may delay the sweep, not cancel it");
+
+    // gone quiet for a polling delay: sweep, whether the socket is closed or merely mute
+    cache.lastSweep = now;
+    cache.lastWebSocketMessage = now - pollingDelayMillis;
+    assertFalse(cache.deferSweep(now), "silence must bring the fallback back");
+  }
+
+  /// Only the websocket may stamp liveness. `accept(AccountInfo)` is also how the poll ingests
+  /// the accounts it fetches itself, so registering the cache directly would let the poll
+  /// satisfy its own liveness test and defer the sweep forever.
+  @Test
+  void onlyTheWebsocketStampsLiveness(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var consumers = new ArrayList<Consumer<AccountInfo<byte[]>>>();
+    cache.subscribe(recordingWebsocket(consumers));
+    assertEquals(0L, cache.lastWebSocketMessage, "subscribing is not hearing anything");
+    assertEquals(4, consumers.size(), "every subscription must route through the stamping consumer");
+
+    // the poll's own ingestion path
+    cache.accept(accountInfo(ORACLE_MAPPINGS_KEY, 100L, mappingsData));
+    assertEquals(0L, cache.lastWebSocketMessage,
+        "the poll's ingestion path must not be able to satisfy the liveness test");
+
+    // the websocket's
+    consumers.getFirst().accept(accountInfo(ORACLE_MAPPINGS_KEY, 101L, mappingsData));
+    assertTrue(cache.lastWebSocketMessage > 0L, "a websocket notification must stamp liveness");
+  }
+
+  private static SolanaRpcWebsocket recordingWebsocket(final List<Consumer<AccountInfo<byte[]>>> consumers) {
+    return (SolanaRpcWebsocket) java.lang.reflect.Proxy.newProxyInstance(
+        SolanaRpcWebsocket.class.getClassLoader(),
+        new Class<?>[]{SolanaRpcWebsocket.class},
+        (proxy, method, args) -> switch (method.getName()) {
+          case "equals" -> proxy == args[0];
+          case "hashCode" -> System.identityHashCode(proxy);
+          case "toString" -> "recordingWebsocket";
+          // programSubscribe returns a primitive boolean; a null unboxes into an NPE
+          case "programSubscribe" -> {
+            @SuppressWarnings("unchecked") final var consumer = (Consumer<AccountInfo<byte[]>>) args[2];
+            consumers.add(consumer);
+            yield Boolean.TRUE;
+          }
+          default -> null;
+        }
+    );
   }
 }

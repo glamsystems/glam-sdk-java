@@ -29,9 +29,11 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Condition;
+import java.util.function.Consumer;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.lang.System.Logger.Level.ERROR;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.lang.System.Logger.Level.WARNING;
 
 final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
@@ -40,6 +42,15 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   static final int MIN_CONFIGURATION_LENGTH = Configuration.PADDING_OFFSET;
   static final int MIN_RESERVE_LENGTH = Reserve.PADDING_OFFSET;
   static final int MIN_VAULT_STATE_LENGTH = VaultState.PADDING_2_OFFSET;
+  /// How many polling delays a healthy websocket may defer the program sweep for.
+  ///
+  /// The sweep is the fallback for a websocket which has stopped delivering, so silence has to
+  /// bring it back quickly; but the subscriptions carry every Reserve write of the program, so
+  /// on a healthy connection it is almost pure duplicate cost — two getProgramAccounts calls,
+  /// which an RPC provider typically bills an order of magnitude above a keyed fetch. Deferring
+  /// rather than cancelling keeps the two things the subscriptions cannot provide: an account
+  /// which was closed, and reconciliation of anything missed while the socket was down.
+  static final int HEALTHY_WEBSOCKET_SWEEP_FACTOR = 20;
 
   private final RpcCaller rpcCaller;
   private final AccountFetcher accountFetcher;
@@ -63,6 +74,14 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
   private final ReentrantReadWriteLock.WriteLock writeLock;
   private final Condition reserveScopeChangeCondition;
   private volatile int numReserveChanges;
+  /// When the websocket last delivered anything, or 0 when it has not since the current
+  /// connection was established. Only the subscription callbacks stamp this — the poll must
+  /// never be able to satisfy its own liveness test.
+  /// Package-private so a test can drive it; a real clock stamp is not reachable otherwise.
+  volatile long lastWebSocketMessage;
+  /// When the program sweep last ran, so that a healthy websocket delays it rather than
+  /// cancelling it.
+  long lastSweep;
   private final ReentrantReadWriteLock.ReadLock readLock;
 
   private final Map<PublicKey, KaminoListener> scopeListeners;
@@ -598,20 +617,51 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     accountFetcher.priorityQueueBatchable(accountsNeeded, this);
   }
 
+  /// Subscribes to every Kamino account this cache tracks.
+  ///
+  /// Called again for each websocket the manager builds, so a second call means the previous
+  /// connection died and was replaced — which is the only disconnect signal available here, the
+  /// websocket exposing no connection state and this cache holding no reference to it. Clearing
+  /// the liveness stamp on the way in is what makes the next [#run] cycle sweep rather than
+  /// trust a reading taken through a socket that no longer exists.
+  ///
+  /// The notification consumer is wrapped rather than passed as `this` so that only the
+  /// websocket stamps liveness: [#accept(AccountInfo)] is also reached from the poll itself, and
+  /// a poll able to satisfy its own liveness test would defer sweeping forever.
   @Override
   public void subscribe(final SolanaRpcWebsocket websocket) {
+    this.lastWebSocketMessage = 0;
+    final Consumer<AccountInfo<byte[]>> onNotification = accountInfo -> {
+      this.lastWebSocketMessage = System.currentTimeMillis();
+      accept(accountInfo);
+    };
     websocket.programSubscribe(
-        scopeProgram, List.of(OracleMappings.SIZE_FILTER, OracleMappings.DISCRIMINATOR_FILTER), this
+        scopeProgram, List.of(OracleMappings.SIZE_FILTER, OracleMappings.DISCRIMINATOR_FILTER), onNotification
     );
     websocket.programSubscribe(
-        scopeProgram, List.of(Configuration.SIZE_FILTER, Configuration.DISCRIMINATOR_FILTER), this
+        scopeProgram, List.of(Configuration.SIZE_FILTER, Configuration.DISCRIMINATOR_FILTER), onNotification
     );
     websocket.programSubscribe(
-        kLendProgram, List.of(Reserve.SIZE_FILTER, Reserve.DISCRIMINATOR_FILTER), this
+        kLendProgram, List.of(Reserve.SIZE_FILTER, Reserve.DISCRIMINATOR_FILTER), onNotification
     );
     websocket.programSubscribe(
-        kVaultsProgram, List.of(VaultState.SIZE_FILTER, VaultState.DISCRIMINATOR_FILTER), this
+        kVaultsProgram, List.of(VaultState.SIZE_FILTER, VaultState.DISCRIMINATOR_FILTER), onNotification
     );
+  }
+
+  /// Whether the program sweep can be skipped this cycle.
+  ///
+  /// Skipped only when the websocket has delivered something within one polling delay *and* the
+  /// sweep has run recently enough. A socket which is open but silently no longer delivering —
+  /// a half open connection, a subscription dropped server side — ages the stamp exactly as a
+  /// closed one does, so the fallback still recovers; that is the whole point of it, and a
+  /// design trusting anything the transport reports about itself would not.
+  boolean deferSweep(final long now) {
+    if (now - lastWebSocketMessage >= NANOSECONDS.toMillis(pollingDelayNanos)) {
+      return false;
+    }
+    final long sweepInterval = NANOSECONDS.toMillis(pollingDelayNanos) * HEALTHY_WEBSOCKET_SWEEP_FACTOR;
+    return now - lastSweep < sweepInterval;
   }
 
   @Override
@@ -686,10 +736,14 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     try {
       var accountsNeededList = new ArrayList<>(this.accountsNeededSet);
       for (; ; ) {
-        final var kVaultsFuture = rpcCaller.courteousCall(
+        // The keyed batch below is deletion detection and costs one request, so it runs every
+        // cycle regardless; the two program sweeps are the expensive half and the part a live
+        // websocket makes redundant.
+        final boolean sweep = !deferSweep(System.currentTimeMillis());
+        final var kVaultsFuture = sweep ? rpcCaller.courteousCall(
             rpcClient -> rpcClient.getProgramAccounts(kVaultsRequest),
             "rpcClient#getKaminoVaultAccounts"
-        );
+        ) : null;
 
         int accountsDeleted = 0;
         final int numAccounts = accountsNeededList.size();
@@ -725,21 +779,24 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
           accountsNeededList = new ArrayList<>(this.accountsNeededSet);
         }
 
-        final var kVaultAccounts = kVaultsFuture.join();
-        final var reserveAccountsFutures = rpcCaller.courteousCall(
-            rpcClient -> rpcClient.getProgramAccounts(reservesRequest),
-            "rpcClient#getKaminoReserves"
-        );
+        if (sweep) {
+          this.lastSweep = System.currentTimeMillis();
+          final var kVaultAccounts = kVaultsFuture.join();
+          final var reserveAccountsFutures = rpcCaller.courteousCall(
+              rpcClient -> rpcClient.getProgramAccounts(reservesRequest),
+              "rpcClient#getKaminoReserves"
+          );
 
-        for (final var accountInfo : kVaultAccounts) {
-          handleVaultStateChange(accountInfo);
-        }
+          for (final var accountInfo : kVaultAccounts) {
+            handleVaultStateChange(accountInfo);
+          }
 
-        final var reserveAccounts = reserveAccountsFutures.join();
-        for (final var accountInfo : reserveAccounts) {
-          final var reserveContext = ReserveContext.createContext(accountInfo, mappingsContextMap);
-          notifyReserveUpdate(accountInfo);
-          updateIfChanged(reserveContext);
+          final var reserveAccounts = reserveAccountsFutures.join();
+          for (final var accountInfo : reserveAccounts) {
+            final var reserveContext = ReserveContext.createContext(accountInfo, mappingsContextMap);
+            notifyReserveUpdate(accountInfo);
+            updateIfChanged(reserveContext);
+          }
         }
 
         writeLock.lock();
