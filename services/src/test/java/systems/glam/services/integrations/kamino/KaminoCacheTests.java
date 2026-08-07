@@ -11,6 +11,7 @@ import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.Context;
 import software.sava.idl.clients.kamino.scope.gen.types.Configuration;
+import software.sava.idl.clients.kamino.scope.gen.types.OraclePrices;
 import systems.glam.services.oracles.scope.MappingsContext;
 import systems.glam.services.oracles.scope.ScopeFeedContext;
 import systems.glam.services.tests.LogCapture;
@@ -146,6 +147,11 @@ final class KaminoCacheTests {
     @Override
     public void onReserveUpdate(final AccountInfo<byte[]> accountInfo) {
       events.add("onReserveUpdate");
+    }
+
+    @Override
+    public void onOraclePricesUpdate(final AccountInfo<byte[]> accountInfo) {
+      events.add("onOraclePricesUpdate");
     }
 
     long updates() {
@@ -595,6 +601,34 @@ final class KaminoCacheTests {
                 .resolve(SOL_RESERVE_KEY.toBase58() + ".dat.gz")),
         "the accepted reserve was not persisted"
     );
+  }
+
+  /// An OraclePrices account is what a reserve actually prices through, and it
+  /// is far larger and far busier than the mappings, so the cache does not
+  /// subscribe to one. It does relay one that arrives by another route — an
+  /// account-fetcher batch assembled for somebody else routinely carries it —
+  /// because the bytes are already in hand and the size check is free.
+  @Test
+  void anOraclePricesAccountIsRelayedToTheScopeListeners(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var scopeListener = new RecordingListener(11);
+    final var reserveListener = new RecordingListener(12);
+    cache.subscribeToScope(scopeListener);
+    cache.subscribeToReserves(reserveListener);
+
+    final byte[] data = new byte[OraclePrices.BYTES];
+    System.arraycopy(OraclePrices.DISCRIMINATOR.data(), 0, data, 0, OraclePrices.DISCRIMINATOR.length());
+    final var priceFeed = accountInfo(PRICE_FEED_KEY, 100L, data);
+
+    cache.accept(List.of(priceFeed), Map.of(PRICE_FEED_KEY, priceFeed));
+    assertEquals(List.of("onOraclePricesUpdate"), scopeListener.events());
+    assertTrue(reserveListener.events().isEmpty(), "a reserve listener has no business with a price feed");
+
+    // the single-account path relays it too, so a websocket delivery would not
+    // be silently logged as an unhandled account
+    cache.accept(priceFeed);
+    assertEquals(List.of("onOraclePricesUpdate", "onOraclePricesUpdate"), scopeListener.events());
+    assertUnlocked(cache);
   }
 
   /// A raw-write hook fires orders of magnitude more often than the filtered

@@ -5,6 +5,7 @@ import software.sava.idl.clients.kamino.lend.gen.types.Reserve;
 import software.sava.idl.clients.kamino.scope.entries.OracleEntry;
 import software.sava.idl.clients.kamino.scope.gen.types.Configuration;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleMappings;
+import software.sava.idl.clients.kamino.scope.gen.types.OraclePrices;
 import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.idl.clients.kamino.vaults.gen.types.VaultState;
 import software.sava.rpc.json.http.client.ProgramAccountsRequest;
@@ -441,6 +442,22 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     }
   }
 
+  /// Delivers a Scope `OraclePrices` write to the scope listeners, guarding each one.
+  ///
+  /// The cache does not subscribe to these accounts; one only arrives when something else
+  /// fetches it, so this is a relay rather than a source. Listeners are guarded for the same
+  /// reason as [#notifyReserveUpdate(AccountInfo)]: a throw on the poll thread would end
+  /// polling for everybody.
+  private void notifyOraclePricesUpdate(final AccountInfo<byte[]> accountInfo) {
+    for (final var listener : scopeListeners.values()) {
+      try {
+        listener.onOraclePricesUpdate(accountInfo);
+      } catch (final RuntimeException ex) {
+        logger.log(ERROR, "Kamino scope listener failed handling an OraclePrices write; continuing.", ex);
+      }
+    }
+  }
+
   private void notifyNewReserve(final ReserveContext reserveContext) {
     for (final var listener : reserveListeners.values()) {
       listener.onNewReserve(reserveContext);
@@ -624,6 +641,8 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
         handleMappingChange(accountInfo);
       } else if (data.length == Configuration.BYTES && Configuration.DISCRIMINATOR.equals(data, 0)) {
         handleConfigurationChange(accountInfo.context().slot(), accountInfo.pubKey(), data);
+      } else if (data.length == OraclePrices.BYTES && OraclePrices.DISCRIMINATOR.equals(data, 0)) {
+        notifyOraclePricesUpdate(accountInfo);
       } else {
         logger.log(WARNING, "Unhandled Kamino Account: " + accountInfo.pubKey());
       }
@@ -649,6 +668,10 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
         handleMappingChange(accountInfo);
       } else if (data.length == Configuration.BYTES && Configuration.DISCRIMINATOR.equals(data, 0)) {
         handleConfigurationChange(accountInfo.context().slot(), accountInfo.pubKey(), data);
+      } else if (data.length == OraclePrices.BYTES && OraclePrices.DISCRIMINATOR.equals(data, 0)) {
+        // Nothing here fetches these, but a batch assembled for somebody else routinely carries
+        // one, and relaying it costs a size check on bytes already in hand.
+        notifyOraclePricesUpdate(accountInfo);
       }
     }
   }

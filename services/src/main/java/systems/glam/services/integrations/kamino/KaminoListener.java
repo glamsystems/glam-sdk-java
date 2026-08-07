@@ -39,6 +39,25 @@ public interface KaminoListener {
 
   }
 
+  /// Called for every observed write to a Scope `OraclePrices` account.
+  ///
+  /// This is the account every Kamino reserve actually prices through: a reserve's stored price
+  /// is a copy taken whenever somebody last called `refresh_reserve`, while this is what such a
+  /// call would pull right now. A listener measuring how fresh a price is obtainable, rather
+  /// than how recently a reserve happened to be touched, wants this hook.
+  ///
+  /// The cache does not subscribe to these accounts — they are far larger than the mappings and
+  /// change constantly — so this only fires when one reaches the cache another way, which today
+  /// means an `AccountFetcher` batch carrying it. A deployment which never fetches one never
+  /// sees this callback, and a listener must treat that as no observation rather than as a
+  /// stale price.
+  ///
+  /// The same threading, idempotency and retention notes as
+  /// [#onReserveUpdate(AccountInfo)] apply.
+  default void onOraclePricesUpdate(final AccountInfo<byte[]> accountInfo) {
+
+  }
+
   default void onReserveChange(final ReserveContext previous,
                                final ReserveContext reserveContext,
                                final Set<ReserveChange> changes) {
