@@ -436,6 +436,31 @@ final class ScopeFeedContextTests {
       public java.util.List<ScopeEntry> oracleEntries(final PublicKey oracle, final OracleType oracleType) {
         throw new UnsupportedOperationException();
       }
+
+      /// The four below were added to ScopeEntries by idl-clients-bundle 25.18.5
+      /// (reference prices and their tolerance, the frozen flag, the prices
+      /// account). Re-indexing consults none of them, so they throw rather than
+      /// answer with fabricated values: if a production path ever starts reading
+      /// one, this test should say so loudly instead of proceeding on a stub.
+      @Override
+      public PublicKey oraclePrices() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public boolean frozen(final int index) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public ScopeEntry referencePrice(final int index) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public java.util.OptionalInt referenceToleranceBps(final int index) {
+        throw new UnsupportedOperationException();
+      }
     };
     final var mappingsContext = new MappingsContext(ORACLE_MAPPINGS, new byte[0], entries);
 
