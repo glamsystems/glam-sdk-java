@@ -131,15 +131,17 @@ its unkilled mutants against the accepted baseline in the module's
 `config/pitest/` and fails on anything new. The baselines were **seeded with
 the full pre-existing survivor population** — that is untriaged debt made
 explicit, not acceptance; the per-module `config/pitest/README.md` tracks the
-triage state. Fuzzing is underway — five targets, all seeded from mainnet
+triage state. Fuzzing is underway — six targets, all seeded from mainnet
 snapshots, corpora replayed inside `check`: `services:fuzzAccountData` (the
 compressed persistence format — decode + write/read differential; found and
 fixed an unbounded-decompression hang), `services:fuzzScopeFeedContext` (the
 Scope `Configuration` reader), `services:fuzzReserveContext` (the Reserve
 reader + price-chain resolution, the composite-`MostRecentOf` path),
 `services:fuzzKaminoVaultContext` (the `VaultState` reader +
-allocation-table walk), and `sdk:fuzzMappingConfig` (the ix-mapper config
-JSON via `ProgramMapConfig.parseConfig`). Register new harnesses in the
+allocation-table walk), `services:fuzzMinGlamStateAccount` (the state-account
+walk over nested length-prefixed ACL sections, plus the change-detection
+re-walk; found a base-asset index landmine), and `sdk:fuzzMappingConfig` (the
+ix-mapper config JSON via `ProgramMapConfig.parseConfig`). Register new harnesses in the
 owning module's `hardening` block with `targetClass` AND `seedCorpus` (both
 are required — a missing `seedCorpus` silently skips the replay test).
 
@@ -158,7 +160,10 @@ changes here:
   task; before handing off, run only the `pitest<Suite>`(s) whose mutated
   code the change can reach — including suites in dependent modules that
   call a changed API, and the owning suite for test-only edits (a weakened
-  test is exactly what the ratchet catches). The full `hardeningCertify` — every
+  test is exactly what the ratchet catches). When the production-class inventory
+  changes (add/remove/rename/move), or mutation target/exclusion rules change,
+  also run the cheap whole-population
+  `mutationOwnershipAudit` before handoff. The full `hardeningCertify` — every
   suite freshly observed, serialized, provenance-bound, diffed against
   `config/pitest/`, with strict timeout and ownership audits — is the pre-release
   check, owned by CI or by the release checklist (this repo records which); it is
@@ -208,6 +213,15 @@ changes here:
   the comparison is a multiset: never hand-dedupe. When one sibling
   survives, the verify names the killed sibling's test — the survivor is
   the opposite branch direction; triage it as its own mutant.
+- **A survivor contradicted by an existing oracle may be contaminated evidence.**
+  Open PIT's HTML **Covering tests** list, then compare the same scoped,
+  history-free population with and without isolation:
+  `-PmutateOnly=<class> -PnoMutationHistory`, then
+  `-PmutateOnly=<class> -PisolateMutants`. An isolation-only kill points
+  to state leaked between mutants — commonly a thread, executor, handler, or
+  static fixture whose cleanup an earlier assertion failure skipped. Put
+  teardown in `finally`/`try`-with-resources and rerun normally, history-free;
+  isolated execution is diagnostic evidence, never a baseline decision.
 - **Stubs and fixtures return distinguishable, non-default values.** A stub
   returning null/0/""/true/empty makes the matching return-value mutant
   equivalent by accident of the fixture — the clock non-zero-origin rule
@@ -233,14 +247,24 @@ changes here:
   `cause:liveness` is admissible watchdog detection after deterministic
   seams/budgets are exhausted: the mutated path has no path-owned finite
   completion guarantee. A fixture's emergency exit does not demote that
-  liveness loss to resource work; record the fixture bound in the README. Before
+  liveness loss to resource work; record the fixture bound in the README. If that
+  bound is the claimed deterministic oracle, compare it with PIT's
+  `duration × timeoutFactor + timeoutConst`: a bound that cannot fail first
+  contributes no cause evidence, so shorten it and re-observe history-free. A
+  later emergency ceiling may coexist with production liveness but cannot prove it.
+  A straight-line path with no loop, retry, lock, wait, blocking
+  call, or external completion dependency is not credible liveness evidence.
+  Before
   admitting liveness, prove the mutated path receives the clock/budget the test
   observes, and check for a synchronous state reader that can expose the defect
   without waiting. A `TestClock` on a collaborator cannot observe a subject using
   the system clock. Seeded
-  `cause:untriaged`, missing/unknown categories, and finite `cause:resource`
-  work are reviewer-stops. Resource behavior gets a deterministic contract
-  test/fix when promised, otherwise a stable `SURVIVED` equivalence argument —
+  `cause:untriaged`, missing/unknown categories, finite `cause:resource`, and
+  `cause:harness` work are reviewer-stops. `cause:harness` is the explicit
+  non-certifying holding state for a demonstrated finite covering-path/watchdog
+  race; it never makes the timeout admissible. Resource behavior gets a
+  deterministic contract test/fix when promised, otherwise a stable `SURVIVED`
+  equivalence argument —
   never silent timeout membership. Liveness authorizes valid `TIMED_OUT`
   evidence only, never `MEMORY_ERROR`: if a non-advancing loop races the heap
   against the watchdog, make every covering path fail deterministically without
@@ -249,16 +273,27 @@ changes here:
   `config/pitest/README.md` still holds the
   full structural cause per member. The verify warns on any timeout outside
   the set — paste the printed row, classify it, then write the cause — and on
-  members matching no mutant. Membership and cause are key-level, which leaves a
-  known blind spot when a liveness mutant and a finite sibling share the same key.
-  Positive multiplicity drift prints all current line-full candidates for review;
+  members matching no mutant. Membership and cause are key-level, so a liveness
+  token claims every sibling under that key. A key proven to mix liveness and
+  finite causes is not representable as an honest certifying row: split/refactor
+  it into distinct method keys or eliminate the ambiguous site, then re-observe
+  history-free. A source-line qualifier cannot fix the identity without making
+  formatting a release gate. Positive multiplicity drift prints all current
+  line-full candidates for review;
   source-line movement itself never warns, fails, or requires re-anchoring. Adding
   a method, moving imports, or reflowing an expression is not a hardening record
   change. Strict workflows run the
   committed-file half before PIT; use `pitest<Suite>Debt` for the same quick
   manual preview. `TimeoutAuditInit` deliberately seeds an uncertifiable file —
-  classify every row before certification. Proving a row can be retired requires
-  `pitest<Suite> -PnoMutationHistory`; assisted reports are previews and do not
+  classify every row before certification. For an otherwise admissible liveness
+  member, do not retire it until the tool emits its 3+ distinct fresh full-run quiet
+  notice over identical evidence inputs and the absence is confirmed under the
+  relevant solo/gate load. A finite KILLED↔TIMED_OUT race is benign only to baseline
+  arithmetic, never certifying evidence; repair/retime its covering path instead of
+  admitting it or waiting on the liveness-retirement rule. The quiet stash
+  is a machine-local nomination: never copy or merge it, and retain the row when a
+  same-input gate confirmation is unavailable. Assisted reports are
+  previews and do not
   advance timeout status or quiet-run evidence.
 - **A flaky harness is worse than recorded debt.** If an interleaving or a
   boundary cannot be made deterministic, accept the mutant with a written
@@ -329,7 +364,10 @@ changes here:
   shape smaller (load average itself proves nothing; the hardening parser refuses
   the report rather than certifying PIT's detected score). The refusal and
   `pitest<Suite>Debt` name every offending row; retain the coordinate before a
-  quiet re-run replaces the report. A repeat at the same coordinate is not evidence
+  quiet re-run replaces the report. `RUN_ERROR` alone diagnoses neither load nor
+  memory and never justifies changing threads or heap; record load/RSS as context,
+  retry once quietly, and tune only when PIT explicitly diagnoses a process-resource
+  failure. A repeat at the same coordinate is not evidence
   of load: investigate the mutated bytecode, its covering tests, and the tool failure.
   The daemon log
   (`~/.gradle/daemon/<version>/daemon-<pid>.out.log`) keeps a failed build's
@@ -350,7 +388,7 @@ changes here:
 - **Time-dependent code takes a clock**, so tests advance time instead of
   waiting. Give test clocks a non-zero origin — a clock starting at 0 makes
   every "start timestamp mutated to 0" mutant equivalent by accident.
-<!-- hardening-template sha256:027179fdb28f -->
+<!-- hardening-template sha256:46f7174e51fb -->
 
 ### GLAM-local hardening facts
 
