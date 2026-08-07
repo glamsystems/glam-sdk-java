@@ -596,4 +596,38 @@ final class KaminoCacheTests {
         "the accepted reserve was not persisted"
     );
   }
+
+  /// A raw-write hook fires orders of magnitude more often than the filtered
+  /// ones, so it is the likeliest to be the listener that throws. The poll loop
+  /// calls it inside a single catch that logs and returns, so an unguarded throw
+  /// would stop polling for every consumer sharing the cache — and take the
+  /// other listeners' delivery with it.
+  @Test
+  void aThrowingListenerNeitherStopsTheOthersNorEscapes(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var thrower = new KaminoListener() {
+      @Override
+      public PublicKey key() {
+        return PublicKey.createPubKey(new byte[]{13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13});
+      }
+
+      @Override
+      public void onReserveUpdate(final AccountInfo<byte[]> accountInfo) {
+        throw new IllegalStateException("listener is broken");
+      }
+    };
+    final var survivor = new RecordingListener(14);
+    cache.subscribeToReserves(thrower);
+    cache.subscribeToReserves(survivor);
+
+    // The batch path deliberately, unlike accept(AccountInfo), has no catch of its own: it is
+    // the account fetcher's polling thread, and AccountFetcherImpl only guards the consumer as a
+    // whole. So an unguarded listener throw escapes here no matter which order the listeners are
+    // visited in, which is what makes this a deterministic pin rather than a race on map order.
+    final var reserve = accountInfo(SOL_RESERVE_KEY, 100L, reserveData);
+    assertDoesNotThrow(() -> cache.accept(List.of(reserve), Map.of(SOL_RESERVE_KEY, reserve)));
+    assertEquals(1, survivor.updates(), "the surviving listener must still be delivered to");
+    assertUnlocked(cache);
+  }
 }

@@ -412,15 +412,32 @@ final class KaminoCacheImpl implements KaminoCache, AccountConsumer {
     }
   }
 
+  /// Delivers a raw reserve write to every listener, guarding each one.
+  ///
+  /// A listener which throws here would otherwise take the cache down with it: the poll loop
+  /// calls this inside [#run]'s single `catch`, which logs and returns, so one bad listener
+  /// permanently stops polling for every consumer sharing the cache. This hook fires on every
+  /// write rather than only on a diffed change, so it is delivered orders of magnitude more
+  /// often than its siblings and is that much likelier to be the one that throws. A listener's
+  /// failure is its own.
   private void notifyReserveUpdate(final AccountInfo<byte[]> accountInfo) {
     for (final var listener : reserveListeners.values()) {
-      listener.onReserveUpdate(accountInfo);
+      notifyReserveUpdate(listener, accountInfo);
     }
     final var listeners = this.specificReserveListeners.get(accountInfo.pubKey());
     if (listeners != null) {
       for (final var listener : listeners.values()) {
-        listener.onReserveUpdate(accountInfo);
+        notifyReserveUpdate(listener, accountInfo);
       }
+    }
+  }
+
+  private static void notifyReserveUpdate(final KaminoListener listener,
+                                          final AccountInfo<byte[]> accountInfo) {
+    try {
+      listener.onReserveUpdate(accountInfo);
+    } catch (final RuntimeException ex) {
+      logger.log(ERROR, "Kamino reserve listener failed handling a write; continuing.", ex);
     }
   }
 

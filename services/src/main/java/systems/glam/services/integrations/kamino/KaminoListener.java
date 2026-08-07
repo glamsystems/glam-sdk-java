@@ -20,7 +20,21 @@ public interface KaminoListener {
   /// fields they care about from the account data themselves.
   ///
   /// Note that the same slot may be delivered more than once, e.g. when a websocket
-  /// notification races the polled refresh, so implementations must be idempotent.
+  /// notification races the polled refresh, so implementations must be idempotent. The polled
+  /// paths re-deliver every Reserve each cycle whether or not it was written, so a listener
+  /// counting deliveries is counting observations rather than on-chain writes; the account's
+  /// own `last_update.slot` is what dates the write it carries.
+  ///
+  /// Unlike [#onReserveChange(ReserveContext, ReserveContext, Set)] and
+  /// [#onNewReserve(ReserveContext)], which are serialized behind the cache's write lock, this
+  /// hook is delivered without a lock and can be entered concurrently for the same Reserve —
+  /// the websocket, the account fetcher and the poll loop all reach it on their own threads.
+  /// Being idempotent is not enough here; an implementation which accumulates has to be thread
+  /// safe.
+  ///
+  /// The `byte[]` is not retained or mutated by the cache, so a listener may hold it.
+  ///
+  /// A listener which throws is logged and skipped, and does not stop delivery to the others.
   default void onReserveUpdate(final AccountInfo<byte[]> accountInfo) {
 
   }
