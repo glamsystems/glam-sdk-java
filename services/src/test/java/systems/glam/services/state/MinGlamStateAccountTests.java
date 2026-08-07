@@ -126,7 +126,18 @@ final class MinGlamStateAccountTests {
     assertNull(minStateAccount.createIfChanged(accountInfo));
 
     final var changedAssets = stateAccount.assets().clone();
-    changedAssets[0] = PublicKey.fromBase58Encoded("11111111111111111111111111111111");
+    // Replace an asset which is not the base asset: the base asset has to stay a member of the
+    // vector, or the account is the malformed one MinGlamStateAccountMalformedTests covers and
+    // createIfChanged rejects it outright rather than reporting a change.
+    int changedAssetIndex = -1;
+    for (int i = 0; i < changedAssets.length; ++i) {
+      if (!changedAssets[i].equals(stateAccount.baseAssetMint())) {
+        changedAssetIndex = i;
+        break;
+      }
+    }
+    assertTrue(changedAssetIndex >= 0, "the fixture needs an asset which is not the base asset");
+    changedAssets[changedAssetIndex] = PublicKey.fromBase58Encoded("11111111111111111111111111111111");
     final var stateAccountWithChangedAssets = new StateAccount(
         stateAccount._address(),
         stateAccount.discriminator(),
@@ -424,7 +435,7 @@ final class MinGlamStateAccountTests {
     assertEquals(expected.baseAssetDecimals(), minStateAccount.baseAssetDecimals());
   }
 
-  private static AccountInfo<byte[]> accountInfo(final long slot, final byte[] data) {
+  static AccountInfo<byte[]> accountInfo(final long slot, final byte[] data) {
     return new AccountInfo<>(
         STATE_ACCOUNT_KEY, new Context(slot, null), false, 0,
         GlamAccounts.MAIN_NET.protocolProgram(), BigInteger.ZERO, 0, data

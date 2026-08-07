@@ -293,7 +293,20 @@ public record MinGlamStateAccount(long slot,
       assets = new PublicKey[numAssets];
       SerDeUtil.readArray(assets, data, fromAssetsOffset);
       Arrays.sort(assets);
-      baseAssetIndex = Arrays.binarySearch(assets, this.baseAssetMint());
+      final var baseAssetMint = this.baseAssetMint();
+      baseAssetIndex = Arrays.binarySearch(assets, baseAssetMint);
+      if (baseAssetIndex < 0) {
+        // The same rejection the parse path makes, for the same reason: a negative index is
+        // stored and then used to index `assets`, so the record would construct cleanly here and
+        // throw out of baseAssetMint() somewhere else entirely. Refusing an update is safe — the
+        // caller keeps the witness it already had — whereas returning the record replaces a good
+        // one with a poisoned one, and callers guarding this with catch(RuntimeException) never
+        // see it, because nothing throws until long after they have stored it.
+        throw new IllegalStateException(
+            "Base asset " + baseAssetMint + " is not among the state account's "
+                + assets.length + " asset(s)."
+        );
+      }
     }
 
     final ProtocolIntegration[] protocolIntegrations;

@@ -124,6 +124,50 @@ final class MinGlamStateAccountMalformedTests {
     );
   }
 
+  /// The same landmine reaches the update path, which the parse-path guard does
+  /// not cover: `createIfChanged` re-searches the assets vector whenever it
+  /// moved, and stored the negative index just as `createRecord` used to. It is
+  /// the worse of the two, because the poisoned record is *returned* rather than
+  /// thrown — callers guard the call with `catch (RuntimeException)`, see
+  /// nothing, and store it, so the throw surfaces later and somewhere else.
+  ///
+  /// Rewriting the base asset's entry inside the vector, and leaving the
+  /// `BASE_ASSET_MINT` field alone, is what reaches it: the assets bytes now
+  /// differ, so the reuse-the-witness shortcut is skipped, and the witness's own
+  /// base asset is no longer among them.
+  @Test
+  void aBaseAssetMissingFromAChangedAssetsVectorIsRejectedOnUpdate() {
+    final var witness = MinGlamStateAccount.createRecord(
+        GlamEnv.PRODUCTION, MinGlamStateAccountTests.fixtureData(), SLOT);
+    final var baseAsset = witness.baseAssetMint();
+
+    final byte[] data = MinGlamStateAccountTests.fixtureData();
+    final int numAssets = ByteUtil.getInt32LE(data, StateAccount.ASSETS_OFFSET);
+    final int firstAsset = StateAccount.ASSETS_OFFSET + Integer.BYTES;
+    final byte[] absent = new byte[PublicKey.PUBLIC_KEY_LENGTH];
+    absent[0] = (byte) 0xFE;
+    absent[PublicKey.PUBLIC_KEY_LENGTH - 1] = (byte) 0xFE;
+    boolean replaced = false;
+    for (int i = 0; i < numAssets; ++i) {
+      final int offset = firstAsset + (i * PublicKey.PUBLIC_KEY_LENGTH);
+      if (baseAsset.equals(PublicKey.readPubKey(data, offset))) {
+        System.arraycopy(absent, 0, data, offset, absent.length);
+        replaced = true;
+        break;
+      }
+    }
+    assertTrue(replaced, "the fixture's base asset should appear in its own assets vector");
+
+    final var failure = assertThrows(
+        IllegalStateException.class,
+        () -> witness.createIfChanged(MinGlamStateAccountTests.accountInfo(SLOT + 1, data))
+    );
+    assertTrue(
+        String.valueOf(failure.getMessage()).contains("not among the state account's"),
+        "expected the base-asset membership rejection, was: " + failure.getMessage()
+    );
+  }
+
   /// The membership guard rejects only *absent* keys. `assets` is sorted, so a
   /// base asset that happens to sort first sits at index 0 — a legitimate and
   /// ordinary account that must be accepted. Only this case separates the
