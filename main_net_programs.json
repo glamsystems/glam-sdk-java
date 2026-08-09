@@ -39,6 +39,33 @@
       "program": "KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd"
     },
     {
+      "name": "GLAM CCTP",
+      "source": "sdk",
+      "module": "sdk",
+      "package": "glam.cctp",
+      "program": "G1NTcMDYgNLpDwgnrpSZvoSKQuR9NXG7S3DmtNQCDmrK",
+      "vcs": {
+        "repo": "glamsystems/glam-sdk-ts",
+        "path": "idl/ext_cctp.json"
+      },
+      "typeRefs": [
+        {
+          "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
       "name": "GLAM Config",
       "source": "sdk",
       "package": "glam.config",
@@ -111,6 +138,33 @@
               "srcMismatch": "KEEP_REF"
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "GLAM Marinade",
+      "source": "sdk",
+      "module": "sdk",
+      "package": "glam.marinade",
+      "program": "G1NTMNMgmgJAWAD9G3toFVMtNcc21dEyHf3fTXc3t74t",
+      "vcs": {
+        "repo": "glamsystems/glam-sdk-ts",
+        "path": "idl/ext_marinade.json"
+      },
+      "typeRefs": [
+        {
+          "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
         }
       ]
     },
@@ -234,6 +288,33 @@
       "vcs": {
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_cctp-staging.json"
+      },
+      "typeRefs": [
+        {
+          "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        },
+        {
+          "refProgram": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
+          "srcMismatch": "WARN_KEEP_LOCAL",
+          "matchOnTypeName": true,
+          "excludeTypes": [],
+          "explicitRules": []
+        }
+      ]
+    },
+    {
+      "name": "GLAM Staging Exponent",
+      "source": "sdk",
+      "module": "sdk",
+      "package": "glam.staging.exponent",
+      "program": "gstgx5AbCFq4mfYKbZP23YDC7XZFUx2EURiG3PcWX6W",
+      "vcs": {
+        "repo": "glamsystems/glam-sdk-ts",
+        "path": "idl/ext_exponent-staging.json"
       },
       "typeRefs": [
         {

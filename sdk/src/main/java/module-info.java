@@ -1,9 +1,13 @@
 module systems.glam.sdk {
+  exports systems.glam.sdk.idl.programs.glam.cctp.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.cctp.gen;
   exports systems.glam.sdk.idl.programs.glam.config.gen.types;
   exports systems.glam.sdk.idl.programs.glam.config.gen;
   exports systems.glam.sdk.idl.programs.glam.jupiter;
   exports systems.glam.sdk.idl.programs.glam.kamino.gen.types;
   exports systems.glam.sdk.idl.programs.glam.kamino.gen;
+  exports systems.glam.sdk.idl.programs.glam.marinade.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.marinade.gen;
   exports systems.glam.sdk.idl.programs.glam.mint.gen.events;
   exports systems.glam.sdk.idl.programs.glam.mint.gen.types;
   exports systems.glam.sdk.idl.programs.glam.mint.gen;
@@ -16,6 +20,8 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.staging.bridge.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.cctp.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.cctp.gen;
+  exports systems.glam.sdk.idl.programs.glam.staging.exponent.gen.types;
+  exports systems.glam.sdk.idl.programs.glam.staging.exponent.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.jupiter.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.jupiter.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.kamino.gen.types;

@@ -1,0 +1,18 @@
+{
+  "deployed": "anchor",
+  "lastDeploySlot": 412328781,
+  "channels": {
+    "anchor": {
+      "origin": "vMUTQDLYhhR9FsDVKRUYmEfaADVk57tXt69AC6M5Pko",
+      "hash": "2d6f91b15ec98461dff709454411adb826805c57e153bd1ca55dddab1bdc78e7",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    },
+    "vcs": {
+      "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_cctp.json",
+      "hash": "2d6f91b15ec98461dff709454411adb826805c57e153bd1ca55dddab1bdc78e7",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    }
+  }
+}

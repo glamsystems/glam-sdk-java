@@ -1,0 +1,12 @@
+{
+  "deployed": "vcs",
+  "lastDeploySlot": 422234373,
+  "channels": {
+    "vcs": {
+      "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_exponent-staging.json",
+      "hash": "6bb72ce01356bc26f6bf9e4033f50eecd33be29dff40f976b692e972dd4f0853",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    }
+  }
+}
