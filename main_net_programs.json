@@ -15,28 +15,48 @@
       "external": true,
       "module": "software.sava.idl.clients.kamino",
       "package": "software.sava.idl.clients.kamino.farms.gen",
-      "program": "FarmsPZpWu9i7Kky8tPN37rs2TpmMrAZrC7S7vJa91Hr"
+      "program": "FarmsPZpWu9i7Kky8tPN37rs2TpmMrAZrC7S7vJa91Hr",
+      "vcs": {
+        "repo": "sava-software/idl-clients",
+        "path": "idl-clients-bundle/src/main/java/software/sava/idl/clients/kamino/farms/gen/idl.json"
+      },
+      "deployed": "vcs"
     },
     {
       "name": "Kamino Lend",
       "external": true,
       "module": "software.sava.idl.clients.kamino",
       "package": "software.sava.idl.clients.kamino.lend.gen",
-      "program": "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD"
+      "program": "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD",
+      "vcs": {
+        "repo": "sava-software/idl-clients",
+        "path": "idl-clients-bundle/src/main/java/software/sava/idl/clients/kamino/lend/gen/idl.json"
+      },
+      "deployed": "vcs"
     },
     {
       "name": "Kamino Scope",
       "external": true,
       "module": "software.sava.idl.clients.kamino",
       "package": "software.sava.idl.clients.kamino.scope.gen",
-      "program": "HFn8GnPADiny6XqUoWE8uRPPxb29ikn4yTuPa9MF2fWJ"
+      "program": "HFn8GnPADiny6XqUoWE8uRPPxb29ikn4yTuPa9MF2fWJ",
+      "vcs": {
+        "repo": "sava-software/idl-clients",
+        "path": "idl-clients-bundle/src/main/java/software/sava/idl/clients/kamino/scope/gen/idl.json"
+      },
+      "deployed": "vcs"
     },
     {
       "name": "Kamino Vaults",
       "external": true,
       "module": "software.sava.idl.clients.kamino",
       "package": "software.sava.idl.clients.kamino.vaults.gen",
-      "program": "KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd"
+      "program": "KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd",
+      "vcs": {
+        "repo": "sava-software/idl-clients",
+        "path": "idl-clients-bundle/src/main/java/software/sava/idl/clients/kamino/vaults/gen/idl.json"
+      },
+      "deployed": "vcs"
     },
     {
       "name": "GLAM CCTP",
