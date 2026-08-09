@@ -3,6 +3,11 @@ name: Gradle Check Scheduled
 on:
   schedule:
     - cron: '0 */8 * * *'
+  # The documented response to a warning is to pause this workflow, regenerate, review and push.
+  # Without a manual trigger the confirming run is up to eight hours away, and the channel stays
+  # quiet in the meantime — which is this job's way of saying it did not run. Being able to ask
+  # for a run is what keeps that pause short enough to still mean what it says.
+  workflow_dispatch:
 
 concurrency:
   group: build-${{ github.ref_name }}
