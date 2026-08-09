@@ -48,6 +48,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_cctp.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
@@ -75,6 +76,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/glam_config.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
@@ -95,6 +97,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_kamino.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD",
@@ -151,6 +154,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_marinade.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
@@ -178,6 +182,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/glam_mint.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
@@ -204,7 +209,8 @@
       "vcs": {
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/glam_protocol.json"
-      }
+      },
+      "generateNext": true
     },
     {
       "name": "GLAM Policy Program",
@@ -216,6 +222,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/glam_policies.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
@@ -236,6 +243,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_spl.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
@@ -262,6 +270,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_bridge-staging.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
@@ -289,6 +298,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_cctp-staging.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
@@ -316,6 +326,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_exponent-staging.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
@@ -343,6 +354,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_rpi-staging.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
@@ -370,6 +382,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_jupiter-staging.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
@@ -397,6 +410,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_kamino-staging.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD",
@@ -453,6 +467,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_loopscale-staging.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
@@ -480,6 +495,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_marginfi-staging.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
@@ -507,6 +523,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_marinade-staging.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
@@ -534,6 +551,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/glam_mint-staging.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
@@ -561,6 +579,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_neutral-staging.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
@@ -588,6 +607,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_orca-staging.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
@@ -615,6 +635,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_phoenix-staging.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
@@ -641,7 +662,8 @@
       "vcs": {
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/glam_protocol-staging.json"
-      }
+      },
+      "generateNext": true
     },
     {
       "name": "GLAM Staging SPL",
@@ -653,6 +675,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_spl-staging.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
@@ -679,6 +702,7 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_stake_pool-staging.json"
       },
+      "generateNext": true,
       "typeRefs": [
         {
           "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
