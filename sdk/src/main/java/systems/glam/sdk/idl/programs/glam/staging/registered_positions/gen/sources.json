@@ -1,0 +1,18 @@
+{
+  "deployed": "anchor",
+  "lastDeploySlot": 428193507,
+  "channels": {
+    "anchor": {
+      "origin": "4CDGaT5Beq5ZkNNkNpqUTSzRvyymtQchazky3k5qMYjY",
+      "hash": "5eacad972139cfa1f962159ea3248e2966cefff66d089e1b2995a77d5780d9c8",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    },
+    "vcs": {
+      "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_rpi-staging.json",
+      "hash": "5eacad972139cfa1f962159ea3248e2966cefff66d089e1b2995a77d5780d9c8",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    }
+  }
+}

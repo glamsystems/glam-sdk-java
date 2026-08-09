@@ -27,6 +27,24 @@ jobs:
           token: ${{ secrets.READ_SAVA_SRC_GEN }}
           path: idl-src-gen
 
+      # genSrc.sh rebuilds the generator whenever its image is older than the sources, so this
+      # cannot silently monitor with stale code — an image built before a fix runs, exits zero and
+      # writes a report indistinguishable from a correct one.
+      #
+      # The webhook makes every run report: what moved, or an all-clear naming how many programs
+      # and channels were compared. Silence in the channel therefore means this job did not run,
+      # never that it ran and found nothing. An undelivered digest fails the step for the same
+      # reason — a green run whose alert went nowhere reads as "nothing happened".
+      #
+      # This job has no write access and never commits, so the committed sources.json it compares
+      # against does not advance on its own: a channel that moved is reported again on every run
+      # until someone regenerates and pushes. The intended response to a warning is therefore to
+      # disable this workflow, regenerate locally, review the diff and push — re-enabling it once
+      # the records are current.
+      #
+      # While it is disabled the channel goes quiet, which otherwise means "the job did not run".
+      # That reading is correct here: it did not. Keep the pause short enough that the two cannot
+      # be confused, or the heartbeat stops being evidence of anything.
       - name: Generate Source & Check
         run: |
           ./idl-src-gen/genSrc.sh --config="../main_net_programs.json" --rpc="${{ secrets.RPC_URL }}"
@@ -34,3 +52,4 @@ jobs:
         env:
           ORG_GRADLE_PROJECT_savaGithubPackagesUsername: ${{ github.actor }}
           ORG_GRADLE_PROJECT_savaGithubPackagesPassword: ${{ secrets.READ_SAVA_PACKAGES }}
+          IDL_SRC_GEN_WEBHOOK: ${{ secrets.IDL_MONITOR_SLACK_WEBHOOK }}

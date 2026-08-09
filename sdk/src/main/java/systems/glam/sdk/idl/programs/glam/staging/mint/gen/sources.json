@@ -1,0 +1,19 @@
+{
+  "deployed": "anchor",
+  "lastDeploySlot": 427332645,
+  "channels": {
+    "anchor": {
+      "origin": "28HSbEepgNUC7f5ceJ1FPacJXNiAo6ScrbXJpQj3EhHv",
+      "hash": "3c8ca7970bf06cb31dc565fcffbf83b26c1c8e33ca083a642ecf4b09b5bbee65",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    },
+    "vcs": {
+      "origin": "github:glamsystems/glam-sdk-ts@main/idl/glam_mint-staging.json",
+      "hash": "abaf2a365fa11c57b9794d03e10e2c000b047a666da974ee291b541e86fe2f21",
+      "matchesDeployed": false,
+      "file": "vcs.json",
+      "verbatim": "vcs.json"
+    }
+  }
+}

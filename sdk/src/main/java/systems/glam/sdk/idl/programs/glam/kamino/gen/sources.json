@@ -1,0 +1,18 @@
+{
+  "deployed": "anchor",
+  "lastDeploySlot": 412328608,
+  "channels": {
+    "anchor": {
+      "origin": "8mv7YXVaSfQuCJzrTAcKjpbCZyYjgAMPY46NmSv8BJpd",
+      "hash": "9746403b83587fecd6df41091bcf28121c149aa8911df494f2abececc2b201e4",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    },
+    "vcs": {
+      "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_kamino.json",
+      "hash": "9746403b83587fecd6df41091bcf28121c149aa8911df494f2abececc2b201e4",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    }
+  }
+}

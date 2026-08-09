@@ -1,0 +1,19 @@
+{
+  "deployed": "anchor",
+  "lastDeploySlot": 419999153,
+  "channels": {
+    "anchor": {
+      "origin": "BkW2wfE9i8UHxjcR19AqcU6eTHr4WLhDZK3XA4SUj16X",
+      "hash": "78ee7940f3c6dbdd98df190b050b9353d89be6d41c9ccd03120e0793d7a07606",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    },
+    "vcs": {
+      "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_jupiter-staging.json",
+      "hash": "c03e1f21a721cdc8a007a679b652309431bef12236531ced03e54c950c651a78",
+      "matchesDeployed": false,
+      "file": "vcs.json",
+      "verbatim": "vcs.json"
+    }
+  }
+}

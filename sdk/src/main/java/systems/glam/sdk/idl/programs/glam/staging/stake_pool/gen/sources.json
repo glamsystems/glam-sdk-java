@@ -1,0 +1,19 @@
+{
+  "deployed": "anchor",
+  "lastDeploySlot": 389557894,
+  "channels": {
+    "anchor": {
+      "origin": "9eiBHZbtw5g1Ut5UgpriWrigGjReLfsKaFftKtvPuiFf",
+      "hash": "ee0ad5a1952d9028c6c267da1cb99867ca90e94d1c5a66b3979994571ff8435c",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    },
+    "vcs": {
+      "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_stake_pool-staging.json",
+      "hash": "39b0436161dd3855f019f625cdbda4afab33811eff0c55fdad0d05bdea0eaccd",
+      "matchesDeployed": false,
+      "file": "vcs.json",
+      "verbatim": "vcs.json"
+    }
+  }
+}

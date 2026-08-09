@@ -1,0 +1,19 @@
+{
+  "deployed": "anchor",
+  "lastDeploySlot": 394258035,
+  "channels": {
+    "anchor": {
+      "origin": "E64ABbxYjmrZdXxHsWziLhvgPyJz21dTzB5EHUJPX5Wd",
+      "hash": "5c368327dbf5f4a02ce781ef8b0a60c0b395639458d4d6e58c939ab8f193471a",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    },
+    "vcs": {
+      "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_marinade-staging.json",
+      "hash": "6352519ef66bbdc6c7dcffb28a95c19bbea38e0f899de0b72a613b782fd6dc71",
+      "matchesDeployed": false,
+      "file": "vcs.json",
+      "verbatim": "vcs.json"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "deployed": "anchor",
+  "lastDeploySlot": 413452260,
+  "channels": {
+    "anchor": {
+      "origin": "FeqMuXwzCRTE5j4gwei8PG2hdzarTRKWyZdMQPkbYBDC",
+      "hash": "33df0b3ff97015584d1d06fdcc2b725ecba443a0f32cb9f2fea890aee86f1755",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    },
+    "vcs": {
+      "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_bridge-staging.json",
+      "hash": "28bf301a3410d2405241d532517b8ac1f58a7684539c7afba0ae70d178036866",
+      "matchesDeployed": false,
+      "file": "vcs.json",
+      "verbatim": "vcs.json"
+    }
+  }
+}

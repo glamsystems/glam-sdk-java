@@ -1,0 +1,19 @@
+{
+  "deployed": "anchor",
+  "lastDeploySlot": 412324912,
+  "channels": {
+    "anchor": {
+      "origin": "7uSYw7DJcTA46HtMJ8eWGsRKmoBQrTidzYiGEM8Poeqn",
+      "hash": "5b714c4d5ac686ba487f49226ce8d8ceb6c3b2635b99e38fd1aa6adaffa5dedf",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    },
+    "vcs": {
+      "origin": "github:glamsystems/glam-sdk-ts@main/idl/glam_protocol.json",
+      "hash": "482131d89ec0656ed01772b54d982f00935257e83a6750e2fe4bf10b323c9099",
+      "matchesDeployed": false,
+      "file": "vcs.json",
+      "verbatim": "vcs.json"
+    }
+  }
+}

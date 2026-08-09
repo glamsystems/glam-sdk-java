@@ -1,0 +1,19 @@
+{
+  "deployed": "anchor",
+  "lastDeploySlot": 421148988,
+  "channels": {
+    "anchor": {
+      "origin": "GkSZbVrcruCGQdbUrqFHtxkRwDCvHPAJ5xA5WvXJW7Xq",
+      "hash": "302aa6767e72753913653fc81078331c966fbc8d1f75934c48e8dc70aee694fc",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    },
+    "vcs": {
+      "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_orca-staging.json",
+      "hash": "d548bf91ee717747e5cf7b7ae6a9e2dbccf90bc7d5ca56014ba1fe8cfc420410",
+      "matchesDeployed": false,
+      "file": "vcs.json",
+      "verbatim": "vcs.json"
+    }
+  }
+}

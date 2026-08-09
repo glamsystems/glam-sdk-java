@@ -1,0 +1,19 @@
+{
+  "deployed": "anchor",
+  "lastDeploySlot": 421085685,
+  "channels": {
+    "anchor": {
+      "origin": "83v2wCkGHZxTyJje4jynjf4EtzhhyhX7BYSR2PNtkyrA",
+      "hash": "3a1aab17afb27e30b67ebb945467d198e9580a692e81a6fe50c2b70643563013",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    },
+    "vcs": {
+      "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_phoenix-staging.json",
+      "hash": "c9a3dbe28754e8cfc9ee1e2b807cbe751df2055a7a69a312bb043b10332863ad",
+      "matchesDeployed": false,
+      "file": "vcs.json",
+      "verbatim": "vcs.json"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "deployed": "anchor",
+  "lastDeploySlot": 427338395,
+  "channels": {
+    "anchor": {
+      "origin": "81Vp3S2EY6YMKCmQsZNtKJiwzXheLKK39nuSrJ1nhpfD",
+      "hash": "7c8b131bc17fcb806ab7e25f2edcf8e711265c62db694ed88d438bf79625b5ee",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    },
+    "vcs": {
+      "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_marginfi-staging.json",
+      "hash": "7a7e7d443a49537604783595e3c968f5a61a8219467aeea7bf6cb3d6a470732f",
+      "matchesDeployed": false,
+      "file": "vcs.json",
+      "verbatim": "vcs.json"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "deployed": "anchor",
+  "lastDeploySlot": 425506310,
+  "channels": {
+    "anchor": {
+      "origin": "5KxCb7M2eNoN7cpFqLLi4UyPFzQV6L4KuY6WK1u6mXcV",
+      "hash": "9885d9e39d419ee9e63d654f87497a92bb0620e0aea0f2bc72130e0d0d995deb",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    },
+    "vcs": {
+      "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_loopscale-staging.json",
+      "hash": "9885d9e39d419ee9e63d654f87497a92bb0620e0aea0f2bc72130e0d0d995deb",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    }
+  }
+}
