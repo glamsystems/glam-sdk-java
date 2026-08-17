@@ -147,10 +147,10 @@ public final class GlamMintProgram {
   }
 
   /// @param mode: u8
-  public record AclGateCreateListIxData(Discriminator discriminator, byte[] seed, int mode) implements SerDe {  
+  public record AclGateCreateListIxData(Discriminator discriminator, byte[] seed, int mode) implements SerDe {
 
     public static AclGateCreateListIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 41;
@@ -379,10 +379,10 @@ public final class GlamMintProgram {
   }
 
   /// @param amount: u64
-  public record BurnTokensIxData(Discriminator discriminator, long amount) implements SerDe {  
+  public record BurnTokensIxData(Discriminator discriminator, long amount) implements SerDe {
 
     public static BurnTokensIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -778,10 +778,10 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record EmergencyUpdateMintIxData(Discriminator discriminator, EmergencyUpdateMintArgs args) implements SerDe {  
+  public record EmergencyUpdateMintIxData(Discriminator discriminator, EmergencyUpdateMintArgs args) implements SerDe {
 
     public static EmergencyUpdateMintIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 10;
@@ -872,10 +872,10 @@ public final class GlamMintProgram {
   }
 
   /// @param gatingProgram: Option<publicKey>
-  public record EnableTokenAclIxData(Discriminator discriminator, PublicKey gatingProgram) implements SerDe {  
+  public record EnableTokenAclIxData(Discriminator discriminator, PublicKey gatingProgram) implements SerDe {
 
     public static EnableTokenAclIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int GATING_PROGRAM_OFFSET = 9;
@@ -981,10 +981,10 @@ public final class GlamMintProgram {
   }
 
   /// @param amount: u64
-  public record ForceTransferTokensIxData(Discriminator discriminator, long amount) implements SerDe {  
+  public record ForceTransferTokensIxData(Discriminator discriminator, long amount) implements SerDe {
 
     public static ForceTransferTokensIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -1101,10 +1101,10 @@ public final class GlamMintProgram {
   }
 
   /// @param limit: Option<u32>
-  public record FulfillIxData(Discriminator discriminator, OptionalLong limit) implements SerDe {  
+  public record FulfillIxData(Discriminator discriminator, OptionalLong limit) implements SerDe {
 
     public static FulfillIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int LIMIT_OFFSET = 9;
@@ -1231,10 +1231,10 @@ public final class GlamMintProgram {
 
   /// @param limit: Option<u32>
   /// @param refNav: Option<i128>
-  public record FulfillWithRefNavIxData(Discriminator discriminator, OptionalLong limit, BigInteger refNav) implements SerDe {  
+  public record FulfillWithRefNavIxData(Discriminator discriminator, OptionalLong limit, BigInteger refNav) implements SerDe {
 
     public static FulfillWithRefNavIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int LIMIT_OFFSET = 9;
@@ -1281,7 +1281,7 @@ public final class GlamMintProgram {
   public static final Discriminator INITIALIZE_MINT_DISCRIMINATOR = toDiscriminator(209, 42, 195, 4, 129, 85, 209, 44);
 
   /// Initialize a new GLAM mint with extensions and metadata.
-  /// 
+  ///
   /// - `mint_model` - Configuration model containing mint parameters and metadata
   /// - `created_key` - 8-byte key used in the GLAM state PDA derivation
   /// - `account_type` - Fund (for tokenized vault mint) or Mint
@@ -1313,7 +1313,7 @@ public final class GlamMintProgram {
   }
 
   /// Initialize a new GLAM mint with extensions and metadata.
-  /// 
+  ///
   /// - `mint_model` - Configuration model containing mint parameters and metadata
   /// - `created_key` - 8-byte key used in the GLAM state PDA derivation
   /// - `account_type` - Fund (for tokenized vault mint) or Mint
@@ -1359,7 +1359,7 @@ public final class GlamMintProgram {
   }
 
   /// Initialize a new GLAM mint with extensions and metadata.
-  /// 
+  ///
   /// - `mint_model` - Configuration model containing mint parameters and metadata
   /// - `created_key` - 8-byte key used in the GLAM state PDA derivation
   /// - `account_type` - Fund (for tokenized vault mint) or Mint
@@ -1390,10 +1390,10 @@ public final class GlamMintProgram {
                                      MintModel mintModel,
                                      byte[] createdKey,
                                      AccountType accountType,
-                                     OptionalInt decimals) implements SerDe {  
+                                     OptionalInt decimals) implements SerDe {
 
     public static InitializeMintIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int CREATED_KEY_LEN = 8;
@@ -1410,7 +1410,7 @@ public final class GlamMintProgram {
       final var createdKey = new byte[8];
       i += SerDeUtil.readArray(createdKey, _data, i);
       final var accountType = AccountType.read(_data, i);
-      i += accountType.l();
+      i += 1;
       final OptionalInt decimals;
       if (SerDeUtil.isAbsent(1, _data, i)) {
         decimals = OptionalInt.empty();
@@ -1505,10 +1505,10 @@ public final class GlamMintProgram {
   }
 
   /// @param amount: u64
-  public record MintTokensIxData(Discriminator discriminator, long amount) implements SerDe {  
+  public record MintTokensIxData(Discriminator discriminator, long amount) implements SerDe {
 
     public static MintTokensIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -1542,7 +1542,7 @@ public final class GlamMintProgram {
   public static final Discriminator PRICE_BRIDGE_MANAGED_TRANSFERS_DISCRIMINATOR = toDiscriminator(15, 249, 66, 19, 107, 71, 41, 51);
 
   /// Price bridge managed transfers.
-  /// 
+  ///
   /// Extra accounts:
   /// - bridge registry account
   ///
@@ -1572,7 +1572,7 @@ public final class GlamMintProgram {
   }
 
   /// Price bridge managed transfers.
-  /// 
+  ///
   /// Extra accounts:
   /// - bridge registry account
   ///
@@ -1604,7 +1604,7 @@ public final class GlamMintProgram {
   }
 
   /// Price bridge managed transfers.
-  /// 
+  ///
   /// Extra accounts:
   /// - bridge registry account
   ///
@@ -1619,7 +1619,7 @@ public final class GlamMintProgram {
   /// - user_stats x 1
   /// - drift_user x N
   /// - markets and oracles used by all drift users (no specific order)
-  /// 
+  ///
   /// Clients must pre-refresh any stale Drift spot market cumulative interest by
   /// prepending Drift `update_spot_market_cumulative_interest` instructions for the
   /// referenced spot markets. Calls will fail with `StaleDriftInterest` if a required
@@ -1654,7 +1654,7 @@ public final class GlamMintProgram {
   /// - user_stats x 1
   /// - drift_user x N
   /// - markets and oracles used by all drift users (no specific order)
-  /// 
+  ///
   /// Clients must pre-refresh any stale Drift spot market cumulative interest by
   /// prepending Drift `update_spot_market_cumulative_interest` instructions for the
   /// referenced spot markets. Calls will fail with `StaleDriftInterest` if a required
@@ -1693,7 +1693,7 @@ public final class GlamMintProgram {
   /// - user_stats x 1
   /// - drift_user x N
   /// - markets and oracles used by all drift users (no specific order)
-  /// 
+  ///
   /// Clients must pre-refresh any stale Drift spot market cumulative interest by
   /// prepending Drift `update_spot_market_cumulative_interest` instructions for the
   /// referenced spot markets. Calls will fail with `StaleDriftInterest` if a required
@@ -1711,10 +1711,10 @@ public final class GlamMintProgram {
   }
 
   /// @param numUsers: u8
-  public record PriceDriftUsersIxData(Discriminator discriminator, int numUsers) implements SerDe {  
+  public record PriceDriftUsersIxData(Discriminator discriminator, int numUsers) implements SerDe {
 
     public static PriceDriftUsersIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 9;
@@ -1752,7 +1752,7 @@ public final class GlamMintProgram {
   /// - spot_market used by drift users of vaults (no specific order)
   /// - perp markets used by drift users of vaults (no specific order)
   /// - oracles of spot markets and perp markets (no specific order)
-  /// 
+  ///
   /// Clients must pre-refresh any stale Drift spot market cumulative interest by
   /// prepending Drift `update_spot_market_cumulative_interest` instructions for the
   /// referenced spot markets. Calls will fail with `StaleDriftInterest` if a required
@@ -1788,7 +1788,7 @@ public final class GlamMintProgram {
   /// - spot_market used by drift users of vaults (no specific order)
   /// - perp markets used by drift users of vaults (no specific order)
   /// - oracles of spot markets and perp markets (no specific order)
-  /// 
+  ///
   /// Clients must pre-refresh any stale Drift spot market cumulative interest by
   /// prepending Drift `update_spot_market_cumulative_interest` instructions for the
   /// referenced spot markets. Calls will fail with `StaleDriftInterest` if a required
@@ -1838,7 +1838,7 @@ public final class GlamMintProgram {
   /// - spot_market used by drift users of vaults (no specific order)
   /// - perp markets used by drift users of vaults (no specific order)
   /// - oracles of spot markets and perp markets (no specific order)
-  /// 
+  ///
   /// Clients must pre-refresh any stale Drift spot market cumulative interest by
   /// prepending Drift `update_spot_market_cumulative_interest` instructions for the
   /// referenced spot markets. Calls will fail with `StaleDriftInterest` if a required
@@ -1869,10 +1869,10 @@ public final class GlamMintProgram {
   public record PriceDriftVaultDepositorsIxData(Discriminator discriminator,
                                                 int numVaultDepositors,
                                                 int numSpotMarkets,
-                                                int numPerpMarkets) implements SerDe {  
+                                                int numPerpMarkets) implements SerDe {
 
     public static PriceDriftVaultDepositorsIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 11;
@@ -1916,10 +1916,10 @@ public final class GlamMintProgram {
   public static final Discriminator PRICE_JUPITER_BORROW_POSITIONS_DISCRIMINATOR = toDiscriminator(55, 251, 33, 55, 80, 17, 18, 154);
 
   /// Prices GLAM-owned Jupiter Borrow Position PDAs tracked in external_positions.
-  /// 
+  ///
   /// Extra accounts for pricing N borrow positions:
   /// - (position, position_token_account, vault_config, vault_state, current_tick, supply_oracle, borrow_oracle) x N
-  /// 
+  ///
   /// Clients should prepend Jupiter Vaults `update_exchange_prices`
   /// instructions for every distinct vault.
   ///
@@ -1949,10 +1949,10 @@ public final class GlamMintProgram {
   }
 
   /// Prices GLAM-owned Jupiter Borrow Position PDAs tracked in external_positions.
-  /// 
+  ///
   /// Extra accounts for pricing N borrow positions:
   /// - (position, position_token_account, vault_config, vault_state, current_tick, supply_oracle, borrow_oracle) x N
-  /// 
+  ///
   /// Clients should prepend Jupiter Vaults `update_exchange_prices`
   /// instructions for every distinct vault.
   ///
@@ -1984,10 +1984,10 @@ public final class GlamMintProgram {
   }
 
   /// Prices GLAM-owned Jupiter Borrow Position PDAs tracked in external_positions.
-  /// 
+  ///
   /// Extra accounts for pricing N borrow positions:
   /// - (position, position_token_account, vault_config, vault_state, current_tick, supply_oracle, borrow_oracle) x N
-  /// 
+  ///
   /// Clients should prepend Jupiter Vaults `update_exchange_prices`
   /// instructions for every distinct vault.
   ///
@@ -1999,10 +1999,10 @@ public final class GlamMintProgram {
   public static final Discriminator PRICE_JUPITER_EARN_POSITIONS_DISCRIMINATOR = toDiscriminator(120, 10, 10, 137, 145, 60, 164, 16);
 
   /// Prices GLAM-owned Jupiter Earn fToken ATAs tracked in external_positions.
-  /// 
+  ///
   /// Extra accounts for pricing N earn positions:
   /// - (f_token_ata, lending, underlying_oracle) x N
-  /// 
+  ///
   /// Clients should prepend Jupiter Lending `update_rate` instructions for
   /// every distinct lending account.
   ///
@@ -2032,10 +2032,10 @@ public final class GlamMintProgram {
   }
 
   /// Prices GLAM-owned Jupiter Earn fToken ATAs tracked in external_positions.
-  /// 
+  ///
   /// Extra accounts for pricing N earn positions:
   /// - (f_token_ata, lending, underlying_oracle) x N
-  /// 
+  ///
   /// Clients should prepend Jupiter Lending `update_rate` instructions for
   /// every distinct lending account.
   ///
@@ -2067,10 +2067,10 @@ public final class GlamMintProgram {
   }
 
   /// Prices GLAM-owned Jupiter Earn fToken ATAs tracked in external_positions.
-  /// 
+  ///
   /// Extra accounts for pricing N earn positions:
   /// - (f_token_ata, lending, underlying_oracle) x N
-  /// 
+  ///
   /// Clients should prepend Jupiter Lending `update_rate` instructions for
   /// every distinct lending account.
   ///
@@ -2082,7 +2082,7 @@ public final class GlamMintProgram {
   public static final Discriminator PRICE_KAMINO_OBLIGATIONS_DISCRIMINATOR = toDiscriminator(166, 110, 234, 179, 240, 179, 69, 246);
 
   /// Prices Kamino obligations. Reserves and obligations must be refreshed in the same slot before calling this ix.
-  /// 
+  ///
   /// Extra accounts for pricing N kamino obligations:
   /// - obligations x N
   ///
@@ -2112,7 +2112,7 @@ public final class GlamMintProgram {
   }
 
   /// Prices Kamino obligations. Reserves and obligations must be refreshed in the same slot before calling this ix.
-  /// 
+  ///
   /// Extra accounts for pricing N kamino obligations:
   /// - obligations x N
   ///
@@ -2144,7 +2144,7 @@ public final class GlamMintProgram {
   }
 
   /// Prices Kamino obligations. Reserves and obligations must be refreshed in the same slot before calling this ix.
-  /// 
+  ///
   /// Extra accounts for pricing N kamino obligations:
   /// - obligations x N
   ///
@@ -2157,7 +2157,7 @@ public final class GlamMintProgram {
 
   /// Prices Kamino vault shares.
   /// - `num_vaults` Number of kamino vaults to price.
-  /// 
+  ///
   /// Extra accounts for pricing N kamino vault shares:
   /// - (kvault_share_ata, kvault_share_mint, kvault_state, kvault_deposit_token_oracle) x N
   /// - reserve x M
@@ -2191,7 +2191,7 @@ public final class GlamMintProgram {
 
   /// Prices Kamino vault shares.
   /// - `num_vaults` Number of kamino vaults to price.
-  /// 
+  ///
   /// Extra accounts for pricing N kamino vault shares:
   /// - (kvault_share_ata, kvault_share_mint, kvault_state, kvault_deposit_token_oracle) x N
   /// - reserve x M
@@ -2229,7 +2229,7 @@ public final class GlamMintProgram {
 
   /// Prices Kamino vault shares.
   /// - `num_vaults` Number of kamino vaults to price.
-  /// 
+  ///
   /// Extra accounts for pricing N kamino vault shares:
   /// - (kvault_share_ata, kvault_share_mint, kvault_state, kvault_deposit_token_oracle) x N
   /// - reserve x M
@@ -2248,10 +2248,10 @@ public final class GlamMintProgram {
   }
 
   /// @param numVaults: u8
-  public record PriceKaminoVaultSharesIxData(Discriminator discriminator, int numVaults) implements SerDe {  
+  public record PriceKaminoVaultSharesIxData(Discriminator discriminator, int numVaults) implements SerDe {
 
     public static PriceKaminoVaultSharesIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 9;
@@ -2285,7 +2285,7 @@ public final class GlamMintProgram {
   public static final Discriminator PRICE_LOOPSCALE_LOANS_DISCRIMINATOR = toDiscriminator(106, 180, 138, 193, 90, 3, 24, 42);
 
   /// Price LoopScale loans for a vault
-  /// 
+  ///
   /// Extra accounts for pricing N loans:
   /// - N loan accounts
   /// - M oracle accounts (one per unique mint used by the loans)
@@ -2316,7 +2316,7 @@ public final class GlamMintProgram {
   }
 
   /// Price LoopScale loans for a vault
-  /// 
+  ///
   /// Extra accounts for pricing N loans:
   /// - N loan accounts
   /// - M oracle accounts (one per unique mint used by the loans)
@@ -2349,7 +2349,7 @@ public final class GlamMintProgram {
   }
 
   /// Price LoopScale loans for a vault
-  /// 
+  ///
   /// Extra accounts for pricing N loans:
   /// - N loan accounts
   /// - M oracle accounts (one per unique mint used by the loans)
@@ -2362,7 +2362,7 @@ public final class GlamMintProgram {
   public static final Discriminator PRICE_LOOPSCALE_STRATEGIES_DISCRIMINATOR = toDiscriminator(169, 52, 25, 11, 96, 138, 10, 174);
 
   /// Price LoopScale strategy accounts for a vault
-  /// 
+  ///
   /// Extra accounts for pricing N strategies:
   /// - N strategy accounts
   /// - M oracle accounts (one per unique principal mint used by the strategies)
@@ -2393,7 +2393,7 @@ public final class GlamMintProgram {
   }
 
   /// Price LoopScale strategy accounts for a vault
-  /// 
+  ///
   /// Extra accounts for pricing N strategies:
   /// - N strategy accounts
   /// - M oracle accounts (one per unique principal mint used by the strategies)
@@ -2426,7 +2426,7 @@ public final class GlamMintProgram {
   }
 
   /// Price LoopScale strategy accounts for a vault
-  /// 
+  ///
   /// Extra accounts for pricing N strategies:
   /// - N strategy accounts
   /// - M oracle accounts (one per unique principal mint used by the strategies)
@@ -2439,7 +2439,7 @@ public final class GlamMintProgram {
   public static final Discriminator PRICE_LOOPSCALE_VAULT_POSITIONS_DISCRIMINATOR = toDiscriminator(98, 229, 99, 154, 94, 139, 124, 220);
 
   /// Price LoopScale vault LP positions registered to a GLAM vault.
-  /// 
+  ///
   /// Extra accounts for pricing N Loopscale vaults with tracked LP or stake positions:
   /// - (loopscale_vault, loopscale_vault_strategy, glam_vault_lp_ata) x N
   /// - M VaultStake accounts registered as external positions
@@ -2471,7 +2471,7 @@ public final class GlamMintProgram {
   }
 
   /// Price LoopScale vault LP positions registered to a GLAM vault.
-  /// 
+  ///
   /// Extra accounts for pricing N Loopscale vaults with tracked LP or stake positions:
   /// - (loopscale_vault, loopscale_vault_strategy, glam_vault_lp_ata) x N
   /// - M VaultStake accounts registered as external positions
@@ -2507,7 +2507,7 @@ public final class GlamMintProgram {
   }
 
   /// Price LoopScale vault LP positions registered to a GLAM vault.
-  /// 
+  ///
   /// Extra accounts for pricing N Loopscale vaults with tracked LP or stake positions:
   /// - (loopscale_vault, loopscale_vault_strategy, glam_vault_lp_ata) x N
   /// - M VaultStake accounts registered as external positions
@@ -2525,10 +2525,10 @@ public final class GlamMintProgram {
   }
 
   /// @param numVaults: u8
-  public record PriceLoopscaleVaultPositionsIxData(Discriminator discriminator, int numVaults) implements SerDe {  
+  public record PriceLoopscaleVaultPositionsIxData(Discriminator discriminator, int numVaults) implements SerDe {
 
     public static PriceLoopscaleVaultPositionsIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 9;
@@ -2562,10 +2562,10 @@ public final class GlamMintProgram {
   public static final Discriminator PRICE_MARGINFI_ACCOUNTS_DISCRIMINATOR = toDiscriminator(146, 215, 180, 231, 191, 188, 42, 235);
 
   /// Prices Marginfi accounts registered as vault external positions.
-  /// 
+  ///
   /// Clients must refresh active banks and call Marginfi `lending_account_pulse_health`
   /// in the same transaction before this ix.
-  /// 
+  ///
   /// Extra accounts for pricing N Marginfi accounts:
   /// - marginfi_account x N
   ///
@@ -2595,10 +2595,10 @@ public final class GlamMintProgram {
   }
 
   /// Prices Marginfi accounts registered as vault external positions.
-  /// 
+  ///
   /// Clients must refresh active banks and call Marginfi `lending_account_pulse_health`
   /// in the same transaction before this ix.
-  /// 
+  ///
   /// Extra accounts for pricing N Marginfi accounts:
   /// - marginfi_account x N
   ///
@@ -2630,10 +2630,10 @@ public final class GlamMintProgram {
   }
 
   /// Prices Marginfi accounts registered as vault external positions.
-  /// 
+  ///
   /// Clients must refresh active banks and call Marginfi `lending_account_pulse_health`
   /// in the same transaction before this ix.
-  /// 
+  ///
   /// Extra accounts for pricing N Marginfi accounts:
   /// - marginfi_account x N
   ///
@@ -2645,7 +2645,7 @@ public final class GlamMintProgram {
   public static final Discriminator PRICE_NEUTRAL_BUNDLE_DEPOSITORS_DISCRIMINATOR = toDiscriminator(202, 93, 205, 29, 37, 180, 127, 102);
 
   /// Price neutral bundle depositors
-  /// 
+  ///
   /// Remaining accounts:
   /// - 4 * N neutral bundle depositor account tuples:
   /// 1. User bundle account
@@ -2679,7 +2679,7 @@ public final class GlamMintProgram {
   }
 
   /// Price neutral bundle depositors
-  /// 
+  ///
   /// Remaining accounts:
   /// - 4 * N neutral bundle depositor account tuples:
   /// 1. User bundle account
@@ -2715,7 +2715,7 @@ public final class GlamMintProgram {
   }
 
   /// Price neutral bundle depositors
-  /// 
+  ///
   /// Remaining accounts:
   /// - 4 * N neutral bundle depositor account tuples:
   /// 1. User bundle account
@@ -2731,7 +2731,7 @@ public final class GlamMintProgram {
   public static final Discriminator PRICE_ORCA_WHIRLPOOL_POSITIONS_DISCRIMINATOR = toDiscriminator(3, 81, 117, 34, 5, 238, 158, 232);
 
   /// Prices Orca Whirlpools positions registered as vault external positions.
-  /// 
+  ///
   /// Remaining accounts for each position:
   /// - position
   /// - position_token_account
@@ -2770,7 +2770,7 @@ public final class GlamMintProgram {
   }
 
   /// Prices Orca Whirlpools positions registered as vault external positions.
-  /// 
+  ///
   /// Remaining accounts for each position:
   /// - position
   /// - position_token_account
@@ -2813,7 +2813,7 @@ public final class GlamMintProgram {
   }
 
   /// Prices Orca Whirlpools positions registered as vault external positions.
-  /// 
+  ///
   /// Remaining accounts for each position:
   /// - position
   /// - position_token_account
@@ -2838,10 +2838,10 @@ public final class GlamMintProgram {
   }
 
   /// @param numPositions: u8
-  public record PriceOrcaWhirlpoolPositionsIxData(Discriminator discriminator, int numPositions) implements SerDe {  
+  public record PriceOrcaWhirlpoolPositionsIxData(Discriminator discriminator, int numPositions) implements SerDe {
 
     public static PriceOrcaWhirlpoolPositionsIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 9;
@@ -2875,13 +2875,13 @@ public final class GlamMintProgram {
   public static final Discriminator PRICE_PHOENIX_TRADERS_DISCRIMINATOR = toDiscriminator(112, 90, 177, 46, 145, 191, 219, 213);
 
   /// Price Phoenix trader accounts registered as vault external positions.
-  /// 
+  ///
   /// Remaining accounts:
   /// - Phoenix global configuration
   /// - Phoenix perp asset map
   /// - Phoenix trader accounts x N
   /// - optional USDC oracle when the GLAM base asset is not USDC
-  /// 
+  ///
   /// Prices portfolio NAV as collateral plus unrealized PnL from Phoenix's
   /// cached positions and mark prices. Clients should prepend Phoenix
   /// `update_trader_state` before this instruction when trader state may be stale.
@@ -2912,13 +2912,13 @@ public final class GlamMintProgram {
   }
 
   /// Price Phoenix trader accounts registered as vault external positions.
-  /// 
+  ///
   /// Remaining accounts:
   /// - Phoenix global configuration
   /// - Phoenix perp asset map
   /// - Phoenix trader accounts x N
   /// - optional USDC oracle when the GLAM base asset is not USDC
-  /// 
+  ///
   /// Prices portfolio NAV as collateral plus unrealized PnL from Phoenix's
   /// cached positions and mark prices. Clients should prepend Phoenix
   /// `update_trader_state` before this instruction when trader state may be stale.
@@ -2951,13 +2951,13 @@ public final class GlamMintProgram {
   }
 
   /// Price Phoenix trader accounts registered as vault external positions.
-  /// 
+  ///
   /// Remaining accounts:
   /// - Phoenix global configuration
   /// - Phoenix perp asset map
   /// - Phoenix trader accounts x N
   /// - optional USDC oracle when the GLAM base asset is not USDC
-  /// 
+  ///
   /// Prices portfolio NAV as collateral plus unrealized PnL from Phoenix's
   /// cached positions and mark prices. Clients should prepend Phoenix
   /// `update_trader_state` before this instruction when trader state may be stale.
@@ -3139,11 +3139,11 @@ public final class GlamMintProgram {
   public static final Discriminator PRICE_VAULT_TOKENS_DISCRIMINATOR = toDiscriminator(54, 42, 16, 199, 20, 183, 50, 137);
 
   /// Prices vault SOL balance and tokens it holds.
-  /// 
+  ///
   /// Args:
   /// - `denom`: Denomination of the price.
   /// - `agg_indexes`: Indexes of the aggregation oracles for the tokens (must follow the same order of mints in extra accounts). If aggregation oracle is not used for token #`i`, `agg_indexesi` should be set to -1.
-  /// 
+  ///
   /// Extra accounts for pricing N tokens:
   /// - (ata, mint, oracle) x N
   /// - optional oracle mapping (only add it if any token uses an agg oracle)
@@ -3174,11 +3174,11 @@ public final class GlamMintProgram {
   }
 
   /// Prices vault SOL balance and tokens it holds.
-  /// 
+  ///
   /// Args:
   /// - `denom`: Denomination of the price.
   /// - `agg_indexes`: Indexes of the aggregation oracles for the tokens (must follow the same order of mints in extra accounts). If aggregation oracle is not used for token #`i`, `agg_indexesi` should be set to -1.
-  /// 
+  ///
   /// Extra accounts for pricing N tokens:
   /// - (ata, mint, oracle) x N
   /// - optional oracle mapping (only add it if any token uses an agg oracle)
@@ -3212,11 +3212,11 @@ public final class GlamMintProgram {
   }
 
   /// Prices vault SOL balance and tokens it holds.
-  /// 
+  ///
   /// Args:
   /// - `denom`: Denomination of the price.
   /// - `agg_indexes`: Indexes of the aggregation oracles for the tokens (must follow the same order of mints in extra accounts). If aggregation oracle is not used for token #`i`, `agg_indexesi` should be set to -1.
-  /// 
+  ///
   /// Extra accounts for pricing N tokens:
   /// - (ata, mint, oracle) x N
   /// - optional oracle mapping (only add it if any token uses an agg oracle)
@@ -3231,10 +3231,10 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record PriceVaultTokensIxData(Discriminator discriminator, short[][] aggIndexes) implements SerDe {  
+  public record PriceVaultTokensIxData(Discriminator discriminator, short[][] aggIndexes) implements SerDe {
 
     public static PriceVaultTokensIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int AGG_INDEXES_OFFSET = 8;
@@ -3325,10 +3325,10 @@ public final class GlamMintProgram {
   }
 
   /// @param amountIn: u64
-  public record QueuedRedeemIxData(Discriminator discriminator, long amountIn) implements SerDe {  
+  public record QueuedRedeemIxData(Discriminator discriminator, long amountIn) implements SerDe {
 
     public static QueuedRedeemIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -3426,10 +3426,10 @@ public final class GlamMintProgram {
   }
 
   /// @param amountIn: u64
-  public record QueuedSubscribeIxData(Discriminator discriminator, long amountIn) implements SerDe {  
+  public record QueuedSubscribeIxData(Discriminator discriminator, long amountIn) implements SerDe {
 
     public static QueuedSubscribeIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -3495,10 +3495,10 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record SetMintPolicyIxData(Discriminator discriminator, MintPolicy policy) implements SerDe {  
+  public record SetMintPolicyIxData(Discriminator discriminator, MintPolicy policy) implements SerDe {
 
     public static SetMintPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;
@@ -3579,10 +3579,10 @@ public final class GlamMintProgram {
 
   /// @param baseFeeBps: u16
   /// @param flowFeeBps: u16
-  public record SetProtocolFeesIxData(Discriminator discriminator, int baseFeeBps, int flowFeeBps) implements SerDe {  
+  public record SetProtocolFeesIxData(Discriminator discriminator, int baseFeeBps, int flowFeeBps) implements SerDe {
 
     public static SetProtocolFeesIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 12;
@@ -3657,10 +3657,10 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record SetTokenAccountsStatesIxData(Discriminator discriminator, boolean frozen) implements SerDe {  
+  public record SetTokenAccountsStatesIxData(Discriminator discriminator, boolean frozen) implements SerDe {
 
     public static SetTokenAccountsStatesIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 9;
@@ -3788,10 +3788,10 @@ public final class GlamMintProgram {
   }
 
   /// @param amountIn: u64
-  public record SubscribeIxData(Discriminator discriminator, long amountIn) implements SerDe {  
+  public record SubscribeIxData(Discriminator discriminator, long amountIn) implements SerDe {
 
     public static SubscribeIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -3929,10 +3929,10 @@ public final class GlamMintProgram {
 
   /// @param amountIn: u64
   /// @param refNav: Option<i128>
-  public record SubscribeWithRefNavIxData(Discriminator discriminator, long amountIn, BigInteger refNav) implements SerDe {  
+  public record SubscribeWithRefNavIxData(Discriminator discriminator, long amountIn, BigInteger refNav) implements SerDe {
 
     public static SubscribeWithRefNavIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int AMOUNT_IN_OFFSET = 8;
@@ -4108,10 +4108,10 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
   }
 
-  public record UpdateMintIxData(Discriminator discriminator, MintModel mintModel) implements SerDe {  
+  public record UpdateMintIxData(Discriminator discriminator, MintModel mintModel) implements SerDe {
 
     public static UpdateMintIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int MINT_MODEL_OFFSET = 8;

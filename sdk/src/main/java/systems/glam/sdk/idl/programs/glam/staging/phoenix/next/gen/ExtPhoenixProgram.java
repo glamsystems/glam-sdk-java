@@ -139,10 +139,10 @@ public final class ExtPhoenixProgram {
     return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
   }
 
-  public record CancelOrdersByIdIxData(Discriminator discriminator, OrderIds orderIds) implements SerDe {  
+  public record CancelOrdersByIdIxData(Discriminator discriminator, OrderIds orderIds) implements SerDe {
 
     public static CancelOrdersByIdIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int ORDER_IDS_OFFSET = 8;
@@ -227,10 +227,10 @@ public final class ExtPhoenixProgram {
     return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
   }
 
-  public record CancelUpToIxData(Discriminator discriminator, CancelUpToInstruction args) implements SerDe {  
+  public record CancelUpToIxData(Discriminator discriminator, CancelUpToInstruction args) implements SerDe {
 
     public static CancelUpToIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int ARGS_OFFSET = 8;
@@ -343,10 +343,10 @@ public final class ExtPhoenixProgram {
     return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
   }
 
-  public record DepositIxData(Discriminator discriminator, DepositParams depositParams) implements SerDe {  
+  public record DepositIxData(Discriminator discriminator, DepositParams depositParams) implements SerDe {
 
     public static DepositIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -433,10 +433,10 @@ public final class ExtPhoenixProgram {
     return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
   }
 
-  public record DepositFundsIxData(Discriminator discriminator, DepositFundsInstruction params) implements SerDe {  
+  public record DepositFundsIxData(Discriminator discriminator, DepositFundsInstruction params) implements SerDe {
 
     public static DepositFundsIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -523,10 +523,10 @@ public final class ExtPhoenixProgram {
     return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
   }
 
-  public record PlaceLimitOrderIxData(Discriminator discriminator, OrderPacket packet) implements SerDe {  
+  public record PlaceLimitOrderIxData(Discriminator discriminator, OrderPacket packet) implements SerDe {
 
     public static PlaceLimitOrderIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int PACKET_OFFSET = 8;
@@ -611,10 +611,10 @@ public final class ExtPhoenixProgram {
     return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
   }
 
-  public record PlaceMarketOrderIxData(Discriminator discriminator, OrderPacket packet) implements SerDe {  
+  public record PlaceMarketOrderIxData(Discriminator discriminator, OrderPacket packet) implements SerDe {
 
     public static PlaceMarketOrderIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int PACKET_OFFSET = 8;
@@ -699,10 +699,10 @@ public final class ExtPhoenixProgram {
     return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
   }
 
-  public record PlaceMultiLimitOrderIxData(Discriminator discriminator, MultipleOrderPacket packet) implements SerDe {  
+  public record PlaceMultiLimitOrderIxData(Discriminator discriminator, MultipleOrderPacket packet) implements SerDe {
 
     public static PlaceMultiLimitOrderIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int PACKET_OFFSET = 8;
@@ -799,10 +799,10 @@ public final class ExtPhoenixProgram {
     return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
   }
 
-  public record RegisterTraderIxData(Discriminator discriminator, RegisterTraderParams args) implements SerDe {  
+  public record RegisterTraderIxData(Discriminator discriminator, RegisterTraderParams args) implements SerDe {
 
     public static RegisterTraderIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 18;
@@ -873,10 +873,10 @@ public final class ExtPhoenixProgram {
     return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
   }
 
-  public record SetPhoenixPolicyIxData(Discriminator discriminator, PhoenixPolicy policy) implements SerDe {  
+  public record SetPhoenixPolicyIxData(Discriminator discriminator, PhoenixPolicy policy) implements SerDe {
 
     public static SetPhoenixPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;
@@ -1012,10 +1012,10 @@ public final class ExtPhoenixProgram {
     return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
   }
 
-  public record TransferCollateralIxData(Discriminator discriminator, TransferCollateralInstruction params) implements SerDe {  
+  public record TransferCollateralIxData(Discriminator discriminator, TransferCollateralInstruction params) implements SerDe {
 
     public static TransferCollateralIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -1102,10 +1102,10 @@ public final class ExtPhoenixProgram {
     return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
   }
 
-  public record TransferCollateralChildToParentIxData(Discriminator discriminator, TransferCollateralChildToParentInstruction params) implements SerDe {  
+  public record TransferCollateralChildToParentIxData(Discriminator discriminator, TransferCollateralChildToParentInstruction params) implements SerDe {
 
     public static TransferCollateralChildToParentIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -1271,10 +1271,10 @@ public final class ExtPhoenixProgram {
     return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
   }
 
-  public record WithdrawIxData(Discriminator discriminator, WithdrawParams withdrawParams) implements SerDe {  
+  public record WithdrawIxData(Discriminator discriminator, WithdrawParams withdrawParams) implements SerDe {
 
     public static WithdrawIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int WITHDRAW_PARAMS_OFFSET = 8;
@@ -1359,10 +1359,10 @@ public final class ExtPhoenixProgram {
     return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
   }
 
-  public record WithdrawFundsIxData(Discriminator discriminator, WithdrawFundsInstruction params) implements SerDe {  
+  public record WithdrawFundsIxData(Discriminator discriminator, WithdrawFundsInstruction params) implements SerDe {
 
     public static WithdrawFundsIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;

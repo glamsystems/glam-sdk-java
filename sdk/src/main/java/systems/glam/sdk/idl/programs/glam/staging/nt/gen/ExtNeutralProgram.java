@@ -29,7 +29,7 @@ public final class ExtNeutralProgram {
   public static final Discriminator CLOSE_USER_BUNDLE_ACCOUNT_DISCRIMINATOR = toDiscriminator(201, 195, 126, 228, 9, 173, 79, 215);
 
   /// Close an empty Neutral user bundle account and remove it from GLAM external positions.
-  /// 
+  ///
   /// - Permission: `CloseUserBundleAccount`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
   ///
@@ -56,7 +56,7 @@ public final class ExtNeutralProgram {
   }
 
   /// Close an empty Neutral user bundle account and remove it from GLAM external positions.
-  /// 
+  ///
   /// - Permission: `CloseUserBundleAccount`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
   ///
@@ -85,7 +85,7 @@ public final class ExtNeutralProgram {
   }
 
   /// Close an empty Neutral user bundle account and remove it from GLAM external positions.
-  /// 
+  ///
   /// - Permission: `CloseUserBundleAccount`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
   ///
@@ -97,7 +97,7 @@ public final class ExtNeutralProgram {
   public static final Discriminator INITIALIZE_BUNDLE_DEPOSITOR_DISCRIMINATOR = toDiscriminator(126, 6, 242, 36, 22, 209, 35, 2);
 
   /// Initialize a non-permissioned Neutral user bundle account for the GLAM vault.
-  /// 
+  ///
   /// - Permission: `InitializeBundleDepositor`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
   ///
@@ -124,7 +124,7 @@ public final class ExtNeutralProgram {
   }
 
   /// Initialize a non-permissioned Neutral user bundle account for the GLAM vault.
-  /// 
+  ///
   /// - Permission: `InitializeBundleDepositor`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
   ///
@@ -153,7 +153,7 @@ public final class ExtNeutralProgram {
   }
 
   /// Initialize a non-permissioned Neutral user bundle account for the GLAM vault.
-  /// 
+  ///
   /// - Permission: `InitializeBundleDepositor`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
   ///
@@ -165,7 +165,7 @@ public final class ExtNeutralProgram {
   public static final Discriminator REQUEST_DEPOSIT_DISCRIMINATOR = toDiscriminator(243, 202, 197, 215, 135, 97, 213, 109);
 
   /// Request a Neutral bundle deposit from the GLAM vault's token account.
-  /// 
+  ///
   /// - Permission: `RequestDeposit`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
   ///
@@ -208,7 +208,7 @@ public final class ExtNeutralProgram {
   }
 
   /// Request a Neutral bundle deposit from the GLAM vault's token account.
-  /// 
+  ///
   /// - Permission: `RequestDeposit`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
   ///
@@ -255,7 +255,7 @@ public final class ExtNeutralProgram {
   }
 
   /// Request a Neutral bundle deposit from the GLAM vault's token account.
-  /// 
+  ///
   /// - Permission: `RequestDeposit`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
   ///
@@ -271,10 +271,10 @@ public final class ExtNeutralProgram {
   }
 
   /// @param amount: u64
-  public record RequestDepositIxData(Discriminator discriminator, long amount) implements SerDe {  
+  public record RequestDepositIxData(Discriminator discriminator, long amount) implements SerDe {
 
     public static RequestDepositIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -308,7 +308,7 @@ public final class ExtNeutralProgram {
   public static final Discriminator REQUEST_WITHDRAWAL_DISCRIMINATOR = toDiscriminator(251, 85, 121, 205, 56, 201, 12, 177);
 
   /// Request a Neutral bundle withdrawal for the GLAM vault.
-  /// 
+  ///
   /// - Permission: `RequestWithdrawal`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
   ///
@@ -342,7 +342,7 @@ public final class ExtNeutralProgram {
   }
 
   /// Request a Neutral bundle withdrawal for the GLAM vault.
-  /// 
+  ///
   /// - Permission: `RequestWithdrawal`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
   ///
@@ -380,7 +380,7 @@ public final class ExtNeutralProgram {
   }
 
   /// Request a Neutral bundle withdrawal for the GLAM vault.
-  /// 
+  ///
   /// - Permission: `RequestWithdrawal`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
   ///
@@ -399,10 +399,10 @@ public final class ExtNeutralProgram {
   }
 
   /// @param minEstimatedValue: u64
-  public record RequestWithdrawalIxData(Discriminator discriminator, BigInteger sharesAmount, long minEstimatedValue) implements SerDe {  
+  public record RequestWithdrawalIxData(Discriminator discriminator, BigInteger sharesAmount, long minEstimatedValue) implements SerDe {
 
     public static RequestWithdrawalIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 32;
@@ -479,10 +479,10 @@ public final class ExtNeutralProgram {
     return Instruction.createInstruction(invokedExtNeutralProgramMeta, keys, _data);
   }
 
-  public record SetNeutralPolicyIxData(Discriminator discriminator, NeutralPolicy policy) implements SerDe {  
+  public record SetNeutralPolicyIxData(Discriminator discriminator, NeutralPolicy policy) implements SerDe {
 
     public static SetNeutralPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;

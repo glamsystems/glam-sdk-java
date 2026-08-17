@@ -48,11 +48,11 @@ public record NotifyAndSettle(ValuationModel model,
     }
     int i = _offset;
     final var model = ValuationModel.read(_data, i);
-    i += model.l();
+    i += 1;
     final var permissionlessFulfillment = _data[i] == 1;
     ++i;
     final var subscribeNoticePeriodType = NoticePeriodType.read(_data, i);
-    i += subscribeNoticePeriodType.l();
+    i += 1;
     final var subscribeNoticePeriod = getInt64LE(_data, i);
     i += 8;
     final var subscribeSettlementPeriod = getInt64LE(_data, i);
@@ -60,7 +60,7 @@ public record NotifyAndSettle(ValuationModel model,
     final var subscribeCancellationWindow = getInt64LE(_data, i);
     i += 8;
     final var redeemNoticePeriodType = NoticePeriodType.read(_data, i);
-    i += redeemNoticePeriodType.l();
+    i += 1;
     final var redeemNoticePeriod = getInt64LE(_data, i);
     i += 8;
     final var redeemSettlementPeriod = getInt64LE(_data, i);
@@ -68,7 +68,7 @@ public record NotifyAndSettle(ValuationModel model,
     final var redeemCancellationWindow = getInt64LE(_data, i);
     i += 8;
     final var timeUnit = TimeUnit.read(_data, i);
-    i += timeUnit.l();
+    i += 1;
     final var padding = new byte[3];
     SerDeUtil.readArray(padding, _data, i);
     return new NotifyAndSettle(model,

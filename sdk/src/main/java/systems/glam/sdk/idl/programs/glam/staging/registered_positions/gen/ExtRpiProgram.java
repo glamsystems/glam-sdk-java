@@ -87,10 +87,10 @@ public final class ExtRpiProgram {
     return Instruction.createInstruction(invokedExtRpiProgramMeta, keys, _data);
   }
 
-  public record RemoveRegisteredPositionIxData(Discriminator discriminator, byte[] positionId) implements SerDe {  
+  public record RemoveRegisteredPositionIxData(Discriminator discriminator, byte[] positionId) implements SerDe {
 
     public static RemoveRegisteredPositionIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 40;
@@ -166,10 +166,10 @@ public final class ExtRpiProgram {
     return Instruction.createInstruction(invokedExtRpiProgramMeta, keys, _data);
   }
 
-  public record SubmitObservationIxData(Discriminator discriminator, PositionObservationInput input) implements SerDe {  
+  public record SubmitObservationIxData(Discriminator discriminator, PositionObservationInput input) implements SerDe {
 
     public static SubmitObservationIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 233;
@@ -281,10 +281,10 @@ public final class ExtRpiProgram {
   public record SubmitObservationWormholeIxData(Discriminator discriminator,
                                                 byte[] positionId,
                                                 int guardianSetBump,
-                                                byte[] vaaBody) implements SerDe {  
+                                                byte[] vaaBody) implements SerDe {
 
     public static SubmitObservationWormholeIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POSITION_ID_LEN = 32;
@@ -382,10 +382,10 @@ public final class ExtRpiProgram {
     return Instruction.createInstruction(invokedExtRpiProgramMeta, keys, _data);
   }
 
-  public record UpsertRegisteredPositionIxData(Discriminator discriminator, PositionConfig config) implements SerDe {  
+  public record UpsertRegisteredPositionIxData(Discriminator discriminator, PositionConfig config) implements SerDe {
 
     public static UpsertRegisteredPositionIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int CONFIG_OFFSET = 8;
@@ -461,10 +461,10 @@ public final class ExtRpiProgram {
     return Instruction.createInstruction(invokedExtRpiProgramMeta, keys, _data);
   }
 
-  public record UpsertRegisteredPositionWormholeConfigIxData(Discriminator discriminator, WormholeObservationConfigInput input) implements SerDe {  
+  public record UpsertRegisteredPositionWormholeConfigIxData(Discriminator discriminator, WormholeObservationConfigInput input) implements SerDe {
 
     public static UpsertRegisteredPositionWormholeConfigIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 80;
@@ -546,10 +546,10 @@ public final class ExtRpiProgram {
     return Instruction.createInstruction(invokedExtRpiProgramMeta, keys, _data);
   }
 
-  public record UpsertRegisteredPositionWormholeHyperliquidConfigIxData(Discriminator discriminator, WormholeHyperliquidObservationConfigInput input) implements SerDe {  
+  public record UpsertRegisteredPositionWormholeHyperliquidConfigIxData(Discriminator discriminator, WormholeHyperliquidObservationConfigInput input) implements SerDe {
 
     public static UpsertRegisteredPositionWormholeHyperliquidConfigIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 112;
@@ -582,7 +582,7 @@ public final class ExtRpiProgram {
   public static final Discriminator VALIDATE_OBSERVATION_DISCRIMINATOR = toDiscriminator(134, 150, 250, 52, 188, 156, 130, 122);
 
   /// Validate a pending observation and promote it to active.
-  /// 
+  ///
   /// Remaining accounts:
   /// - `remaining_accounts0` is required when the pending observation
   /// denomination is a non-base mint; it must be the observed mint oracle
@@ -609,7 +609,7 @@ public final class ExtRpiProgram {
   }
 
   /// Validate a pending observation and promote it to active.
-  /// 
+  ///
   /// Remaining accounts:
   /// - `remaining_accounts0` is required when the pending observation
   /// denomination is a non-base mint; it must be the observed mint oracle
@@ -639,7 +639,7 @@ public final class ExtRpiProgram {
   }
 
   /// Validate a pending observation and promote it to active.
-  /// 
+  ///
   /// Remaining accounts:
   /// - `remaining_accounts0` is required when the pending observation
   /// denomination is a non-base mint; it must be the observed mint oracle
@@ -655,10 +655,10 @@ public final class ExtRpiProgram {
     return Instruction.createInstruction(invokedExtRpiProgramMeta, keys, _data);
   }
 
-  public record ValidateObservationIxData(Discriminator discriminator, byte[] positionId) implements SerDe {  
+  public record ValidateObservationIxData(Discriminator discriminator, byte[] positionId) implements SerDe {
 
     public static ValidateObservationIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 40;

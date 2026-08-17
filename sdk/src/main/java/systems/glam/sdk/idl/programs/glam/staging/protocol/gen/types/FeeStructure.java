@@ -23,13 +23,13 @@ public record FeeStructure(EntryExitFees vault,
     }
     int i = _offset;
     final var vault = EntryExitFees.read(_data, i);
-    i += vault.l();
+    i += 4;
     final var manager = EntryExitFees.read(_data, i);
-    i += manager.l();
+    i += 4;
     final var management = ManagementFee.read(_data, i);
-    i += management.l();
+    i += 2;
     final var performance = PerformanceFee.read(_data, i);
-    i += performance.l();
+    i += 5;
     final var protocol = ProtocolFees.read(_data, i);
     return new FeeStructure(vault,
                             manager,

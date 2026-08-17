@@ -25,7 +25,7 @@ public record ExtraParams(ActionType actionType,
     }
     int i = _offset;
     final var actionType = ActionType.read(_data, i);
-    i += actionType.l();
+    i += 1;
     final var pubkey = readPubKey(_data, i);
     i += 32;
     final OptionalLong amount;

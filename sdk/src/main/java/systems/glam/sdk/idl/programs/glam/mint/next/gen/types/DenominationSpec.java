@@ -23,7 +23,7 @@ public record DenominationSpec(Denomination denom, PublicKey mint) implements Se
     }
     int i = _offset;
     final var denom = Denomination.read(_data, i);
-    i += denom.l();
+    i += 1;
     final var mint = readPubKey(_data, i);
     return new DenominationSpec(denom, mint);
   }

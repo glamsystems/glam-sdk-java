@@ -63,10 +63,10 @@ public final class ExtExponentProgram {
     return Instruction.createInstruction(invokedExtExponentProgramMeta, keys, _data);
   }
 
-  public record SetExponentPolicyIxData(Discriminator discriminator, ExponentPolicy policy) implements SerDe {  
+  public record SetExponentPolicyIxData(Discriminator discriminator, ExponentPolicy policy) implements SerDe {
 
     public static SetExponentPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;
@@ -98,11 +98,11 @@ public final class ExtExponentProgram {
 
   /// Buy Exponent PT from an allowlisted Exponent market using the
   /// wrapper-compatible path.
-  /// 
+  ///
   /// This mints up to `max_base_amount` into SY first, then trades PT with the
   /// minted SY amount as the spend limit. Any unspent SY remains in the GLAM
   /// vault's SY token account.
-  /// 
+  ///
   /// - Permission: `BuyPt`.
   /// - Policy: the market must be in `markets_allowlist`.
   ///
@@ -146,11 +146,11 @@ public final class ExtExponentProgram {
 
   /// Buy Exponent PT from an allowlisted Exponent market using the
   /// wrapper-compatible path.
-  /// 
+  ///
   /// This mints up to `max_base_amount` into SY first, then trades PT with the
   /// minted SY amount as the spend limit. Any unspent SY remains in the GLAM
   /// vault's SY token account.
-  /// 
+  ///
   /// - Permission: `BuyPt`.
   /// - Policy: the market must be in `markets_allowlist`.
   ///
@@ -208,11 +208,11 @@ public final class ExtExponentProgram {
 
   /// Buy Exponent PT from an allowlisted Exponent market using the
   /// wrapper-compatible path.
-  /// 
+  ///
   /// This mints up to `max_base_amount` into SY first, then trades PT with the
   /// minted SY amount as the spend limit. Any unspent SY remains in the GLAM
   /// vault's SY token account.
-  /// 
+  ///
   /// - Permission: `BuyPt`.
   /// - Policy: the market must be in `markets_allowlist`.
   ///
@@ -241,10 +241,10 @@ public final class ExtExponentProgram {
   public record WrapperBuyPtIxData(Discriminator discriminator,
                                    long ptAmount,
                                    long maxBaseAmount,
-                                   int mintSyRemAccountsUntil) implements SerDe {  
+                                   int mintSyRemAccountsUntil) implements SerDe {
 
     public static WrapperBuyPtIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 25;
@@ -289,7 +289,7 @@ public final class ExtExponentProgram {
 
   /// Merge Exponent PT and YT into SY, then redeem the resulting SY into base
   /// asset using the wrapper-compatible path.
-  /// 
+  ///
   /// - Permission: `Merge`.
   /// - Policy: the vault must be in `vaults_allowlist`.
   ///
@@ -339,7 +339,7 @@ public final class ExtExponentProgram {
 
   /// Merge Exponent PT and YT into SY, then redeem the resulting SY into base
   /// asset using the wrapper-compatible path.
-  /// 
+  ///
   /// - Permission: `Merge`.
   /// - Policy: the vault must be in `vaults_allowlist`.
   ///
@@ -395,7 +395,7 @@ public final class ExtExponentProgram {
 
   /// Merge Exponent PT and YT into SY, then redeem the resulting SY into base
   /// asset using the wrapper-compatible path.
-  /// 
+  ///
   /// - Permission: `Merge`.
   /// - Policy: the vault must be in `vaults_allowlist`.
   ///
@@ -416,10 +416,10 @@ public final class ExtExponentProgram {
 
   /// @param amountPy: u64
   /// @param redeemSyAccountsUntil: u8
-  public record WrapperMergeIxData(Discriminator discriminator, long amountPy, int redeemSyAccountsUntil) implements SerDe {  
+  public record WrapperMergeIxData(Discriminator discriminator, long amountPy, int redeemSyAccountsUntil) implements SerDe {
 
     public static WrapperMergeIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 17;
@@ -459,7 +459,7 @@ public final class ExtExponentProgram {
 
   /// Sell Exponent PT into an allowlisted Exponent market using the
   /// wrapper-compatible path.
-  /// 
+  ///
   /// - Permission: `SellPt`.
   /// - Policy: the market must be in `markets_allowlist`.
   ///
@@ -503,7 +503,7 @@ public final class ExtExponentProgram {
 
   /// Sell Exponent PT into an allowlisted Exponent market using the
   /// wrapper-compatible path.
-  /// 
+  ///
   /// - Permission: `SellPt`.
   /// - Policy: the market must be in `markets_allowlist`.
   ///
@@ -561,7 +561,7 @@ public final class ExtExponentProgram {
 
   /// Sell Exponent PT into an allowlisted Exponent market using the
   /// wrapper-compatible path.
-  /// 
+  ///
   /// - Permission: `SellPt`.
   /// - Policy: the market must be in `markets_allowlist`.
   ///
@@ -590,10 +590,10 @@ public final class ExtExponentProgram {
   public record WrapperSellPtIxData(Discriminator discriminator,
                                     long amountPt,
                                     long minBaseAmount,
-                                    int redeemSyRemAccountsUntil) implements SerDe {  
+                                    int redeemSyRemAccountsUntil) implements SerDe {
 
     public static WrapperSellPtIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 25;

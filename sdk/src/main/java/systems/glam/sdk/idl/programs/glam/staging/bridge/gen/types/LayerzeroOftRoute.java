@@ -47,7 +47,7 @@ public record LayerzeroOftRoute(PublicKey sourceMint,
     final var providerProgram = readPubKey(_data, i);
     i += 32;
     final var managementMode = RouteManagementMode.read(_data, i);
-    i += managementMode.l();
+    i += 1;
     final var minAmount = getInt64LE(_data, i);
     i += 8;
     final var maxAmount = getInt64LE(_data, i);

@@ -114,10 +114,10 @@ public final class ExtStakePoolProgram {
 
   /// @param lamportsIn: u64
   /// @param minimumPoolTokensOut: Option<u64>
-  public record DepositSolIxData(Discriminator discriminator, long lamportsIn, OptionalLong minimumPoolTokensOut) implements SerDe {  
+  public record DepositSolIxData(Discriminator discriminator, long lamportsIn, OptionalLong minimumPoolTokensOut) implements SerDe {
 
     public static DepositSolIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int LAMPORTS_IN_OFFSET = 8;
@@ -260,10 +260,10 @@ public final class ExtStakePoolProgram {
   }
 
   /// @param minimumPoolTokensOut: Option<u64>
-  public record DepositStakeIxData(Discriminator discriminator, OptionalLong minimumPoolTokensOut) implements SerDe {  
+  public record DepositStakeIxData(Discriminator discriminator, OptionalLong minimumPoolTokensOut) implements SerDe {
 
     public static DepositStakeIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int MINIMUM_POOL_TOKENS_OUT_OFFSET = 9;
@@ -392,10 +392,10 @@ public final class ExtStakePoolProgram {
 
   /// @param poolTokensIn: u64
   /// @param minimumLamportsOut: Option<u64>
-  public record WithdrawSolIxData(Discriminator discriminator, long poolTokensIn, OptionalLong minimumLamportsOut) implements SerDe {  
+  public record WithdrawSolIxData(Discriminator discriminator, long poolTokensIn, OptionalLong minimumLamportsOut) implements SerDe {
 
     public static WithdrawSolIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POOL_TOKENS_IN_OFFSET = 8;
@@ -536,10 +536,10 @@ public final class ExtStakePoolProgram {
 
   /// @param poolTokensIn: u64
   /// @param minimumLamportsOut: Option<u64>
-  public record WithdrawStakeIxData(Discriminator discriminator, long poolTokensIn, OptionalLong minimumLamportsOut) implements SerDe {  
+  public record WithdrawStakeIxData(Discriminator discriminator, long poolTokensIn, OptionalLong minimumLamportsOut) implements SerDe {
 
     public static WithdrawStakeIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POOL_TOKENS_IN_OFFSET = 8;

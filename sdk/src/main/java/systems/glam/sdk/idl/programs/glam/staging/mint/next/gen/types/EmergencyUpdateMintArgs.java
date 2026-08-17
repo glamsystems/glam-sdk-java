@@ -16,7 +16,7 @@ public record EmergencyUpdateMintArgs(RequestType requestType, boolean setPaused
     }
     int i = _offset;
     final var requestType = RequestType.read(_data, i);
-    i += requestType.l();
+    i += 1;
     final var setPaused = _data[i] == 1;
     return new EmergencyUpdateMintArgs(requestType, setPaused);
   }

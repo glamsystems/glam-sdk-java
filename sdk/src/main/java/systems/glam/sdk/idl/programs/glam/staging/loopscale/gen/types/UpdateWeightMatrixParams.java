@@ -27,7 +27,7 @@ public record UpdateWeightMatrixParams(int collateralIndex,
     final var weightMatrix = new long[5];
     i += SerDeUtil.readUnsignedIntArray(weightMatrix, _data, i);
     final var expectedLoanValues = ExpectedLoanValues.read(_data, i);
-    i += expectedLoanValues.l();
+    i += 28;
     final var assetIndexGuidance = SerDeUtil.readbyteVector(4, _data, i);
     return new UpdateWeightMatrixParams(collateralIndex,
                                         weightMatrix,

@@ -117,14 +117,28 @@ public record StateAccount(PublicKey _address,
   }
 
   public static StateAccount read(final AccountInfo<byte[]> accountInfo) {
-    return read(accountInfo.pubKey(), accountInfo.data(), 0);
+    return readChecked(accountInfo.pubKey(), accountInfo.data(), 0);
   }
 
   public static StateAccount read(final PublicKey _address, final byte[] _data) {
     return read(_address, _data, 0);
   }
 
-  public static final BiFunction<PublicKey, byte[], StateAccount> FACTORY = StateAccount::read;
+  public static StateAccount readChecked(final PublicKey _address, final byte[] _data) {
+    return readChecked(_address, _data, 0);
+  }
+
+  public static StateAccount readChecked(final PublicKey _address, final byte[] _data, final int _offset) {
+    if (_data == null || _data.length == 0) {
+      return null;
+    }
+    if (!DISCRIMINATOR.equals(_data, _offset)) {
+      throw new IllegalArgumentException("Not a StateAccount account.");
+    }
+    return read(_address, _data, _offset);
+  }
+
+  public static final BiFunction<PublicKey, byte[], StateAccount> FACTORY = StateAccount::readChecked;
 
   public static StateAccount read(final PublicKey _address, final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
@@ -133,7 +147,7 @@ public record StateAccount(PublicKey _address,
     final var discriminator = createAnchorDiscriminator(_data, _offset);
     int i = _offset + discriminator.length();
     final var accountType = AccountType.read(_data, i);
-    i += accountType.l();
+    i += 1;
     final var enabled = _data[i] == 1;
     ++i;
     final var vault = readPubKey(_data, i);
@@ -143,7 +157,7 @@ public record StateAccount(PublicKey _address,
     final var portfolioManagerName = new byte[32];
     i += SerDeUtil.readArray(portfolioManagerName, _data, i);
     final var created = CreatedModel.read(_data, i);
-    i += created.l();
+    i += 48;
     final var baseAssetMint = readPubKey(_data, i);
     i += 32;
     final var baseAssetDecimals = _data[i] & 0xFF;

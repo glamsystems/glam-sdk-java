@@ -1,6 +1,11 @@
 {
+  "program": "gstgNyHgtURH7iuMn19GQczzv6Wc9fhPV2WDySZVyKx",
   "deployed": "anchor",
   "lastDeploySlot": 416673527,
+  "programDataState": "upgradeable",
+  "programDataStateSlot": 439884391,
+  "programDataPayloadSha256": "c6161b8fbf5d2f359eb7a4400ba9f55eaee1be59c511bdec3af5e90b28b3a4a9",
+  "programDataPayloadLength": 428440,
   "channels": {
     "anchor": {
       "origin": "9ZNxhhVM56UVcXCGq1KU3RUfaPkzdMhCFSLkiXqZ1t3N",

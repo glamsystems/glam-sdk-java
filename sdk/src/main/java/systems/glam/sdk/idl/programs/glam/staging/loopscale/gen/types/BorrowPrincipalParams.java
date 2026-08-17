@@ -30,7 +30,7 @@ public record BorrowPrincipalParams(long amount,
     final var duration = _data[i] & 0xFF;
     ++i;
     final var expectedLoanValues = ExpectedLoanValues.read(_data, i);
-    i += expectedLoanValues.l();
+    i += 28;
     final var skipSolUnwrap = _data[i] == 1;
     return new BorrowPrincipalParams(amount,
                                      assetIndexGuidance,

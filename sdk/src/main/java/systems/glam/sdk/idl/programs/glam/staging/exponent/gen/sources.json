@@ -1,6 +1,11 @@
 {
+  "program": "gstgx5AbCFq4mfYKbZP23YDC7XZFUx2EURiG3PcWX6W",
   "deployed": "vcs",
   "lastDeploySlot": 422234373,
+  "programDataState": "upgradeable",
+  "programDataStateSlot": 439884391,
+  "programDataPayloadSha256": "4966be652a860f1eb47094f872b5053617e56e3173218194516922c69898d2e3",
+  "programDataPayloadLength": 435264,
   "channels": {
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_exponent-staging.json",

@@ -2,14 +2,10 @@
 package systems.glam.sdk.idl.programs.glam.mint.next.gen.types;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.encoding.ByteUtil;
 import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 
-import java.util.Arrays;
 import java.util.OptionalLong;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt32LE;
@@ -58,9 +54,9 @@ public record MintModel(String symbol, byte[] _symbol,
                                        final OptionalLong minRedemption,
                                        final PublicKey[] allowlist,
                                        final PublicKey[] blocklist) {
-    return new MintModel(symbol, symbol == null ? null : symbol.getBytes(UTF_8),
+    return new MintModel(symbol, symbol == null ? null : SerDeUtil.encodeString(symbol),
                          name,
-                         uri, uri == null ? null : uri.getBytes(UTF_8),
+                         uri, uri == null ? null : SerDeUtil.encodeString(uri),
                          yearInSeconds,
                          permanentDelegate,
                          defaultAccountStateFrozen,
@@ -81,15 +77,15 @@ public record MintModel(String symbol, byte[] _symbol,
     int i = _offset;
     final byte[] _symbol;
     final String symbol;
-    if (_data[i++] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
+      ++i;
       _symbol = null;
       symbol = null;
     } else {
-      final int _symbolLength = ByteUtil.getInt32LE(_data, i);
-      i += 4;
-      _symbol = Arrays.copyOfRange(_data, i, i + _symbolLength);
-      symbol = new String(_symbol);
-      i += _symbolLength;
+      ++i;
+      _symbol = SerDeUtil.readbyteVector(4, _data, i);
+      symbol = SerDeUtil.decodeString(_symbol);
+      i += 4 + _symbol.length;
     }
 
     final byte[] name;
@@ -103,15 +99,15 @@ public record MintModel(String symbol, byte[] _symbol,
     }
     final byte[] _uri;
     final String uri;
-    if (_data[i++] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
+      ++i;
       _uri = null;
       uri = null;
     } else {
-      final int _uriLength = ByteUtil.getInt32LE(_data, i);
-      i += 4;
-      _uri = Arrays.copyOfRange(_data, i, i + _uriLength);
-      uri = new String(_uri);
-      i += _uriLength;
+      ++i;
+      _uri = SerDeUtil.readbyteVector(4, _data, i);
+      uri = SerDeUtil.decodeString(_uri);
+      i += 4 + _uri.length;
     }
 
     final OptionalLong yearInSeconds;
@@ -148,7 +144,7 @@ public record MintModel(String symbol, byte[] _symbol,
     } else {
       ++i;
       feeStructure = FeeStructure.read(_data, i);
-      i += feeStructure.l();
+      i += 19;
     }
     final NotifyAndSettle notifyAndSettle;
     if (SerDeUtil.isAbsent(1, _data, i)) {
@@ -157,7 +153,7 @@ public record MintModel(String symbol, byte[] _symbol,
     } else {
       ++i;
       notifyAndSettle = NotifyAndSettle.read(_data, i);
-      i += notifyAndSettle.l();
+      i += 56;
     }
     final OptionalLong lockupPeriod;
     if (SerDeUtil.isAbsent(1, _data, i)) {

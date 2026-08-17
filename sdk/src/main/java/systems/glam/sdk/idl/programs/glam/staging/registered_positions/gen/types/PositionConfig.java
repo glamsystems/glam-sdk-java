@@ -12,7 +12,7 @@ import static software.sava.core.encoding.ByteUtil.putInt32LE;
 /// Per-position configuration entry in the registry.
 ///
 /// @param positionId Unique identifier for this position within the vault.
-///                   
+///
 ///                   GLAM AUM coverage for RPI is represented by the vault's ObservationState
 ///                   PDA. This id remains the per-position key inside the RPI policy and
 ///                   observation state.
@@ -60,15 +60,15 @@ public record PositionConfig(byte[] positionId,
     final var positionId = new byte[32];
     i += SerDeUtil.readArray(positionId, _data, i);
     final var positionType = RegisteredPositionType.read(_data, i);
-    i += positionType.l();
+    i += 1;
     final var sourceType = RegisteredSourceType.read(_data, i);
-    i += sourceType.l();
+    i += 1;
     final var denomination = DenominationSpec.read(_data, i);
-    i += denomination.l();
+    i += 33;
     final var nativeCustodyAccount = readPubKey(_data, i);
     i += 32;
     final var nativeCustodyKind = NativeCustodyKind.read(_data, i);
-    i += nativeCustodyKind.l();
+    i += 1;
     final var enabled = _data[i] == 1;
     ++i;
     final var freshnessOverrideSecs = Integer.toUnsignedLong(getInt32LE(_data, i));

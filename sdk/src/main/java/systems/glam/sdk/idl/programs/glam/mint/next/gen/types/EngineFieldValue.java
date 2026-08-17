@@ -5,8 +5,6 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.core.gen.RustEnum;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt32LE;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
@@ -107,7 +105,7 @@ public sealed interface EngineFieldValue extends RustEnum permits
   record String(byte[] val, java.lang.String _val) implements EnumString, EngineFieldValue {
 
     public static String createRecord(final java.lang.String val) {
-      return new String(val.getBytes(UTF_8), val);
+      return new String(SerDeUtil.encodeString(val), val);
     }
 
     public static String read(final byte[] data, final int _offset) {

@@ -53,7 +53,7 @@ public record PendingRequest(PublicKey user,
     final var timeUnit = _data[i] & 0xFF;
     ++i;
     final var requestType = RequestType.read(_data, i);
-    i += requestType.l();
+    i += 1;
     final var reserved = new byte[6];
     SerDeUtil.readArray(reserved, _data, i);
     return new PendingRequest(user,

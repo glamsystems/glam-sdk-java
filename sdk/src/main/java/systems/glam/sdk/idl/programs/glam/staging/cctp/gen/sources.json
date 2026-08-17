@@ -1,6 +1,11 @@
 {
+  "program": "gstgcuRwiX2FpmtigowB1TnVi3fPkZC9TEmVnc5sdxW",
   "deployed": "anchor",
   "lastDeploySlot": 423260396,
+  "programDataState": "upgradeable",
+  "programDataStateSlot": 439884391,
+  "programDataPayloadSha256": "974658619aaad56e1bbcdc155d8144ae488d8a85e242bd534ba5a6dabdeec14c",
+  "programDataPayloadLength": 313696,
   "channels": {
     "anchor": {
       "origin": "4u6SrUAwVbSkhFsDsbox9TzroyvTwiHhrNiMRCm6iJ9o",
@@ -12,7 +17,7 @@
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_cctp-staging.json",
       "hash": "3497e6b7be7fcdc5e0a1357e2fb32df55aea3d140fb73f6ec54fda6626b7c541",
       "matchesDeployed": true,
-      "verbatim": "idl.json"
+      "verbatim": "vcs.original.json"
     }
   }
 }

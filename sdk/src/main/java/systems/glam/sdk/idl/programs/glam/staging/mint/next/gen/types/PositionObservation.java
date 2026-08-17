@@ -61,13 +61,13 @@ public record PositionObservation(byte[] positionId,
     final var padPending = new byte[7];
     i += SerDeUtil.readArray(padPending, _data, i);
     final var pendingObservation = Observation.read(_data, i);
-    i += pendingObservation.l();
+    i += 112;
     final var hasValidated = _data[i] == 1;
     ++i;
     final var padValidated = new byte[7];
     i += SerDeUtil.readArray(padValidated, _data, i);
     final var lastValidatedObservation = Observation.read(_data, i);
-    i += lastValidatedObservation.l();
+    i += 112;
     final var validatedBy = readPubKey(_data, i);
     i += 32;
     final var validatedAtSlot = getInt64LE(_data, i);

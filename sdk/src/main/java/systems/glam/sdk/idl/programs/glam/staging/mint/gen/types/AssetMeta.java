@@ -45,7 +45,7 @@ public record AssetMeta(PublicKey asset,
     final var oracle = readPubKey(_data, i);
     i += 32;
     final var oracleSource = OracleSource.read(_data, i);
-    i += oracleSource.l();
+    i += 1;
     final var maxAgeSeconds = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var priority = _data[i];

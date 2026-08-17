@@ -31,7 +31,7 @@ public final class ExtMarginfiProgram {
   public static final Discriminator KAMINO_DEPOSIT_DISCRIMINATOR = toDiscriminator(237, 8, 188, 187, 115, 99, 49, 85);
 
   /// Deposit Kamino-backed collateral into a Marginfi account.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::KaminoDeposit`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -99,7 +99,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Deposit Kamino-backed collateral into a Marginfi account.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::KaminoDeposit`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -171,7 +171,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Deposit Kamino-backed collateral into a Marginfi account.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::KaminoDeposit`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -189,10 +189,10 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
-  public record KaminoDepositIxData(Discriminator discriminator, long amount) implements SerDe {  
+  public record KaminoDepositIxData(Discriminator discriminator, long amount) implements SerDe {
 
     public static KaminoDepositIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -226,7 +226,7 @@ public final class ExtMarginfiProgram {
   public static final Discriminator KAMINO_WITHDRAW_DISCRIMINATOR = toDiscriminator(199, 101, 41, 45, 213, 98, 224, 200);
 
   /// Withdraw Kamino-backed collateral from a Marginfi account.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::KaminoWithdraw`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -294,7 +294,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Withdraw Kamino-backed collateral from a Marginfi account.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::KaminoWithdraw`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -368,7 +368,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Withdraw Kamino-backed collateral from a Marginfi account.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::KaminoWithdraw`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -394,10 +394,10 @@ public final class ExtMarginfiProgram {
 
   /// @param amount: u64
   /// @param withdrawAll: Option<bool>
-  public record KaminoWithdrawIxData(Discriminator discriminator, long amount, Boolean withdrawAll) implements SerDe {  
+  public record KaminoWithdrawIxData(Discriminator discriminator, long amount, Boolean withdrawAll) implements SerDe {
 
     public static KaminoWithdrawIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int AMOUNT_OFFSET = 8;
@@ -439,7 +439,7 @@ public final class ExtMarginfiProgram {
   public static final Discriminator LENDING_ACCOUNT_BORROW_DISCRIMINATOR = toDiscriminator(4, 126, 116, 53, 48, 5, 212, 31);
 
   /// Borrow liquidity from Marginfi into the GLAM vault.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::Borrow`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -479,7 +479,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Borrow liquidity from Marginfi into the GLAM vault.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::Borrow`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -523,7 +523,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Borrow liquidity from Marginfi into the GLAM vault.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::Borrow`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -542,10 +542,10 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
-  public record LendingAccountBorrowIxData(Discriminator discriminator, long amount) implements SerDe {  
+  public record LendingAccountBorrowIxData(Discriminator discriminator, long amount) implements SerDe {
 
     public static LendingAccountBorrowIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -579,7 +579,7 @@ public final class ExtMarginfiProgram {
   public static final Discriminator LENDING_ACCOUNT_DEPOSIT_DISCRIMINATOR = toDiscriminator(171, 94, 235, 103, 82, 64, 212, 140);
 
   /// Deposit liquidity from the GLAM vault into a Marginfi account.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::Deposit`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -616,7 +616,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Deposit liquidity from the GLAM vault into a Marginfi account.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::Deposit`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -659,7 +659,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Deposit liquidity from the GLAM vault into a Marginfi account.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::Deposit`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -685,10 +685,10 @@ public final class ExtMarginfiProgram {
 
   /// @param amount: u64
   /// @param depositUpToLimit: Option<bool>
-  public record LendingAccountDepositIxData(Discriminator discriminator, long amount, Boolean depositUpToLimit) implements SerDe {  
+  public record LendingAccountDepositIxData(Discriminator discriminator, long amount, Boolean depositUpToLimit) implements SerDe {
 
     public static LendingAccountDepositIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int AMOUNT_OFFSET = 8;
@@ -730,7 +730,7 @@ public final class ExtMarginfiProgram {
   public static final Discriminator LENDING_ACCOUNT_REPAY_DISCRIMINATOR = toDiscriminator(79, 209, 172, 177, 222, 51, 173, 151);
 
   /// Repay borrowed liquidity from the GLAM vault to a Marginfi account.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::Repay`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -767,7 +767,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Repay borrowed liquidity from the GLAM vault to a Marginfi account.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::Repay`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -810,7 +810,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Repay borrowed liquidity from the GLAM vault to a Marginfi account.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::Repay`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -836,10 +836,10 @@ public final class ExtMarginfiProgram {
 
   /// @param amount: u64
   /// @param repayAll: Option<bool>
-  public record LendingAccountRepayIxData(Discriminator discriminator, long amount, Boolean repayAll) implements SerDe {  
+  public record LendingAccountRepayIxData(Discriminator discriminator, long amount, Boolean repayAll) implements SerDe {
 
     public static LendingAccountRepayIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int AMOUNT_OFFSET = 8;
@@ -881,7 +881,7 @@ public final class ExtMarginfiProgram {
   public static final Discriminator LENDING_ACCOUNT_WITHDRAW_DISCRIMINATOR = toDiscriminator(36, 72, 74, 19, 210, 210, 192, 192);
 
   /// Withdraw liquidity from a Marginfi account to the GLAM vault.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::Withdraw`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -920,7 +920,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Withdraw liquidity from a Marginfi account to the GLAM vault.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::Withdraw`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -965,7 +965,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Withdraw liquidity from a Marginfi account to the GLAM vault.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::Withdraw`.
   /// - Policy:
   /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
@@ -991,10 +991,10 @@ public final class ExtMarginfiProgram {
 
   /// @param amount: u64
   /// @param withdrawAll: Option<bool>
-  public record LendingAccountWithdrawIxData(Discriminator discriminator, long amount, Boolean withdrawAll) implements SerDe {  
+  public record LendingAccountWithdrawIxData(Discriminator discriminator, long amount, Boolean withdrawAll) implements SerDe {
 
     public static LendingAccountWithdrawIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int AMOUNT_OFFSET = 8;
@@ -1036,7 +1036,7 @@ public final class ExtMarginfiProgram {
   public static final Discriminator MARGINFI_ACCOUNT_CLOSE_DISCRIMINATOR = toDiscriminator(186, 221, 93, 34, 50, 97, 194, 241);
 
   /// Close an empty Marginfi account PDA owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::CloseAccount`.
   ///
   public static List<AccountMeta> marginfiAccountCloseKeys(final SolanaAccounts solanaAccounts,
@@ -1060,7 +1060,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Close an empty Marginfi account PDA owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::CloseAccount`.
   ///
   public static Instruction marginfiAccountClose(final AccountMeta invokedExtMarginfiProgramMeta,
@@ -1086,7 +1086,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Close an empty Marginfi account PDA owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::CloseAccount`.
   ///
   public static Instruction marginfiAccountClose(final AccountMeta invokedExtMarginfiProgramMeta,
@@ -1097,7 +1097,7 @@ public final class ExtMarginfiProgram {
   public static final Discriminator MARGINFI_ACCOUNT_INITIALIZE_PDA_DISCRIMINATOR = toDiscriminator(87, 177, 91, 80, 218, 119, 245, 31);
 
   /// Initialize a Marginfi account PDA owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::InitAccount`.
   ///
   public static List<AccountMeta> marginfiAccountInitializePdaKeys(final SolanaAccounts solanaAccounts,
@@ -1125,7 +1125,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Initialize a Marginfi account PDA owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::InitAccount`.
   ///
   /// @param accountIndex: u16
@@ -1159,7 +1159,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Initialize a Marginfi account PDA owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `MarginfiPermissions::InitAccount`.
   ///
   /// @param accountIndex: u16
@@ -1182,10 +1182,10 @@ public final class ExtMarginfiProgram {
 
   /// @param accountIndex: u16
   /// @param thirdPartyId: Option<u16>
-  public record MarginfiAccountInitializePdaIxData(Discriminator discriminator, int accountIndex, OptionalInt thirdPartyId) implements SerDe {  
+  public record MarginfiAccountInitializePdaIxData(Discriminator discriminator, int accountIndex, OptionalInt thirdPartyId) implements SerDe {
 
     public static MarginfiAccountInitializePdaIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int ACCOUNT_INDEX_OFFSET = 8;
@@ -1227,7 +1227,7 @@ public final class ExtMarginfiProgram {
   public static final Discriminator SET_MARGINFI_POLICY_DISCRIMINATOR = toDiscriminator(161, 236, 171, 232, 25, 67, 129, 198);
 
   /// Set the Marginfi policy (group, bank, and borrow-token allowlists).
-  /// 
+  ///
   /// - Permission: GLAM state owner via `glam_protocol::set_protocol_policy`.
   ///
   public static List<AccountMeta> setMarginfiPolicyKeys(final PublicKey glamStateKey,
@@ -1241,7 +1241,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Set the Marginfi policy (group, bank, and borrow-token allowlists).
-  /// 
+  ///
   /// - Permission: GLAM state owner via `glam_protocol::set_protocol_policy`.
   ///
   public static Instruction setMarginfiPolicy(final AccountMeta invokedExtMarginfiProgramMeta,
@@ -1258,7 +1258,7 @@ public final class ExtMarginfiProgram {
   }
 
   /// Set the Marginfi policy (group, bank, and borrow-token allowlists).
-  /// 
+  ///
   /// - Permission: GLAM state owner via `glam_protocol::set_protocol_policy`.
   ///
   public static Instruction setMarginfiPolicy(final AccountMeta invokedExtMarginfiProgramMeta,
@@ -1271,10 +1271,10 @@ public final class ExtMarginfiProgram {
     return Instruction.createInstruction(invokedExtMarginfiProgramMeta, keys, _data);
   }
 
-  public record SetMarginfiPolicyIxData(Discriminator discriminator, MarginfiPolicy policy) implements SerDe {  
+  public record SetMarginfiPolicyIxData(Discriminator discriminator, MarginfiPolicy policy) implements SerDe {
 
     public static SetMarginfiPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;

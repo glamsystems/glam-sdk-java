@@ -14,7 +14,7 @@ public record EngineField(EngineFieldName name, EngineFieldValue value) implemen
     }
     int i = _offset;
     final var name = EngineFieldName.read(_data, i);
-    i += name.l();
+    i += 1;
     final var value = EngineFieldValue.read(_data, i);
     return new EngineField(name, value);
   }

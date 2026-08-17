@@ -17,7 +17,7 @@ public record RemainingAccountsSlice(AccountsType accountsType, int length) impl
     }
     int i = _offset;
     final var accountsType = AccountsType.read(_data, i);
-    i += accountsType.l();
+    i += 1;
     final var length = _data[i] & 0xFF;
     return new RemainingAccountsSlice(accountsType, length);
   }

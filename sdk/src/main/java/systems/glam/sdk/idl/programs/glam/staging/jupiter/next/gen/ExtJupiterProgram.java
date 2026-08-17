@@ -38,7 +38,7 @@ public final class ExtJupiterProgram {
   public static final Discriminator BORROW_INIT_POSITION_DISCRIMINATOR = toDiscriminator(92, 209, 176, 14, 75, 243, 107, 230);
 
   /// Initialize a Jupiter Borrow position NFT owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::InitPosition`.
   /// - Policy: `vault_state` must be in `BorrowPolicy::vaults_allowlist`.
   ///
@@ -80,7 +80,7 @@ public final class ExtJupiterProgram {
   }
 
   /// Initialize a Jupiter Borrow position NFT owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::InitPosition`.
   /// - Policy: `vault_state` must be in `BorrowPolicy::vaults_allowlist`.
   ///
@@ -125,7 +125,7 @@ public final class ExtJupiterProgram {
   }
 
   /// Initialize a Jupiter Borrow position NFT owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::InitPosition`.
   /// - Policy: `vault_state` must be in `BorrowPolicy::vaults_allowlist`.
   ///
@@ -146,10 +146,10 @@ public final class ExtJupiterProgram {
 
   /// @param vaultId: u16
   /// @param nextPositionId: u32
-  public record BorrowInitPositionIxData(Discriminator discriminator, int vaultId, long nextPositionId) implements SerDe {  
+  public record BorrowInitPositionIxData(Discriminator discriminator, int vaultId, long nextPositionId) implements SerDe {
 
     public static BorrowInitPositionIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 14;
@@ -188,7 +188,7 @@ public final class ExtJupiterProgram {
   public static final Discriminator BORROW_OPERATE_DISCRIMINATOR = toDiscriminator(46, 121, 58, 48, 13, 5, 117, 188);
 
   /// Operate a Jupiter Borrow position.
-  /// 
+  ///
   /// Required permissions are derived from signed deltas:
   /// positive collateral = deposit, negative collateral = withdraw,
   /// positive debt = borrow, negative debt = repay.
@@ -278,7 +278,7 @@ public final class ExtJupiterProgram {
   }
 
   /// Operate a Jupiter Borrow position.
-  /// 
+  ///
   /// Required permissions are derived from signed deltas:
   /// positive collateral = deposit, negative collateral = withdraw,
   /// positive debt = borrow, negative debt = repay.
@@ -380,7 +380,7 @@ public final class ExtJupiterProgram {
   }
 
   /// Operate a Jupiter Borrow position.
-  /// 
+  ///
   /// Required permissions are derived from signed deltas:
   /// positive collateral = deposit, negative collateral = withdraw,
   /// positive debt = borrow, negative debt = repay.
@@ -410,10 +410,10 @@ public final class ExtJupiterProgram {
                                     BigInteger newCol,
                                     BigInteger newDebt,
                                     TransferType transferType,
-                                    byte[] remainingAccountsIndices) implements SerDe {  
+                                    byte[] remainingAccountsIndices) implements SerDe {
 
     public static BorrowOperateIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int NEW_COL_OFFSET = 8;
@@ -437,7 +437,7 @@ public final class ExtJupiterProgram {
       } else {
         ++i;
         transferType = TransferType.read(_data, i);
-        i += transferType.l();
+        i += 1;
       }
       final var remainingAccountsIndices = SerDeUtil.readbyteVector(4, _data, i);
       return new BorrowOperateIxData(discriminator,
@@ -468,7 +468,7 @@ public final class ExtJupiterProgram {
   public static final Discriminator EARN_DEPOSIT_DISCRIMINATOR = toDiscriminator(81, 98, 113, 207, 82, 192, 187, 234);
 
   /// Deposit underlying tokens into Jupiter Earn and mint jlTokens to the GLAM vault.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Deposit`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -520,7 +520,7 @@ public final class ExtJupiterProgram {
   }
 
   /// Deposit underlying tokens into Jupiter Earn and mint jlTokens to the GLAM vault.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Deposit`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -577,7 +577,7 @@ public final class ExtJupiterProgram {
   }
 
   /// Deposit underlying tokens into Jupiter Earn and mint jlTokens to the GLAM vault.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Deposit`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -598,10 +598,10 @@ public final class ExtJupiterProgram {
 
   /// @param assets: u64
   /// @param minAmountOut: u64
-  public record EarnDepositIxData(Discriminator discriminator, long assets, long minAmountOut) implements SerDe {  
+  public record EarnDepositIxData(Discriminator discriminator, long assets, long minAmountOut) implements SerDe {
 
     public static EarnDepositIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 24;
@@ -640,7 +640,7 @@ public final class ExtJupiterProgram {
   public static final Discriminator EARN_MINT_DISCRIMINATOR = toDiscriminator(248, 245, 116, 167, 84, 254, 78, 58);
 
   /// Deposit enough underlying tokens into Jupiter Earn to mint exact jlToken shares.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Deposit`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -692,7 +692,7 @@ public final class ExtJupiterProgram {
   }
 
   /// Deposit enough underlying tokens into Jupiter Earn to mint exact jlToken shares.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Deposit`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -747,7 +747,7 @@ public final class ExtJupiterProgram {
   }
 
   /// Deposit enough underlying tokens into Jupiter Earn to mint exact jlToken shares.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Deposit`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -763,10 +763,10 @@ public final class ExtJupiterProgram {
   }
 
   /// @param shares: u64
-  public record EarnMintIxData(Discriminator discriminator, long shares) implements SerDe {  
+  public record EarnMintIxData(Discriminator discriminator, long shares) implements SerDe {
 
     public static EarnMintIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -800,7 +800,7 @@ public final class ExtJupiterProgram {
   public static final Discriminator EARN_MINT_WITH_MAX_ASSETS_DISCRIMINATOR = toDiscriminator(180, 177, 204, 33, 230, 193, 220, 69);
 
   /// Deposit at most `max_assets` underlying tokens into Jupiter Earn to mint exact jlToken shares.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Deposit`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -852,7 +852,7 @@ public final class ExtJupiterProgram {
   }
 
   /// Deposit at most `max_assets` underlying tokens into Jupiter Earn to mint exact jlToken shares.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Deposit`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -909,7 +909,7 @@ public final class ExtJupiterProgram {
   }
 
   /// Deposit at most `max_assets` underlying tokens into Jupiter Earn to mint exact jlToken shares.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Deposit`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -930,10 +930,10 @@ public final class ExtJupiterProgram {
 
   /// @param shares: u64
   /// @param maxAssets: u64
-  public record EarnMintWithMaxAssetsIxData(Discriminator discriminator, long shares, long maxAssets) implements SerDe {  
+  public record EarnMintWithMaxAssetsIxData(Discriminator discriminator, long shares, long maxAssets) implements SerDe {
 
     public static EarnMintWithMaxAssetsIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 24;
@@ -972,7 +972,7 @@ public final class ExtJupiterProgram {
   public static final Discriminator EARN_REDEEM_DISCRIMINATOR = toDiscriminator(93, 162, 58, 1, 75, 18, 212, 66);
 
   /// Redeem exact Jupiter Earn jlToken shares and withdraw underlying tokens to the GLAM vault.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Withdraw`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -1026,7 +1026,7 @@ public final class ExtJupiterProgram {
   }
 
   /// Redeem exact Jupiter Earn jlToken shares and withdraw underlying tokens to the GLAM vault.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Withdraw`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -1083,7 +1083,7 @@ public final class ExtJupiterProgram {
   }
 
   /// Redeem exact Jupiter Earn jlToken shares and withdraw underlying tokens to the GLAM vault.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Withdraw`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -1099,10 +1099,10 @@ public final class ExtJupiterProgram {
   }
 
   /// @param shares: u64
-  public record EarnRedeemIxData(Discriminator discriminator, long shares) implements SerDe {  
+  public record EarnRedeemIxData(Discriminator discriminator, long shares) implements SerDe {
 
     public static EarnRedeemIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -1136,7 +1136,7 @@ public final class ExtJupiterProgram {
   public static final Discriminator EARN_REDEEM_WITH_MIN_AMOUNT_OUT_DISCRIMINATOR = toDiscriminator(204, 196, 159, 42, 52, 107, 134, 153);
 
   /// Redeem Jupiter Earn jlToken shares for at least `min_amount_out` underlying tokens.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Withdraw`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -1190,7 +1190,7 @@ public final class ExtJupiterProgram {
   }
 
   /// Redeem Jupiter Earn jlToken shares for at least `min_amount_out` underlying tokens.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Withdraw`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -1249,7 +1249,7 @@ public final class ExtJupiterProgram {
   }
 
   /// Redeem Jupiter Earn jlToken shares for at least `min_amount_out` underlying tokens.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Withdraw`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -1270,10 +1270,10 @@ public final class ExtJupiterProgram {
 
   /// @param shares: u64
   /// @param minAmountOut: u64
-  public record EarnRedeemWithMinAmountOutIxData(Discriminator discriminator, long shares, long minAmountOut) implements SerDe {  
+  public record EarnRedeemWithMinAmountOutIxData(Discriminator discriminator, long shares, long minAmountOut) implements SerDe {
 
     public static EarnRedeemWithMinAmountOutIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 24;
@@ -1312,7 +1312,7 @@ public final class ExtJupiterProgram {
   public static final Discriminator EARN_WITHDRAW_DISCRIMINATOR = toDiscriminator(68, 169, 40, 28, 165, 60, 157, 98);
 
   /// Burn Jupiter Earn jlTokens and withdraw underlying tokens to the GLAM vault.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Withdraw`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -1366,7 +1366,7 @@ public final class ExtJupiterProgram {
   }
 
   /// Burn Jupiter Earn jlTokens and withdraw underlying tokens to the GLAM vault.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Withdraw`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -1425,7 +1425,7 @@ public final class ExtJupiterProgram {
   }
 
   /// Burn Jupiter Earn jlTokens and withdraw underlying tokens to the GLAM vault.
-  /// 
+  ///
   /// - Permission: `EarnPermissions::Withdraw`.
   /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
   ///
@@ -1446,10 +1446,10 @@ public final class ExtJupiterProgram {
 
   /// @param amount: u64
   /// @param maxSharesBurn: u64
-  public record EarnWithdrawIxData(Discriminator discriminator, long amount, long maxSharesBurn) implements SerDe {  
+  public record EarnWithdrawIxData(Discriminator discriminator, long amount, long maxSharesBurn) implements SerDe {
 
     public static EarnWithdrawIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 24;
@@ -1526,10 +1526,10 @@ public final class ExtJupiterProgram {
     return Instruction.createInstruction(invokedExtJupiterProgramMeta, keys, _data);
   }
 
-  public record SetBorrowPolicyIxData(Discriminator discriminator, BorrowPolicy policy) implements SerDe {  
+  public record SetBorrowPolicyIxData(Discriminator discriminator, BorrowPolicy policy) implements SerDe {
 
     public static SetBorrowPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;
@@ -1598,10 +1598,10 @@ public final class ExtJupiterProgram {
     return Instruction.createInstruction(invokedExtJupiterProgramMeta, keys, _data);
   }
 
-  public record SetEarnPolicyIxData(Discriminator discriminator, EarnPolicy policy) implements SerDe {  
+  public record SetEarnPolicyIxData(Discriminator discriminator, EarnPolicy policy) implements SerDe {
 
     public static SetEarnPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;

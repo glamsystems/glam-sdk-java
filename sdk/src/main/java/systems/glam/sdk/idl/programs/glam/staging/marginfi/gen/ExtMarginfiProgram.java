@@ -168,10 +168,10 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
-  public record KaminoDepositIxData(Discriminator discriminator, long amount) implements SerDe {  
+  public record KaminoDepositIxData(Discriminator discriminator, long amount) implements SerDe {
 
     public static KaminoDepositIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -362,10 +362,10 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
-  public record KaminoInitObligationIxData(Discriminator discriminator, long amount) implements SerDe {  
+  public record KaminoInitObligationIxData(Discriminator discriminator, long amount) implements SerDe {
 
     public static KaminoInitObligationIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -546,10 +546,10 @@ public final class ExtMarginfiProgram {
 
   /// @param amount: u64
   /// @param withdrawAll: Option<bool>
-  public record KaminoWithdrawIxData(Discriminator discriminator, long amount, Boolean withdrawAll) implements SerDe {  
+  public record KaminoWithdrawIxData(Discriminator discriminator, long amount, Boolean withdrawAll) implements SerDe {
 
     public static KaminoWithdrawIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int AMOUNT_OFFSET = 8;
@@ -670,10 +670,10 @@ public final class ExtMarginfiProgram {
   }
 
   /// @param amount: u64
-  public record LendingAccountBorrowIxData(Discriminator discriminator, long amount) implements SerDe {  
+  public record LendingAccountBorrowIxData(Discriminator discriminator, long amount) implements SerDe {
 
     public static LendingAccountBorrowIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -792,10 +792,10 @@ public final class ExtMarginfiProgram {
 
   /// @param amount: u64
   /// @param depositUpToLimit: Option<bool>
-  public record LendingAccountDepositIxData(Discriminator discriminator, long amount, Boolean depositUpToLimit) implements SerDe {  
+  public record LendingAccountDepositIxData(Discriminator discriminator, long amount, Boolean depositUpToLimit) implements SerDe {
 
     public static LendingAccountDepositIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int AMOUNT_OFFSET = 8;
@@ -922,10 +922,10 @@ public final class ExtMarginfiProgram {
 
   /// @param amount: u64
   /// @param repayAll: Option<bool>
-  public record LendingAccountRepayIxData(Discriminator discriminator, long amount, Boolean repayAll) implements SerDe {  
+  public record LendingAccountRepayIxData(Discriminator discriminator, long amount, Boolean repayAll) implements SerDe {
 
     public static LendingAccountRepayIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int AMOUNT_OFFSET = 8;
@@ -1056,10 +1056,10 @@ public final class ExtMarginfiProgram {
 
   /// @param amount: u64
   /// @param withdrawAll: Option<bool>
-  public record LendingAccountWithdrawIxData(Discriminator discriminator, long amount, Boolean withdrawAll) implements SerDe {  
+  public record LendingAccountWithdrawIxData(Discriminator discriminator, long amount, Boolean withdrawAll) implements SerDe {
 
     public static LendingAccountWithdrawIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int AMOUNT_OFFSET = 8;
@@ -1223,10 +1223,10 @@ public final class ExtMarginfiProgram {
 
   /// @param accountIndex: u16
   /// @param thirdPartyId: Option<u16>
-  public record MarginfiAccountInitializePdaIxData(Discriminator discriminator, int accountIndex, OptionalInt thirdPartyId) implements SerDe {  
+  public record MarginfiAccountInitializePdaIxData(Discriminator discriminator, int accountIndex, OptionalInt thirdPartyId) implements SerDe {
 
     public static MarginfiAccountInitializePdaIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int ACCOUNT_INDEX_OFFSET = 8;
@@ -1300,10 +1300,10 @@ public final class ExtMarginfiProgram {
     return Instruction.createInstruction(invokedExtMarginfiProgramMeta, keys, _data);
   }
 
-  public record SetMarginfiPolicyIxData(Discriminator discriminator, MarginfiPolicy policy) implements SerDe {  
+  public record SetMarginfiPolicyIxData(Discriminator discriminator, MarginfiPolicy policy) implements SerDe {
 
     public static SetMarginfiPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;

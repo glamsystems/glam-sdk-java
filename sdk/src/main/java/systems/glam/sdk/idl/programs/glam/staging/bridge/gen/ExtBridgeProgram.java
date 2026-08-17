@@ -60,10 +60,10 @@ public final class ExtBridgeProgram {
     return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
   }
 
-  public record AddLayerzeroOftRouteIxData(Discriminator discriminator, LayerzeroOftRoute route) implements SerDe {  
+  public record AddLayerzeroOftRouteIxData(Discriminator discriminator, LayerzeroOftRoute route) implements SerDe {
 
     public static AddLayerzeroOftRouteIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 125;
@@ -171,10 +171,10 @@ public final class ExtBridgeProgram {
     return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
   }
 
-  public record CommitOftTransferIxData(Discriminator discriminator, CommitOftTransferArgs args) implements SerDe {  
+  public record CommitOftTransferIxData(Discriminator discriminator, CommitOftTransferArgs args) implements SerDe {
 
     public static CommitOftTransferIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 40;
@@ -239,10 +239,10 @@ public final class ExtBridgeProgram {
     return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
   }
 
-  public record DeleteLayerzeroOftRouteIxData(Discriminator discriminator, LayerzeroOftRoute route) implements SerDe {  
+  public record DeleteLayerzeroOftRouteIxData(Discriminator discriminator, LayerzeroOftRoute route) implements SerDe {
 
     public static DeleteLayerzeroOftRouteIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 125;
@@ -350,10 +350,10 @@ public final class ExtBridgeProgram {
     return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
   }
 
-  public record PrepareOftTransferIxData(Discriminator discriminator, PrepareOftTransferArgs args) implements SerDe {  
+  public record PrepareOftTransferIxData(Discriminator discriminator, PrepareOftTransferArgs args) implements SerDe {
 
     public static PrepareOftTransferIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 83;
@@ -487,10 +487,10 @@ public final class ExtBridgeProgram {
     return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
   }
 
-  public record SettleManagedTransferIxData(Discriminator discriminator, SettleManagedTransferArgs args) implements SerDe {  
+  public record SettleManagedTransferIxData(Discriminator discriminator, SettleManagedTransferArgs args) implements SerDe {
 
     public static SettleManagedTransferIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 40;
@@ -555,10 +555,10 @@ public final class ExtBridgeProgram {
     return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
   }
 
-  public record UpdateLayerzeroOftRouteIxData(Discriminator discriminator, LayerzeroOftRoute route) implements SerDe {  
+  public record UpdateLayerzeroOftRouteIxData(Discriminator discriminator, LayerzeroOftRoute route) implements SerDe {
 
     public static UpdateLayerzeroOftRouteIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 125;
@@ -629,10 +629,10 @@ public final class ExtBridgeProgram {
     return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
   }
 
-  public record ValidateManagedTransferIxData(Discriminator discriminator, ValidateManagedTransferArgs args) implements SerDe {  
+  public record ValidateManagedTransferIxData(Discriminator discriminator, ValidateManagedTransferArgs args) implements SerDe {
 
     public static ValidateManagedTransferIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 40;

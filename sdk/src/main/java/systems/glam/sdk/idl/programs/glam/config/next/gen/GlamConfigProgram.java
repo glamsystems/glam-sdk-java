@@ -98,10 +98,10 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
-  public record DeleteAssetMetaIxData(Discriminator discriminator, PublicKey asset, PublicKey oracle) implements SerDe {  
+  public record DeleteAssetMetaIxData(Discriminator discriminator, PublicKey asset, PublicKey oracle) implements SerDe {
 
     public static DeleteAssetMetaIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 72;
@@ -182,10 +182,10 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
-  public record DeprecateAssetMetaIxData(Discriminator discriminator, PublicKey asset, PublicKey oracle) implements SerDe {  
+  public record DeprecateAssetMetaIxData(Discriminator discriminator, PublicKey asset, PublicKey oracle) implements SerDe {
 
     public static DeprecateAssetMetaIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 72;
@@ -291,10 +291,10 @@ public final class GlamConfigProgram {
                                  PublicKey feeAuthority,
                                  PublicKey referrer,
                                  int baseFeeBps,
-                                 int flowFeeBps) implements SerDe {  
+                                 int flowFeeBps) implements SerDe {
 
     public static InitializeIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 108;
@@ -385,10 +385,10 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
-  public record UpdateAdminIxData(Discriminator discriminator, PublicKey newAdmin) implements SerDe {  
+  public record UpdateAdminIxData(Discriminator discriminator, PublicKey newAdmin) implements SerDe {
 
     public static UpdateAdminIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 40;
@@ -450,10 +450,10 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
-  public record UpdateFeeAuthorityIxData(Discriminator discriminator, PublicKey feeAuthority) implements SerDe {  
+  public record UpdateFeeAuthorityIxData(Discriminator discriminator, PublicKey feeAuthority) implements SerDe {
 
     public static UpdateFeeAuthorityIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 40;
@@ -525,10 +525,10 @@ public final class GlamConfigProgram {
 
   /// @param baseFeeBps: u16
   /// @param flowFeeBps: u16
-  public record UpdateProtocolFeesIxData(Discriminator discriminator, int baseFeeBps, int flowFeeBps) implements SerDe {  
+  public record UpdateProtocolFeesIxData(Discriminator discriminator, int baseFeeBps, int flowFeeBps) implements SerDe {
 
     public static UpdateProtocolFeesIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 12;
@@ -595,10 +595,10 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
-  public record UpdateReferrerIxData(Discriminator discriminator, PublicKey referrer) implements SerDe {  
+  public record UpdateReferrerIxData(Discriminator discriminator, PublicKey referrer) implements SerDe {
 
     public static UpdateReferrerIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 40;
@@ -672,10 +672,10 @@ public final class GlamConfigProgram {
     return Instruction.createInstruction(invokedGlamConfigProgramMeta, keys, _data);
   }
 
-  public record UpsertAssetMetaIxData(Discriminator discriminator, AssetMeta assetMeta) implements SerDe {  
+  public record UpsertAssetMetaIxData(Discriminator discriminator, AssetMeta assetMeta) implements SerDe {
 
     public static UpsertAssetMetaIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 80;

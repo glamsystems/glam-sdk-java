@@ -127,10 +127,10 @@ public final class ExtKaminoProgram {
   }
 
   /// @param rewardIndex: u64
-  public record FarmsHarvestRewardIxData(Discriminator discriminator, long rewardIndex) implements SerDe {  
+  public record FarmsHarvestRewardIxData(Discriminator discriminator, long rewardIndex) implements SerDe {
 
     public static FarmsHarvestRewardIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -299,10 +299,10 @@ public final class ExtKaminoProgram {
   }
 
   /// @param amount: u64
-  public record FarmsStakeIxData(Discriminator discriminator, long amount) implements SerDe {  
+  public record FarmsStakeIxData(Discriminator discriminator, long amount) implements SerDe {
 
     public static FarmsStakeIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -398,10 +398,10 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record FarmsUnstakeIxData(Discriminator discriminator, BigInteger amount) implements SerDe {  
+  public record FarmsUnstakeIxData(Discriminator discriminator, BigInteger amount) implements SerDe {
 
     public static FarmsUnstakeIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 24;
@@ -613,10 +613,10 @@ public final class ExtKaminoProgram {
   }
 
   /// @param liquidityAmount: u64
-  public record LendingBorrowObligationLiquidityV2IxData(Discriminator discriminator, long liquidityAmount) implements SerDe {  
+  public record LendingBorrowObligationLiquidityV2IxData(Discriminator discriminator, long liquidityAmount) implements SerDe {
 
     public static LendingBorrowObligationLiquidityV2IxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -767,10 +767,10 @@ public final class ExtKaminoProgram {
   }
 
   /// @param liquidityAmount: u64
-  public record LendingDepositReserveLiquidityAndObligationCollateralV2IxData(Discriminator discriminator, long liquidityAmount) implements SerDe {  
+  public record LendingDepositReserveLiquidityAndObligationCollateralV2IxData(Discriminator discriminator, long liquidityAmount) implements SerDe {
 
     public static LendingDepositReserveLiquidityAndObligationCollateralV2IxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -877,10 +877,10 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record LendingInitObligationIxData(Discriminator discriminator, InitObligationArgs args) implements SerDe {  
+  public record LendingInitObligationIxData(Discriminator discriminator, InitObligationArgs args) implements SerDe {
 
     public static LendingInitObligationIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 10;
@@ -997,10 +997,10 @@ public final class ExtKaminoProgram {
   }
 
   /// @param mode: u8
-  public record LendingInitObligationFarmsForReserveIxData(Discriminator discriminator, int mode) implements SerDe {  
+  public record LendingInitObligationFarmsForReserveIxData(Discriminator discriminator, int mode) implements SerDe {
 
     public static LendingInitObligationFarmsForReserveIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 9;
@@ -1097,10 +1097,10 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record LendingInitUserMetadataIxData(Discriminator discriminator, PublicKey userLookupTable) implements SerDe {  
+  public record LendingInitUserMetadataIxData(Discriminator discriminator, PublicKey userLookupTable) implements SerDe {
 
     public static LendingInitUserMetadataIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 40;
@@ -1306,10 +1306,10 @@ public final class ExtKaminoProgram {
   public record LendingLiquidateObligationAndRedeemReserveCollateralV2IxData(Discriminator discriminator,
                                                                              long liquidityAmount,
                                                                              long minAcceptableReceivedLiquidityAmount,
-                                                                             long maxAllowedLtvOverridePercent) implements SerDe {  
+                                                                             long maxAllowedLtvOverridePercent) implements SerDe {
 
     public static LendingLiquidateObligationAndRedeemReserveCollateralV2IxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 32;
@@ -1454,10 +1454,10 @@ public final class ExtKaminoProgram {
   }
 
   /// @param liquidityAmount: u64
-  public record LendingRepayObligationLiquidityV2IxData(Discriminator discriminator, long liquidityAmount) implements SerDe {  
+  public record LendingRepayObligationLiquidityV2IxData(Discriminator discriminator, long liquidityAmount) implements SerDe {
 
     public static LendingRepayObligationLiquidityV2IxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -1550,10 +1550,10 @@ public final class ExtKaminoProgram {
   }
 
   /// @param elevationGroup: u8
-  public record LendingRequestElevationGroupIxData(Discriminator discriminator, int elevationGroup) implements SerDe {  
+  public record LendingRequestElevationGroupIxData(Discriminator discriminator, int elevationGroup) implements SerDe {
 
     public static LendingRequestElevationGroupIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 9;
@@ -1704,10 +1704,10 @@ public final class ExtKaminoProgram {
   }
 
   /// @param collateralAmount: u64
-  public record LendingWithdrawObligationCollateralAndRedeemReserveCollateralV2IxData(Discriminator discriminator, long collateralAmount) implements SerDe {  
+  public record LendingWithdrawObligationCollateralAndRedeemReserveCollateralV2IxData(Discriminator discriminator, long collateralAmount) implements SerDe {
 
     public static LendingWithdrawObligationCollateralAndRedeemReserveCollateralV2IxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -1773,10 +1773,10 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record SetLendingPolicyIxData(Discriminator discriminator, LendingPolicy policy) implements SerDe {  
+  public record SetLendingPolicyIxData(Discriminator discriminator, LendingPolicy policy) implements SerDe {
 
     public static SetLendingPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;
@@ -1839,10 +1839,10 @@ public final class ExtKaminoProgram {
     return Instruction.createInstruction(invokedExtKaminoProgramMeta, keys, _data);
   }
 
-  public record SetVaultsPolicyIxData(Discriminator discriminator, VaultsPolicy policy) implements SerDe {  
+  public record SetVaultsPolicyIxData(Discriminator discriminator, VaultsPolicy policy) implements SerDe {
 
     public static SetVaultsPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;
@@ -1972,10 +1972,10 @@ public final class ExtKaminoProgram {
   }
 
   /// @param maxAmount: u64
-  public record VaultsDepositIxData(Discriminator discriminator, long maxAmount) implements SerDe {  
+  public record VaultsDepositIxData(Discriminator discriminator, long maxAmount) implements SerDe {
 
     public static VaultsDepositIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -2156,10 +2156,10 @@ public final class ExtKaminoProgram {
   }
 
   /// @param sharesAmount: u64
-  public record VaultsWithdrawIxData(Discriminator discriminator, long sharesAmount) implements SerDe {  
+  public record VaultsWithdrawIxData(Discriminator discriminator, long sharesAmount) implements SerDe {
 
     public static VaultsWithdrawIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;

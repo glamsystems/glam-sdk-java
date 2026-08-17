@@ -35,7 +35,7 @@ public final class ExtOrcaProgram {
   public static final Discriminator CLOSE_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR = toDiscriminator(1, 182, 135, 59, 155, 25, 99, 223);
 
   /// Close an empty Token-2022 Orca Whirlpools position owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `ClosePosition`.
   ///
   public static List<AccountMeta> closePositionWithTokenExtensionsKeys(final SolanaAccounts solanaAccounts,
@@ -67,7 +67,7 @@ public final class ExtOrcaProgram {
   }
 
   /// Close an empty Token-2022 Orca Whirlpools position owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `ClosePosition`.
   ///
   public static Instruction closePositionWithTokenExtensions(final AccountMeta invokedExtOrcaProgramMeta,
@@ -101,7 +101,7 @@ public final class ExtOrcaProgram {
   }
 
   /// Close an empty Token-2022 Orca Whirlpools position owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `ClosePosition`.
   ///
   public static Instruction closePositionWithTokenExtensions(final AccountMeta invokedExtOrcaProgramMeta,
@@ -112,7 +112,7 @@ public final class ExtOrcaProgram {
   public static final Discriminator COLLECT_FEES_V_2_DISCRIMINATOR = toDiscriminator(207, 117, 95, 191, 229, 180, 226, 15);
 
   /// Collect accrued pool fees using Token-2022-aware accounts.
-  /// 
+  ///
   /// - Permission: `CollectFees`.
   ///
   public static List<AccountMeta> collectFeesV2Keys(final SolanaAccounts solanaAccounts,
@@ -158,7 +158,7 @@ public final class ExtOrcaProgram {
   }
 
   /// Collect accrued pool fees using Token-2022-aware accounts.
-  /// 
+  ///
   /// - Permission: `CollectFees`.
   ///
   public static Instruction collectFeesV2(final AccountMeta invokedExtOrcaProgramMeta,
@@ -207,7 +207,7 @@ public final class ExtOrcaProgram {
   }
 
   /// Collect accrued pool fees using Token-2022-aware accounts.
-  /// 
+  ///
   /// - Permission: `CollectFees`.
   ///
   public static Instruction collectFeesV2(final AccountMeta invokedExtOrcaProgramMeta,
@@ -223,10 +223,10 @@ public final class ExtOrcaProgram {
     return Instruction.createInstruction(invokedExtOrcaProgramMeta, keys, _data);
   }
 
-  public record CollectFeesV2IxData(Discriminator discriminator, RemainingAccountsInfo remainingAccountsInfo) implements SerDe {  
+  public record CollectFeesV2IxData(Discriminator discriminator, RemainingAccountsInfo remainingAccountsInfo) implements SerDe {
 
     public static CollectFeesV2IxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int REMAINING_ACCOUNTS_INFO_OFFSET = 9;
@@ -263,7 +263,7 @@ public final class ExtOrcaProgram {
   public static final Discriminator COLLECT_REWARD_V_2_DISCRIMINATOR = toDiscriminator(177, 107, 37, 180, 160, 19, 49, 209);
 
   /// Collect one reward emission using Token-2022-aware accounts.
-  /// 
+  ///
   /// - Permission: `CollectReward`.
   ///
   public static List<AccountMeta> collectRewardV2Keys(final SolanaAccounts solanaAccounts,
@@ -301,7 +301,7 @@ public final class ExtOrcaProgram {
   }
 
   /// Collect one reward emission using Token-2022-aware accounts.
-  /// 
+  ///
   /// - Permission: `CollectReward`.
   ///
   /// @param rewardIndex: u8
@@ -344,7 +344,7 @@ public final class ExtOrcaProgram {
   }
 
   /// Collect one reward emission using Token-2022-aware accounts.
-  /// 
+  ///
   /// - Permission: `CollectReward`.
   ///
   /// @param rewardIndex: u8
@@ -365,10 +365,10 @@ public final class ExtOrcaProgram {
   }
 
   /// @param rewardIndex: u8
-  public record CollectRewardV2IxData(Discriminator discriminator, int rewardIndex, RemainingAccountsInfo remainingAccountsInfo) implements SerDe {  
+  public record CollectRewardV2IxData(Discriminator discriminator, int rewardIndex, RemainingAccountsInfo remainingAccountsInfo) implements SerDe {
 
     public static CollectRewardV2IxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int REWARD_INDEX_OFFSET = 8;
@@ -410,7 +410,7 @@ public final class ExtOrcaProgram {
   public static final Discriminator DECREASE_LIQUIDITY_V_2_DISCRIMINATOR = toDiscriminator(58, 127, 188, 62, 79, 82, 196, 96);
 
   /// Decrease liquidity in an Orca Whirlpools position using Token-2022-aware accounts.
-  /// 
+  ///
   /// - Permission: `DecreaseLiquidity`.
   ///
   public static List<AccountMeta> decreaseLiquidityV2Keys(final SolanaAccounts solanaAccounts,
@@ -460,7 +460,7 @@ public final class ExtOrcaProgram {
   }
 
   /// Decrease liquidity in an Orca Whirlpools position using Token-2022-aware accounts.
-  /// 
+  ///
   /// - Permission: `DecreaseLiquidity`.
   ///
   /// @param tokenMinA: u64
@@ -525,7 +525,7 @@ public final class ExtOrcaProgram {
   }
 
   /// Decrease liquidity in an Orca Whirlpools position using Token-2022-aware accounts.
-  /// 
+  ///
   /// - Permission: `DecreaseLiquidity`.
   ///
   /// @param tokenMinA: u64
@@ -558,10 +558,10 @@ public final class ExtOrcaProgram {
                                           BigInteger liquidityAmount,
                                           long tokenMinA,
                                           long tokenMinB,
-                                          RemainingAccountsInfo remainingAccountsInfo) implements SerDe {  
+                                          RemainingAccountsInfo remainingAccountsInfo) implements SerDe {
 
     public static DecreaseLiquidityV2IxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int LIQUIDITY_AMOUNT_OFFSET = 8;
@@ -733,10 +733,10 @@ public final class ExtOrcaProgram {
     return Instruction.createInstruction(invokedExtOrcaProgramMeta, keys, _data);
   }
 
-  public record IncreaseLiquidityByTokenAmountsV2IxData(Discriminator discriminator, IncreaseLiquidityMethod method, RemainingAccountsInfo remainingAccountsInfo) implements SerDe {  
+  public record IncreaseLiquidityByTokenAmountsV2IxData(Discriminator discriminator, IncreaseLiquidityMethod method, RemainingAccountsInfo remainingAccountsInfo) implements SerDe {
 
     public static IncreaseLiquidityByTokenAmountsV2IxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int METHOD_OFFSET = 8;
@@ -776,7 +776,7 @@ public final class ExtOrcaProgram {
   public static final Discriminator INCREASE_LIQUIDITY_V_2_DISCRIMINATOR = toDiscriminator(133, 29, 89, 223, 69, 238, 176, 10);
 
   /// Increase liquidity in an Orca Whirlpools position using Token-2022-aware accounts.
-  /// 
+  ///
   /// - Permission: `IncreaseLiquidity`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
@@ -827,7 +827,7 @@ public final class ExtOrcaProgram {
   }
 
   /// Increase liquidity in an Orca Whirlpools position using Token-2022-aware accounts.
-  /// 
+  ///
   /// - Permission: `IncreaseLiquidity`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
@@ -893,7 +893,7 @@ public final class ExtOrcaProgram {
   }
 
   /// Increase liquidity in an Orca Whirlpools position using Token-2022-aware accounts.
-  /// 
+  ///
   /// - Permission: `IncreaseLiquidity`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
@@ -927,10 +927,10 @@ public final class ExtOrcaProgram {
                                           BigInteger liquidityAmount,
                                           long tokenMaxA,
                                           long tokenMaxB,
-                                          RemainingAccountsInfo remainingAccountsInfo) implements SerDe {  
+                                          RemainingAccountsInfo remainingAccountsInfo) implements SerDe {
 
     public static IncreaseLiquidityV2IxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int LIQUIDITY_AMOUNT_OFFSET = 8;
@@ -986,7 +986,7 @@ public final class ExtOrcaProgram {
   public static final Discriminator INITIALIZE_TICK_ARRAY_DISCRIMINATOR = toDiscriminator(11, 188, 193, 214, 141, 91, 149, 184);
 
   /// Initialize an Orca fixed tick array for an allowlisted Whirlpool.
-  /// 
+  ///
   /// - Permission: `InitializeTickArray`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
@@ -1013,7 +1013,7 @@ public final class ExtOrcaProgram {
   }
 
   /// Initialize an Orca fixed tick array for an allowlisted Whirlpool.
-  /// 
+  ///
   /// - Permission: `InitializeTickArray`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
@@ -1043,7 +1043,7 @@ public final class ExtOrcaProgram {
   }
 
   /// Initialize an Orca fixed tick array for an allowlisted Whirlpool.
-  /// 
+  ///
   /// - Permission: `InitializeTickArray`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
@@ -1057,10 +1057,10 @@ public final class ExtOrcaProgram {
     return Instruction.createInstruction(invokedExtOrcaProgramMeta, keys, _data);
   }
 
-  public record InitializeTickArrayIxData(Discriminator discriminator, int startTickIndex) implements SerDe {  
+  public record InitializeTickArrayIxData(Discriminator discriminator, int startTickIndex) implements SerDe {
 
     public static InitializeTickArrayIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 12;
@@ -1094,7 +1094,7 @@ public final class ExtOrcaProgram {
   public static final Discriminator OPEN_POSITION_WITH_TOKEN_EXTENSIONS_DISCRIMINATOR = toDiscriminator(212, 47, 95, 92, 114, 102, 131, 250);
 
   /// Open a Token-2022 Orca Whirlpools position owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `OpenPosition`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
@@ -1130,7 +1130,7 @@ public final class ExtOrcaProgram {
   }
 
   /// Open a Token-2022 Orca Whirlpools position owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `OpenPosition`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
@@ -1176,7 +1176,7 @@ public final class ExtOrcaProgram {
   }
 
   /// Open a Token-2022 Orca Whirlpools position owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `OpenPosition`.
   /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
@@ -1199,10 +1199,10 @@ public final class ExtOrcaProgram {
   public record OpenPositionWithTokenExtensionsIxData(Discriminator discriminator,
                                                       int tickLowerIndex,
                                                       int tickUpperIndex,
-                                                      boolean withTokenMetadataExtension) implements SerDe {  
+                                                      boolean withTokenMetadataExtension) implements SerDe {
 
     public static OpenPositionWithTokenExtensionsIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 17;
@@ -1389,10 +1389,10 @@ public final class ExtOrcaProgram {
                                             int newTickLowerIndex,
                                             int newTickUpperIndex,
                                             RepositionLiquidityMethod method,
-                                            RemainingAccountsInfo remainingAccountsInfo) implements SerDe {  
+                                            RemainingAccountsInfo remainingAccountsInfo) implements SerDe {
 
     public static RepositionLiquidityV2IxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int NEW_TICK_LOWER_INDEX_OFFSET = 8;
@@ -1484,10 +1484,10 @@ public final class ExtOrcaProgram {
     return Instruction.createInstruction(invokedExtOrcaProgramMeta, keys, _data);
   }
 
-  public record SetWhirlpoolsPolicyIxData(Discriminator discriminator, WhirlpoolsPolicy policy) implements SerDe {  
+  public record SetWhirlpoolsPolicyIxData(Discriminator discriminator, WhirlpoolsPolicy policy) implements SerDe {
 
     public static SetWhirlpoolsPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;
@@ -1518,7 +1518,7 @@ public final class ExtOrcaProgram {
   public static final Discriminator UPDATE_FEES_AND_REWARDS_DISCRIMINATOR = toDiscriminator(154, 230, 250, 13, 236, 209, 75, 223);
 
   /// Update accrued fees and rewards for an Orca Whirlpools position.
-  /// 
+  ///
   /// - Permission: `UpdateFeesAndRewards`.
   ///
   public static List<AccountMeta> updateFeesAndRewardsKeys(final SolanaAccounts solanaAccounts,
@@ -1548,7 +1548,7 @@ public final class ExtOrcaProgram {
   }
 
   /// Update accrued fees and rewards for an Orca Whirlpools position.
-  /// 
+  ///
   /// - Permission: `UpdateFeesAndRewards`.
   ///
   public static Instruction updateFeesAndRewards(final AccountMeta invokedExtOrcaProgramMeta,
@@ -1580,7 +1580,7 @@ public final class ExtOrcaProgram {
   }
 
   /// Update accrued fees and rewards for an Orca Whirlpools position.
-  /// 
+  ///
   /// - Permission: `UpdateFeesAndRewards`.
   ///
   public static Instruction updateFeesAndRewards(final AccountMeta invokedExtOrcaProgramMeta,

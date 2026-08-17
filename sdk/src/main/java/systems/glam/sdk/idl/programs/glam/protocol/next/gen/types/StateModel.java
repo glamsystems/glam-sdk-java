@@ -2,14 +2,10 @@
 package systems.glam.sdk.idl.programs.glam.protocol.next.gen.types;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.encoding.ByteUtil;
 import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 
-import java.util.Arrays;
 import java.util.OptionalLong;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt32LE;
@@ -51,7 +47,7 @@ public record StateModel(AccountType accountType,
                                         final DelegateAcl[] delegateAcls) {
     return new StateModel(accountType,
                           name,
-                          uri, uri == null ? null : uri.getBytes(UTF_8),
+                          uri, uri == null ? null : SerDeUtil.encodeString(uri),
                           enabled,
                           assets,
                           created,
@@ -75,7 +71,7 @@ public record StateModel(AccountType accountType,
     } else {
       ++i;
       accountType = AccountType.read(_data, i);
-      i += accountType.l();
+      i += 1;
     }
     final byte[] name;
     if (SerDeUtil.isAbsent(1, _data, i)) {
@@ -88,15 +84,15 @@ public record StateModel(AccountType accountType,
     }
     final byte[] _uri;
     final String uri;
-    if (_data[i++] == 0) {
+    if (SerDeUtil.isAbsent(1, _data, i)) {
+      ++i;
       _uri = null;
       uri = null;
     } else {
-      final int _uriLength = ByteUtil.getInt32LE(_data, i);
-      i += 4;
-      _uri = Arrays.copyOfRange(_data, i, i + _uriLength);
-      uri = new String(_uri);
-      i += _uriLength;
+      ++i;
+      _uri = SerDeUtil.readbyteVector(4, _data, i);
+      uri = SerDeUtil.decodeString(_uri);
+      i += 4 + _uri.length;
     }
 
     final Boolean enabled;
@@ -124,7 +120,7 @@ public record StateModel(AccountType accountType,
     } else {
       ++i;
       created = CreatedModel.read(_data, i);
-      i += created.l();
+      i += 48;
     }
     final PublicKey owner;
     if (SerDeUtil.isAbsent(1, _data, i)) {

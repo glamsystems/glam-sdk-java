@@ -156,10 +156,10 @@ public final class GlamPoliciesProgram {
   }
 
   /// @param lockedUntil: u64
-  public record CreatePolicyIxData(Discriminator discriminator, long lockedUntil, TimeUnit timeUnit) implements SerDe {  
+  public record CreatePolicyIxData(Discriminator discriminator, long lockedUntil, TimeUnit timeUnit) implements SerDe {
 
     public static CreatePolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 17;
@@ -248,10 +248,10 @@ public final class GlamPoliciesProgram {
   }
 
   /// @param amount: u64
-  public record ExecuteIxData(Discriminator discriminator, long amount) implements SerDe {  
+  public record ExecuteIxData(Discriminator discriminator, long amount) implements SerDe {
 
     public static ExecuteIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -325,10 +325,10 @@ public final class GlamPoliciesProgram {
     return Instruction.createInstruction(invokedGlamPoliciesProgramMeta, keys, _data);
   }
 
-  public record InitializeExtraMetasAccountIxData(Discriminator discriminator, AnchorExtraAccountMeta[] metas) implements SerDe {  
+  public record InitializeExtraMetasAccountIxData(Discriminator discriminator, AnchorExtraAccountMeta[] metas) implements SerDe {
 
     public static InitializeExtraMetasAccountIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int METAS_OFFSET = 8;

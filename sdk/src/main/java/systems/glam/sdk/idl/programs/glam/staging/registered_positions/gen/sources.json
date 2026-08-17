@@ -1,6 +1,11 @@
 {
+  "program": "gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX",
   "deployed": "anchor",
   "lastDeploySlot": 428193507,
+  "programDataState": "upgradeable",
+  "programDataStateSlot": 439884391,
+  "programDataPayloadSha256": "702db8b9185bc1453f87835404385b75b70b6e28edc8c26fa2c49dd4c2ecad5a",
+  "programDataPayloadLength": 628408,
   "channels": {
     "anchor": {
       "origin": "4CDGaT5Beq5ZkNNkNpqUTSzRvyymtQchazky3k5qMYjY",
@@ -12,7 +17,7 @@
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_rpi-staging.json",
       "hash": "5eacad972139cfa1f962159ea3248e2966cefff66d089e1b2995a77d5780d9c8",
       "matchesDeployed": true,
-      "verbatim": "idl.json"
+      "verbatim": "vcs.original.json"
     }
   }
 }

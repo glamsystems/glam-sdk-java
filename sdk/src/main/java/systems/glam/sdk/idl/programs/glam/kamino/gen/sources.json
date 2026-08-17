@@ -1,6 +1,11 @@
 {
+  "program": "G1NTkDEUR3pkEqGCKZtmtmVzCUEdYa86pezHkwYbLyde",
   "deployed": "anchor",
   "lastDeploySlot": 412328608,
+  "programDataState": "upgradeable",
+  "programDataStateSlot": 439884391,
+  "programDataPayloadSha256": "fd0397360ab642a4cc8d43a8499aaea83e2d087a699d4f1e5bd5784b7bd6072b",
+  "programDataPayloadLength": 659032,
   "channels": {
     "anchor": {
       "origin": "8mv7YXVaSfQuCJzrTAcKjpbCZyYjgAMPY46NmSv8BJpd",
@@ -12,7 +17,7 @@
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_kamino.json",
       "hash": "9746403b83587fecd6df41091bcf28121c149aa8911df494f2abececc2b201e4",
       "matchesDeployed": true,
-      "verbatim": "idl.json"
+      "verbatim": "vcs.original.json"
     }
   }
 }

@@ -49,7 +49,7 @@ public record PositionObservationInput(byte[] positionId,
     final var amount = getInt128LE(_data, i);
     i += 16;
     final var denomination = DenominationSpec.read(_data, i);
-    i += denomination.l();
+    i += 33;
     final var observationTimestamp = getInt64LE(_data, i);
     i += 8;
     final var externalShares = getInt64LE(_data, i);

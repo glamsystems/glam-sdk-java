@@ -20,7 +20,7 @@ public record FIFOOrderId(Ticks priceInTicks, long orderSequenceNumber) implemen
     }
     int i = _offset;
     final var priceInTicks = Ticks.read(_data, i);
-    i += priceInTicks.l();
+    i += 8;
     final var orderSequenceNumber = getInt64LE(_data, i);
     return new FIFOOrderId(priceInTicks, orderSequenceNumber);
   }

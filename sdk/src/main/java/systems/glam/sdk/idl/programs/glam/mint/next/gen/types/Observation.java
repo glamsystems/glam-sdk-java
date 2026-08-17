@@ -43,9 +43,9 @@ public record Observation(StoredI128 amount,
     }
     int i = _offset;
     final var amount = StoredI128.read(_data, i);
-    i += amount.l();
+    i += 16;
     final var denomination = DenominationSpec.read(_data, i);
-    i += denomination.l();
+    i += 33;
     final var padDenom = new byte[7];
     i += SerDeUtil.readArray(padDenom, _data, i);
     final var observationTimestamp = getInt64LE(_data, i);

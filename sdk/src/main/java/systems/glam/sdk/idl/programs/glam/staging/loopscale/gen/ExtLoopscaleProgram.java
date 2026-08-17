@@ -42,7 +42,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator BORROW_PRINCIPAL_DISCRIMINATOR = toDiscriminator(106, 10, 38, 204, 139, 188, 124, 50);
 
   /// Borrow principal against a locked loan.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::BorrowPrincipal`.
   /// - Policy:
   /// - `principal_mint` must be present in `BorrowPolicy::principal_allowlist`.
@@ -89,7 +89,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Borrow principal against a locked loan.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::BorrowPrincipal`.
   /// - Policy:
   /// - `principal_mint` must be present in `BorrowPolicy::principal_allowlist`.
@@ -138,7 +138,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Borrow principal against a locked loan.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::BorrowPrincipal`.
   /// - Policy:
   /// - `principal_mint` must be present in `BorrowPolicy::principal_allowlist`.
@@ -155,10 +155,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record BorrowPrincipalIxData(Discriminator discriminator, BorrowPrincipalParams params) implements SerDe {  
+  public record BorrowPrincipalIxData(Discriminator discriminator, BorrowPrincipalParams params) implements SerDe {
 
     public static BorrowPrincipalIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int PARAMS_OFFSET = 8;
@@ -189,7 +189,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator CLAIM_VAULT_REWARDS_DISCRIMINATOR = toDiscriminator(0, 152, 75, 29, 195, 223, 12, 101);
 
   /// Claim rewards accrued by a Loopscale VaultStake account.
-  /// 
+  ///
   /// - Permission: `VaultPermissions::ClaimVaultRewards`.
   /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
   ///
@@ -227,7 +227,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Claim rewards accrued by a Loopscale VaultStake account.
-  /// 
+  ///
   /// - Permission: `VaultPermissions::ClaimVaultRewards`.
   /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
   ///
@@ -267,7 +267,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Claim rewards accrued by a Loopscale VaultStake account.
-  /// 
+  ///
   /// - Permission: `VaultPermissions::ClaimVaultRewards`.
   /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
   ///
@@ -281,10 +281,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record ClaimVaultRewardsIxData(Discriminator discriminator, PublicKey[] mints) implements SerDe {  
+  public record ClaimVaultRewardsIxData(Discriminator discriminator, PublicKey[] mints) implements SerDe {
 
     public static ClaimVaultRewardsIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int MINTS_OFFSET = 8;
@@ -315,7 +315,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator CLOSE_LOAN_DISCRIMINATOR = toDiscriminator(96, 114, 111, 204, 149, 228, 235, 124);
 
   /// Close an existing Loopscale loan PDA.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::CloseLoan`.
   ///
   public static List<AccountMeta> closeLoanKeys(final SolanaAccounts solanaAccounts,
@@ -345,7 +345,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Close an existing Loopscale loan PDA.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::CloseLoan`.
   ///
   public static Instruction closeLoan(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -377,7 +377,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Close an existing Loopscale loan PDA.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::CloseLoan`.
   ///
   public static Instruction closeLoan(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -388,7 +388,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator CLOSE_STRATEGY_DISCRIMINATOR = toDiscriminator(56, 247, 170, 246, 89, 221, 134, 200);
 
   /// Close a Loopscale lender strategy account.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::CloseStrategy`.
   ///
   public static List<AccountMeta> closeStrategyKeys(final SolanaAccounts solanaAccounts,
@@ -423,7 +423,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Close a Loopscale lender strategy account.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::CloseStrategy`.
   ///
   public static Instruction closeStrategy(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -459,7 +459,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Close a Loopscale lender strategy account.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::CloseStrategy`.
   ///
   public static Instruction closeStrategy(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -470,7 +470,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator CREATE_LOAN_DISCRIMINATOR = toDiscriminator(166, 131, 118, 219, 138, 218, 206, 140);
 
   /// Create a new Loopscale loan PDA owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::CreateLoan`.
   ///
   public static List<AccountMeta> createLoanKeys(final SolanaAccounts solanaAccounts,
@@ -500,7 +500,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Create a new Loopscale loan PDA owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::CreateLoan`.
   ///
   public static Instruction createLoan(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -533,7 +533,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Create a new Loopscale loan PDA owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::CreateLoan`.
   ///
   public static Instruction createLoan(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -546,10 +546,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record CreateLoanIxData(Discriminator discriminator, CreateLoanParams params) implements SerDe {  
+  public record CreateLoanIxData(Discriminator discriminator, CreateLoanParams params) implements SerDe {
 
     public static CreateLoanIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -582,7 +582,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator CREATE_STRATEGY_DISCRIMINATOR = toDiscriminator(152, 160, 107, 148, 245, 190, 127, 224);
 
   /// Create a new Loopscale lender strategy owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::CreateStrategy`.
   /// - Policy:
   /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
@@ -623,7 +623,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Create a new Loopscale lender strategy owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::CreateStrategy`.
   /// - Policy:
   /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
@@ -667,7 +667,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Create a new Loopscale lender strategy owned by the GLAM vault.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::CreateStrategy`.
   /// - Policy:
   /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
@@ -685,10 +685,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record CreateStrategyIxData(Discriminator discriminator, CreateStrategyParams params) implements SerDe {  
+  public record CreateStrategyIxData(Discriminator discriminator, CreateStrategyParams params) implements SerDe {
 
     public static CreateStrategyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int PARAMS_OFFSET = 8;
@@ -719,7 +719,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator DEPOSIT_COLLATERAL_DISCRIMINATOR = toDiscriminator(156, 131, 142, 116, 146, 247, 162, 120);
 
   /// Deposit collateral into a Loopscale loan.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::DepositCollateral`.
   /// - Policy:
   /// - `deposit_mint` must be present in `BorrowPolicy::collateral_allowlist`.
@@ -762,7 +762,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Deposit collateral into a Loopscale loan.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::DepositCollateral`.
   /// - Policy:
   /// - `deposit_mint` must be present in `BorrowPolicy::collateral_allowlist`.
@@ -807,7 +807,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Deposit collateral into a Loopscale loan.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::DepositCollateral`.
   /// - Policy:
   /// - `deposit_mint` must be present in `BorrowPolicy::collateral_allowlist`.
@@ -822,10 +822,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record DepositCollateralIxData(Discriminator discriminator, DepositCollateralParams params) implements SerDe {  
+  public record DepositCollateralIxData(Discriminator discriminator, DepositCollateralParams params) implements SerDe {
 
     public static DepositCollateralIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int PARAMS_OFFSET = 8;
@@ -856,7 +856,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator DEPOSIT_STRATEGY_DISCRIMINATOR = toDiscriminator(246, 82, 57, 226, 131, 222, 253, 249);
 
   /// Deposit principal liquidity into a Loopscale lender strategy.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::DepositStrategy`.
   /// - Policy:
   /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
@@ -901,7 +901,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Deposit principal liquidity into a Loopscale lender strategy.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::DepositStrategy`.
   /// - Policy:
   /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
@@ -949,7 +949,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Deposit principal liquidity into a Loopscale lender strategy.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::DepositStrategy`.
   /// - Policy:
   /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
@@ -968,10 +968,10 @@ public final class ExtLoopscaleProgram {
   }
 
   /// @param amount: u64
-  public record DepositStrategyIxData(Discriminator discriminator, long amount) implements SerDe {  
+  public record DepositStrategyIxData(Discriminator discriminator, long amount) implements SerDe {
 
     public static DepositStrategyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -1005,7 +1005,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator DEPOSIT_USER_VAULT_DISCRIMINATOR = toDiscriminator(204, 190, 182, 224, 15, 219, 247, 121);
 
   /// Deposit principal into a Loopscale user vault and receive Token-2022 LP tokens.
-  /// 
+  ///
   /// - Permission: `VaultPermissions::DepositUserVault`.
   /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
   ///
@@ -1055,7 +1055,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Deposit principal into a Loopscale user vault and receive Token-2022 LP tokens.
-  /// 
+  ///
   /// - Permission: `VaultPermissions::DepositUserVault`.
   /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
   ///
@@ -1107,7 +1107,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Deposit principal into a Loopscale user vault and receive Token-2022 LP tokens.
-  /// 
+  ///
   /// - Permission: `VaultPermissions::DepositUserVault`.
   /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
   ///
@@ -1121,10 +1121,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record DepositUserVaultIxData(Discriminator discriminator, LpParams params) implements SerDe {  
+  public record DepositUserVaultIxData(Discriminator discriminator, LpParams params) implements SerDe {
 
     public static DepositUserVaultIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int PARAMS_OFFSET = 8;
@@ -1155,7 +1155,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator REPAY_PRINCIPAL_DISCRIMINATOR = toDiscriminator(229, 67, 83, 65, 77, 84, 80, 141);
 
   /// Repay principal on a Loopscale loan.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::RepayPrincipal`.
   ///
   public static List<AccountMeta> repayPrincipalKeys(final SolanaAccounts solanaAccounts,
@@ -1198,7 +1198,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Repay principal on a Loopscale loan.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::RepayPrincipal`.
   ///
   public static Instruction repayPrincipal(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -1243,7 +1243,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Repay principal on a Loopscale loan.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::RepayPrincipal`.
   ///
   public static Instruction repayPrincipal(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -1256,10 +1256,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record RepayPrincipalIxData(Discriminator discriminator, RepayPrincipalParams params) implements SerDe {  
+  public record RepayPrincipalIxData(Discriminator discriminator, RepayPrincipalParams params) implements SerDe {
 
     public static RepayPrincipalIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 18;
@@ -1292,7 +1292,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator SELL_LEDGER_DISCRIMINATOR = toDiscriminator(55, 17, 153, 148, 120, 242, 80, 5);
 
   /// Sell a loan ledger from one strategy to another.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::SellLedger`.
   /// - Policy:
   /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
@@ -1347,7 +1347,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Sell a loan ledger from one strategy to another.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::SellLedger`.
   /// - Policy:
   /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
@@ -1404,7 +1404,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Sell a loan ledger from one strategy to another.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::SellLedger`.
   /// - Policy:
   /// - `principal_mint` must be present in `LendingPolicy::principal_allowlist`.
@@ -1421,10 +1421,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record SellLedgerIxData(Discriminator discriminator, SellLedgerParams params) implements SerDe {  
+  public record SellLedgerIxData(Discriminator discriminator, SellLedgerParams params) implements SerDe {
 
     public static SellLedgerIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int PARAMS_OFFSET = 8;
@@ -1455,7 +1455,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator SET_BORROW_POLICY_DISCRIMINATOR = toDiscriminator(199, 94, 106, 205, 150, 227, 206, 68);
 
   /// Set the Loopscale borrow policy (collateral allowlist and market policies).
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::SetPolicy`.
   ///
   public static List<AccountMeta> setBorrowPolicyKeys(final PublicKey glamStateKey,
@@ -1473,7 +1473,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Set the Loopscale borrow policy (collateral allowlist and market policies).
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::SetPolicy`.
   ///
   public static Instruction setBorrowPolicy(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -1494,7 +1494,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Set the Loopscale borrow policy (collateral allowlist and market policies).
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::SetPolicy`.
   ///
   public static Instruction setBorrowPolicy(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -1507,10 +1507,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record SetBorrowPolicyIxData(Discriminator discriminator, BorrowPolicy policy) implements SerDe {  
+  public record SetBorrowPolicyIxData(Discriminator discriminator, BorrowPolicy policy) implements SerDe {
 
     public static SetBorrowPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;
@@ -1541,7 +1541,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator SET_LENDING_POLICY_DISCRIMINATOR = toDiscriminator(226, 185, 23, 3, 113, 88, 118, 176);
 
   /// Set the Loopscale lending policy (allowlists, market policies, and sell-ledger limits).
-  /// 
+  ///
   /// - Permission: `LendingPermissions::SetPolicy`.
   ///
   public static List<AccountMeta> setLendingPolicyKeys(final PublicKey glamStateKey,
@@ -1559,7 +1559,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Set the Loopscale lending policy (allowlists, market policies, and sell-ledger limits).
-  /// 
+  ///
   /// - Permission: `LendingPermissions::SetPolicy`.
   ///
   public static Instruction setLendingPolicy(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -1580,7 +1580,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Set the Loopscale lending policy (allowlists, market policies, and sell-ledger limits).
-  /// 
+  ///
   /// - Permission: `LendingPermissions::SetPolicy`.
   ///
   public static Instruction setLendingPolicy(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -1593,10 +1593,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record SetLendingPolicyIxData(Discriminator discriminator, LendingPolicy policy) implements SerDe {  
+  public record SetLendingPolicyIxData(Discriminator discriminator, LendingPolicy policy) implements SerDe {
 
     public static SetLendingPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;
@@ -1627,7 +1627,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator SET_VAULT_POLICY_DISCRIMINATOR = toDiscriminator(184, 31, 142, 18, 106, 143, 184, 158);
 
   /// Set the Loopscale vault policy (vault allowlist).
-  /// 
+  ///
   /// - Permission: `VaultPermissions::SetPolicy`.
   ///
   public static List<AccountMeta> setVaultPolicyKeys(final PublicKey glamStateKey,
@@ -1645,7 +1645,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Set the Loopscale vault policy (vault allowlist).
-  /// 
+  ///
   /// - Permission: `VaultPermissions::SetPolicy`.
   ///
   public static Instruction setVaultPolicy(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -1666,7 +1666,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Set the Loopscale vault policy (vault allowlist).
-  /// 
+  ///
   /// - Permission: `VaultPermissions::SetPolicy`.
   ///
   public static Instruction setVaultPolicy(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -1679,10 +1679,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record SetVaultPolicyIxData(Discriminator discriminator, VaultPolicy policy) implements SerDe {  
+  public record SetVaultPolicyIxData(Discriminator discriminator, VaultPolicy policy) implements SerDe {
 
     public static SetVaultPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;
@@ -1713,7 +1713,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator STAKE_USER_VAULT_LP_DISCRIMINATOR = toDiscriminator(114, 132, 194, 209, 208, 149, 43, 136);
 
   /// Stake Loopscale user vault LP tokens into a VaultStake account.
-  /// 
+  ///
   /// - Permission: `VaultPermissions::StakeUserVaultLp`.
   /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
   ///
@@ -1761,7 +1761,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Stake Loopscale user vault LP tokens into a VaultStake account.
-  /// 
+  ///
   /// - Permission: `VaultPermissions::StakeUserVaultLp`.
   /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
   ///
@@ -1811,7 +1811,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Stake Loopscale user vault LP tokens into a VaultStake account.
-  /// 
+  ///
   /// - Permission: `VaultPermissions::StakeUserVaultLp`.
   /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
   ///
@@ -1825,10 +1825,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record StakeUserVaultLpIxData(Discriminator discriminator, VaultStakeParams params) implements SerDe {  
+  public record StakeUserVaultLpIxData(Discriminator discriminator, VaultStakeParams params) implements SerDe {
 
     public static StakeUserVaultLpIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int PARAMS_OFFSET = 8;
@@ -1859,7 +1859,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator UNSTAKE_USER_VAULT_LP_DISCRIMINATOR = toDiscriminator(83, 78, 230, 123, 226, 40, 158, 97);
 
   /// Unstake Loopscale user vault LP tokens from a VaultStake account.
-  /// 
+  ///
   /// - Permission: `VaultPermissions::UnstakeUserVaultLp`.
   /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
   ///
@@ -1905,7 +1905,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Unstake Loopscale user vault LP tokens from a VaultStake account.
-  /// 
+  ///
   /// - Permission: `VaultPermissions::UnstakeUserVaultLp`.
   /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
   ///
@@ -1953,7 +1953,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Unstake Loopscale user vault LP tokens from a VaultStake account.
-  /// 
+  ///
   /// - Permission: `VaultPermissions::UnstakeUserVaultLp`.
   /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
   ///
@@ -1967,10 +1967,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record UnstakeUserVaultLpIxData(Discriminator discriminator, VaultUnstakeParams params) implements SerDe {  
+  public record UnstakeUserVaultLpIxData(Discriminator discriminator, VaultUnstakeParams params) implements SerDe {
 
     public static UnstakeUserVaultLpIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 17;
@@ -2003,7 +2003,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator UPDATE_STRATEGY_DISCRIMINATOR = toDiscriminator(16, 76, 138, 179, 171, 112, 196, 21);
 
   /// Update a Loopscale lender strategy's terms, caps, and collateral terms.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::UpdateStrategy`.
   /// - Policy:
   /// - The strategy market account must be passed as the first remaining account.
@@ -2047,7 +2047,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Update a Loopscale lender strategy's terms, caps, and collateral terms.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::UpdateStrategy`.
   /// - Policy:
   /// - The strategy market account must be passed as the first remaining account.
@@ -2094,7 +2094,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Update a Loopscale lender strategy's terms, caps, and collateral terms.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::UpdateStrategy`.
   /// - Policy:
   /// - The strategy market account must be passed as the first remaining account.
@@ -2119,10 +2119,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record UpdateStrategyIxData(Discriminator discriminator, MultiCollateralTermsUpdateParams[] collateralTerms, UpdateStrategyParams params) implements SerDe {  
+  public record UpdateStrategyIxData(Discriminator discriminator, MultiCollateralTermsUpdateParams[] collateralTerms, UpdateStrategyParams params) implements SerDe {
 
     public static UpdateStrategyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int COLLATERAL_TERMS_OFFSET = 8;
@@ -2162,7 +2162,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator UPDATE_WEIGHT_MATRIX_DISCRIMINATOR = toDiscriminator(252, 166, 37, 207, 154, 83, 187, 128);
 
   /// Update the collateral weight matrix on a loan.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::UpdateLoan`.
   ///
   public static List<AccountMeta> updateWeightMatrixKeys(final SolanaAccounts solanaAccounts,
@@ -2190,7 +2190,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Update the collateral weight matrix on a loan.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::UpdateLoan`.
   ///
   public static Instruction updateWeightMatrix(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -2221,7 +2221,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Update the collateral weight matrix on a loan.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::UpdateLoan`.
   ///
   public static Instruction updateWeightMatrix(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -2234,10 +2234,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record UpdateWeightMatrixIxData(Discriminator discriminator, UpdateWeightMatrixParams params) implements SerDe {  
+  public record UpdateWeightMatrixIxData(Discriminator discriminator, UpdateWeightMatrixParams params) implements SerDe {
 
     public static UpdateWeightMatrixIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int PARAMS_OFFSET = 8;
@@ -2268,7 +2268,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator WITHDRAW_COLLATERAL_DISCRIMINATOR = toDiscriminator(115, 135, 168, 106, 139, 214, 138, 150);
 
   /// Withdraw collateral from a Loopscale loan.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::WithdrawCollateral`.
   ///
   public static List<AccountMeta> withdrawCollateralKeys(final SolanaAccounts solanaAccounts,
@@ -2307,7 +2307,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Withdraw collateral from a Loopscale loan.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::WithdrawCollateral`.
   ///
   public static Instruction withdrawCollateral(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -2348,7 +2348,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Withdraw collateral from a Loopscale loan.
-  /// 
+  ///
   /// - Permission: `BorrowPermissions::WithdrawCollateral`.
   ///
   public static Instruction withdrawCollateral(final AccountMeta invokedExtLoopscaleProgramMeta,
@@ -2361,10 +2361,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record WithdrawCollateralIxData(Discriminator discriminator, WithdrawCollateralParams params) implements SerDe {  
+  public record WithdrawCollateralIxData(Discriminator discriminator, WithdrawCollateralParams params) implements SerDe {
 
     public static WithdrawCollateralIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int PARAMS_OFFSET = 8;
@@ -2395,7 +2395,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator WITHDRAW_STRATEGY_DISCRIMINATOR = toDiscriminator(31, 45, 162, 5, 193, 217, 134, 188);
 
   /// Withdraw undeployed principal from a Loopscale lender strategy.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::WithdrawStrategy`.
   ///
   public static List<AccountMeta> withdrawStrategyKeys(final SolanaAccounts solanaAccounts,
@@ -2436,7 +2436,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Withdraw undeployed principal from a Loopscale lender strategy.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::WithdrawStrategy`.
   ///
   /// @param amount: u64
@@ -2481,7 +2481,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Withdraw undeployed principal from a Loopscale lender strategy.
-  /// 
+  ///
   /// - Permission: `LendingPermissions::WithdrawStrategy`.
   ///
   /// @param amount: u64
@@ -2499,10 +2499,10 @@ public final class ExtLoopscaleProgram {
   }
 
   /// @param amount: u64
-  public record WithdrawStrategyIxData(Discriminator discriminator, long amount, boolean withdrawAll) implements SerDe {  
+  public record WithdrawStrategyIxData(Discriminator discriminator, long amount, boolean withdrawAll) implements SerDe {
 
     public static WithdrawStrategyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 17;
@@ -2541,7 +2541,7 @@ public final class ExtLoopscaleProgram {
   public static final Discriminator WITHDRAW_USER_VAULT_DISCRIMINATOR = toDiscriminator(9, 80, 134, 138, 212, 20, 61, 42);
 
   /// Withdraw principal from a Loopscale user vault by burning Token-2022 LP tokens.
-  /// 
+  ///
   /// - Permission: `VaultPermissions::WithdrawUserVault`.
   /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
   ///
@@ -2591,7 +2591,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Withdraw principal from a Loopscale user vault by burning Token-2022 LP tokens.
-  /// 
+  ///
   /// - Permission: `VaultPermissions::WithdrawUserVault`.
   /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
   ///
@@ -2643,7 +2643,7 @@ public final class ExtLoopscaleProgram {
   }
 
   /// Withdraw principal from a Loopscale user vault by burning Token-2022 LP tokens.
-  /// 
+  ///
   /// - Permission: `VaultPermissions::WithdrawUserVault`.
   /// - Policy: `vault` must be present in `VaultPolicy::vault_allowlist`.
   ///
@@ -2657,10 +2657,10 @@ public final class ExtLoopscaleProgram {
     return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
   }
 
-  public record WithdrawUserVaultIxData(Discriminator discriminator, LpParams params) implements SerDe {  
+  public record WithdrawUserVaultIxData(Discriminator discriminator, LpParams params) implements SerDe {
 
     public static WithdrawUserVaultIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int PARAMS_OFFSET = 8;

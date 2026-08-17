@@ -176,10 +176,10 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record CpiProxyIxData(Discriminator discriminator, byte[] data, ExtraParams[] extraParams) implements SerDe {  
+  public record CpiProxyIxData(Discriminator discriminator, byte[] data, ExtraParams[] extraParams) implements SerDe {
 
     public static CpiProxyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int DATA_OFFSET = 8;
@@ -281,10 +281,10 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record EmergencyAccessUpdateIxData(Discriminator discriminator, EmergencyAccessUpdateArgs args) implements SerDe {  
+  public record EmergencyAccessUpdateIxData(Discriminator discriminator, EmergencyAccessUpdateArgs args) implements SerDe {
 
     public static EmergencyAccessUpdateIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int ARGS_OFFSET = 8;
@@ -363,10 +363,10 @@ public final class GlamProtocolProgram {
   public record EnableDisableProtocolsIxData(Discriminator discriminator,
                                              PublicKey integrationProgram,
                                              int protocolsBitmask,
-                                             boolean setEnabled) implements SerDe {  
+                                             boolean setEnabled) implements SerDe {
 
     public static EnableDisableProtocolsIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 43;
@@ -445,10 +445,10 @@ public final class GlamProtocolProgram {
   }
 
   /// @param bytes: u32
-  public record ExtendStateIxData(Discriminator discriminator, long bytes) implements SerDe {  
+  public record ExtendStateIxData(Discriminator discriminator, long bytes) implements SerDe {
 
     public static ExtendStateIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 12;
@@ -545,10 +545,10 @@ public final class GlamProtocolProgram {
                                                      PublicKey integrationProgram,
                                                      int protocolBitflag,
                                                      long permissionsBitmask,
-                                                     boolean setGranted) implements SerDe {  
+                                                     boolean setGranted) implements SerDe {
 
     public static GrantRevokeDelegatePermissionsIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 83;
@@ -643,10 +643,10 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record InitializeStateIxData(Discriminator discriminator, StateModel state) implements SerDe {  
+  public record InitializeStateIxData(Discriminator discriminator, StateModel state) implements SerDe {
 
     public static InitializeStateIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int STATE_OFFSET = 8;
@@ -723,10 +723,10 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record JupiterSwapIxData(Discriminator discriminator, byte[] data) implements SerDe {  
+  public record JupiterSwapIxData(Discriminator discriminator, byte[] data) implements SerDe {
 
     public static JupiterSwapIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int DATA_OFFSET = 8;
@@ -823,10 +823,10 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record JupiterSwapV2IxData(Discriminator discriminator, boolean skipQuotePriceCheck, byte[] data) implements SerDe {  
+  public record JupiterSwapV2IxData(Discriminator discriminator, boolean skipQuotePriceCheck, byte[] data) implements SerDe {
 
     public static JupiterSwapV2IxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int SKIP_QUOTE_PRICE_CHECK_OFFSET = 8;
@@ -900,10 +900,10 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record LinkUnlinkMintByMintAuthorityIxData(Discriminator discriminator, boolean link) implements SerDe {  
+  public record LinkUnlinkMintByMintAuthorityIxData(Discriminator discriminator, boolean link) implements SerDe {
 
     public static LinkUnlinkMintByMintAuthorityIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 9;
@@ -1000,10 +1000,10 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record SetJupiterSwapPolicyIxData(Discriminator discriminator, JupiterSwapPolicy policy) implements SerDe {  
+  public record SetJupiterSwapPolicyIxData(Discriminator discriminator, JupiterSwapPolicy policy) implements SerDe {
 
     public static SetJupiterSwapPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;
@@ -1082,10 +1082,10 @@ public final class GlamProtocolProgram {
   public record SetProtocolPolicyIxData(Discriminator discriminator,
                                         PublicKey integrationProgram,
                                         int protocolBitflag,
-                                        byte[] data) implements SerDe {  
+                                        byte[] data) implements SerDe {
 
     public static SetProtocolPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int INTEGRATION_PROGRAM_OFFSET = 8;
@@ -1165,10 +1165,10 @@ public final class GlamProtocolProgram {
   }
 
   /// @param protocolBitflag: u16
-  public record SetProtocolPolicyByIntegrationAuthorityIxData(Discriminator discriminator, int protocolBitflag, byte[] data) implements SerDe {  
+  public record SetProtocolPolicyByIntegrationAuthorityIxData(Discriminator discriminator, int protocolBitflag, byte[] data) implements SerDe {
 
     public static SetProtocolPolicyByIntegrationAuthorityIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int PROTOCOL_BITFLAG_OFFSET = 8;
@@ -1232,10 +1232,10 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record SetSystemTransferPolicyIxData(Discriminator discriminator, TransferPolicy policy) implements SerDe {  
+  public record SetSystemTransferPolicyIxData(Discriminator discriminator, TransferPolicy policy) implements SerDe {
 
     public static SetSystemTransferPolicyIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;
@@ -1314,10 +1314,10 @@ public final class GlamProtocolProgram {
   }
 
   /// @param stakerOrWithdrawer: u32
-  public record StakeAuthorizeIxData(Discriminator discriminator, PublicKey newAuthority, long stakerOrWithdrawer) implements SerDe {  
+  public record StakeAuthorizeIxData(Discriminator discriminator, PublicKey newAuthority, long stakerOrWithdrawer) implements SerDe {
 
     public static StakeAuthorizeIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 44;
@@ -1574,10 +1574,10 @@ public final class GlamProtocolProgram {
   }
 
   /// @param lamports: u64
-  public record StakeMoveIxData(Discriminator discriminator, boolean moveStake, long lamports) implements SerDe {  
+  public record StakeMoveIxData(Discriminator discriminator, boolean moveStake, long lamports) implements SerDe {
 
     public static StakeMoveIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 17;
@@ -1663,10 +1663,10 @@ public final class GlamProtocolProgram {
   }
 
   /// @param lamports: u64
-  public record StakeSplitIxData(Discriminator discriminator, long lamports) implements SerDe {  
+  public record StakeSplitIxData(Discriminator discriminator, long lamports) implements SerDe {
 
     public static StakeSplitIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -1746,10 +1746,10 @@ public final class GlamProtocolProgram {
   }
 
   /// @param lamports: u64
-  public record StakeWithdrawIxData(Discriminator discriminator, long lamports) implements SerDe {  
+  public record StakeWithdrawIxData(Discriminator discriminator, long lamports) implements SerDe {
 
     public static StakeWithdrawIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -1783,7 +1783,7 @@ public final class GlamProtocolProgram {
   public static final Discriminator SYSTEM_TRANSFER_DISCRIMINATOR = toDiscriminator(167, 164, 195, 155, 219, 152, 191, 230);
 
   /// Transfers SOL from the vault to another account.
-  /// 
+  ///
   /// Token program ID is required as a remaining account when wrapping SOL (i.e., transfer to wSOL token account).
   ///
   public static List<AccountMeta> systemTransferKeys(final SolanaAccounts solanaAccounts,
@@ -1801,7 +1801,7 @@ public final class GlamProtocolProgram {
   }
 
   /// Transfers SOL from the vault to another account.
-  /// 
+  ///
   /// Token program ID is required as a remaining account when wrapping SOL (i.e., transfer to wSOL token account).
   ///
   /// @param lamports: u64
@@ -1823,7 +1823,7 @@ public final class GlamProtocolProgram {
   }
 
   /// Transfers SOL from the vault to another account.
-  /// 
+  ///
   /// Token program ID is required as a remaining account when wrapping SOL (i.e., transfer to wSOL token account).
   ///
   /// @param lamports: u64
@@ -1838,10 +1838,10 @@ public final class GlamProtocolProgram {
   }
 
   /// @param lamports: u64
-  public record SystemTransferIxData(Discriminator discriminator, long lamports) implements SerDe {  
+  public record SystemTransferIxData(Discriminator discriminator, long lamports) implements SerDe {
 
     public static SystemTransferIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -1943,10 +1943,10 @@ public final class GlamProtocolProgram {
 
   /// @param amount: u64
   /// @param decimals: u8
-  public record TokenTransferCheckedByMintAuthorityIxData(Discriminator discriminator, long amount, int decimals) implements SerDe {  
+  public record TokenTransferCheckedByMintAuthorityIxData(Discriminator discriminator, long amount, int decimals) implements SerDe {
 
     public static TokenTransferCheckedByMintAuthorityIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 17;
@@ -2013,10 +2013,10 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record UpdateMintParamsIxData(Discriminator discriminator, EngineField[] params) implements SerDe {  
+  public record UpdateMintParamsIxData(Discriminator discriminator, EngineField[] params) implements SerDe {
 
     public static UpdateMintParamsIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int PARAMS_OFFSET = 8;
@@ -2085,10 +2085,10 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record UpdateMintParamsByMintAuthorityIxData(Discriminator discriminator, EngineField[] params) implements SerDe {  
+  public record UpdateMintParamsByMintAuthorityIxData(Discriminator discriminator, EngineField[] params) implements SerDe {
 
     public static UpdateMintParamsByMintAuthorityIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int PARAMS_OFFSET = 8;
@@ -2153,10 +2153,10 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record UpdatePricedProtocolIxData(Discriminator discriminator, PricedProtocol pricedProtocol) implements SerDe {  
+  public record UpdatePricedProtocolIxData(Discriminator discriminator, PricedProtocol pricedProtocol) implements SerDe {
 
     public static UpdatePricedProtocolIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int PRICED_PROTOCOL_OFFSET = 8;
@@ -2215,10 +2215,10 @@ public final class GlamProtocolProgram {
     return Instruction.createInstruction(invokedGlamProtocolProgramMeta, keys, _data);
   }
 
-  public record UpdateStateIxData(Discriminator discriminator, StateModel state) implements SerDe {  
+  public record UpdateStateIxData(Discriminator discriminator, StateModel state) implements SerDe {
 
     public static UpdateStateIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int STATE_OFFSET = 8;

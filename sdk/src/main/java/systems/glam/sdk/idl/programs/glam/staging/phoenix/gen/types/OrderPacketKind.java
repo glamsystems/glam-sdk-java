@@ -48,11 +48,11 @@ public sealed interface OrderPacketKind extends RustEnum permits
       }
       int i = _offset;
       final var side = Side.read(_data, i);
-      i += side.l();
+      i += 1;
       final var priceInTicks = Ticks.read(_data, i);
-      i += priceInTicks.l();
+      i += 8;
       final var numBaseLots = BaseLots.read(_data, i);
-      i += numBaseLots.l();
+      i += 8;
       final var clientOrderId = new byte[16];
       i += SerDeUtil.readArray(clientOrderId, _data, i);
       final var slide = _data[i] == 1;
@@ -67,7 +67,7 @@ public sealed interface OrderPacketKind extends RustEnum permits
         i += 8;
       }
       final var orderFlags = OrderFlags.read(_data, i);
-      i += orderFlags.l();
+      i += 1;
       final var cancelExisting = _data[i] == 1;
       return new PostOnly(side,
                           priceInTicks,
@@ -138,13 +138,13 @@ public sealed interface OrderPacketKind extends RustEnum permits
       }
       int i = _offset;
       final var side = Side.read(_data, i);
-      i += side.l();
+      i += 1;
       final var priceInTicks = Ticks.read(_data, i);
-      i += priceInTicks.l();
+      i += 8;
       final var numBaseLots = BaseLots.read(_data, i);
-      i += numBaseLots.l();
+      i += 8;
       final var selfTradeBehavior = SelfTradeBehavior.read(_data, i);
-      i += selfTradeBehavior.l();
+      i += 1;
       final OptionalLong matchLimit;
       if (SerDeUtil.isAbsent(1, _data, i)) {
         matchLimit = OptionalLong.empty();
@@ -166,7 +166,7 @@ public sealed interface OrderPacketKind extends RustEnum permits
         i += 8;
       }
       final var orderFlags = OrderFlags.read(_data, i);
-      i += orderFlags.l();
+      i += 1;
       final var cancelExisting = _data[i] == 1;
       return new Limit(side,
                        priceInTicks,
@@ -239,7 +239,7 @@ public sealed interface OrderPacketKind extends RustEnum permits
       }
       int i = _offset;
       final var side = Side.read(_data, i);
-      i += side.l();
+      i += 1;
       final Ticks priceInTicks;
       if (SerDeUtil.isAbsent(1, _data, i)) {
         priceInTicks = null;
@@ -247,10 +247,10 @@ public sealed interface OrderPacketKind extends RustEnum permits
       } else {
         ++i;
         priceInTicks = Ticks.read(_data, i);
-        i += priceInTicks.l();
+        i += 8;
       }
       final var numBaseLots = BaseLots.read(_data, i);
-      i += numBaseLots.l();
+      i += 8;
       final QuoteLots numQuoteLots;
       if (SerDeUtil.isAbsent(1, _data, i)) {
         numQuoteLots = null;
@@ -258,14 +258,14 @@ public sealed interface OrderPacketKind extends RustEnum permits
       } else {
         ++i;
         numQuoteLots = QuoteLots.read(_data, i);
-        i += numQuoteLots.l();
+        i += 8;
       }
       final var minBaseLotsToFill = BaseLots.read(_data, i);
-      i += minBaseLotsToFill.l();
+      i += 8;
       final var minQuoteLotsToFill = QuoteLots.read(_data, i);
-      i += minQuoteLotsToFill.l();
+      i += 8;
       final var selfTradeBehavior = SelfTradeBehavior.read(_data, i);
-      i += selfTradeBehavior.l();
+      i += 1;
       final OptionalLong matchLimit;
       if (SerDeUtil.isAbsent(1, _data, i)) {
         matchLimit = OptionalLong.empty();
@@ -287,7 +287,7 @@ public sealed interface OrderPacketKind extends RustEnum permits
         i += 8;
       }
       final var orderFlags = OrderFlags.read(_data, i);
-      i += orderFlags.l();
+      i += 1;
       final var cancelExisting = _data[i] == 1;
       return new ImmediateOrCancel(side,
                                    priceInTicks,

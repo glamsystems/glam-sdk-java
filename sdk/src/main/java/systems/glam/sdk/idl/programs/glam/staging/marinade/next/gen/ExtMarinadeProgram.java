@@ -119,10 +119,10 @@ public final class ExtMarinadeProgram {
   }
 
   /// @param lamports: u64
-  public record DepositIxData(Discriminator discriminator, long lamports) implements SerDe {  
+  public record DepositIxData(Discriminator discriminator, long lamports) implements SerDe {
 
     public static DepositIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -258,10 +258,10 @@ public final class ExtMarinadeProgram {
   }
 
   /// @param validatorIndex: u32
-  public record DepositStakeAccountIxData(Discriminator discriminator, long validatorIndex) implements SerDe {  
+  public record DepositStakeAccountIxData(Discriminator discriminator, long validatorIndex) implements SerDe {
 
     public static DepositStakeAccountIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 12;
@@ -380,10 +380,10 @@ public final class ExtMarinadeProgram {
   }
 
   /// @param msolAmount: u64
-  public record LiquidUnstakeIxData(Discriminator discriminator, long msolAmount) implements SerDe {  
+  public record LiquidUnstakeIxData(Discriminator discriminator, long msolAmount) implements SerDe {
 
     public static LiquidUnstakeIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 16;
@@ -555,10 +555,10 @@ public final class ExtMarinadeProgram {
                                            long stakeIndex,
                                            long validatorIndex,
                                            long msolAmount,
-                                           PublicKey beneficiary) implements SerDe {  
+                                           PublicKey beneficiary) implements SerDe {
 
     public static WithdrawStakeAccountIxData read(final Instruction instruction) {
-      return read(instruction.data(), instruction.offset());
+      return read(instruction.copyData(), 0);
     }
 
     public static final int BYTES = 56;

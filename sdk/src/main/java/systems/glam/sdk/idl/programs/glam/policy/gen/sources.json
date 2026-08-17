@@ -1,6 +1,11 @@
 {
+  "program": "po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY",
   "deployed": "anchor",
   "lastDeploySlot": 412329134,
+  "programDataState": "upgradeable",
+  "programDataStateSlot": 439884391,
+  "programDataPayloadSha256": "c92e857254ef75ab36d577696acf59b6c016b4e733195652fe9d195f7452ff76",
+  "programDataPayloadLength": 280360,
   "channels": {
     "anchor": {
       "origin": "38kAumtXgn2ZLQxDCGzmVgtVtLP7ss6YMGBXVizTz5Yp",
@@ -12,7 +17,7 @@
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/glam_policies.json",
       "hash": "938491fa29ce3ad8db6db46a204834aa2627980ba69ec9d618b56eda4e344f5f",
       "matchesDeployed": true,
-      "verbatim": "idl.json"
+      "verbatim": "vcs.original.json"
     }
   }
 }

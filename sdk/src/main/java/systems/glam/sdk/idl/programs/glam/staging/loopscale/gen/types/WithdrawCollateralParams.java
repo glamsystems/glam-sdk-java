@@ -32,7 +32,7 @@ public record WithdrawCollateralParams(long amount,
     final var assetIndexGuidance = SerDeUtil.readbyteVector(4, _data, i);
     i += SerDeUtil.lenVector(4, assetIndexGuidance);
     final var expectedLoanValues = ExpectedLoanValues.read(_data, i);
-    i += expectedLoanValues.l();
+    i += 28;
     final var closeIfEligible = _data[i] == 1;
     ++i;
     final var withdrawAll = _data[i] == 1;

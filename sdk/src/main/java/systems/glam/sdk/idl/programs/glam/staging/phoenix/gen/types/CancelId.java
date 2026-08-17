@@ -16,7 +16,7 @@ public record CancelId(NodePointer nodePointer, FIFOOrderId orderId) implements 
     }
     int i = _offset;
     final var nodePointer = NodePointer.read(_data, i);
-    i += nodePointer.l();
+    i += 4;
     final var orderId = FIFOOrderId.read(_data, i);
     return new CancelId(nodePointer, orderId);
   }

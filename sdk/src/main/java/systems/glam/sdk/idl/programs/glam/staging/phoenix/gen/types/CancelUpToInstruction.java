@@ -23,7 +23,7 @@ public record CancelUpToInstruction(Side side,
     }
     int i = _offset;
     final var side = Side.read(_data, i);
-    i += side.l();
+    i += 1;
     final OptionalLong numOrdersToCancel;
     if (SerDeUtil.isAbsent(1, _data, i)) {
       numOrdersToCancel = OptionalLong.empty();
