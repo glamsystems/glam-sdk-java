@@ -26,6 +26,15 @@
 !/settings.gradle.kts
 !/syncMappings.sh
 
+# Both reports idl-src-gen emits from one run: the movement events this run saw, and the
+# standing gap dashboard beside it. The gap file needs its own rule -- it is named by the
+# generator rather than by the --report flag, so nothing here would have re-included it and
+# the deny-by-default rule above would swallow a committed deliverable silently. It did:
+# 92318b2's report was lost exactly that way (the earlier record commits predate the
+# generator writing a report by default and had none to lose).
+!/idl-change-report.txt
+!/idl-change-report-gap.txt
+
 ### CI ###
 !/.github/
 !/.github/**

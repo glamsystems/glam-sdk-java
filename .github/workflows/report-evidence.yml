@@ -1,0 +1,101 @@
+# The audit half of the movement-evidence invariant (AGENTS.md): every pushed commit
+# that moves a generated channel record must carry that generation's movement report
+# beside it. The script is vendored from sava-software/idl-src-gen `consumer/`, which is
+# canonical — it lives beside the serializer whose output it greps — and the drift step
+# below is what keeps this copy honest.
+#
+# On push, not on pull_request. Work lands on main directly here; the only pull requests
+# are release-please's, and those never touch a generated record, so a PR-gated check
+# would never run on the commits it exists for. It reports after the fact rather than
+# blocking, which is still the whole point: movement is an event, and one generation
+# later the evidence is gone for good. The pre-push hook (.github/hooks/pre-push) is the
+# blocking half, run where amending is still legal.
+name: Report Evidence
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      range:
+        description: 'Commit range to audit (default: everything since the audit was adopted)'
+        required: false
+        default: ''
+
+# No concurrency group on purpose: each push run audits its own disjoint before..after
+# range, read-only, so concurrent runs cannot conflict — and a cancelled or superseded
+# run's range would never be audited by any later push's run.
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      # Full history: the audit reads the pushed range, and a shallow clone would leave
+      # `before` unfetched — which reads as "nothing to check" rather than as an error.
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+
+      # Self-contained on purpose: the verdict step needs no token, so an expired
+      # credential can never read as an evidence violation — or hide one.
+      - name: Audit the pushed range for movement evidence
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          DISPATCH_RANGE: ${{ inputs.range }}
+        run: |
+          if [ -n "${DISPATCH_RANGE:-}" ]; then
+            range="$DISPATCH_RANGE"
+          elif [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            # Everything since the audit arrived, found from the most recent commit
+            # that added this workflow file. The record commits before it predate the
+            # invariant — 92318b2's report was lost to the whitelist .gitignore, and
+            # the earlier ones predate the generator writing a report by default — and
+            # a default that re-reported them forever would teach everyone that a red
+            # audit is normal.
+            adopted=$(git log --diff-filter=A --format=%H -1 -- .github/workflows/report-evidence.yml)
+            if [ -z "$adopted" ]; then
+              echo "::error::cannot locate the commit that adopted this workflow; pass an explicit range input" >&2
+              exit 2
+            fi
+            range="$adopted..$AFTER"
+          elif [ -n "${BEFORE:-}" ] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            range="$BEFORE..$AFTER"
+          else
+            # A new branch, a force push, or a first push: there is no meaningful range to
+            # walk, so audit the tip alone rather than silently checking nothing.
+            echo "::notice::no usable push range (before=${BEFORE:-unset}); auditing $AFTER alone"
+            range="$AFTER"
+          fi
+          echo "auditing $range"
+          .github/report-evidence.sh "$range"
+
+      # Drift gate, not execution path: idl-src-gen is cloned here only to prove the
+      # vendored audit is byte-identical to the canonical copy beside the serializer it
+      # greps. Separate steps with separate failure meanings — red below is "the gate
+      # is stale" or "the canonical copy is unreachable", never "evidence is missing",
+      # and a token rotation cannot masquerade as either verdict above. Both steps run
+      # on a red audit too (!cancelled()): a stale vendored script producing a false
+      # verdict is exactly the run whose summary must say "unverified".
+      - name: Checkout the canonical audit
+        id: canonical
+        if: ${{ !cancelled() }}
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          repository: sava-software/idl-src-gen
+          token: ${{ secrets.READ_SAVA_SRC_GEN }}
+          path: idl-src-gen
+      - name: The vendored audit must match the canonical one
+        if: ${{ !cancelled() && steps.canonical.outcome == 'success' }}
+        run: |
+          status=0
+          diff -u idl-src-gen/consumer/report-evidence.sh .github/report-evidence.sh || status=1
+          diff -u idl-src-gen/consumer/hooks/pre-push .github/hooks/pre-push || status=1
+          if [ "$status" -ne 0 ]; then
+            echo "The vendored audit has drifted from idl-src-gen consumer/. Re-vendor with" >&2
+            echo "idl-src-gen/consumer/sync.sh and commit. The audit verdict above came from" >&2
+            echo "the stale copy and is unverified until then." >&2
+            echo "**Unverified audit**: the vendored report-evidence tooling has drifted from the canonical copy in idl-src-gen \`consumer/\`. The verdict above came from the stale copy; re-vendor with \`consumer/sync.sh\` and commit." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$status"

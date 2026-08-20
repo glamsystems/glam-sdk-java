@@ -9,8 +9,12 @@ on:
   # for a run is what keeps that pause short enough to still mean what it says.
   workflow_dispatch:
 
+# Its own group, not build.yml's: concurrency groups are repository-wide, so sharing
+# `build-main` let an ordinary push cancel a mid-flight monitor run — swallowing the
+# heartbeat digest as a neutral "cancelled" — and let the 8-hour tick cancel a push's
+# build. Self-supersession within the monitor is still wanted.
 concurrency:
-  group: build-${{ github.ref_name }}
+  group: build-scheduled-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -27,6 +31,7 @@ jobs:
 
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         name: Checkout IDL Source Generator
+        id: srcgen
         with:
           repository: sava-software/idl-src-gen
           token: ${{ secrets.READ_SAVA_SRC_GEN }}
@@ -58,3 +63,21 @@ jobs:
           ORG_GRADLE_PROJECT_savaGithubPackagesUsername: ${{ github.actor }}
           ORG_GRADLE_PROJECT_savaGithubPackagesPassword: ${{ secrets.READ_SAVA_PACKAGES }}
           IDL_SRC_GEN_WEBHOOK: ${{ secrets.IDL_MONITOR_SLACK_WEBHOOK }}
+
+      # The vendored movement-evidence audit (.github/report-evidence.sh, hooks/pre-push) is a
+      # byte-copy of idl-src-gen consumer/, which this job has already checked out. Diffed here
+      # as well as on push so a canonical change is caught within eight hours even when nothing
+      # is being pushed — and *after* the monitor step, so stale tooling reddens the run without
+      # silencing the heartbeat digest the step above already delivered. !cancelled(): the
+      # eight-hour bound must hold precisely while the monitor step is failing, which is when a
+      # channel that moved is re-alerting every run.
+      - name: The vendored audit must match the canonical one
+        if: ${{ !cancelled() && steps.srcgen.outcome == 'success' }}
+        run: |
+          status=0
+          diff -u idl-src-gen/consumer/report-evidence.sh .github/report-evidence.sh || status=1
+          diff -u idl-src-gen/consumer/hooks/pre-push .github/hooks/pre-push || status=1
+          if [ "$status" -ne 0 ]; then
+            echo "Re-vendor with idl-src-gen/consumer/sync.sh and commit." >&2
+          fi
+          exit "$status"

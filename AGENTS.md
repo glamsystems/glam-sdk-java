@@ -22,7 +22,9 @@ plus service components for operating against it.
     staging deployment). Regenerated from IDLs by `idl-src-gen` (the
     scheduled CI workflow checks out `sava-software/idl-src-gen` and
     regenerates before `check`). **Do not hand-edit generated code** — fix
-    the generator or the IDL and regenerate.
+    the generator or the IDL and regenerate, and commit the movement report
+    beside any record a regeneration moves (see "IDL channel records and
+    movement evidence").
   - **Hand-written layer**: `GlamAccountClient` (extends sava's
     `SPLAccountClient`; `createClient` picks the staging vs prod impl by
     protocol program), `GlamAccounts` / `GlamVaultAccounts` (program IDs and
@@ -472,6 +474,55 @@ reader (`lock.getReadLockCount()`, a cache accessor) over any wait at all.
 When adding a parser, algorithm or strategy: add unit tests, put it in a
 mutation suite (the wildcard targeting already mutates new classes by default),
 and add a fuzz harness if it consumes external input.
+
+## IDL channel records and movement evidence
+
+Each generated `gen` tree carries a `sources.json` channel record: which published
+descriptions of the program exist, their content hashes, and the program's deploy
+slot and image hash. The scheduled monitor (`build-scheduled.yml`) regenerates and
+compares against these committed records every eight hours; its Slack digest is the
+redeploy signal, and the committed records are the baseline it compares against.
+
+Always generate with `--report=idl-change-report.txt` (the genSrc.sh default) and
+commit **both** reports one run writes: that file, which carries the movement this
+run saw, and `idl-change-report-gap.txt` beside it, the standing gap dashboard. A
+change to a generated `sources.json` hash without a matching change to the
+*movement* report means the generation was run without retaining its
+channel-movement evidence. Movement is an event: the next run reports nothing, and
+what this one saw is then unrecoverable. The gap file is not evidence of anything —
+it re-renders whether or not the run saw movement. Both files are explicitly
+re-included in `.gitignore`; before those rules existed the deny-by-default rule
+swallowed them silently, which is how `92318b2` lost its report — the three
+earlier record commits predate the generator writing a report by default
+(idl-src-gen `42ea388`) and never carried one either way.
+
+`.github/report-evidence.sh` is that sentence as a gate, run over every pushed
+range by the `Report Evidence` workflow. It keys on the movement-implying *lines*
+of a **modified** record — a channel `hash`, `lastDeploySlot`, `programDataState`,
+`programDataPayloadSha256` — and not on the file being touched: an *added* record
+is a first generation with no baseline to have moved against, and a top-level key
+*appearing* with no `-` line is the record format growing a field (`1fee3f8`
+restamped all 24 records that way), not the program moving — a channel `hash`
+still counts on any sign, because a channel appearing is movement. A record moved with no
+generation behind it says so in commit trailers the gate verifies rather than
+merely requires: a `Report-Evidence:` trailer carrying the why in prose, plus one
+`Report-Evidence-Path:` trailer per moved record, whose set must equal exactly the
+records the gate detects; on failure it prints the set, ready to paste.
+
+The script and `.github/hooks/pre-push` are **vendored, byte-identical copies** of
+`consumer/` in sava-software/idl-src-gen, which is canonical — the audit's key set
+and line-anchored greps are contracts with the serializer there, and
+`ReportEvidenceScriptTests` in that repository holds the two together. Never edit
+the copies here: fix canonically, then re-vendor with idl-src-gen's
+`consumer/sync.sh`. Both the push-triggered workflow and the scheduled monitor
+diff the copies against canonical and fail on drift.
+
+The hook runs the same audit over the commits a push would publish, which is the
+one moment the fix is still free — a pushed commit is an ancestor of a remote ref
+and must not be rewritten. Install it with `git config core.hooksPath
+.github/hooks`, noting that this redirects *all* hook lookups to that directory.
+It does not replace the workflow: a hook lives in one clone and `--no-verify`
+skips it, so the two answer different halves.
 
 ## Gotchas & invariants worth knowing
 

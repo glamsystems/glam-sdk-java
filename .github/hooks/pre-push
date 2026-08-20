@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Refuses a push carrying a moved channel record with no movement report behind it.
+#
+# Thin on purpose: the audit, its per-ref range logic and its failure guidance all live
+# in `.github/report-evidence.sh --pre-push` — the same file CI runs — so the hook
+# cannot drift from the workflow by construction. This file only finds that script and
+# hands it git's stdin.
+#
+# It is not a replacement for the workflow. A hook lives in one clone, and pushes reach
+# a repository from more than one — other machines, Remote Control sessions, cloud
+# agents — and `--no-verify` skips it by design. The workflow is what covers those.
+#
+# Installed by pointing git at this directory, which keeps the tracked file and the
+# running hook the same file (note: this redirects ALL hook lookups to the directory,
+# so anything in .git/hooks stops running):
+#
+#     git config core.hooksPath .github/hooks
+set -uo pipefail
+
+repo="$(git rev-parse --show-toplevel)"
+audit="$repo/.github/report-evidence.sh"
+
+if [ ! -x "$audit" ]; then
+  # Loudly, not silently. A gate that disables itself when its checker goes missing is
+  # the failure this one exists to catch, one level up.
+  echo "pre-push: $audit is missing or not executable; cannot audit this push." >&2
+  echo "          Fix it, or push with --no-verify if you know it does not apply." >&2
+  exit 1
+fi
+
+exec "$audit" --pre-push
