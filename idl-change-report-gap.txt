@@ -1,0 +1,82 @@
+IDL gap report
+
+Every channel that disagrees with the idl.json its program was generated from — a standing
+state, true again on every run until someone deploys what the divergent channel already
+publishes. A dashboard to read rather than a diff to review: an entry names its members and
+changes only when that membership does, while the volatile counts and versions stay on the
+console summaries and the movement log. Ordered by program and channel, and carrying no
+timestamp.
+
+== Next gap (19) ==
+
+GLAM Config: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_config.json differs from the deployed idl.json
+  instructions added (2): deprecate_asset_meta, update_fee_authority
+  instructions changed (5): delete_asset_meta, update_admin, update_protocol_fees, update_referrer, upsert_asset_meta
+  types changed (2): AssetMeta, GlobalConfig
+  errors added (2): AssetMetaNotFound, InvalidFeeAuthority
+  errors removed (1): AssetMetaAlreadyExists
+  errors changed (2): InvalidGlobalConfig, InvalidParameters
+
+GLAM Marinade: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_marinade.json differs from the deployed idl.json
+  types changed (2): AccountType, EngineFieldName
+
+GLAM Mint: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_mint.json differs from the deployed idl.json
+  instructions added (7): fulfill_with_ref_nav, price_jupiter_borrow_positions, price_jupiter_earn_positions, price_marginfi_accounts, price_orca_whirlpool_positions, price_registered_positions, subscribe_with_ref_nav
+  accounts added (1): ObservationState
+  types added (6): Denomination, DenominationSpec, Observation, ObservationState, PositionObservation, StoredI128
+  types changed (3): AssetMeta, GlobalConfig, MintPolicy
+  errors added (5): InsufficientEscrowBalance, InvalidMintState, NavDeviationTooLarge, SubscriptionPausedOverdue, TokenAclManagesFreezeThaw
+
+GLAM Protocol: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_protocol.json differs from the deployed idl.json
+  instructions added (1): set_protocol_policy_by_integration_authority
+  errors added (6): AssetBalanceNotZero, CannotDeleteBaseAsset, CannotRemoveCancelTimelockDelegate, DelegateAclLimitExceeded, IntegrationAclLimitExceeded, InvalidFeeStructure
+
+GLAM Staging Bridge: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_bridge-staging.json differs from the deployed idl.json
+  accounts added (1): StateAccount
+
+GLAM Staging Exponent: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_exponent-staging.json differs from the deployed idl.json
+  accounts added (1): StateAccount
+
+GLAM Staging Jupiter: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_jupiter-staging.json differs from the deployed idl.json
+  accounts added (1): StateAccount
+
+GLAM Staging Loopscale: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_loopscale-staging.json differs from the deployed idl.json
+  accounts added (1): StateAccount
+
+GLAM Staging MarginFi: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_marginfi-staging.json differs from the deployed idl.json
+  accounts added (1): StateAccount
+
+GLAM Staging Marinade: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_marinade-staging.json differs from the deployed idl.json
+  types changed (2): AccountType, EngineFieldName
+
+GLAM Staging Mint: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_mint-staging.json differs from the deployed idl.json
+  instructions added (5): fulfill_with_ref_nav, price_jupiter_borrow_positions, price_jupiter_earn_positions, price_registered_positions, subscribe_with_ref_nav
+  instructions removed (1): price_external_positions
+  accounts added (1): ObservationState
+  types added (6): Denomination, DenominationSpec, Observation, ObservationState, PositionObservation, StoredI128
+  errors added (1): NavDeviationTooLarge
+
+GLAM Staging Neutral Trade: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_neutral-staging.json differs from the deployed idl.json
+  accounts added (1): StateAccount
+
+GLAM Staging Orca: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_orca-staging.json differs from the deployed idl.json
+  accounts added (1): StateAccount
+
+GLAM Staging Phoenix: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_phoenix-staging.json differs from the deployed idl.json
+  accounts added (1): StateAccount
+
+GLAM Staging Protocol: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_protocol-staging.json differs from the deployed idl.json
+  errors added (1): CannotRemoveCancelTimelockDelegate
+
+GLAM Staging Registered Positions: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_rpi-staging.json differs from the deployed idl.json
+  accounts added (1): StateAccount
+
+GLAM Staging SPL: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_spl-staging.json differs from the deployed idl.json
+  types changed (1): AccountType
+
+GLAM Staging Stake Pool: the anchor IDL at 9eiBHZbtw5g1Ut5UgpriWrigGjReLfsKaFftKtvPuiFf differs from the deployed idl.json
+  accounts added (1): StateAccount
+  types changed (1): AccountType
+
+GLAM Staging Stake Pool: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_stake_pool-staging.json differs from the deployed idl.json
+  accounts added (1): StateAccount

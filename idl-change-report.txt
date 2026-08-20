@@ -1,0 +1,12 @@
+IDL movement report
+
+Every channel that is not what the previous sources.json recorded for it, with the member
+names behind every summary. An event log: each entry fires on the run that first sees a
+change and is silent afterwards, so an empty section is this run's answer and not a report
+nobody took. The standing disagreements live beside this file, at its name with "-gap"
+before the extension. Ordered by program and channel, and carrying no timestamp, so
+consecutive runs are worth diffing against each other.
+
+== Movement (0) ==
+
+Nothing moved since the last generation.
