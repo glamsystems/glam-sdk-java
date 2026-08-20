@@ -37,7 +37,6 @@ public final class ExtOrcaProgram {
   /// Close an empty Token-2022 Orca Whirlpools position owned by the GLAM vault.
   ///
   /// - Permission: `ClosePosition`.
-  /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
   public static List<AccountMeta> closePositionWithTokenExtensionsKeys(final SolanaAccounts solanaAccounts,
                                                                        final PublicKey glamStateKey,
@@ -70,7 +69,6 @@ public final class ExtOrcaProgram {
   /// Close an empty Token-2022 Orca Whirlpools position owned by the GLAM vault.
   ///
   /// - Permission: `ClosePosition`.
-  /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
   public static Instruction closePositionWithTokenExtensions(final AccountMeta invokedExtOrcaProgramMeta,
                                                              final SolanaAccounts solanaAccounts,
@@ -105,7 +103,6 @@ public final class ExtOrcaProgram {
   /// Close an empty Token-2022 Orca Whirlpools position owned by the GLAM vault.
   ///
   /// - Permission: `ClosePosition`.
-  /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
   public static Instruction closePositionWithTokenExtensions(final AccountMeta invokedExtOrcaProgramMeta,
                                                              final List<AccountMeta> keys) {
@@ -117,7 +114,6 @@ public final class ExtOrcaProgram {
   /// Collect accrued pool fees using Token-2022-aware accounts.
   ///
   /// - Permission: `CollectFees`.
-  /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
   public static List<AccountMeta> collectFeesV2Keys(final SolanaAccounts solanaAccounts,
                                                     final PublicKey glamStateKey,
@@ -164,7 +160,6 @@ public final class ExtOrcaProgram {
   /// Collect accrued pool fees using Token-2022-aware accounts.
   ///
   /// - Permission: `CollectFees`.
-  /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
   public static Instruction collectFeesV2(final AccountMeta invokedExtOrcaProgramMeta,
                                           final SolanaAccounts solanaAccounts,
@@ -214,7 +209,6 @@ public final class ExtOrcaProgram {
   /// Collect accrued pool fees using Token-2022-aware accounts.
   ///
   /// - Permission: `CollectFees`.
-  /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
   public static Instruction collectFeesV2(final AccountMeta invokedExtOrcaProgramMeta,
                                           final List<AccountMeta> keys,
@@ -271,7 +265,6 @@ public final class ExtOrcaProgram {
   /// Collect one reward emission using Token-2022-aware accounts.
   ///
   /// - Permission: `CollectReward`.
-  /// - Policy: The reward mint is validated against the Whirlpool reward config.
   ///
   public static List<AccountMeta> collectRewardV2Keys(final SolanaAccounts solanaAccounts,
                                                       final PublicKey glamStateKey,
@@ -310,7 +303,6 @@ public final class ExtOrcaProgram {
   /// Collect one reward emission using Token-2022-aware accounts.
   ///
   /// - Permission: `CollectReward`.
-  /// - Policy: The reward mint is validated against the Whirlpool reward config.
   ///
   /// @param rewardIndex: u8
   public static Instruction collectRewardV2(final AccountMeta invokedExtOrcaProgramMeta,
@@ -354,7 +346,6 @@ public final class ExtOrcaProgram {
   /// Collect one reward emission using Token-2022-aware accounts.
   ///
   /// - Permission: `CollectReward`.
-  /// - Policy: The reward mint is validated against the Whirlpool reward config.
   ///
   /// @param rewardIndex: u8
   public static Instruction collectRewardV2(final AccountMeta invokedExtOrcaProgramMeta,
@@ -421,7 +412,6 @@ public final class ExtOrcaProgram {
   /// Decrease liquidity in an Orca Whirlpools position using Token-2022-aware accounts.
   ///
   /// - Permission: `DecreaseLiquidity`.
-  /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
   public static List<AccountMeta> decreaseLiquidityV2Keys(final SolanaAccounts solanaAccounts,
                                                           final PublicKey glamStateKey,
@@ -472,7 +462,6 @@ public final class ExtOrcaProgram {
   /// Decrease liquidity in an Orca Whirlpools position using Token-2022-aware accounts.
   ///
   /// - Permission: `DecreaseLiquidity`.
-  /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
   /// @param tokenMinA: u64
   /// @param tokenMinB: u64
@@ -538,7 +527,6 @@ public final class ExtOrcaProgram {
   /// Decrease liquidity in an Orca Whirlpools position using Token-2022-aware accounts.
   ///
   /// - Permission: `DecreaseLiquidity`.
-  /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
   /// @param tokenMinA: u64
   /// @param tokenMinB: u64
@@ -1532,7 +1520,6 @@ public final class ExtOrcaProgram {
   /// Update accrued fees and rewards for an Orca Whirlpools position.
   ///
   /// - Permission: `UpdateFeesAndRewards`.
-  /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
   public static List<AccountMeta> updateFeesAndRewardsKeys(final SolanaAccounts solanaAccounts,
                                                            final PublicKey glamStateKey,
@@ -1563,7 +1550,6 @@ public final class ExtOrcaProgram {
   /// Update accrued fees and rewards for an Orca Whirlpools position.
   ///
   /// - Permission: `UpdateFeesAndRewards`.
-  /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
   public static Instruction updateFeesAndRewards(final AccountMeta invokedExtOrcaProgramMeta,
                                                  final SolanaAccounts solanaAccounts,
@@ -1596,7 +1582,6 @@ public final class ExtOrcaProgram {
   /// Update accrued fees and rewards for an Orca Whirlpools position.
   ///
   /// - Permission: `UpdateFeesAndRewards`.
-  /// - Policy: Whirlpool and both pool token mints must be allowlisted.
   ///
   public static Instruction updateFeesAndRewards(final AccountMeta invokedExtOrcaProgramMeta,
                                                  final List<AccountMeta> keys) {

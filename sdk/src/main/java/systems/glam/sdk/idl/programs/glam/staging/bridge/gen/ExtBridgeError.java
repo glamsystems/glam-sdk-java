@@ -28,7 +28,8 @@ public sealed interface ExtBridgeError extends ProgramError permits
     ExtBridgeError.InvalidRemainingAccounts,
     ExtBridgeError.DuplicateTransferRecord,
     ExtBridgeError.TooManyManagedTransfers,
-    ExtBridgeError.InvalidBridgeRegistry {
+    ExtBridgeError.InvalidBridgeRegistry,
+    ExtBridgeError.InvalidDestinationChain {
 
   static ExtBridgeError getInstance(final int errorCode) {
     return switch (errorCode) {
@@ -57,6 +58,7 @@ public sealed interface ExtBridgeError extends ProgramError permits
       case 6022 -> DuplicateTransferRecord.INSTANCE;
       case 6023 -> TooManyManagedTransfers.INSTANCE;
       case 6024 -> InvalidBridgeRegistry.INSTANCE;
+      case 6025 -> InvalidDestinationChain.INSTANCE;
       default -> null;
     };
   }
@@ -233,6 +235,13 @@ public sealed interface ExtBridgeError extends ProgramError permits
 
     public static final InvalidBridgeRegistry INSTANCE = new InvalidBridgeRegistry(
         6024, "The bridge registry does not belong to this vault"
+    );
+  }
+
+  record InvalidDestinationChain(int code, String msg) implements ExtBridgeError {
+
+    public static final InvalidDestinationChain INSTANCE = new InvalidDestinationChain(
+        6025, "The destination identifier exceeds the supported range"
     );
   }
 }

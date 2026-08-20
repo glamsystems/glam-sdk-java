@@ -13,6 +13,10 @@ public final class ExtMarginfiConstants {
 
   public static final long PROTO_MARGINFI_PERM_INIT_ACCOUNT = 1;
 
+  public static final long PROTO_MARGINFI_PERM_KAMINO_DEPOSIT = 64;
+
+  public static final long PROTO_MARGINFI_PERM_KAMINO_WITHDRAW = 128;
+
   public static final long PROTO_MARGINFI_PERM_REPAY = 16;
 
   public static final long PROTO_MARGINFI_PERM_WITHDRAW = 4;

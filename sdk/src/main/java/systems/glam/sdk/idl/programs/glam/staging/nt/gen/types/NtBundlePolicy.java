@@ -5,16 +5,16 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
 
-public record NeutralPolicy(PublicKey[] bundlesAllowlist) implements SerDe {
+public record NtBundlePolicy(PublicKey[] bundlesAllowlist) implements SerDe {
 
   public static final int BUNDLES_ALLOWLIST_OFFSET = 0;
 
-  public static NeutralPolicy read(final byte[] _data, final int _offset) {
+  public static NtBundlePolicy read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
     final var bundlesAllowlist = SerDeUtil.readPublicKeyVector(4, _data, _offset);
-    return new NeutralPolicy(bundlesAllowlist);
+    return new NtBundlePolicy(bundlesAllowlist);
   }
 
   @Override

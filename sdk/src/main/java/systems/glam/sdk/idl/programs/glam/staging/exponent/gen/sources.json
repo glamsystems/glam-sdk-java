@@ -1,17 +1,24 @@
 {
   "program": "gstgx5AbCFq4mfYKbZP23YDC7XZFUx2EURiG3PcWX6W",
-  "deployed": "vcs",
-  "lastDeploySlot": 422234373,
+  "deployed": "metadata",
+  "lastDeploySlot": 440291652,
   "programDataState": "upgradeable",
   "programDataStateSlot": 439884391,
-  "programDataPayloadSha256": "4966be652a860f1eb47094f872b5053617e56e3173218194516922c69898d2e3",
+  "programDataPayloadSha256": "832dd61521afe3852ccf1b9421bc801ad8fbba6d17ba89abc9a50d8fd89e296d",
   "programDataPayloadLength": 435264,
   "channels": {
+    "metadata": {
+      "origin": "LU4XqCUK6XMq6dsFqx2LVgVhpHSTYJtN3AirdmuXWeS",
+      "hash": "e21f5d879c2cc202118cd1a108a09c0f812e9fbc477b941438c3d038a213b2e1",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
+    },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_exponent-staging.json",
       "hash": "6bb72ce01356bc26f6bf9e4033f50eecd33be29dff40f976b692e972dd4f0853",
-      "matchesDeployed": true,
-      "verbatim": "idl.json"
+      "matchesDeployed": false,
+      "file": "vcs.json",
+      "verbatim": "vcs.json"
     }
   }
 }

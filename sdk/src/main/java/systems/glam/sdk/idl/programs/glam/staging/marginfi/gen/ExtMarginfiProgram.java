@@ -30,6 +30,13 @@ public final class ExtMarginfiProgram {
 
   public static final Discriminator KAMINO_DEPOSIT_DISCRIMINATOR = toDiscriminator(237, 8, 188, 187, 115, 99, 49, 85);
 
+  /// Deposit Kamino-backed collateral into a Marginfi account.
+  ///
+  /// - Permission: `MarginfiPermissions::KaminoDeposit`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  ///
   public static List<AccountMeta> kaminoDepositKeys(final AccountMeta invokedExtMarginfiProgramMeta,
                                                     final SolanaAccounts solanaAccounts,
                                                     final PublicKey glamStateKey,
@@ -91,6 +98,13 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// Deposit Kamino-backed collateral into a Marginfi account.
+  ///
+  /// - Permission: `MarginfiPermissions::KaminoDeposit`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  ///
   /// @param amount: u64
   public static Instruction kaminoDeposit(final AccountMeta invokedExtMarginfiProgramMeta,
                                           final SolanaAccounts solanaAccounts,
@@ -156,6 +170,13 @@ public final class ExtMarginfiProgram {
     return kaminoDeposit(invokedExtMarginfiProgramMeta, keys, amount);
   }
 
+  /// Deposit Kamino-backed collateral into a Marginfi account.
+  ///
+  /// - Permission: `MarginfiPermissions::KaminoDeposit`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  ///
   /// @param amount: u64
   public static Instruction kaminoDeposit(final AccountMeta invokedExtMarginfiProgramMeta,
                                           final List<AccountMeta> keys,
@@ -202,202 +223,15 @@ public final class ExtMarginfiProgram {
     }
   }
 
-  public static final Discriminator KAMINO_INIT_OBLIGATION_DISCRIMINATOR = toDiscriminator(253, 177, 160, 225, 70, 156, 217, 109);
-
-  public static List<AccountMeta> kaminoInitObligationKeys(final AccountMeta invokedExtMarginfiProgramMeta,
-                                                           final SolanaAccounts solanaAccounts,
-                                                           final PublicKey glamStateKey,
-                                                           final PublicKey glamVaultKey,
-                                                           final PublicKey glamSignerKey,
-                                                           final PublicKey integrationAuthorityKey,
-                                                           final PublicKey cpiProgramKey,
-                                                           final PublicKey glamProtocolProgramKey,
-                                                           final PublicKey marginfiGroupKey,
-                                                           final PublicKey bankKey,
-                                                           final PublicKey signerTokenAccountKey,
-                                                           final PublicKey liquidityVaultAuthorityKey,
-                                                           final PublicKey liquidityVaultKey,
-                                                           final PublicKey integrationAcc2Key,
-                                                           final PublicKey userMetadataKey,
-                                                           final PublicKey lendingMarketKey,
-                                                           final PublicKey lendingMarketAuthorityKey,
-                                                           final PublicKey integrationAcc1Key,
-                                                           final PublicKey mintKey,
-                                                           final PublicKey reserveLiquiditySupplyKey,
-                                                           final PublicKey reserveCollateralMintKey,
-                                                           final PublicKey reserveDestinationDepositCollateralKey,
-                                                           final PublicKey pythOracleKey,
-                                                           final PublicKey switchboardPriceOracleKey,
-                                                           final PublicKey switchboardTwapOracleKey,
-                                                           final PublicKey scopePricesKey,
-                                                           final PublicKey obligationFarmUserStateKey,
-                                                           final PublicKey reserveFarmStateKey,
-                                                           final PublicKey kaminoProgramKey,
-                                                           final PublicKey farmsProgramKey,
-                                                           final PublicKey collateralTokenProgramKey,
-                                                           final PublicKey liquidityTokenProgramKey,
-                                                           final PublicKey instructionSysvarAccountKey,
-                                                           final PublicKey rentKey) {
-    return List.of(
-      createWrite(glamStateKey),
-      createWrite(glamVaultKey),
-      createWritableSigner(glamSignerKey),
-      createRead(integrationAuthorityKey),
-      createRead(cpiProgramKey),
-      createRead(glamProtocolProgramKey),
-      createRead(solanaAccounts.systemProgram()),
-      createRead(marginfiGroupKey),
-      createRead(bankKey),
-      createWrite(signerTokenAccountKey),
-      createWrite(liquidityVaultAuthorityKey),
-      createWrite(liquidityVaultKey),
-      createWrite(integrationAcc2Key),
-      createWrite(userMetadataKey),
-      createRead(lendingMarketKey),
-      createRead(lendingMarketAuthorityKey),
-      createWrite(integrationAcc1Key),
-      createWrite(mintKey),
-      createWrite(reserveLiquiditySupplyKey),
-      createWrite(reserveCollateralMintKey),
-      createWrite(reserveDestinationDepositCollateralKey),
-      createRead(requireNonNullElse(pythOracleKey, invokedExtMarginfiProgramMeta.publicKey())),
-      createRead(requireNonNullElse(switchboardPriceOracleKey, invokedExtMarginfiProgramMeta.publicKey())),
-      createRead(requireNonNullElse(switchboardTwapOracleKey, invokedExtMarginfiProgramMeta.publicKey())),
-      createRead(requireNonNullElse(scopePricesKey, invokedExtMarginfiProgramMeta.publicKey())),
-      createWrite(requireNonNullElse(obligationFarmUserStateKey, invokedExtMarginfiProgramMeta.publicKey())),
-      createWrite(requireNonNullElse(reserveFarmStateKey, invokedExtMarginfiProgramMeta.publicKey())),
-      createRead(kaminoProgramKey),
-      createRead(farmsProgramKey),
-      createRead(collateralTokenProgramKey),
-      createRead(liquidityTokenProgramKey),
-      createRead(instructionSysvarAccountKey),
-      createRead(rentKey)
-    );
-  }
-
-  /// @param amount: u64
-  public static Instruction kaminoInitObligation(final AccountMeta invokedExtMarginfiProgramMeta,
-                                                 final SolanaAccounts solanaAccounts,
-                                                 final PublicKey glamStateKey,
-                                                 final PublicKey glamVaultKey,
-                                                 final PublicKey glamSignerKey,
-                                                 final PublicKey integrationAuthorityKey,
-                                                 final PublicKey cpiProgramKey,
-                                                 final PublicKey glamProtocolProgramKey,
-                                                 final PublicKey marginfiGroupKey,
-                                                 final PublicKey bankKey,
-                                                 final PublicKey signerTokenAccountKey,
-                                                 final PublicKey liquidityVaultAuthorityKey,
-                                                 final PublicKey liquidityVaultKey,
-                                                 final PublicKey integrationAcc2Key,
-                                                 final PublicKey userMetadataKey,
-                                                 final PublicKey lendingMarketKey,
-                                                 final PublicKey lendingMarketAuthorityKey,
-                                                 final PublicKey integrationAcc1Key,
-                                                 final PublicKey mintKey,
-                                                 final PublicKey reserveLiquiditySupplyKey,
-                                                 final PublicKey reserveCollateralMintKey,
-                                                 final PublicKey reserveDestinationDepositCollateralKey,
-                                                 final PublicKey pythOracleKey,
-                                                 final PublicKey switchboardPriceOracleKey,
-                                                 final PublicKey switchboardTwapOracleKey,
-                                                 final PublicKey scopePricesKey,
-                                                 final PublicKey obligationFarmUserStateKey,
-                                                 final PublicKey reserveFarmStateKey,
-                                                 final PublicKey kaminoProgramKey,
-                                                 final PublicKey farmsProgramKey,
-                                                 final PublicKey collateralTokenProgramKey,
-                                                 final PublicKey liquidityTokenProgramKey,
-                                                 final PublicKey instructionSysvarAccountKey,
-                                                 final PublicKey rentKey,
-                                                 final long amount) {
-    final var keys = kaminoInitObligationKeys(
-      invokedExtMarginfiProgramMeta,
-      solanaAccounts,
-      glamStateKey,
-      glamVaultKey,
-      glamSignerKey,
-      integrationAuthorityKey,
-      cpiProgramKey,
-      glamProtocolProgramKey,
-      marginfiGroupKey,
-      bankKey,
-      signerTokenAccountKey,
-      liquidityVaultAuthorityKey,
-      liquidityVaultKey,
-      integrationAcc2Key,
-      userMetadataKey,
-      lendingMarketKey,
-      lendingMarketAuthorityKey,
-      integrationAcc1Key,
-      mintKey,
-      reserveLiquiditySupplyKey,
-      reserveCollateralMintKey,
-      reserveDestinationDepositCollateralKey,
-      pythOracleKey,
-      switchboardPriceOracleKey,
-      switchboardTwapOracleKey,
-      scopePricesKey,
-      obligationFarmUserStateKey,
-      reserveFarmStateKey,
-      kaminoProgramKey,
-      farmsProgramKey,
-      collateralTokenProgramKey,
-      liquidityTokenProgramKey,
-      instructionSysvarAccountKey,
-      rentKey
-    );
-    return kaminoInitObligation(invokedExtMarginfiProgramMeta, keys, amount);
-  }
-
-  /// @param amount: u64
-  public static Instruction kaminoInitObligation(final AccountMeta invokedExtMarginfiProgramMeta,
-                                                 final List<AccountMeta> keys,
-                                                 final long amount) {
-    final byte[] _data = new byte[16];
-    int i = KAMINO_INIT_OBLIGATION_DISCRIMINATOR.write(_data, 0);
-    putInt64LE(_data, i, amount);
-
-    return Instruction.createInstruction(invokedExtMarginfiProgramMeta, keys, _data);
-  }
-
-  /// @param amount: u64
-  public record KaminoInitObligationIxData(Discriminator discriminator, long amount) implements SerDe {
-
-    public static KaminoInitObligationIxData read(final Instruction instruction) {
-      return read(instruction.copyData(), 0);
-    }
-
-    public static final int BYTES = 16;
-
-    public static final int AMOUNT_OFFSET = 8;
-
-    public static KaminoInitObligationIxData read(final byte[] _data, final int _offset) {
-      if (_data == null || _data.length == 0) {
-        return null;
-      }
-      final var discriminator = createAnchorDiscriminator(_data, _offset);
-      int i = _offset + discriminator.length();
-      final var amount = getInt64LE(_data, i);
-      return new KaminoInitObligationIxData(discriminator, amount);
-    }
-
-    @Override
-    public int write(final byte[] _data, final int _offset) {
-      int i = _offset + discriminator.write(_data, _offset);
-      putInt64LE(_data, i, amount);
-      i += 8;
-      return i - _offset;
-    }
-
-    @Override
-    public int l() {
-      return BYTES;
-    }
-  }
-
   public static final Discriminator KAMINO_WITHDRAW_DISCRIMINATOR = toDiscriminator(199, 101, 41, 45, 213, 98, 224, 200);
 
+  /// Withdraw Kamino-backed collateral from a Marginfi account.
+  ///
+  /// - Permission: `MarginfiPermissions::KaminoWithdraw`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  ///
   public static List<AccountMeta> kaminoWithdrawKeys(final AccountMeta invokedExtMarginfiProgramMeta,
                                                      final SolanaAccounts solanaAccounts,
                                                      final PublicKey glamStateKey,
@@ -459,6 +293,13 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// Withdraw Kamino-backed collateral from a Marginfi account.
+  ///
+  /// - Permission: `MarginfiPermissions::KaminoWithdraw`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  ///
   /// @param amount: u64
   /// @param withdrawAll: Option<bool>
   public static Instruction kaminoWithdraw(final AccountMeta invokedExtMarginfiProgramMeta,
@@ -526,6 +367,13 @@ public final class ExtMarginfiProgram {
     return kaminoWithdraw(invokedExtMarginfiProgramMeta, keys, amount, withdrawAll);
   }
 
+  /// Withdraw Kamino-backed collateral from a Marginfi account.
+  ///
+  /// - Permission: `MarginfiPermissions::KaminoWithdraw`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  ///
   /// @param amount: u64
   /// @param withdrawAll: Option<bool>
   public static Instruction kaminoWithdraw(final AccountMeta invokedExtMarginfiProgramMeta,
@@ -590,6 +438,14 @@ public final class ExtMarginfiProgram {
 
   public static final Discriminator LENDING_ACCOUNT_BORROW_DISCRIMINATOR = toDiscriminator(4, 126, 116, 53, 48, 5, 212, 31);
 
+  /// Borrow liquidity from Marginfi into the GLAM vault.
+  ///
+  /// - Permission: `MarginfiPermissions::Borrow`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  /// - The bank mint must be present in `MarginfiPolicy::borrow_allowlist`.
+  ///
   public static List<AccountMeta> lendingAccountBorrowKeys(final SolanaAccounts solanaAccounts,
                                                            final PublicKey glamStateKey,
                                                            final PublicKey glamVaultKey,
@@ -622,6 +478,14 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// Borrow liquidity from Marginfi into the GLAM vault.
+  ///
+  /// - Permission: `MarginfiPermissions::Borrow`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  /// - The bank mint must be present in `MarginfiPolicy::borrow_allowlist`.
+  ///
   /// @param amount: u64
   public static Instruction lendingAccountBorrow(final AccountMeta invokedExtMarginfiProgramMeta,
                                                  final SolanaAccounts solanaAccounts,
@@ -658,6 +522,14 @@ public final class ExtMarginfiProgram {
     return lendingAccountBorrow(invokedExtMarginfiProgramMeta, keys, amount);
   }
 
+  /// Borrow liquidity from Marginfi into the GLAM vault.
+  ///
+  /// - Permission: `MarginfiPermissions::Borrow`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  /// - The bank mint must be present in `MarginfiPolicy::borrow_allowlist`.
+  ///
   /// @param amount: u64
   public static Instruction lendingAccountBorrow(final AccountMeta invokedExtMarginfiProgramMeta,
                                                  final List<AccountMeta> keys,
@@ -706,6 +578,13 @@ public final class ExtMarginfiProgram {
 
   public static final Discriminator LENDING_ACCOUNT_DEPOSIT_DISCRIMINATOR = toDiscriminator(171, 94, 235, 103, 82, 64, 212, 140);
 
+  /// Deposit liquidity from the GLAM vault into a Marginfi account.
+  ///
+  /// - Permission: `MarginfiPermissions::Deposit`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  ///
   public static List<AccountMeta> lendingAccountDepositKeys(final SolanaAccounts solanaAccounts,
                                                             final PublicKey glamStateKey,
                                                             final PublicKey glamVaultKey,
@@ -736,6 +615,13 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// Deposit liquidity from the GLAM vault into a Marginfi account.
+  ///
+  /// - Permission: `MarginfiPermissions::Deposit`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  ///
   /// @param amount: u64
   /// @param depositUpToLimit: Option<bool>
   public static Instruction lendingAccountDeposit(final AccountMeta invokedExtMarginfiProgramMeta,
@@ -772,6 +658,13 @@ public final class ExtMarginfiProgram {
     return lendingAccountDeposit(invokedExtMarginfiProgramMeta, keys, amount, depositUpToLimit);
   }
 
+  /// Deposit liquidity from the GLAM vault into a Marginfi account.
+  ///
+  /// - Permission: `MarginfiPermissions::Deposit`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  ///
   /// @param amount: u64
   /// @param depositUpToLimit: Option<bool>
   public static Instruction lendingAccountDeposit(final AccountMeta invokedExtMarginfiProgramMeta,
@@ -836,6 +729,13 @@ public final class ExtMarginfiProgram {
 
   public static final Discriminator LENDING_ACCOUNT_REPAY_DISCRIMINATOR = toDiscriminator(79, 209, 172, 177, 222, 51, 173, 151);
 
+  /// Repay borrowed liquidity from the GLAM vault to a Marginfi account.
+  ///
+  /// - Permission: `MarginfiPermissions::Repay`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  ///
   public static List<AccountMeta> lendingAccountRepayKeys(final SolanaAccounts solanaAccounts,
                                                           final PublicKey glamStateKey,
                                                           final PublicKey glamVaultKey,
@@ -866,6 +766,13 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// Repay borrowed liquidity from the GLAM vault to a Marginfi account.
+  ///
+  /// - Permission: `MarginfiPermissions::Repay`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  ///
   /// @param amount: u64
   /// @param repayAll: Option<bool>
   public static Instruction lendingAccountRepay(final AccountMeta invokedExtMarginfiProgramMeta,
@@ -902,6 +809,13 @@ public final class ExtMarginfiProgram {
     return lendingAccountRepay(invokedExtMarginfiProgramMeta, keys, amount, repayAll);
   }
 
+  /// Repay borrowed liquidity from the GLAM vault to a Marginfi account.
+  ///
+  /// - Permission: `MarginfiPermissions::Repay`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  ///
   /// @param amount: u64
   /// @param repayAll: Option<bool>
   public static Instruction lendingAccountRepay(final AccountMeta invokedExtMarginfiProgramMeta,
@@ -966,6 +880,13 @@ public final class ExtMarginfiProgram {
 
   public static final Discriminator LENDING_ACCOUNT_WITHDRAW_DISCRIMINATOR = toDiscriminator(36, 72, 74, 19, 210, 210, 192, 192);
 
+  /// Withdraw liquidity from a Marginfi account to the GLAM vault.
+  ///
+  /// - Permission: `MarginfiPermissions::Withdraw`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  ///
   public static List<AccountMeta> lendingAccountWithdrawKeys(final SolanaAccounts solanaAccounts,
                                                              final PublicKey glamStateKey,
                                                              final PublicKey glamVaultKey,
@@ -998,6 +919,13 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// Withdraw liquidity from a Marginfi account to the GLAM vault.
+  ///
+  /// - Permission: `MarginfiPermissions::Withdraw`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  ///
   /// @param amount: u64
   /// @param withdrawAll: Option<bool>
   public static Instruction lendingAccountWithdraw(final AccountMeta invokedExtMarginfiProgramMeta,
@@ -1036,6 +964,13 @@ public final class ExtMarginfiProgram {
     return lendingAccountWithdraw(invokedExtMarginfiProgramMeta, keys, amount, withdrawAll);
   }
 
+  /// Withdraw liquidity from a Marginfi account to the GLAM vault.
+  ///
+  /// - Permission: `MarginfiPermissions::Withdraw`.
+  /// - Policy:
+  /// - `group` must be present in `MarginfiPolicy::groups_allowlist`.
+  /// - `bank` must be present in `MarginfiPolicy::banks_allowlist`.
+  ///
   /// @param amount: u64
   /// @param withdrawAll: Option<bool>
   public static Instruction lendingAccountWithdraw(final AccountMeta invokedExtMarginfiProgramMeta,
@@ -1100,6 +1035,10 @@ public final class ExtMarginfiProgram {
 
   public static final Discriminator MARGINFI_ACCOUNT_CLOSE_DISCRIMINATOR = toDiscriminator(186, 221, 93, 34, 50, 97, 194, 241);
 
+  /// Close an empty Marginfi account PDA owned by the GLAM vault.
+  ///
+  /// - Permission: `MarginfiPermissions::CloseAccount`.
+  ///
   public static List<AccountMeta> marginfiAccountCloseKeys(final SolanaAccounts solanaAccounts,
                                                            final PublicKey glamStateKey,
                                                            final PublicKey glamVaultKey,
@@ -1120,6 +1059,10 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// Close an empty Marginfi account PDA owned by the GLAM vault.
+  ///
+  /// - Permission: `MarginfiPermissions::CloseAccount`.
+  ///
   public static Instruction marginfiAccountClose(final AccountMeta invokedExtMarginfiProgramMeta,
                                                  final SolanaAccounts solanaAccounts,
                                                  final PublicKey glamStateKey,
@@ -1142,6 +1085,10 @@ public final class ExtMarginfiProgram {
     return marginfiAccountClose(invokedExtMarginfiProgramMeta, keys);
   }
 
+  /// Close an empty Marginfi account PDA owned by the GLAM vault.
+  ///
+  /// - Permission: `MarginfiPermissions::CloseAccount`.
+  ///
   public static Instruction marginfiAccountClose(final AccountMeta invokedExtMarginfiProgramMeta,
                                                  final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedExtMarginfiProgramMeta, keys, MARGINFI_ACCOUNT_CLOSE_DISCRIMINATOR);
@@ -1149,6 +1096,10 @@ public final class ExtMarginfiProgram {
 
   public static final Discriminator MARGINFI_ACCOUNT_INITIALIZE_PDA_DISCRIMINATOR = toDiscriminator(87, 177, 91, 80, 218, 119, 245, 31);
 
+  /// Initialize a Marginfi account PDA owned by the GLAM vault.
+  ///
+  /// - Permission: `MarginfiPermissions::InitAccount`.
+  ///
   public static List<AccountMeta> marginfiAccountInitializePdaKeys(final SolanaAccounts solanaAccounts,
                                                                    final PublicKey glamStateKey,
                                                                    final PublicKey glamVaultKey,
@@ -1173,6 +1124,10 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// Initialize a Marginfi account PDA owned by the GLAM vault.
+  ///
+  /// - Permission: `MarginfiPermissions::InitAccount`.
+  ///
   /// @param accountIndex: u16
   /// @param thirdPartyId: Option<u16>
   public static Instruction marginfiAccountInitializePda(final AccountMeta invokedExtMarginfiProgramMeta,
@@ -1203,6 +1158,10 @@ public final class ExtMarginfiProgram {
     return marginfiAccountInitializePda(invokedExtMarginfiProgramMeta, keys, accountIndex, thirdPartyId);
   }
 
+  /// Initialize a Marginfi account PDA owned by the GLAM vault.
+  ///
+  /// - Permission: `MarginfiPermissions::InitAccount`.
+  ///
   /// @param accountIndex: u16
   /// @param thirdPartyId: Option<u16>
   public static Instruction marginfiAccountInitializePda(final AccountMeta invokedExtMarginfiProgramMeta,
@@ -1267,6 +1226,10 @@ public final class ExtMarginfiProgram {
 
   public static final Discriminator SET_MARGINFI_POLICY_DISCRIMINATOR = toDiscriminator(161, 236, 171, 232, 25, 67, 129, 198);
 
+  /// Set the Marginfi policy (group, bank, and borrow-token allowlists).
+  ///
+  /// - Permission: GLAM state owner via `glam_protocol::set_protocol_policy`.
+  ///
   public static List<AccountMeta> setMarginfiPolicyKeys(final PublicKey glamStateKey,
                                                         final PublicKey glamSignerKey,
                                                         final PublicKey glamProtocolProgramKey) {
@@ -1277,6 +1240,10 @@ public final class ExtMarginfiProgram {
     );
   }
 
+  /// Set the Marginfi policy (group, bank, and borrow-token allowlists).
+  ///
+  /// - Permission: GLAM state owner via `glam_protocol::set_protocol_policy`.
+  ///
   public static Instruction setMarginfiPolicy(final AccountMeta invokedExtMarginfiProgramMeta,
                                               final PublicKey glamStateKey,
                                               final PublicKey glamSignerKey,
@@ -1290,6 +1257,10 @@ public final class ExtMarginfiProgram {
     return setMarginfiPolicy(invokedExtMarginfiProgramMeta, keys, policy);
   }
 
+  /// Set the Marginfi policy (group, bank, and borrow-token allowlists).
+  ///
+  /// - Permission: GLAM state owner via `glam_protocol::set_protocol_policy`.
+  ///
   public static Instruction setMarginfiPolicy(final AccountMeta invokedExtMarginfiProgramMeta,
                                               final List<AccountMeta> keys,
                                               final MarginfiPolicy policy) {

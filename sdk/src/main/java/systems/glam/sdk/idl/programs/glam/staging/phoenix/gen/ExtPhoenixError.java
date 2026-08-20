@@ -21,7 +21,7 @@ public sealed interface ExtPhoenixError extends ProgramError permits
     ExtPhoenixError.UnexpectedSigner,
     ExtPhoenixError.InvalidPhoenixPda,
     ExtPhoenixError.InvalidOrderPacket,
-    ExtPhoenixError.InvalidSide,
+    ExtPhoenixError.InvalidOrderType,
     ExtPhoenixError.InvalidOrderFlags,
     ExtPhoenixError.InvalidTraderCapability,
     ExtPhoenixError.DuplicateTraderCapability,
@@ -54,7 +54,7 @@ public sealed interface ExtPhoenixError extends ProgramError permits
       case 6014 -> UnexpectedSigner.INSTANCE;
       case 6015 -> InvalidPhoenixPda.INSTANCE;
       case 6016 -> InvalidOrderPacket.INSTANCE;
-      case 6017 -> InvalidSide.INSTANCE;
+      case 6017 -> InvalidOrderType.INSTANCE;
       case 6018 -> InvalidOrderFlags.INSTANCE;
       case 6019 -> InvalidTraderCapability.INSTANCE;
       case 6020 -> DuplicateTraderCapability.INSTANCE;
@@ -190,10 +190,10 @@ public sealed interface ExtPhoenixError extends ProgramError permits
     );
   }
 
-  record InvalidSide(int code, String msg) implements ExtPhoenixError {
+  record InvalidOrderType(int code, String msg) implements ExtPhoenixError {
 
-    public static final InvalidSide INSTANCE = new InvalidSide(
-        6017, "Invalid Phoenix side"
+    public static final InvalidOrderType INSTANCE = new InvalidOrderType(
+        6017, "Invalid Phoenix order type"
     );
   }
 

@@ -1,23 +1,24 @@
 {
   "program": "gstgL6y4uWjsfM3Qjs5euoTDmEcXoUjqx8rkYJhYngG",
-  "deployed": "anchor",
-  "lastDeploySlot": 425506310,
+  "deployed": "metadata",
+  "lastDeploySlot": 440320309,
   "programDataState": "upgradeable",
   "programDataStateSlot": 439884391,
-  "programDataPayloadSha256": "3fd1e481ffb3de616a1368b0867f8beb7299dc5531fd580b4a142d86284eafc3",
+  "programDataPayloadSha256": "3afa29dea3a343bd6d9378335f9fe3239962ec2aa9bff53642f1deee3976c93b",
   "programDataPayloadLength": 766128,
   "channels": {
-    "anchor": {
-      "origin": "5KxCb7M2eNoN7cpFqLLi4UyPFzQV6L4KuY6WK1u6mXcV",
-      "hash": "9885d9e39d419ee9e63d654f87497a92bb0620e0aea0f2bc72130e0d0d995deb",
+    "metadata": {
+      "origin": "CEjFveZPPQXbCPMCr9gzM5fUhgEzo87zJues3RyDoffP",
+      "hash": "54208af83c3b9a297f305a95c077fa87269ece0c0c35b14c4c2c26ff27c4d6b3",
       "matchesDeployed": true,
       "verbatim": "idl.json"
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_loopscale-staging.json",
       "hash": "9885d9e39d419ee9e63d654f87497a92bb0620e0aea0f2bc72130e0d0d995deb",
-      "matchesDeployed": true,
-      "verbatim": "vcs.original.json"
+      "matchesDeployed": false,
+      "file": "vcs.json",
+      "verbatim": "vcs.json"
     }
   }
 }

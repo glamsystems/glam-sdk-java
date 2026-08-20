@@ -9,9 +9,11 @@ public final class ExtBridgeConstants {
 
   public static final long PROTO_BRIDGE_PERM_VALIDATE = 2;
 
+  public static final int PROTO_CCTP = 1;
+
   public static final int PROTO_LAYERZERO_OFT = 4;
 
-  public static final int PROTO_MANAGED_INFLIGHT = 4;
+  public static final int PROTO_MANAGED_INFLIGHT = 5;
 
   private ExtBridgeConstants() {
   }

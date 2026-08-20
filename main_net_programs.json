@@ -286,6 +286,7 @@
       "package": "glam.staging.bridge",
       "module": "sdk",
       "program": "gstgxS9yTioViNKdsM4DC33k1TU9un2VCYDQK8fAeSA",
+      "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_bridge-staging.json"
@@ -342,6 +343,7 @@
       "module": "sdk",
       "package": "glam.staging.exponent",
       "program": "gstgx5AbCFq4mfYKbZP23YDC7XZFUx2EURiG3PcWX6W",
+      "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_exponent-staging.json"
@@ -370,6 +372,7 @@
       "package": "glam.staging.registered_positions",
       "module": "sdk",
       "program": "gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX",
+      "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_rpi-staging.json"
@@ -398,6 +401,7 @@
       "package": "glam.staging.jupiter",
       "module": "sdk",
       "program": "gstgJbGqoE3p1SdFA2dET9tcaCzNqGcdD8wpbGctnU9",
+      "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_jupiter-staging.json"
@@ -483,6 +487,7 @@
       "package": "glam.staging.loopscale",
       "module": "sdk",
       "program": "gstgL6y4uWjsfM3Qjs5euoTDmEcXoUjqx8rkYJhYngG",
+      "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_loopscale-staging.json"
@@ -511,6 +516,7 @@
       "package": "glam.staging.marginfi",
       "module": "sdk",
       "program": "gstgMghFitRBz2GXKwgpMd7L1JXd1sg59q2v5Y83vSY",
+      "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_marginfi-staging.json"
@@ -595,6 +601,7 @@
       "module": "sdk",
       "package": "glam.staging.nt",
       "program": "gstgNyHgtURH7iuMn19GQczzv6Wc9fhPV2WDySZVyKx",
+      "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_neutral-staging.json"
@@ -623,6 +630,7 @@
       "module": "sdk",
       "package": "glam.staging.orca",
       "program": "gstgo1EgmTp2PbLSaL6Qg57P7uADx3aiRZrMsewEdSy",
+      "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_orca-staging.json"
@@ -651,6 +659,7 @@
       "module": "sdk",
       "package": "glam.staging.phoenix",
       "program": "gstgPL7r9aYedDDsXNtLpr4atYtNvY7zubAWWstqS3L",
+      "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_phoenix-staging.json"
@@ -718,6 +727,7 @@
       "package": "glam.staging.stake_pool",
       "module": "sdk",
       "program": "gstgS4dNeT3BTEQa1aaTS2b8CsAUz1SmwQDGosHSPsw",
+      "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/ext_stake_pool-staging.json"

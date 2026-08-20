@@ -6,23 +6,35 @@ import software.sava.idl.clients.core.gen.ProgramError;
 public sealed interface ExtOrcaError extends ProgramError permits
     ExtOrcaError.InvalidWhirlpoolAccount,
     ExtOrcaError.InvalidPositionAccount,
-    ExtOrcaError.InvalidRewardIndex,
     ExtOrcaError.TokenMintMismatch,
-    ExtOrcaError.TokenVaultMismatch,
-    ExtOrcaError.PositionHasLiquidity,
-    ExtOrcaError.InvalidTickArrayAccount,
-    ExtOrcaError.InvalidOracleAccount {
+    ExtOrcaError.InvalidIxArgs,
+    ExtOrcaError.ProtocolPolicyViolation,
+    ExtOrcaError.PricingError,
+    ExtOrcaError.MissingAccount,
+    ExtOrcaError.UnsupportedOracleSource,
+    ExtOrcaError.InvalidAccountType,
+    ExtOrcaError.UnexpectedProgramOwner,
+    ExtOrcaError.InvalidPriceDenom,
+    ExtOrcaError.MaxDeviationExceeded,
+    ExtOrcaError.InvalidTokenAccount,
+    ExtOrcaError.InvalidVaultTokenAccount {
 
   static ExtOrcaError getInstance(final int errorCode) {
     return switch (errorCode) {
       case 6000 -> InvalidWhirlpoolAccount.INSTANCE;
       case 6001 -> InvalidPositionAccount.INSTANCE;
-      case 6002 -> InvalidRewardIndex.INSTANCE;
-      case 6003 -> TokenMintMismatch.INSTANCE;
-      case 6004 -> TokenVaultMismatch.INSTANCE;
-      case 6005 -> PositionHasLiquidity.INSTANCE;
-      case 6006 -> InvalidTickArrayAccount.INSTANCE;
-      case 6007 -> InvalidOracleAccount.INSTANCE;
+      case 6002 -> TokenMintMismatch.INSTANCE;
+      case 6003 -> InvalidIxArgs.INSTANCE;
+      case 6004 -> ProtocolPolicyViolation.INSTANCE;
+      case 6005 -> PricingError.INSTANCE;
+      case 6006 -> MissingAccount.INSTANCE;
+      case 6007 -> UnsupportedOracleSource.INSTANCE;
+      case 6008 -> InvalidAccountType.INSTANCE;
+      case 6009 -> UnexpectedProgramOwner.INSTANCE;
+      case 6010 -> InvalidPriceDenom.INSTANCE;
+      case 6011 -> MaxDeviationExceeded.INSTANCE;
+      case 6012 -> InvalidTokenAccount.INSTANCE;
+      case 6013 -> InvalidVaultTokenAccount.INSTANCE;
       default -> null;
     };
   }
@@ -41,45 +53,87 @@ public sealed interface ExtOrcaError extends ProgramError permits
     );
   }
 
-  record InvalidRewardIndex(int code, String msg) implements ExtOrcaError {
-
-    public static final InvalidRewardIndex INSTANCE = new InvalidRewardIndex(
-        6002, "Invalid Orca reward index"
-    );
-  }
-
   record TokenMintMismatch(int code, String msg) implements ExtOrcaError {
 
     public static final TokenMintMismatch INSTANCE = new TokenMintMismatch(
-        6003, "Orca token account mint does not match the Whirlpool"
+        6002, "Orca token account mint does not match the Whirlpool"
     );
   }
 
-  record TokenVaultMismatch(int code, String msg) implements ExtOrcaError {
+  record InvalidIxArgs(int code, String msg) implements ExtOrcaError {
 
-    public static final TokenVaultMismatch INSTANCE = new TokenVaultMismatch(
-        6004, "Orca token vault does not match the Whirlpool"
+    public static final InvalidIxArgs INSTANCE = new InvalidIxArgs(
+        6003, "Invalid instruction arguments"
     );
   }
 
-  record PositionHasLiquidity(int code, String msg) implements ExtOrcaError {
+  record ProtocolPolicyViolation(int code, String msg) implements ExtOrcaError {
 
-    public static final PositionHasLiquidity INSTANCE = new PositionHasLiquidity(
-        6005, "Orca position is not empty"
+    public static final ProtocolPolicyViolation INSTANCE = new ProtocolPolicyViolation(
+        6004, "Protocol policy violation"
     );
   }
 
-  record InvalidTickArrayAccount(int code, String msg) implements ExtOrcaError {
+  record PricingError(int code, String msg) implements ExtOrcaError {
 
-    public static final InvalidTickArrayAccount INSTANCE = new InvalidTickArrayAccount(
-        6006, "Invalid Orca tick array account"
+    public static final PricingError INSTANCE = new PricingError(
+        6005, "Pricing error"
     );
   }
 
-  record InvalidOracleAccount(int code, String msg) implements ExtOrcaError {
+  record MissingAccount(int code, String msg) implements ExtOrcaError {
 
-    public static final InvalidOracleAccount INSTANCE = new InvalidOracleAccount(
-        6007, "Invalid Orca oracle account"
+    public static final MissingAccount INSTANCE = new MissingAccount(
+        6006, "An account required by the instruction is missing"
+    );
+  }
+
+  record UnsupportedOracleSource(int code, String msg) implements ExtOrcaError {
+
+    public static final UnsupportedOracleSource INSTANCE = new UnsupportedOracleSource(
+        6007, "Oracle source not supported in this context"
+    );
+  }
+
+  record InvalidAccountType(int code, String msg) implements ExtOrcaError {
+
+    public static final InvalidAccountType INSTANCE = new InvalidAccountType(
+        6008, "Invalid account type"
+    );
+  }
+
+  record UnexpectedProgramOwner(int code, String msg) implements ExtOrcaError {
+
+    public static final UnexpectedProgramOwner INSTANCE = new UnexpectedProgramOwner(
+        6009, "Account is owned by an unexpected program"
+    );
+  }
+
+  record InvalidPriceDenom(int code, String msg) implements ExtOrcaError {
+
+    public static final InvalidPriceDenom INSTANCE = new InvalidPriceDenom(
+        6010, "Invalid price denom"
+    );
+  }
+
+  record MaxDeviationExceeded(int code, String msg) implements ExtOrcaError {
+
+    public static final MaxDeviationExceeded INSTANCE = new MaxDeviationExceeded(
+        6011, "Max deviation exceeded"
+    );
+  }
+
+  record InvalidTokenAccount(int code, String msg) implements ExtOrcaError {
+
+    public static final InvalidTokenAccount INSTANCE = new InvalidTokenAccount(
+        6012, "Invalid token account"
+    );
+  }
+
+  record InvalidVaultTokenAccount(int code, String msg) implements ExtOrcaError {
+
+    public static final InvalidVaultTokenAccount INSTANCE = new InvalidVaultTokenAccount(
+        6013, "Invalid vault ata"
     );
   }
 }

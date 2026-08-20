@@ -1,15 +1,15 @@
 {
   "program": "gstgNyHgtURH7iuMn19GQczzv6Wc9fhPV2WDySZVyKx",
-  "deployed": "anchor",
-  "lastDeploySlot": 416673527,
+  "deployed": "metadata",
+  "lastDeploySlot": 440288167,
   "programDataState": "upgradeable",
   "programDataStateSlot": 439884391,
-  "programDataPayloadSha256": "c6161b8fbf5d2f359eb7a4400ba9f55eaee1be59c511bdec3af5e90b28b3a4a9",
+  "programDataPayloadSha256": "ad15eef649b23e4b12a376a146a38cd0f8b4005d570bf7badb0f0abb8c6c3fd0",
   "programDataPayloadLength": 428440,
   "channels": {
-    "anchor": {
-      "origin": "9ZNxhhVM56UVcXCGq1KU3RUfaPkzdMhCFSLkiXqZ1t3N",
-      "hash": "fe8fd5bea7eeca99db24bbaf464d32bdbb1d07773c7d02a99d86b3e1134cb17c",
+    "metadata": {
+      "origin": "FXMmNwpRUpa17rKKTqNCQpKYtqAUv6Z1kPgZmspVhxjh",
+      "hash": "cac0cf63f23b5d355ef72054e4135d35ed1d8e397af777f9337244b13569763d",
       "matchesDeployed": true,
       "verbatim": "idl.json"
     },

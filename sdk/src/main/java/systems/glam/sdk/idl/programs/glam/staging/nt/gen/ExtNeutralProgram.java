@@ -8,7 +8,7 @@ import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.core.gen.SerDe;
 
-import systems.glam.sdk.idl.programs.glam.staging.nt.gen.types.NeutralPolicy;
+import systems.glam.sdk.idl.programs.glam.staging.nt.gen.types.NtBundlePolicy;
 
 import java.math.BigInteger;
 
@@ -28,7 +28,7 @@ public final class ExtNeutralProgram {
 
   public static final Discriminator CLOSE_USER_BUNDLE_ACCOUNT_DISCRIMINATOR = toDiscriminator(201, 195, 126, 228, 9, 173, 79, 215);
 
-  /// Close an empty Neutral user bundle account and remove it from GLAM external positions.
+  /// Closes an empty NT user bundle account and removes it from GLAM external positions.
   ///
   /// - Permission: `CloseUserBundleAccount`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
@@ -55,7 +55,7 @@ public final class ExtNeutralProgram {
     );
   }
 
-  /// Close an empty Neutral user bundle account and remove it from GLAM external positions.
+  /// Closes an empty NT user bundle account and removes it from GLAM external positions.
   ///
   /// - Permission: `CloseUserBundleAccount`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
@@ -84,7 +84,7 @@ public final class ExtNeutralProgram {
     return closeUserBundleAccount(invokedExtNeutralProgramMeta, keys);
   }
 
-  /// Close an empty Neutral user bundle account and remove it from GLAM external positions.
+  /// Closes an empty NT user bundle account and removes it from GLAM external positions.
   ///
   /// - Permission: `CloseUserBundleAccount`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
@@ -96,7 +96,7 @@ public final class ExtNeutralProgram {
 
   public static final Discriminator INITIALIZE_BUNDLE_DEPOSITOR_DISCRIMINATOR = toDiscriminator(126, 6, 242, 36, 22, 209, 35, 2);
 
-  /// Initialize a non-permissioned Neutral user bundle account for the GLAM vault.
+  /// Initializes a non-permissioned NT user bundle account for the GLAM vault.
   ///
   /// - Permission: `InitializeBundleDepositor`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
@@ -123,7 +123,7 @@ public final class ExtNeutralProgram {
     );
   }
 
-  /// Initialize a non-permissioned Neutral user bundle account for the GLAM vault.
+  /// Initializes a non-permissioned NT user bundle account for the GLAM vault.
   ///
   /// - Permission: `InitializeBundleDepositor`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
@@ -152,7 +152,7 @@ public final class ExtNeutralProgram {
     return initializeBundleDepositor(invokedExtNeutralProgramMeta, keys);
   }
 
-  /// Initialize a non-permissioned Neutral user bundle account for the GLAM vault.
+  /// Initializes a non-permissioned NT user bundle account for the GLAM vault.
   ///
   /// - Permission: `InitializeBundleDepositor`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
@@ -164,7 +164,7 @@ public final class ExtNeutralProgram {
 
   public static final Discriminator REQUEST_DEPOSIT_DISCRIMINATOR = toDiscriminator(243, 202, 197, 215, 135, 97, 213, 109);
 
-  /// Request a Neutral bundle deposit from the GLAM vault's token account.
+  /// Requests a NT bundle deposit from the GLAM vault's token account.
   ///
   /// - Permission: `RequestDeposit`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
@@ -207,7 +207,7 @@ public final class ExtNeutralProgram {
     );
   }
 
-  /// Request a Neutral bundle deposit from the GLAM vault's token account.
+  /// Requests a NT bundle deposit from the GLAM vault's token account.
   ///
   /// - Permission: `RequestDeposit`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
@@ -254,7 +254,7 @@ public final class ExtNeutralProgram {
     return requestDeposit(invokedExtNeutralProgramMeta, keys, amount);
   }
 
-  /// Request a Neutral bundle deposit from the GLAM vault's token account.
+  /// Requests a NT bundle deposit from the GLAM vault's token account.
   ///
   /// - Permission: `RequestDeposit`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
@@ -307,7 +307,7 @@ public final class ExtNeutralProgram {
 
   public static final Discriminator REQUEST_WITHDRAWAL_DISCRIMINATOR = toDiscriminator(251, 85, 121, 205, 56, 201, 12, 177);
 
-  /// Request a Neutral bundle withdrawal for the GLAM vault.
+  /// Requests a NT bundle withdrawal for the GLAM vault.
   ///
   /// - Permission: `RequestWithdrawal`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
@@ -341,7 +341,7 @@ public final class ExtNeutralProgram {
     );
   }
 
-  /// Request a Neutral bundle withdrawal for the GLAM vault.
+  /// Requests a NT bundle withdrawal for the GLAM vault.
   ///
   /// - Permission: `RequestWithdrawal`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
@@ -379,7 +379,7 @@ public final class ExtNeutralProgram {
     return requestWithdrawal(invokedExtNeutralProgramMeta, keys, sharesAmount, minEstimatedValue);
   }
 
-  /// Request a Neutral bundle withdrawal for the GLAM vault.
+  /// Requests a NT bundle withdrawal for the GLAM vault.
   ///
   /// - Permission: `RequestWithdrawal`.
   /// - Policy: `bundle_account` must be present in `NeutralPolicy::bundles_allowlist`.
@@ -438,13 +438,13 @@ public final class ExtNeutralProgram {
     }
   }
 
-  public static final Discriminator SET_NEUTRAL_POLICY_DISCRIMINATOR = toDiscriminator(82, 190, 30, 24, 221, 135, 158, 215);
+  public static final Discriminator SET_NTBUNDLE_POLICY_DISCRIMINATOR = toDiscriminator(231, 39, 82, 194, 32, 231, 83, 203);
 
-  /// Set the Neutral bundle allowlist policy.
+  /// Sets the NT bundle allowlist policy.
   ///
-  public static List<AccountMeta> setNeutralPolicyKeys(final PublicKey glamStateKey,
-                                                       final PublicKey glamSignerKey,
-                                                       final PublicKey glamProtocolProgramKey) {
+  public static List<AccountMeta> setNtbundlePolicyKeys(final PublicKey glamStateKey,
+                                                        final PublicKey glamSignerKey,
+                                                        final PublicKey glamProtocolProgramKey) {
     return List.of(
       createWrite(glamStateKey),
       createWritableSigner(glamSignerKey),
@@ -452,49 +452,49 @@ public final class ExtNeutralProgram {
     );
   }
 
-  /// Set the Neutral bundle allowlist policy.
+  /// Sets the NT bundle allowlist policy.
   ///
-  public static Instruction setNeutralPolicy(final AccountMeta invokedExtNeutralProgramMeta,
-                                             final PublicKey glamStateKey,
-                                             final PublicKey glamSignerKey,
-                                             final PublicKey glamProtocolProgramKey,
-                                             final NeutralPolicy policy) {
-    final var keys = setNeutralPolicyKeys(
+  public static Instruction setNtbundlePolicy(final AccountMeta invokedExtNeutralProgramMeta,
+                                              final PublicKey glamStateKey,
+                                              final PublicKey glamSignerKey,
+                                              final PublicKey glamProtocolProgramKey,
+                                              final NtBundlePolicy policy) {
+    final var keys = setNtbundlePolicyKeys(
       glamStateKey,
       glamSignerKey,
       glamProtocolProgramKey
     );
-    return setNeutralPolicy(invokedExtNeutralProgramMeta, keys, policy);
+    return setNtbundlePolicy(invokedExtNeutralProgramMeta, keys, policy);
   }
 
-  /// Set the Neutral bundle allowlist policy.
+  /// Sets the NT bundle allowlist policy.
   ///
-  public static Instruction setNeutralPolicy(final AccountMeta invokedExtNeutralProgramMeta,
-                                             final List<AccountMeta> keys,
-                                             final NeutralPolicy policy) {
+  public static Instruction setNtbundlePolicy(final AccountMeta invokedExtNeutralProgramMeta,
+                                              final List<AccountMeta> keys,
+                                              final NtBundlePolicy policy) {
     final byte[] _data = new byte[8 + policy.l()];
-    int i = SET_NEUTRAL_POLICY_DISCRIMINATOR.write(_data, 0);
+    int i = SET_NTBUNDLE_POLICY_DISCRIMINATOR.write(_data, 0);
     policy.write(_data, i);
 
     return Instruction.createInstruction(invokedExtNeutralProgramMeta, keys, _data);
   }
 
-  public record SetNeutralPolicyIxData(Discriminator discriminator, NeutralPolicy policy) implements SerDe {
+  public record SetNtbundlePolicyIxData(Discriminator discriminator, NtBundlePolicy policy) implements SerDe {
 
-    public static SetNeutralPolicyIxData read(final Instruction instruction) {
+    public static SetNtbundlePolicyIxData read(final Instruction instruction) {
       return read(instruction.copyData(), 0);
     }
 
     public static final int POLICY_OFFSET = 8;
 
-    public static SetNeutralPolicyIxData read(final byte[] _data, final int _offset) {
+    public static SetNtbundlePolicyIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var policy = NeutralPolicy.read(_data, i);
-      return new SetNeutralPolicyIxData(discriminator, policy);
+      final var policy = NtBundlePolicy.read(_data, i);
+      return new SetNtbundlePolicyIxData(discriminator, policy);
     }
 
     @Override

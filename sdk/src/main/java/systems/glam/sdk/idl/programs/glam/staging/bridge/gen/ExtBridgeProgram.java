@@ -8,8 +8,11 @@ import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.core.gen.SerDe;
 
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.CctpDepositForBurnArgs;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.CctpPolicy;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.CommitOftTransferArgs;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.LayerzeroOftRoute;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.ManagedCctpDepositForBurnArgs;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.PrepareOftTransferArgs;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.SettleManagedTransferArgs;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.ValidateManagedTransferArgs;
@@ -84,6 +87,152 @@ public final class ExtBridgeProgram {
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
       i += route.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
+  public static final Discriminator CCTP_DEPOSIT_FOR_BURN_DISCRIMINATOR = toDiscriminator(132, 90, 36, 35, 103, 197, 143, 91);
+
+  /// Burns tokens through Circle CCTP without creating a managed inflight position.
+  ///
+  public static List<AccountMeta> cctpDepositForBurnKeys(final SolanaAccounts solanaAccounts,
+                                                         final PublicKey glamStateKey,
+                                                         final PublicKey glamVaultKey,
+                                                         final PublicKey glamSignerKey,
+                                                         final PublicKey integrationAuthorityKey,
+                                                         final PublicKey cpiProgramKey,
+                                                         final PublicKey glamProtocolProgramKey,
+                                                         final PublicKey senderAuthorityPdaKey,
+                                                         final PublicKey burnTokenAccountKey,
+                                                         final PublicKey denylistAccountKey,
+                                                         final PublicKey messageTransmitterKey,
+                                                         final PublicKey tokenMessengerKey,
+                                                         final PublicKey remoteTokenMessengerKey,
+                                                         final PublicKey tokenMinterKey,
+                                                         final PublicKey localTokenKey,
+                                                         final PublicKey burnTokenMintKey,
+                                                         final PublicKey messageSentEventDataKey,
+                                                         final PublicKey messageTransmitterProgramKey,
+                                                         final PublicKey tokenMessengerMinterProgramKey,
+                                                         final PublicKey tokenProgramKey,
+                                                         final PublicKey eventAuthorityKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createRead(senderAuthorityPdaKey),
+      createWrite(burnTokenAccountKey),
+      createRead(denylistAccountKey),
+      createWrite(messageTransmitterKey),
+      createRead(tokenMessengerKey),
+      createRead(remoteTokenMessengerKey),
+      createRead(tokenMinterKey),
+      createWrite(localTokenKey),
+      createWrite(burnTokenMintKey),
+      createWritableSigner(messageSentEventDataKey),
+      createRead(messageTransmitterProgramKey),
+      createRead(tokenMessengerMinterProgramKey),
+      createRead(tokenProgramKey),
+      createRead(eventAuthorityKey)
+    );
+  }
+
+  /// Burns tokens through Circle CCTP without creating a managed inflight position.
+  ///
+  public static Instruction cctpDepositForBurn(final AccountMeta invokedExtBridgeProgramMeta,
+                                               final SolanaAccounts solanaAccounts,
+                                               final PublicKey glamStateKey,
+                                               final PublicKey glamVaultKey,
+                                               final PublicKey glamSignerKey,
+                                               final PublicKey integrationAuthorityKey,
+                                               final PublicKey cpiProgramKey,
+                                               final PublicKey glamProtocolProgramKey,
+                                               final PublicKey senderAuthorityPdaKey,
+                                               final PublicKey burnTokenAccountKey,
+                                               final PublicKey denylistAccountKey,
+                                               final PublicKey messageTransmitterKey,
+                                               final PublicKey tokenMessengerKey,
+                                               final PublicKey remoteTokenMessengerKey,
+                                               final PublicKey tokenMinterKey,
+                                               final PublicKey localTokenKey,
+                                               final PublicKey burnTokenMintKey,
+                                               final PublicKey messageSentEventDataKey,
+                                               final PublicKey messageTransmitterProgramKey,
+                                               final PublicKey tokenMessengerMinterProgramKey,
+                                               final PublicKey tokenProgramKey,
+                                               final PublicKey eventAuthorityKey,
+                                               final CctpDepositForBurnArgs args) {
+    final var keys = cctpDepositForBurnKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      senderAuthorityPdaKey,
+      burnTokenAccountKey,
+      denylistAccountKey,
+      messageTransmitterKey,
+      tokenMessengerKey,
+      remoteTokenMessengerKey,
+      tokenMinterKey,
+      localTokenKey,
+      burnTokenMintKey,
+      messageSentEventDataKey,
+      messageTransmitterProgramKey,
+      tokenMessengerMinterProgramKey,
+      tokenProgramKey,
+      eventAuthorityKey
+    );
+    return cctpDepositForBurn(invokedExtBridgeProgramMeta, keys, args);
+  }
+
+  /// Burns tokens through Circle CCTP without creating a managed inflight position.
+  ///
+  public static Instruction cctpDepositForBurn(final AccountMeta invokedExtBridgeProgramMeta,
+                                               final List<AccountMeta> keys,
+                                               final CctpDepositForBurnArgs args) {
+    final byte[] _data = new byte[8 + args.l()];
+    int i = CCTP_DEPOSIT_FOR_BURN_DISCRIMINATOR.write(_data, 0);
+    args.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record CctpDepositForBurnIxData(Discriminator discriminator, CctpDepositForBurnArgs args) implements SerDe {
+
+    public static CctpDepositForBurnIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int BYTES = 96;
+
+    public static final int ARGS_OFFSET = 8;
+
+    public static CctpDepositForBurnIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var args = CctpDepositForBurnArgs.read(_data, i);
+      return new CctpDepositForBurnIxData(discriminator, args);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += args.write(_data, i);
       return i - _offset;
     }
 
@@ -272,6 +421,156 @@ public final class ExtBridgeProgram {
     }
   }
 
+  public static final Discriminator MANAGED_CCTP_DEPOSIT_FOR_BURN_DISCRIMINATOR = toDiscriminator(120, 159, 100, 14, 2, 142, 128, 123);
+
+  /// Burns tokens through Circle CCTP and records a managed inflight bridge position.
+  ///
+  public static List<AccountMeta> managedCctpDepositForBurnKeys(final SolanaAccounts solanaAccounts,
+                                                                final PublicKey glamStateKey,
+                                                                final PublicKey glamVaultKey,
+                                                                final PublicKey glamSignerKey,
+                                                                final PublicKey integrationAuthorityKey,
+                                                                final PublicKey cpiProgramKey,
+                                                                final PublicKey glamProtocolProgramKey,
+                                                                final PublicKey bridgeRegistryKey,
+                                                                final PublicKey senderAuthorityPdaKey,
+                                                                final PublicKey burnTokenAccountKey,
+                                                                final PublicKey denylistAccountKey,
+                                                                final PublicKey messageTransmitterKey,
+                                                                final PublicKey tokenMessengerKey,
+                                                                final PublicKey remoteTokenMessengerKey,
+                                                                final PublicKey tokenMinterKey,
+                                                                final PublicKey localTokenKey,
+                                                                final PublicKey burnTokenMintKey,
+                                                                final PublicKey messageSentEventDataKey,
+                                                                final PublicKey messageTransmitterProgramKey,
+                                                                final PublicKey tokenMessengerMinterProgramKey,
+                                                                final PublicKey tokenProgramKey,
+                                                                final PublicKey eventAuthorityKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createWrite(bridgeRegistryKey),
+      createRead(senderAuthorityPdaKey),
+      createWrite(burnTokenAccountKey),
+      createRead(denylistAccountKey),
+      createWrite(messageTransmitterKey),
+      createRead(tokenMessengerKey),
+      createRead(remoteTokenMessengerKey),
+      createRead(tokenMinterKey),
+      createWrite(localTokenKey),
+      createWrite(burnTokenMintKey),
+      createWritableSigner(messageSentEventDataKey),
+      createRead(messageTransmitterProgramKey),
+      createRead(tokenMessengerMinterProgramKey),
+      createRead(tokenProgramKey),
+      createRead(eventAuthorityKey)
+    );
+  }
+
+  /// Burns tokens through Circle CCTP and records a managed inflight bridge position.
+  ///
+  public static Instruction managedCctpDepositForBurn(final AccountMeta invokedExtBridgeProgramMeta,
+                                                      final SolanaAccounts solanaAccounts,
+                                                      final PublicKey glamStateKey,
+                                                      final PublicKey glamVaultKey,
+                                                      final PublicKey glamSignerKey,
+                                                      final PublicKey integrationAuthorityKey,
+                                                      final PublicKey cpiProgramKey,
+                                                      final PublicKey glamProtocolProgramKey,
+                                                      final PublicKey bridgeRegistryKey,
+                                                      final PublicKey senderAuthorityPdaKey,
+                                                      final PublicKey burnTokenAccountKey,
+                                                      final PublicKey denylistAccountKey,
+                                                      final PublicKey messageTransmitterKey,
+                                                      final PublicKey tokenMessengerKey,
+                                                      final PublicKey remoteTokenMessengerKey,
+                                                      final PublicKey tokenMinterKey,
+                                                      final PublicKey localTokenKey,
+                                                      final PublicKey burnTokenMintKey,
+                                                      final PublicKey messageSentEventDataKey,
+                                                      final PublicKey messageTransmitterProgramKey,
+                                                      final PublicKey tokenMessengerMinterProgramKey,
+                                                      final PublicKey tokenProgramKey,
+                                                      final PublicKey eventAuthorityKey,
+                                                      final ManagedCctpDepositForBurnArgs args) {
+    final var keys = managedCctpDepositForBurnKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      bridgeRegistryKey,
+      senderAuthorityPdaKey,
+      burnTokenAccountKey,
+      denylistAccountKey,
+      messageTransmitterKey,
+      tokenMessengerKey,
+      remoteTokenMessengerKey,
+      tokenMinterKey,
+      localTokenKey,
+      burnTokenMintKey,
+      messageSentEventDataKey,
+      messageTransmitterProgramKey,
+      tokenMessengerMinterProgramKey,
+      tokenProgramKey,
+      eventAuthorityKey
+    );
+    return managedCctpDepositForBurn(invokedExtBridgeProgramMeta, keys, args);
+  }
+
+  /// Burns tokens through Circle CCTP and records a managed inflight bridge position.
+  ///
+  public static Instruction managedCctpDepositForBurn(final AccountMeta invokedExtBridgeProgramMeta,
+                                                      final List<AccountMeta> keys,
+                                                      final ManagedCctpDepositForBurnArgs args) {
+    final byte[] _data = new byte[8 + args.l()];
+    int i = MANAGED_CCTP_DEPOSIT_FOR_BURN_DISCRIMINATOR.write(_data, 0);
+    args.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record ManagedCctpDepositForBurnIxData(Discriminator discriminator, ManagedCctpDepositForBurnArgs args) implements SerDe {
+
+    public static ManagedCctpDepositForBurnIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int BYTES = 128;
+
+    public static final int ARGS_OFFSET = 8;
+
+    public static ManagedCctpDepositForBurnIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var args = ManagedCctpDepositForBurnArgs.read(_data, i);
+      return new ManagedCctpDepositForBurnIxData(discriminator, args);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += args.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
   public static final Discriminator PREPARE_OFT_TRANSFER_DISCRIMINATOR = toDiscriminator(192, 75, 97, 92, 178, 246, 220, 8);
 
   /// Prepares the auxiliary token account used by the OFT transfer flow.
@@ -428,6 +727,72 @@ public final class ExtBridgeProgram {
   public static Instruction priceManagedTransfers(final AccountMeta invokedExtBridgeProgramMeta,
                                                   final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, PRICE_MANAGED_TRANSFERS_DISCRIMINATOR);
+  }
+
+  public static final Discriminator SET_CCTP_POLICY_DISCRIMINATOR = toDiscriminator(32, 88, 254, 15, 2, 206, 222, 234);
+
+  public static List<AccountMeta> setCctpPolicyKeys(final PublicKey glamStateKey,
+                                                    final PublicKey glamSignerKey,
+                                                    final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  public static Instruction setCctpPolicy(final AccountMeta invokedExtBridgeProgramMeta,
+                                          final PublicKey glamStateKey,
+                                          final PublicKey glamSignerKey,
+                                          final PublicKey glamProtocolProgramKey,
+                                          final CctpPolicy policy) {
+    final var keys = setCctpPolicyKeys(
+      glamStateKey,
+      glamSignerKey,
+      glamProtocolProgramKey
+    );
+    return setCctpPolicy(invokedExtBridgeProgramMeta, keys, policy);
+  }
+
+  public static Instruction setCctpPolicy(final AccountMeta invokedExtBridgeProgramMeta,
+                                          final List<AccountMeta> keys,
+                                          final CctpPolicy policy) {
+    final byte[] _data = new byte[8 + policy.l()];
+    int i = SET_CCTP_POLICY_DISCRIMINATOR.write(_data, 0);
+    policy.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  public record SetCctpPolicyIxData(Discriminator discriminator, CctpPolicy policy) implements SerDe {
+
+    public static SetCctpPolicyIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int POLICY_OFFSET = 8;
+
+    public static SetCctpPolicyIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var policy = CctpPolicy.read(_data, i);
+      return new SetCctpPolicyIxData(discriminator, policy);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += policy.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + policy.l();
+    }
   }
 
   public static final Discriminator SETTLE_MANAGED_TRANSFER_DISCRIMINATOR = toDiscriminator(197, 87, 37, 239, 24, 244, 152, 135);

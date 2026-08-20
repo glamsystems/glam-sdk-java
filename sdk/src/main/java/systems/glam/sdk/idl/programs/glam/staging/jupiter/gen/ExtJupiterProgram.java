@@ -637,6 +637,678 @@ public final class ExtJupiterProgram {
     }
   }
 
+  public static final Discriminator EARN_MINT_DISCRIMINATOR = toDiscriminator(248, 245, 116, 167, 84, 254, 78, 58);
+
+  /// Deposit enough underlying tokens into Jupiter Earn to mint exact jlToken shares.
+  ///
+  /// - Permission: `EarnPermissions::Deposit`.
+  /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
+  ///
+  public static List<AccountMeta> earnMintKeys(final SolanaAccounts solanaAccounts,
+                                               final PublicKey glamStateKey,
+                                               final PublicKey glamVaultKey,
+                                               final PublicKey glamSignerKey,
+                                               final PublicKey integrationAuthorityKey,
+                                               final PublicKey cpiProgramKey,
+                                               final PublicKey glamProtocolProgramKey,
+                                               final PublicKey depositorTokenAccountKey,
+                                               final PublicKey recipientTokenAccountKey,
+                                               final PublicKey mintKey,
+                                               final PublicKey lendingAdminKey,
+                                               final PublicKey lendingKey,
+                                               final PublicKey fTokenMintKey,
+                                               final PublicKey supplyTokenReservesLiquidityKey,
+                                               final PublicKey lendingSupplyPositionOnLiquidityKey,
+                                               final PublicKey rateModelKey,
+                                               final PublicKey vaultKey,
+                                               final PublicKey liquidityKey,
+                                               final PublicKey liquidityProgramKey,
+                                               final PublicKey rewardsRateModelKey,
+                                               final PublicKey tokenProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createWrite(depositorTokenAccountKey),
+      createWrite(recipientTokenAccountKey),
+      createRead(mintKey),
+      createRead(lendingAdminKey),
+      createWrite(lendingKey),
+      createWrite(fTokenMintKey),
+      createWrite(supplyTokenReservesLiquidityKey),
+      createWrite(lendingSupplyPositionOnLiquidityKey),
+      createRead(rateModelKey),
+      createWrite(vaultKey),
+      createWrite(liquidityKey),
+      createWrite(liquidityProgramKey),
+      createRead(rewardsRateModelKey),
+      createRead(tokenProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram())
+    );
+  }
+
+  /// Deposit enough underlying tokens into Jupiter Earn to mint exact jlToken shares.
+  ///
+  /// - Permission: `EarnPermissions::Deposit`.
+  /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
+  ///
+  /// @param shares: u64
+  public static Instruction earnMint(final AccountMeta invokedExtJupiterProgramMeta,
+                                     final SolanaAccounts solanaAccounts,
+                                     final PublicKey glamStateKey,
+                                     final PublicKey glamVaultKey,
+                                     final PublicKey glamSignerKey,
+                                     final PublicKey integrationAuthorityKey,
+                                     final PublicKey cpiProgramKey,
+                                     final PublicKey glamProtocolProgramKey,
+                                     final PublicKey depositorTokenAccountKey,
+                                     final PublicKey recipientTokenAccountKey,
+                                     final PublicKey mintKey,
+                                     final PublicKey lendingAdminKey,
+                                     final PublicKey lendingKey,
+                                     final PublicKey fTokenMintKey,
+                                     final PublicKey supplyTokenReservesLiquidityKey,
+                                     final PublicKey lendingSupplyPositionOnLiquidityKey,
+                                     final PublicKey rateModelKey,
+                                     final PublicKey vaultKey,
+                                     final PublicKey liquidityKey,
+                                     final PublicKey liquidityProgramKey,
+                                     final PublicKey rewardsRateModelKey,
+                                     final PublicKey tokenProgramKey,
+                                     final long shares) {
+    final var keys = earnMintKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      depositorTokenAccountKey,
+      recipientTokenAccountKey,
+      mintKey,
+      lendingAdminKey,
+      lendingKey,
+      fTokenMintKey,
+      supplyTokenReservesLiquidityKey,
+      lendingSupplyPositionOnLiquidityKey,
+      rateModelKey,
+      vaultKey,
+      liquidityKey,
+      liquidityProgramKey,
+      rewardsRateModelKey,
+      tokenProgramKey
+    );
+    return earnMint(invokedExtJupiterProgramMeta, keys, shares);
+  }
+
+  /// Deposit enough underlying tokens into Jupiter Earn to mint exact jlToken shares.
+  ///
+  /// - Permission: `EarnPermissions::Deposit`.
+  /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
+  ///
+  /// @param shares: u64
+  public static Instruction earnMint(final AccountMeta invokedExtJupiterProgramMeta,
+                                     final List<AccountMeta> keys,
+                                     final long shares) {
+    final byte[] _data = new byte[16];
+    int i = EARN_MINT_DISCRIMINATOR.write(_data, 0);
+    putInt64LE(_data, i, shares);
+
+    return Instruction.createInstruction(invokedExtJupiterProgramMeta, keys, _data);
+  }
+
+  /// @param shares: u64
+  public record EarnMintIxData(Discriminator discriminator, long shares) implements SerDe {
+
+    public static EarnMintIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int BYTES = 16;
+
+    public static final int SHARES_OFFSET = 8;
+
+    public static EarnMintIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var shares = getInt64LE(_data, i);
+      return new EarnMintIxData(discriminator, shares);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      putInt64LE(_data, i, shares);
+      i += 8;
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
+  public static final Discriminator EARN_MINT_WITH_MAX_ASSETS_DISCRIMINATOR = toDiscriminator(180, 177, 204, 33, 230, 193, 220, 69);
+
+  /// Deposit at most `max_assets` underlying tokens into Jupiter Earn to mint exact jlToken shares.
+  ///
+  /// - Permission: `EarnPermissions::Deposit`.
+  /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
+  ///
+  public static List<AccountMeta> earnMintWithMaxAssetsKeys(final SolanaAccounts solanaAccounts,
+                                                            final PublicKey glamStateKey,
+                                                            final PublicKey glamVaultKey,
+                                                            final PublicKey glamSignerKey,
+                                                            final PublicKey integrationAuthorityKey,
+                                                            final PublicKey cpiProgramKey,
+                                                            final PublicKey glamProtocolProgramKey,
+                                                            final PublicKey depositorTokenAccountKey,
+                                                            final PublicKey recipientTokenAccountKey,
+                                                            final PublicKey mintKey,
+                                                            final PublicKey lendingAdminKey,
+                                                            final PublicKey lendingKey,
+                                                            final PublicKey fTokenMintKey,
+                                                            final PublicKey supplyTokenReservesLiquidityKey,
+                                                            final PublicKey lendingSupplyPositionOnLiquidityKey,
+                                                            final PublicKey rateModelKey,
+                                                            final PublicKey vaultKey,
+                                                            final PublicKey liquidityKey,
+                                                            final PublicKey liquidityProgramKey,
+                                                            final PublicKey rewardsRateModelKey,
+                                                            final PublicKey tokenProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createWrite(depositorTokenAccountKey),
+      createWrite(recipientTokenAccountKey),
+      createRead(mintKey),
+      createRead(lendingAdminKey),
+      createWrite(lendingKey),
+      createWrite(fTokenMintKey),
+      createWrite(supplyTokenReservesLiquidityKey),
+      createWrite(lendingSupplyPositionOnLiquidityKey),
+      createRead(rateModelKey),
+      createWrite(vaultKey),
+      createWrite(liquidityKey),
+      createWrite(liquidityProgramKey),
+      createRead(rewardsRateModelKey),
+      createRead(tokenProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram())
+    );
+  }
+
+  /// Deposit at most `max_assets` underlying tokens into Jupiter Earn to mint exact jlToken shares.
+  ///
+  /// - Permission: `EarnPermissions::Deposit`.
+  /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
+  ///
+  /// @param shares: u64
+  /// @param maxAssets: u64
+  public static Instruction earnMintWithMaxAssets(final AccountMeta invokedExtJupiterProgramMeta,
+                                                  final SolanaAccounts solanaAccounts,
+                                                  final PublicKey glamStateKey,
+                                                  final PublicKey glamVaultKey,
+                                                  final PublicKey glamSignerKey,
+                                                  final PublicKey integrationAuthorityKey,
+                                                  final PublicKey cpiProgramKey,
+                                                  final PublicKey glamProtocolProgramKey,
+                                                  final PublicKey depositorTokenAccountKey,
+                                                  final PublicKey recipientTokenAccountKey,
+                                                  final PublicKey mintKey,
+                                                  final PublicKey lendingAdminKey,
+                                                  final PublicKey lendingKey,
+                                                  final PublicKey fTokenMintKey,
+                                                  final PublicKey supplyTokenReservesLiquidityKey,
+                                                  final PublicKey lendingSupplyPositionOnLiquidityKey,
+                                                  final PublicKey rateModelKey,
+                                                  final PublicKey vaultKey,
+                                                  final PublicKey liquidityKey,
+                                                  final PublicKey liquidityProgramKey,
+                                                  final PublicKey rewardsRateModelKey,
+                                                  final PublicKey tokenProgramKey,
+                                                  final long shares,
+                                                  final long maxAssets) {
+    final var keys = earnMintWithMaxAssetsKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      depositorTokenAccountKey,
+      recipientTokenAccountKey,
+      mintKey,
+      lendingAdminKey,
+      lendingKey,
+      fTokenMintKey,
+      supplyTokenReservesLiquidityKey,
+      lendingSupplyPositionOnLiquidityKey,
+      rateModelKey,
+      vaultKey,
+      liquidityKey,
+      liquidityProgramKey,
+      rewardsRateModelKey,
+      tokenProgramKey
+    );
+    return earnMintWithMaxAssets(invokedExtJupiterProgramMeta, keys, shares, maxAssets);
+  }
+
+  /// Deposit at most `max_assets` underlying tokens into Jupiter Earn to mint exact jlToken shares.
+  ///
+  /// - Permission: `EarnPermissions::Deposit`.
+  /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
+  ///
+  /// @param shares: u64
+  /// @param maxAssets: u64
+  public static Instruction earnMintWithMaxAssets(final AccountMeta invokedExtJupiterProgramMeta,
+                                                  final List<AccountMeta> keys,
+                                                  final long shares,
+                                                  final long maxAssets) {
+    final byte[] _data = new byte[24];
+    int i = EARN_MINT_WITH_MAX_ASSETS_DISCRIMINATOR.write(_data, 0);
+    putInt64LE(_data, i, shares);
+    i += 8;
+    putInt64LE(_data, i, maxAssets);
+
+    return Instruction.createInstruction(invokedExtJupiterProgramMeta, keys, _data);
+  }
+
+  /// @param shares: u64
+  /// @param maxAssets: u64
+  public record EarnMintWithMaxAssetsIxData(Discriminator discriminator, long shares, long maxAssets) implements SerDe {
+
+    public static EarnMintWithMaxAssetsIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int BYTES = 24;
+
+    public static final int SHARES_OFFSET = 8;
+    public static final int MAX_ASSETS_OFFSET = 16;
+
+    public static EarnMintWithMaxAssetsIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var shares = getInt64LE(_data, i);
+      i += 8;
+      final var maxAssets = getInt64LE(_data, i);
+      return new EarnMintWithMaxAssetsIxData(discriminator, shares, maxAssets);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      putInt64LE(_data, i, shares);
+      i += 8;
+      putInt64LE(_data, i, maxAssets);
+      i += 8;
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
+  public static final Discriminator EARN_REDEEM_DISCRIMINATOR = toDiscriminator(93, 162, 58, 1, 75, 18, 212, 66);
+
+  /// Redeem exact Jupiter Earn jlToken shares and withdraw underlying tokens to the GLAM vault.
+  ///
+  /// - Permission: `EarnPermissions::Withdraw`.
+  /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
+  ///
+  public static List<AccountMeta> earnRedeemKeys(final SolanaAccounts solanaAccounts,
+                                                 final PublicKey glamStateKey,
+                                                 final PublicKey glamVaultKey,
+                                                 final PublicKey glamSignerKey,
+                                                 final PublicKey integrationAuthorityKey,
+                                                 final PublicKey cpiProgramKey,
+                                                 final PublicKey glamProtocolProgramKey,
+                                                 final PublicKey ownerTokenAccountKey,
+                                                 final PublicKey recipientTokenAccountKey,
+                                                 final PublicKey lendingAdminKey,
+                                                 final PublicKey lendingKey,
+                                                 final PublicKey mintKey,
+                                                 final PublicKey fTokenMintKey,
+                                                 final PublicKey supplyTokenReservesLiquidityKey,
+                                                 final PublicKey lendingSupplyPositionOnLiquidityKey,
+                                                 final PublicKey rateModelKey,
+                                                 final PublicKey vaultKey,
+                                                 final PublicKey claimAccountKey,
+                                                 final PublicKey liquidityKey,
+                                                 final PublicKey liquidityProgramKey,
+                                                 final PublicKey rewardsRateModelKey,
+                                                 final PublicKey tokenProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createWrite(ownerTokenAccountKey),
+      createWrite(recipientTokenAccountKey),
+      createRead(lendingAdminKey),
+      createWrite(lendingKey),
+      createRead(mintKey),
+      createWrite(fTokenMintKey),
+      createWrite(supplyTokenReservesLiquidityKey),
+      createWrite(lendingSupplyPositionOnLiquidityKey),
+      createRead(rateModelKey),
+      createWrite(vaultKey),
+      createWrite(claimAccountKey),
+      createWrite(liquidityKey),
+      createWrite(liquidityProgramKey),
+      createRead(rewardsRateModelKey),
+      createRead(tokenProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram())
+    );
+  }
+
+  /// Redeem exact Jupiter Earn jlToken shares and withdraw underlying tokens to the GLAM vault.
+  ///
+  /// - Permission: `EarnPermissions::Withdraw`.
+  /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
+  ///
+  /// @param shares: u64
+  public static Instruction earnRedeem(final AccountMeta invokedExtJupiterProgramMeta,
+                                       final SolanaAccounts solanaAccounts,
+                                       final PublicKey glamStateKey,
+                                       final PublicKey glamVaultKey,
+                                       final PublicKey glamSignerKey,
+                                       final PublicKey integrationAuthorityKey,
+                                       final PublicKey cpiProgramKey,
+                                       final PublicKey glamProtocolProgramKey,
+                                       final PublicKey ownerTokenAccountKey,
+                                       final PublicKey recipientTokenAccountKey,
+                                       final PublicKey lendingAdminKey,
+                                       final PublicKey lendingKey,
+                                       final PublicKey mintKey,
+                                       final PublicKey fTokenMintKey,
+                                       final PublicKey supplyTokenReservesLiquidityKey,
+                                       final PublicKey lendingSupplyPositionOnLiquidityKey,
+                                       final PublicKey rateModelKey,
+                                       final PublicKey vaultKey,
+                                       final PublicKey claimAccountKey,
+                                       final PublicKey liquidityKey,
+                                       final PublicKey liquidityProgramKey,
+                                       final PublicKey rewardsRateModelKey,
+                                       final PublicKey tokenProgramKey,
+                                       final long shares) {
+    final var keys = earnRedeemKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      ownerTokenAccountKey,
+      recipientTokenAccountKey,
+      lendingAdminKey,
+      lendingKey,
+      mintKey,
+      fTokenMintKey,
+      supplyTokenReservesLiquidityKey,
+      lendingSupplyPositionOnLiquidityKey,
+      rateModelKey,
+      vaultKey,
+      claimAccountKey,
+      liquidityKey,
+      liquidityProgramKey,
+      rewardsRateModelKey,
+      tokenProgramKey
+    );
+    return earnRedeem(invokedExtJupiterProgramMeta, keys, shares);
+  }
+
+  /// Redeem exact Jupiter Earn jlToken shares and withdraw underlying tokens to the GLAM vault.
+  ///
+  /// - Permission: `EarnPermissions::Withdraw`.
+  /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
+  ///
+  /// @param shares: u64
+  public static Instruction earnRedeem(final AccountMeta invokedExtJupiterProgramMeta,
+                                       final List<AccountMeta> keys,
+                                       final long shares) {
+    final byte[] _data = new byte[16];
+    int i = EARN_REDEEM_DISCRIMINATOR.write(_data, 0);
+    putInt64LE(_data, i, shares);
+
+    return Instruction.createInstruction(invokedExtJupiterProgramMeta, keys, _data);
+  }
+
+  /// @param shares: u64
+  public record EarnRedeemIxData(Discriminator discriminator, long shares) implements SerDe {
+
+    public static EarnRedeemIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int BYTES = 16;
+
+    public static final int SHARES_OFFSET = 8;
+
+    public static EarnRedeemIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var shares = getInt64LE(_data, i);
+      return new EarnRedeemIxData(discriminator, shares);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      putInt64LE(_data, i, shares);
+      i += 8;
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
+  public static final Discriminator EARN_REDEEM_WITH_MIN_AMOUNT_OUT_DISCRIMINATOR = toDiscriminator(204, 196, 159, 42, 52, 107, 134, 153);
+
+  /// Redeem Jupiter Earn jlToken shares for at least `min_amount_out` underlying tokens.
+  ///
+  /// - Permission: `EarnPermissions::Withdraw`.
+  /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
+  ///
+  public static List<AccountMeta> earnRedeemWithMinAmountOutKeys(final SolanaAccounts solanaAccounts,
+                                                                 final PublicKey glamStateKey,
+                                                                 final PublicKey glamVaultKey,
+                                                                 final PublicKey glamSignerKey,
+                                                                 final PublicKey integrationAuthorityKey,
+                                                                 final PublicKey cpiProgramKey,
+                                                                 final PublicKey glamProtocolProgramKey,
+                                                                 final PublicKey ownerTokenAccountKey,
+                                                                 final PublicKey recipientTokenAccountKey,
+                                                                 final PublicKey lendingAdminKey,
+                                                                 final PublicKey lendingKey,
+                                                                 final PublicKey mintKey,
+                                                                 final PublicKey fTokenMintKey,
+                                                                 final PublicKey supplyTokenReservesLiquidityKey,
+                                                                 final PublicKey lendingSupplyPositionOnLiquidityKey,
+                                                                 final PublicKey rateModelKey,
+                                                                 final PublicKey vaultKey,
+                                                                 final PublicKey claimAccountKey,
+                                                                 final PublicKey liquidityKey,
+                                                                 final PublicKey liquidityProgramKey,
+                                                                 final PublicKey rewardsRateModelKey,
+                                                                 final PublicKey tokenProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createWrite(ownerTokenAccountKey),
+      createWrite(recipientTokenAccountKey),
+      createRead(lendingAdminKey),
+      createWrite(lendingKey),
+      createRead(mintKey),
+      createWrite(fTokenMintKey),
+      createWrite(supplyTokenReservesLiquidityKey),
+      createWrite(lendingSupplyPositionOnLiquidityKey),
+      createRead(rateModelKey),
+      createWrite(vaultKey),
+      createWrite(claimAccountKey),
+      createWrite(liquidityKey),
+      createWrite(liquidityProgramKey),
+      createRead(rewardsRateModelKey),
+      createRead(tokenProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram())
+    );
+  }
+
+  /// Redeem Jupiter Earn jlToken shares for at least `min_amount_out` underlying tokens.
+  ///
+  /// - Permission: `EarnPermissions::Withdraw`.
+  /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
+  ///
+  /// @param shares: u64
+  /// @param minAmountOut: u64
+  public static Instruction earnRedeemWithMinAmountOut(final AccountMeta invokedExtJupiterProgramMeta,
+                                                       final SolanaAccounts solanaAccounts,
+                                                       final PublicKey glamStateKey,
+                                                       final PublicKey glamVaultKey,
+                                                       final PublicKey glamSignerKey,
+                                                       final PublicKey integrationAuthorityKey,
+                                                       final PublicKey cpiProgramKey,
+                                                       final PublicKey glamProtocolProgramKey,
+                                                       final PublicKey ownerTokenAccountKey,
+                                                       final PublicKey recipientTokenAccountKey,
+                                                       final PublicKey lendingAdminKey,
+                                                       final PublicKey lendingKey,
+                                                       final PublicKey mintKey,
+                                                       final PublicKey fTokenMintKey,
+                                                       final PublicKey supplyTokenReservesLiquidityKey,
+                                                       final PublicKey lendingSupplyPositionOnLiquidityKey,
+                                                       final PublicKey rateModelKey,
+                                                       final PublicKey vaultKey,
+                                                       final PublicKey claimAccountKey,
+                                                       final PublicKey liquidityKey,
+                                                       final PublicKey liquidityProgramKey,
+                                                       final PublicKey rewardsRateModelKey,
+                                                       final PublicKey tokenProgramKey,
+                                                       final long shares,
+                                                       final long minAmountOut) {
+    final var keys = earnRedeemWithMinAmountOutKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      ownerTokenAccountKey,
+      recipientTokenAccountKey,
+      lendingAdminKey,
+      lendingKey,
+      mintKey,
+      fTokenMintKey,
+      supplyTokenReservesLiquidityKey,
+      lendingSupplyPositionOnLiquidityKey,
+      rateModelKey,
+      vaultKey,
+      claimAccountKey,
+      liquidityKey,
+      liquidityProgramKey,
+      rewardsRateModelKey,
+      tokenProgramKey
+    );
+    return earnRedeemWithMinAmountOut(invokedExtJupiterProgramMeta, keys, shares, minAmountOut);
+  }
+
+  /// Redeem Jupiter Earn jlToken shares for at least `min_amount_out` underlying tokens.
+  ///
+  /// - Permission: `EarnPermissions::Withdraw`.
+  /// - Policy: underlying `mint` must be in `EarnPolicy::mints_allowlist`.
+  ///
+  /// @param shares: u64
+  /// @param minAmountOut: u64
+  public static Instruction earnRedeemWithMinAmountOut(final AccountMeta invokedExtJupiterProgramMeta,
+                                                       final List<AccountMeta> keys,
+                                                       final long shares,
+                                                       final long minAmountOut) {
+    final byte[] _data = new byte[24];
+    int i = EARN_REDEEM_WITH_MIN_AMOUNT_OUT_DISCRIMINATOR.write(_data, 0);
+    putInt64LE(_data, i, shares);
+    i += 8;
+    putInt64LE(_data, i, minAmountOut);
+
+    return Instruction.createInstruction(invokedExtJupiterProgramMeta, keys, _data);
+  }
+
+  /// @param shares: u64
+  /// @param minAmountOut: u64
+  public record EarnRedeemWithMinAmountOutIxData(Discriminator discriminator, long shares, long minAmountOut) implements SerDe {
+
+    public static EarnRedeemWithMinAmountOutIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int BYTES = 24;
+
+    public static final int SHARES_OFFSET = 8;
+    public static final int MIN_AMOUNT_OUT_OFFSET = 16;
+
+    public static EarnRedeemWithMinAmountOutIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var shares = getInt64LE(_data, i);
+      i += 8;
+      final var minAmountOut = getInt64LE(_data, i);
+      return new EarnRedeemWithMinAmountOutIxData(discriminator, shares, minAmountOut);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      putInt64LE(_data, i, shares);
+      i += 8;
+      putInt64LE(_data, i, minAmountOut);
+      i += 8;
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
   public static final Discriminator EARN_WITHDRAW_DISCRIMINATOR = toDiscriminator(68, 169, 40, 28, 165, 60, 157, 98);
 
   /// Burn Jupiter Earn jlTokens and withdraw underlying tokens to the GLAM vault.

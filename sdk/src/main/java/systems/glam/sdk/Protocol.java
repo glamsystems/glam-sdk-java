@@ -5,13 +5,13 @@ import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintConstants;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolConstants;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplConstants;
 import systems.glam.sdk.idl.programs.glam.staging.cctp.gen.ExtCctpConstants;
-import systems.glam.sdk.idl.programs.glam.staging.registered_positions.gen.ExtRpiConstants;
 import systems.glam.sdk.idl.programs.glam.staging.jupiter.gen.ExtJupiterConstants;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.ExtLoopscaleConstants;
 import systems.glam.sdk.idl.programs.glam.staging.marginfi.gen.ExtMarginfiConstants;
 import systems.glam.sdk.idl.programs.glam.staging.nt.gen.ExtNeutralConstants;
 import systems.glam.sdk.idl.programs.glam.staging.orca.gen.ExtOrcaConstants;
 import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.ExtPhoenixConstants;
+import systems.glam.sdk.idl.programs.glam.staging.registered_positions.gen.ExtRpiConstants;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -32,7 +32,7 @@ public enum Protocol {
   LOOPSCALE_LENDING(ExtLoopscaleConstants.class, ExtLoopscaleConstants.PROTO_LOOPSCALE_LENDING),
   LOOPSCALE_VAULTS(ExtLoopscaleConstants.class, ExtLoopscaleConstants.PROTO_LOOPSCALE_VAULT),
   MARGINFI(ExtMarginfiConstants.class, ExtMarginfiConstants.PROTO_MARGINFI),
-  NEUTRAL(ExtNeutralConstants.class, ExtNeutralConstants.PROTO_NEUTRAL),
+  NEUTRAL(ExtNeutralConstants.class, ExtNeutralConstants.PROTO_NT_BUNDLE),
   ORCA_WHIRLPOOLS(ExtOrcaConstants.class, ExtOrcaConstants.PROTO_ORCA_WHIRLPOOLS),
   PHOENIX(ExtPhoenixConstants.class, ExtPhoenixConstants.PROTO_PHOENIX),
   MINT(GlamMintConstants.class, GlamMintConstants.PROTO_MINT),

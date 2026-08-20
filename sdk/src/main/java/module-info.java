@@ -46,7 +46,6 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.staging.registered_positions.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.registered_positions.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.spl.gen;
-  exports systems.glam.sdk.idl.programs.glam.staging.stake_pool.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.stake_pool.gen;
   exports systems.glam.sdk.lut;
   exports systems.glam.sdk.proxy;

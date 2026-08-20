@@ -3,15 +3,15 @@ package systems.glam.sdk.idl.programs.glam.staging.nt.gen;
 
 public final class ExtNeutralConstants {
 
-  public static final int PROTO_NEUTRAL = 1;
+  public static final int PROTO_NT_BUNDLE = 1;
 
-  public static final long PROTO_NEUTRAL_PERM_CLOSE_USER_BUNDLE_ACCOUNT = 8;
+  public static final long PROTO_NT_BUNDLE_PERM_CLOSE_USER_BUNDLE_ACCOUNT = 8;
 
-  public static final long PROTO_NEUTRAL_PERM_INITIALIZE_BUNDLE_DEPOSITOR = 1;
+  public static final long PROTO_NT_BUNDLE_PERM_INIT_BUNDLE_DEPOSITOR = 1;
 
-  public static final long PROTO_NEUTRAL_PERM_REQUEST_DEPOSIT = 2;
+  public static final long PROTO_NT_BUNDLE_PERM_REQUEST_DEPOSIT = 2;
 
-  public static final long PROTO_NEUTRAL_PERM_REQUEST_WITHDRAWAL = 4;
+  public static final long PROTO_NT_BUNDLE_PERM_REQUEST_WITHDRAWAL = 4;
 
   private ExtNeutralConstants() {
   }
