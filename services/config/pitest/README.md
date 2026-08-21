@@ -1048,7 +1048,13 @@ explains. Suspect fixture lifecycle before writing an equivalence argument, and
 use `-PisolateMutants` to confirm — it is diagnostic evidence only and must
 never support a baseline decision.
 
-## Timed-out mutants (audited set, reclassified 2026-08-06)
+## Timed-out mutants (historical 135-row snapshot; reclassified 2026-08-06)
+
+The discussion below is retained as historical evidence; it is not the current
+audited set. The authoritative current inventory is `services-timeouts.csv`
+(52 rows, all `cause:liveness`). The Kamino subsection likewise records
+pre-move evidence; its six audited timeout keys moved to `vault-stat-service`
+on 2026-08-21.
 
 Per HARDENING.md: a timeout-detected mutant was observed for *slowness, not
 wrongness* — the watchdog fires whatever the covering assertion says, so for
@@ -1065,7 +1071,7 @@ separately; never refresh them out on the strength of one loaded run.
 Snapshot: the 2026-07-26 `qualityGate -PnoMutationHistory` run on plugin
 21.5.15 — 135 rows.
 
-All rows share one meta-shape: mutants inside service loops and
+All rows in this snapshot shared one meta-shape: mutants inside service loops and
 lock/condition protocols, where the only observable failure is a thread that
 stops making progress (or spins without it) until PIT's watchdog. Structural
 causes by class:

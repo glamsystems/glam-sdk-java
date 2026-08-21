@@ -214,12 +214,7 @@ means replacing the label.
 ## Untriaged debt
 
 For the current per-class ranking, run `./gradlew pitestSdkDebt` — a
-hand-maintained list here goes stale the same week it is written. What the
-task cannot tell you is *why* blocks are still open:
-`VaultTableBuilderImpl.main` is untestable scratch pending relocation (see
-the kamino-lend pass above); the `VaultTableBuilder` interface and
-`GlamAccountClientImpl` / jupiter-client `NO_COVERAGE` blocks are the
-remaining mechanical work.
+hand-maintained list here goes stale the same week it is written.
 
 The baseline was seeded with the full pre-existing survivor population when
 the ratchet was adopted, per HARDENING.md's adoption path — triage debt made
