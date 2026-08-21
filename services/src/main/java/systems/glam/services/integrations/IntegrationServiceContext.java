@@ -4,7 +4,6 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.idl.clients.jupiter.JupiterAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
-import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.idl.clients.loopscale.LoopscaleAccounts;
 import software.sava.idl.clients.marginfi.v2.MarginfiAccounts;
 import software.sava.idl.clients.meteora.MeteoraAccounts;
@@ -14,9 +13,7 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamEnv;
 import systems.glam.services.ServiceContext;
-import systems.glam.services.integrations.kamino.KaminoCache;
 import systems.glam.services.mints.*;
-import systems.glam.services.oracles.scope.FeedIndexes;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.GlobalConfigCache;
@@ -34,7 +31,6 @@ public interface IntegrationServiceContext {
                                                  final IntegLookupTableCache integLookupTableCache,
                                                  final AccountFetcher accountFetcher,
                                                  final KaminoAccounts kaminoAccounts,
-                                                 final KaminoCache kaminoCache,
                                                  final LoopscaleAccounts loopscaleAccounts,
                                                  final OrcaAccounts orcaAccounts,
                                                  final PhoenixAccounts phoenixAccounts,
@@ -48,7 +44,7 @@ public interface IntegrationServiceContext {
         globalConfigCache,
         integLookupTableCache,
         accountFetcher,
-        kaminoAccounts, kaminoCache,
+        kaminoAccounts,
         loopscaleAccounts,
         orcaAccounts,
         phoenixAccounts,
@@ -94,8 +90,6 @@ public interface IntegrationServiceContext {
 
   AssetMetaContext globalConfigAssetMeta(final PublicKey mint);
 
-  FeedIndexes scopeAggregateIndexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType);
-
   OrcaAccounts orcaAccounts();
 
   PublicKey orcaWhirlpoolProgram();
@@ -111,8 +105,6 @@ public interface IntegrationServiceContext {
   JupiterAccounts jupiterAccounts();
 
   IntegLookupTableCache integTableCache();
-
-  KaminoCache kaminoCache();
 
   KaminoAccounts kaminoAccounts();
 

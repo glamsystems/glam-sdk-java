@@ -96,71 +96,6 @@ systems.glam.services.integrations.IntegLookupTableCacheImpl,lambda$accept$0,Rem
 systems.glam.services.integrations.IntegLookupTableCacheImpl,run,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 62
 systems.glam.services.integrations.IntegrationServiceContext,createContext,NullReturnValsMutator,NO_COVERAGE # untriaged # line 44
 systems.glam.services.integrations.IntegrationServiceContext,readClockSysVar,NullReturnValsMutator,NO_COVERAGE # untriaged # line 64
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$0,MathMutator,SURVIVED # capacity-hint # line 111
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$0,MathMutator,SURVIVED # capacity-hint # line 139
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$0,MathMutator,SURVIVED # capacity-hint # line 158
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$0,MathMutator,SURVIVED # capacity-hint # line 91
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,MathMutator,SURVIVED # capacity-hint # line 232
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 258
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 258
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # residual sibling legs # line 273
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 273
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # residual sibling legs # line 306
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 306
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 324
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,MathMutator,SURVIVED # capacity-hint # line 333
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # residual sibling legs # line 336
-systems.glam.services.integrations.kamino.KaminoCache,lambda$initService$5,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 336
-systems.glam.services.integrations.kamino.KaminoCacheImpl,<init>,MathMutator,SURVIVED # capacity-hint # line 103
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 600
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 604
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 606
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 608
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 614
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 625
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 629
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 631
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 631
-systems.glam.services.integrations.kamino.KaminoCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 633
-systems.glam.services.integrations.kamino.KaminoCacheImpl,acceptReserve,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 586
-systems.glam.services.integrations.kamino.KaminoCacheImpl,acceptReserve,RemoveConditionalMutator_EQUAL_IF,SURVIVED # subsumed length guard # line 586
-systems.glam.services.integrations.kamino.KaminoCacheImpl,deleteScopeConfiguration,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 227
-systems.glam.services.integrations.kamino.KaminoCacheImpl,deleteScopeConfiguration,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 233
-systems.glam.services.integrations.kamino.KaminoCacheImpl,deleteScopeConfiguration,RemoveConditionalMutator_EQUAL_IF,SURVIVED # residual sibling legs # line 236
-systems.glam.services.integrations.kamino.KaminoCacheImpl,deleteScopeConfiguration,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 240
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard # line 314
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard # line 318
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard # line 318
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard # line 326
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard # line 330
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,RemoveConditionalMutator_EQUAL_IF,SURVIVED # in-lock race guard # line 330
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,ConditionalsBoundaryMutator,SURVIVED # in-lock race guard # line 335
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,RemoveConditionalMutator_ORDER_ELSE,SURVIVED # in-lock race guard # line 335
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,RemoveConditionalMutator_ORDER_IF,SURVIVED # in-lock race guard # line 335
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleMappingChange,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 337
-systems.glam.services.integrations.kamino.KaminoCacheImpl,handleVaultStateChange,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard # line 463
-systems.glam.services.integrations.kamino.KaminoCacheImpl,indexes,NakedReceiverMutator,SURVIVED # single-feed unobservable # line 180
-systems.glam.services.integrations.kamino.KaminoCacheImpl,indexes,RemoveConditionalMutator_EQUAL_IF,SURVIVED # single-feed unobservable # line 192
-systems.glam.services.integrations.kamino.KaminoCacheImpl,lambda$handleVaultStateChange$0,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 471
-systems.glam.services.integrations.kamino.KaminoCacheImpl,lambda$handleVaultStateChange$0,RemoveConditionalMutator_ORDER_ELSE,SURVIVED # untriaged # line 471
-systems.glam.services.integrations.kamino.KaminoCacheImpl,persistReserve,RemoveConditionalMutator_EQUAL_IF,SURVIVED # flip insurance (load-dependent kill; forced re-create of an existing dir is a no-op) # line 735
-systems.glam.services.integrations.kamino.KaminoCacheImpl,persistReserve,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 742
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,RemoveConditionalMutator_EQUAL_IF,SURVIVED # signalAll waiter # line 679
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,ConditionalsBoundaryMutator,SURVIVED # signalAll waiter # line 684
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,RemoveConditionalMutator_ORDER_IF,SURVIVED # signalAll waiter # line 684
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 695
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,RemoveConditionalMutator_ORDER_ELSE,SURVIVED # signalAll waiter # line 708
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,ConditionalsBoundaryMutator,SURVIVED # signalAll waiter # line 713
-systems.glam.services.integrations.kamino.KaminoCacheImpl,run,RemoveConditionalMutator_ORDER_IF,SURVIVED # signalAll waiter # line 713
-systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,RemoveConditionalMutator_EQUAL_IF,SURVIVED # in-lock race guard # line 361
-systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,RemoveConditionalMutator_EQUAL_IF,SURVIVED # in-lock race guard # line 365
-systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard # line 367
-systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # in-lock race guard # line 394
-systems.glam.services.integrations.kamino.KaminoCacheImpl,updateIfChanged,VoidMethodCallMutator,SURVIVED # in-lock race guard # line 400
-systems.glam.services.integrations.kamino.ReserveContext,readPriceChains,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 75
-systems.glam.services.integrations.kamino.ReserveContext,readPriceChains,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 75
-systems.glam.services.integrations.kamino.ReserveContext,readPriceFeedMeta,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 32
-systems.glam.services.integrations.kamino.ReserveContext,writeMarketMeta,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 41
 systems.glam.services.io.AccountData,isAccount,BooleanFalseReturnValsMutator,NO_COVERAGE # untriaged # line 22
 systems.glam.services.io.AccountData,isAccount,BooleanTrueReturnValsMutator,NO_COVERAGE # untriaged # line 22
 systems.glam.services.io.FileUtils,compressIfNeeded,NakedReceiverMutator,SURVIVED # untriaged # line 85
@@ -185,15 +120,6 @@ systems.glam.services.mints.StakePoolCache,lambda$initCache$0,ConditionalsBounda
 systems.glam.services.mints.StakePoolCache,lambda$initCache$0,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged # line 89
 systems.glam.services.mints.StakePoolCacheImpl,accept,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 83
 systems.glam.services.mints.StakePoolCacheImpl,accept,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 89
-systems.glam.services.oracles.scope.ScopeFeedContext$FilteredReserve,compareTo,PrimitiveReturnsMutator,SURVIVED # mutual-redundancy family # line 331
-systems.glam.services.oracles.scope.ScopeFeedContext,createContext,ConditionalsBoundaryMutator,SURVIVED # mutual-redundancy family # line 47
-systems.glam.services.oracles.scope.ScopeFeedContext,createContext,RemoveConditionalMutator_ORDER_IF,SURVIVED # mutual-redundancy family # line 47
-systems.glam.services.oracles.scope.ScopeFeedContext,indexReserveByIndex,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # mutual-redundancy family # line 170
-systems.glam.services.oracles.scope.ScopeFeedContext,indexReserveByIndex,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # mutual-redundancy family # line 171
-systems.glam.services.oracles.scope.ScopeFeedContext,indexes,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # mutual-redundancy family # line 337
-systems.glam.services.oracles.scope.ScopeFeedContext,indexes,NakedReceiverMutator,SURVIVED # mutual-redundancy family # line 353
-systems.glam.services.oracles.scope.ScopeFeedContext,removePreviousEntry,ConditionalsBoundaryMutator,SURVIVED # mutual-redundancy family # line 222
-systems.glam.services.oracles.scope.ScopeFeedContext,removePreviousEntry,RemoveConditionalMutator_ORDER_IF,SURVIVED # mutual-redundancy family # line 222
 systems.glam.services.rpc.AccountFetcher,isNull,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 20
 systems.glam.services.rpc.AccountFetcher,priorityQueue,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 43
 systems.glam.services.rpc.AccountFetcher,queue,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 55

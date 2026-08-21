@@ -23,42 +23,11 @@ Findings become a named seed here **and** a regression test; the committed
 corpus is replayed inside `check` by the generated
 `AccountDataFuzzSeedReplayTest`.
 
-## scopeFeedContext
+## scopeFeedContext / reserveContext / kaminoVaultContext — moved
 
-Raw Scope `Configuration` account bytes fed to `ScopeFeedContext.createContext`
-plus every offset accessor (`ScopeFeedContextFuzz`). Crash-only: garbage in ->
-`RuntimeException` out. The reader does not validate length — production gates
-these bytes behind `KaminoCacheImpl.accept`'s length + discriminator check, so
-the target pins the parser directly against a gate-dropping refactor. Seeds:
-
-- `mainnet-configuration` — the real mainnet Configuration snapshot decompressed
-  to raw account bytes (provenance: `../accounts/kamino/README.md`).
-- `short-past-offsets` — a 160-byte buffer that builds a context but throws on
-  the deeper accessor reads; pins the tolerated short-buffer path.
-
-## reserveContext
-
-Raw Kamino Reserve bytes fed to `ReserveContext.createContext` against a real
-mainnet `MappingsContext` (`ReserveContextFuzz`), so the seed resolves an actual
-price chain and the mutator drives `ScopeEntries.readPriceChains` — where the
-composite (`MostRecentOf`) chain handling lives — with hostile reserve bytes.
-Crash-only: garbage in -> `RuntimeException` out; a `StackOverflowError` from a
-cyclic chain is a finding (keeps the upstream cycle-guard regression covered).
-The raw `OracleMappings` parser is fuzzed upstream in idl-clients. Seeds:
-
-- `mainnet-sol-reserve` — the real SOL Reserve snapshot decompressed to raw
-  bytes; its price feed matches the registered mappings, so it resolves a chain.
-- `short` — a 200-byte buffer pinning the truncated-reserve rejection.
-
-## kaminoVaultContext
-
-Raw Kamino `VaultState` bytes fed to `KaminoVaultContext.createContext`
-(`KaminoVaultContextFuzz`), exercising `parseReserveKeys` — the allocation-table
-walk whose slot count comes from the bytes and which had off-by-one/terminator
-bugs before. Crash-only. Seeds:
-
-- `mainnet-vault-state` — the real vault-state snapshot decompressed to raw bytes.
-- `short` — a 200-byte buffer pinning the truncated-vault rejection.
+These three targets, their harnesses and seed corpora moved to
+`vault-stat-service` with the Kamino cache on 2026-08-21; their provenance
+notes moved with them.
 
 ## minGlamStateAccount
 

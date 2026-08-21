@@ -3,7 +3,6 @@ package systems.glam.services.integrations;
 import software.sava.core.accounts.PublicKey;
 import software.sava.idl.clients.jupiter.JupiterAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
-import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.idl.clients.loopscale.LoopscaleAccounts;
 import software.sava.idl.clients.marginfi.v2.MarginfiAccounts;
 import software.sava.idl.clients.meteora.MeteoraAccounts;
@@ -12,9 +11,7 @@ import software.sava.idl.clients.phoenix.PhoenixAccounts;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.execution.BaseServiceContext;
-import systems.glam.services.integrations.kamino.KaminoCache;
 import systems.glam.services.mints.*;
-import systems.glam.services.oracles.scope.FeedIndexes;
 import systems.glam.services.rpc.AccountConsumer;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.GlobalConfigCache;
@@ -29,7 +26,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   private final IntegLookupTableCache integLookupTableCache;
   private final AccountFetcher accountFetcher;
   private final KaminoAccounts kaminoAccounts;
-  private final KaminoCache kaminoCache;
   private final LoopscaleAccounts loopscaleAccounts;
   private final OrcaAccounts orcaAccounts;
   private final PhoenixAccounts phoenixAccounts;
@@ -44,7 +40,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
                                 final IntegLookupTableCache integLookupTableCache,
                                 final AccountFetcher accountFetcher,
                                 final KaminoAccounts kaminoAccounts,
-                                final KaminoCache kaminoCache,
                                 final LoopscaleAccounts loopscaleAccounts,
                                 final OrcaAccounts orcaAccounts,
                                 final PhoenixAccounts phoenixAccounts,
@@ -58,7 +53,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
     this.integLookupTableCache = integLookupTableCache;
     this.accountFetcher = accountFetcher;
     this.kaminoAccounts = kaminoAccounts;
-    this.kaminoCache = kaminoCache;
     this.loopscaleAccounts = loopscaleAccounts;
     this.orcaAccounts = orcaAccounts;
     this.phoenixAccounts = phoenixAccounts;
@@ -120,16 +114,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   @Override
   public KaminoAccounts kaminoAccounts() {
     return kaminoAccounts;
-  }
-
-  @Override
-  public KaminoCache kaminoCache() {
-    return kaminoCache;
-  }
-
-  @Override
-  public FeedIndexes scopeAggregateIndexes(final PublicKey mint, final PublicKey oracle, final OracleType oracleType) {
-    return kaminoCache.indexes(mint, oracle, oracleType);
   }
 
   @Override

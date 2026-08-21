@@ -18,25 +18,6 @@ hardening {
     // rejects it, so this bounds the *file* size the mutator can grow a seed to
     maxLen = 65536
   }
-  fuzz.register("scopeFeedContext") {
-    targetClass = "systems.glam.services.oracles.scope.ScopeFeedContextFuzz"
-    seedCorpus = layout.projectDirectory.dir("src/test/resources/fuzz/scopeFeedContext")
-    // Configuration is a fixed 10240-byte account; headroom lets the mutator
-    // probe over-long inputs. The mainnet seed is unreachable from scratch
-    maxLen = 12288
-  }
-  fuzz.register("reserveContext") {
-    targetClass = "systems.glam.services.integrations.kamino.ReserveContextFuzz"
-    seedCorpus = layout.projectDirectory.dir("src/test/resources/fuzz/reserveContext")
-    // Reserve is a fixed 8624-byte account; headroom for over-long probes
-    maxLen = 10240
-  }
-  fuzz.register("kaminoVaultContext") {
-    targetClass = "systems.glam.services.integrations.kamino.KaminoVaultContextFuzz"
-    seedCorpus = layout.projectDirectory.dir("src/test/resources/fuzz/kaminoVaultContext")
-    // VaultState is a fixed 62552-byte account; headroom for over-long probes
-    maxLen = 65536
-  }
   fuzz.register("minGlamStateAccount") {
     targetClass = "systems.glam.services.state.MinGlamStateAccountFuzz"
     seedCorpus = layout.projectDirectory.dir("src/test/resources/fuzz/minGlamStateAccount")

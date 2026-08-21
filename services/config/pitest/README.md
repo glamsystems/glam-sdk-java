@@ -939,6 +939,21 @@ unattributable stayed `# untriaged` — the honest default; refine labels when
 a row's family is pinned down, and refreshes seed `# untriaged` on new rows.
 The untriaged rows are the real remaining triage debt, now a printed number.
 
+### 2026-08-21 — Kamino cache moved to vault-stat-service
+
+The `systems.glam.services.integrations.kamino` and
+`systems.glam.services.oracles.scope` packages (KaminoCache and its context
+types) moved to the `vault-stat-service` repo, their only consumer, along with
+their tests, fuzz harnesses (`scopeFeedContext`, `reserveContext`,
+`kaminoVaultContext`) and seed corpora. Their 74 accepted rows and 6 audited
+timeouts migrated verbatim into that repo's `kamino` suite
+(`config/pitest/kamino-*.csv`), family labels and arguments included; the
+dated pass sections below that argued them remain here as the historical
+record. Families whose every member moved (`in-lock race guard`,
+`mutual-redundancy family`, `single-feed unobservable`, `subsumed length
+guard`, `residual sibling legs`, `capacity-hint`) stay named in the label
+registry so those sections still parse.
+
 ### Family labels
 
 Each accepted row carries a `# <family>` label whose argument is the pass

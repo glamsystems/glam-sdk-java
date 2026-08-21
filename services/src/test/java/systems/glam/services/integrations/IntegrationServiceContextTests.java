@@ -6,7 +6,6 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.idl.clients.jupiter.JupiterAccounts;
 import software.sava.idl.clients.kamino.KaminoAccounts;
-import software.sava.idl.clients.kamino.scope.gen.types.OracleType;
 import software.sava.idl.clients.loopscale.LoopscaleAccounts;
 import software.sava.idl.clients.marginfi.v2.MarginfiAccounts;
 import software.sava.idl.clients.meteora.MeteoraAccounts;
@@ -17,13 +16,11 @@ import software.sava.rpc.json.http.response.Context;
 import software.sava.services.core.remote.call.Backoff;
 import systems.glam.sdk.GlamAccounts;
 import systems.glam.services.ServiceContextImpl;
-import systems.glam.services.integrations.kamino.KaminoCache;
 import systems.glam.services.mints.AssetMetaContext;
 import systems.glam.services.mints.MintCache;
 import systems.glam.services.mints.MintContext;
 import systems.glam.services.mints.StakePoolCache;
 import systems.glam.services.mints.StakePoolContext;
-import systems.glam.services.oracles.scope.FeedIndexes;
 import systems.glam.services.rpc.AccountFetcher;
 import systems.glam.services.state.GlobalConfigCache;
 
@@ -117,22 +114,10 @@ final class IntegrationServiceContextTests {
       throw new UnsupportedOperationException(method.getName());
     });
 
-    final var oracleKey = fromBase58Encoded("3H7XbyVaYusyzQCncfRSBx3zgvfmjGG7wrr3ARtXF1o7");
-    final var feedIndexes = new FeedIndexes(null, null, new short[0], BigInteger.ZERO);
-    final var kaminoCache = stub(KaminoCache.class, (proxy, method, args) -> {
-      if (method.getName().equals("indexes")) {
-        assertEquals(mintKey, args[0]);
-        assertEquals(oracleKey, args[1]);
-        assertEquals(OracleType.SwitchboardOnDemand, args[2]);
-        return feedIndexes;
-      }
-      throw new UnsupportedOperationException(method.getName());
-    });
-
     final var context = new IntegrationServiceContextImpl(
         serviceContext,
         mintCache, stakePoolCache, globalConfigCache, integTableCache, accountFetcher,
-        KaminoAccounts.MAIN_NET, kaminoCache,
+        KaminoAccounts.MAIN_NET,
         LoopscaleAccounts.MAIN_NET, OrcaAccounts.MAIN_NET, PhoenixAccounts.MAIN_NET,
         MarginfiAccounts.MAIN_NET, JupiterAccounts.MAIN_NET, MeteoraAccounts.MAIN_NET
     );
@@ -141,13 +126,11 @@ final class IntegrationServiceContextTests {
     assertSame(accountFetcher, context.accountFetcher());
     assertSame(globalConfigCache, context.globalConfigCache());
     assertSame(integTableCache, context.integTableCache());
-    assertSame(kaminoCache, context.kaminoCache());
 
     assertSame(stakePoolContext, context.stakePoolContextForMint(mintKey));
     assertSame(cachedMint, context.mintContext(mintKey));
     assertSame(solAssetMeta, context.solAssetMeta());
     assertSame(mintAssetMeta, context.globalConfigAssetMeta(mintKey));
-    assertSame(feedIndexes, context.scopeAggregateIndexes(mintKey, oracleKey, OracleType.SwitchboardOnDemand));
 
     // setMintContext(MintContext) hands the given context to the cache
     assertSame(cachedMint, context.setMintContext(cachedMint));
@@ -160,6 +143,7 @@ final class IntegrationServiceContextTests {
     assertEquals(mintKey, parsed.mint());
     assertEquals(SOLANA.readTokenProgram(), parsed.readTokenProgram());
 
+    final var oracleKey = fromBase58Encoded("3H7XbyVaYusyzQCncfRSBx3zgvfmjGG7wrr3ARtXF1o7");
     final var accounts = List.of(mintKey, oracleKey);
     context.queueUnique(accounts, null);
     assertSame(accounts, queued.getFirst());

@@ -27,11 +27,9 @@ module systems.glam.services {
   exports systems.glam.services.fulfillment.accounting;
   exports systems.glam.services.fulfillment.config;
   exports systems.glam.services.fulfillment;
-  exports systems.glam.services.integrations.kamino;
   exports systems.glam.services.integrations;
   exports systems.glam.services.io;
   exports systems.glam.services.mints;
-  exports systems.glam.services.oracles.scope;
   exports systems.glam.services.rpc;
   exports systems.glam.services.state;
   exports systems.glam.services;
