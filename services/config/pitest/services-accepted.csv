@@ -94,8 +94,8 @@ systems.glam.services.integrations.IntegLookupTableCacheImpl,deleteTableFile,Voi
 systems.glam.services.integrations.IntegLookupTableCacheImpl,lambda$accept$0,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 117
 systems.glam.services.integrations.IntegLookupTableCacheImpl,lambda$accept$0,RemoveConditionalMutator_ORDER_ELSE,SURVIVED # untriaged # line 117
 systems.glam.services.integrations.IntegLookupTableCacheImpl,run,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 62
-systems.glam.services.integrations.IntegrationServiceContext,createContext,NullReturnValsMutator,NO_COVERAGE # untriaged # line 44
-systems.glam.services.integrations.IntegrationServiceContext,readClockSysVar,NullReturnValsMutator,NO_COVERAGE # untriaged # line 64
+systems.glam.services.integrations.IntegrationServiceContext,createContext,NullReturnValsMutator,NO_COVERAGE # untriaged # line 40
+systems.glam.services.integrations.IntegrationServiceContext,readClockSysVar,NullReturnValsMutator,NO_COVERAGE # untriaged # line 60
 systems.glam.services.io.AccountData,isAccount,BooleanFalseReturnValsMutator,NO_COVERAGE # untriaged # line 22
 systems.glam.services.io.AccountData,isAccount,BooleanTrueReturnValsMutator,NO_COVERAGE # untriaged # line 22
 systems.glam.services.io.FileUtils,compressIfNeeded,NakedReceiverMutator,SURVIVED # untriaged # line 85
@@ -123,16 +123,16 @@ systems.glam.services.mints.StakePoolCacheImpl,accept,RemoveConditionalMutator_E
 systems.glam.services.rpc.AccountFetcher,isNull,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 20
 systems.glam.services.rpc.AccountFetcher,priorityQueue,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 43
 systems.glam.services.rpc.AccountFetcher,queue,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 55
-systems.glam.services.rpc.AccountFetcherImpl$UniqueAccountBatchRecord,accept,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 455
-systems.glam.services.rpc.AccountFetcherImpl,createBatch,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 255
-systems.glam.services.rpc.AccountFetcherImpl,createBatch,IncrementsMutator,SURVIVED # accepted equivalent # line 299
-systems.glam.services.rpc.AccountFetcherImpl,createBatch,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # accepted equivalent # line 302
-systems.glam.services.rpc.AccountFetcherImpl,delay,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent # line 327
-systems.glam.services.rpc.AccountFetcherImpl,delay,VoidMethodCallMutator,SURVIVED # accepted equivalent # line 335
-systems.glam.services.rpc.AccountFetcherImpl,lockedQueue,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent # line 96
-systems.glam.services.rpc.AccountFetcherImpl,priorityQueueBatchable,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 163
-systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent # line 146
-systems.glam.services.rpc.AccountFetcherImpl,run,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent # line 347
+systems.glam.services.rpc.AccountFetcherImpl$UniqueAccountBatchRecord,accept,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 530
+systems.glam.services.rpc.AccountFetcherImpl,createBatch,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 269
+systems.glam.services.rpc.AccountFetcherImpl,createBatch,IncrementsMutator,SURVIVED # accepted equivalent # line 313
+systems.glam.services.rpc.AccountFetcherImpl,createBatch,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # accepted equivalent # line 316
+systems.glam.services.rpc.AccountFetcherImpl,delay,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent # line 341
+systems.glam.services.rpc.AccountFetcherImpl,delay,VoidMethodCallMutator,SURVIVED # accepted equivalent # line 349
+systems.glam.services.rpc.AccountFetcherImpl,lockedQueue,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent # line 102
+systems.glam.services.rpc.AccountFetcherImpl,priorityQueueBatchable,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 169
+systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent # line 152
+systems.glam.services.rpc.AccountFetcherImpl,run,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent # line 404
 systems.glam.services.rpc.AccountFetcherImpl,run,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent # line 389
 systems.glam.services.state.GlobalConfigCache,createMap,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 116
 systems.glam.services.state.GlobalConfigCache,createMap,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged # line 116
@@ -165,18 +165,18 @@ systems.glam.services.state.MinGlamStateAccount,createIfChanged,RemoveConditiona
 systems.glam.services.state.MinGlamStateAccount,createRecord,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 186
 systems.glam.services.state.MinGlamStateAccount,disabled,BooleanTrueReturnValsMutator,SURVIVED # untriaged # line 29
 systems.glam.services.state.MinGlamStateAccount,disabled,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 29
-systems.glam.services.state.MinGlamStateAccount,equals,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 346
-systems.glam.services.state.MinGlamStateAccount,equals,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 347
-systems.glam.services.state.MinGlamStateAccount,equals,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 348
-systems.glam.services.state.MinGlamStateAccount,equals,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 349
-systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 370
-systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 371
-systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 372
-systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 373
-systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 374
-systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 375
-systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 376
-systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 377
-systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 378
+systems.glam.services.state.MinGlamStateAccount,equals,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 359
+systems.glam.services.state.MinGlamStateAccount,equals,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 360
+systems.glam.services.state.MinGlamStateAccount,equals,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 361
+systems.glam.services.state.MinGlamStateAccount,equals,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 362
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 383
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 384
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 385
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 386
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 387
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 388
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 389
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 390
+systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 391
 systems.glam.services.state.MinGlamStateAccount,readIntegrationAcls,VoidMethodCallMutator,SURVIVED # untriaged # line 84
 systems.glam.services.state.ProtocolIntegration,compareTo,PrimitiveReturnsMutator,SURVIVED # untriaged # line 10

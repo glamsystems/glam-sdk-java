@@ -372,8 +372,8 @@ loop double-incremented and skipped every other matching reserve, and
 `resortReserves`' replacement path returned before re-indexing by chain
 index, leaving `reservesByIndex` serving stale contexts). The `SURVIVED`
 count rose because newly covered code carries untriaged survivors — that is
-the next phase's work. This suite reports a load-dependent `TIMED_OUT`
-population (135 as of 2026-07-26 — see "Timed-out mutants (audited set)"
+the next phase's work. That pass reported a load-dependent `TIMED_OUT`
+population (135 as of 2026-07-26 — see the historical timeout snapshot
 below for the per-row structural causes); per HARDENING.md, verify
 solo-vs-gate before trusting any flip, and union only observed flips.
 
@@ -760,6 +760,23 @@ the in-lock reset recheck (383 — race-guard family).
 loop's `instanceof` branch always intercepts unique records, so the record's
 own delegation is unreachable by design; it must exist to satisfy the
 interface.
+
+**Follow-up (2026-08-21):** fresh certification after the Kamino/Scope move
+exposed eighteen `AccountFetcherImpl` timeout instances whose only covering
+paths entered the long-running poll loop. Direct finite batch-assembly tests
+now pin exact selection, reset, top-up, deferral, oversized-drop isolation and
+unique-claim release. Failure cleanup snapshots and clears the in-flight deque
+under its lock before failing futures and re-queuing callbacks, so its progress
+is finite and its lock/reset state is synchronously observable. Wrapped
+interrupt cause chains are cycle-safe and tested in both direct and run-loop
+paths. The result killed every new batching/failure candidate without adding a
+baseline or timeout row.
+
+This also corrects the historical WARN-path `clearBatch` equivalence above:
+when a valid neighbor follows a caller-mutated oversized batch, omitting that
+reset leaves the shared key set dirty and poisons the neighbor's assembly. The
+older statement described the narrower no-neighbor fixture; the current
+neighbor-isolation test kills the removal.
 
 ## Global config init paths pass (2026-07-23)
 

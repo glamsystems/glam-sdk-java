@@ -6,8 +6,10 @@ import software.sava.core.encoding.ByteUtil;
 import systems.glam.sdk.GlamEnv;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -184,5 +186,30 @@ final class MinGlamStateAccountMalformedTests {
     final var record = MinGlamStateAccount.createRecord(GlamEnv.PRODUCTION, data, SLOT);
     assertEquals(firstAsset, record.baseAssetMint(),
         "the lowest-sorting asset is a valid base asset at index 0");
+  }
+
+  @Test
+  void aBaseAssetAtIndexZeroIsAcceptedOnUpdate() {
+    final byte[] initial = MinGlamStateAccountTests.fixtureData();
+    final var parsed = MinGlamStateAccount.createRecord(GlamEnv.PRODUCTION, initial, SLOT);
+    final var firstAsset = parsed.assets()[0];
+    firstAsset.write(initial, StateAccount.BASE_ASSET_MINT_OFFSET);
+    final var witness = MinGlamStateAccount.createRecord(GlamEnv.PRODUCTION, initial, SLOT);
+    assertEquals(0, witness.baseAssetIndex());
+
+    final byte[] changed = initial.clone();
+    final int firstOffset = StateAccount.ASSETS_OFFSET + Integer.BYTES;
+    final int secondOffset = firstOffset + PublicKey.PUBLIC_KEY_LENGTH;
+    final var rawFirst = PublicKey.readPubKey(changed, firstOffset);
+    final var rawSecond = PublicKey.readPubKey(changed, secondOffset);
+    assertFalse(rawFirst.equals(rawSecond), "the fixture needs two distinct assets to reorder");
+    rawFirst.write(changed, secondOffset);
+    rawSecond.write(changed, firstOffset);
+
+    final var updated = witness.createIfChanged(MinGlamStateAccountTests.accountInfo(SLOT + 1, changed));
+    assertNotNull(updated);
+    assertEquals(0, updated.baseAssetIndex());
+    assertEquals(firstAsset, updated.baseAssetMint());
+    assertArrayEquals(witness.assets(), updated.assets());
   }
 }

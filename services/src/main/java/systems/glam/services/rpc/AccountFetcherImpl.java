@@ -74,6 +74,12 @@ final class AccountFetcherImpl implements AccountFetcher {
     return recentSlot;
   }
 
+  /// Synchronous test oracle for the failure-reset invariant. A stale in-flight
+  /// entry otherwise remains invisible until a later callback is delivered twice.
+  int currentBatchSize() {
+    return currentBatch.size();
+  }
+
   @Override
   public void listenToAll(final AccountConsumer accountConsumer) {
     this.alwaysCall.add(accountConsumer);
@@ -227,11 +233,13 @@ final class AccountFetcherImpl implements AccountFetcher {
     }
   }
 
-  private void clearBatch() {
+  /// Package-private so finite batch assembly and reset invariants can be tested
+  /// synchronously, without using the deliberately long-running polling loop.
+  void clearBatch() {
     removeTrailing(batch.size() - alwaysFetch.size());
   }
 
-  private List<PublicKey> createBatch() {
+  List<PublicKey> createBatch() {
     lock.lock();
     try {
       int size = batch.size();
@@ -431,13 +439,19 @@ final class AccountFetcherImpl implements AccountFetcher {
     }
   }
 
-  private static boolean causedByInterrupt(final Throwable ex) {
-    for (var cause = ex.getCause(); cause != null; cause = cause.getCause()) {
-      if (cause instanceof InterruptedException) {
-        return true;
-      }
+  static boolean causedByInterrupt(final RuntimeException ex) {
+    return causedByInterrupt(
+        ex,
+        Collections.newSetFromMap(new IdentityHashMap<Throwable, Boolean>())
+    );
+  }
+
+  private static boolean causedByInterrupt(final Throwable cause,
+                                           final Set<Throwable> seen) {
+    if (cause == null || !seen.add(cause)) {
+      return false;
     }
-    return false;
+    return cause instanceof InterruptedException || causedByInterrupt(cause.getCause(), seen);
   }
 
   /// Drains the in-flight batches after a failed cycle so no caller is left waiting on
@@ -446,27 +460,26 @@ final class AccountFetcherImpl implements AccountFetcher {
   /// re-queued for the next cycle rather than silently dropped (a unique consumer keeps
   /// its pending claim: it is still pending). The failure was the cycle's, never a
   /// batch's -- per-batch dispatch is guarded -- so a re-queued batch cannot re-poison.
-  private void failCurrentBatches(final RuntimeException cause) {
+  void failCurrentBatches(final RuntimeException cause) {
+    final List<AccountBatch> failedBatches;
+    lock.lock();
+    try {
+      failedBatches = List.copyOf(currentBatch);
+      currentBatch.clear();
+      this.currentBatchKeys = this.alwaysFetch;
+      clearBatch();
+    } finally {
+      lock.unlock();
+    }
+
     final var requeue = new ArrayList<AccountBatch>();
-    for (; ; ) {
-      final var accountBatch = currentBatch.pollFirst();
-      if (accountBatch == null) {
-        lock.lock();
-        try {
-          if (currentBatch.isEmpty()) { // Reset Batch
-            this.currentBatchKeys = this.alwaysFetch;
-            break;
-          }
-        } finally {
-          lock.unlock();
-        }
-      } else if (accountBatch instanceof CompletableAccountBatch(_, final CompletableFuture<AccountResult> future)) {
+    for (final var accountBatch : failedBatches) {
+      if (accountBatch instanceof CompletableAccountBatch(_, final CompletableFuture<AccountResult> future)) {
         future.completeExceptionally(cause);
       } else {
         requeue.add(accountBatch);
       }
     }
-    clearBatch();
     // After the reset, so a re-queued batch cannot land back in the drained
     // currentBatch through the containsAll fast path.
     for (final var accountBatch : requeue) {

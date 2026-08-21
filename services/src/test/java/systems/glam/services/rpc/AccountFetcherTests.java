@@ -24,6 +24,7 @@ import java.lang.reflect.Proxy;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -105,6 +106,8 @@ final class AccountFetcherTests {
     boolean returnNull;
     /// Answers the first N calls with a null body — a poisoned cycle — then recovers.
     int returnNullForFirstCalls;
+    RuntimeException accountsReadFailure;
+    int accountsReadFailureForFirstCalls;
 
     SolanaRpcClient client() {
       return (SolanaRpcClient) Proxy.newProxyInstance(
@@ -119,6 +122,20 @@ final class AccountFetcherTests {
               }
               if (returnNull || calls.size() <= returnNullForFirstCalls) {
                 return java.util.concurrent.CompletableFuture.completedFuture(null);
+              }
+              if (accountsReadFailure != null && calls.size() <= accountsReadFailureForFirstCalls) {
+                final var failure = accountsReadFailure;
+                return java.util.concurrent.CompletableFuture.completedFuture(new AbstractList<AccountInfo<byte[]>>() {
+                  @Override
+                  public AccountInfo<byte[]> get(final int index) {
+                    throw failure;
+                  }
+
+                  @Override
+                  public int size() {
+                    throw failure;
+                  }
+                });
               }
               if (calls.size() >= interruptOnCall) {
                 Thread.currentThread().interrupt();
@@ -348,7 +365,7 @@ final class AccountFetcherTests {
   /// growing past the limit between queueing and batch assembly, which is exactly what
   /// this test stages.
   @Test
-  @Timeout(value = 10, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+  @Timeout(value = 1, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
   void anOversizedDropReleasesTheUniquePendingClaim() {
     final var rpc = new RecordingRpc();
     final var first = key(1);
@@ -381,7 +398,7 @@ final class AccountFetcherTests {
   /// ended fetching for every service sharing this fetcher — and every future queued
   /// afterward parked its caller silently and forever.
   @Test
-  @Timeout(value = 10, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+  @Timeout(value = 1, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
   void aFailedCycleFailsItsFuturesOverAndKeepsPolling() throws Exception {
     final var rpc = new RecordingRpc();
     rpc.returnNullForFirstCalls = 1; // cycle one: a null RPC body poisons the dispatch
@@ -396,18 +413,18 @@ final class AccountFetcherTests {
       final var pollThread = Thread.ofPlatform().start(fetcher::run);
       try {
         final var failure = assertThrows(ExecutionException.class,
-            () -> poisoned.get(5, TimeUnit.SECONDS),
+            () -> poisoned.get(250, TimeUnit.MILLISECONDS),
             "the failed cycle must fail its future over, not leave the caller parked");
         assertInstanceOf(NullPointerException.class, failure.getCause());
         log.assertLogged("Unexpected error fetching accounts; continuing to poll.");
 
         // the loop survived: a fresh future completes normally
         final var recovered = fetcher.priorityQueue(List.of(present));
-        final var result = recovered.get(5, TimeUnit.SECONDS);
+        final var result = recovered.get(250, TimeUnit.MILLISECONDS);
         assertArrayEquals(new byte[]{1}, result.accountMap().get(present).data());
       } finally {
         pollThread.interrupt();
-        pollThread.join(Duration.ofSeconds(5).toMillis());
+        pollThread.join(250);
       }
       assertFalse(pollThread.isAlive(), "run() must exit on interrupt");
     }
@@ -794,17 +811,23 @@ final class AccountFetcherTests {
     final var consumer = new RecordingConsumer();
 
     final var worker = new Thread(fetcher::run, "account-fetcher");
-    worker.start();
-    try {
-      // a reactive fetcher parks on the condition; it must not busy-spin
-      awaitTrue("the reactive fetcher parked", () -> worker.getState() == Thread.State.WAITING);
+    try (final var log = LogCapture.attach(AccountFetcher.class.getName())) {
+      worker.start();
+      try {
+        // a reactive fetcher parks on the condition; it must not busy-spin
+        awaitTrue("the reactive fetcher parked", () -> worker.getState() == Thread.State.WAITING);
 
-      // queueing must signal the parked fetcher awake
-      fetcher.queue(List.of(present), consumer);
-      worker.join(5_000);
-      assertFalse(worker.isAlive(), "the queue signal never woke the reactive fetcher");
-    } finally {
-      worker.interrupt();
+        // queueing must signal the parked fetcher awake
+        fetcher.queue(List.of(present), consumer);
+        worker.join(5_000);
+        assertFalse(worker.isAlive(), "the queue signal never woke the reactive fetcher");
+      } finally {
+        worker.interrupt();
+      }
+      assertFalse(
+          log.messages().stream().anyMatch(m -> m != null && m.contains("Unexpected error fetching accounts")),
+          () -> log.messages().toString()
+      );
     }
     assertEquals(1, rpc.calls.size());
     assertEquals(1, consumer.received.size());
@@ -825,24 +848,30 @@ final class AccountFetcherTests {
     final var fresh = key(10);
     rpc.universe.put(fresh, account(fresh, 41L, new byte[]{3}));
     final var worker = new Thread(fetcher::run, "account-fetcher");
-    worker.start();
-    try {
-      // a fresh key: a subset of the always-fetch set would ride the current
-      // batch instead of queueing, and would not wake the poller
-      fetcher.queue(List.of(fresh), consumer);
-      awaitTrue("the first batch was fetched", () -> rpc.calls.size() == 1);
+    try (final var log = LogCapture.attach(AccountFetcher.class.getName())) {
+      worker.start();
+      try {
+        // a fresh key: a subset of the always-fetch set would ride the current
+        // batch instead of queueing, and would not wake the poller
+        fetcher.queue(List.of(fresh), consumer);
+        awaitTrue("the first batch was fetched", () -> rpc.calls.size() == 1);
 
-      // an empty queue means waiting, not free-running cycles of the
-      // always-fetch keys
-      Thread.sleep(60);
-      assertEquals(1, rpc.calls.size(), "the poller cycled on an empty queue");
+        // an empty queue means waiting, not free-running cycles of the
+        // always-fetch keys
+        Thread.sleep(60);
+        assertEquals(1, rpc.calls.size(), "the poller cycled on an empty queue");
 
-      // late work is picked up by the polling sleep, no signal involved
-      fetcher.queue(List.of(late), lateConsumer);
-      worker.join(5_000);
-      assertFalse(worker.isAlive(), "the poller never picked up late work");
-    } finally {
-      worker.interrupt();
+        // late work is picked up by the polling sleep, no signal involved
+        fetcher.queue(List.of(late), lateConsumer);
+        worker.join(5_000);
+        assertFalse(worker.isAlive(), "the poller never picked up late work");
+      } finally {
+        worker.interrupt();
+      }
+      assertFalse(
+          log.messages().stream().anyMatch(m -> m != null && m.contains("Unexpected error fetching accounts")),
+          () -> log.messages().toString()
+      );
     }
     assertEquals(2, rpc.calls.size());
     assertTrue(rpc.calls.get(1).contains(late));
@@ -1044,6 +1073,281 @@ final class AccountFetcherTests {
     assertEquals(90, rpc.calls.get(1).size());
     assertTrue(rpc.calls.get(1).containsAll(b));
     assertEquals(1, bConsumer.received.size());
+  }
+
+  @Test
+  void directBatchResetRestoresExactlyTheAlwaysFetchBase() {
+    final var rpc = new RecordingRpc();
+    final var always = key(1);
+    final var first = key(2);
+    final var second = key(3);
+    final var fetcher = (AccountFetcherImpl) createFetcher(rpc, Set.of(always));
+
+    fetcher.queue(List.of(first));
+    assertEquals(Set.of(always, first), Set.copyOf(fetcher.createBatch()));
+    assertFalse(fetcher.lock.isLocked());
+
+    fetcher.clearBatch();
+    fetcher.queue(List.of(second));
+    assertEquals(Set.of(always, second), Set.copyOf(fetcher.createBatch()));
+    assertFalse(fetcher.lock.isLocked());
+  }
+
+  @Test
+  void directOversizedFirstBatchTopsUpWithoutDuplicatingKeys() {
+    final var rpc = new RecordingRpc();
+    final var alwaysFetch = new LinkedHashSet<PublicKey>();
+    for (int i = 0; i < 3; ++i) {
+      alwaysFetch.add(key(100 + i));
+    }
+    final var fetcher = (AccountFetcherImpl) createFetcher(rpc, alwaysFetch);
+    final var firstKeys = new ArrayList<PublicKey>(99);
+    for (int i = 0; i < 99; ++i) {
+      firstKeys.add(key(1_000 + i));
+    }
+
+    fetcher.queue(firstKeys);
+    final var firstBatch = fetcher.createBatch();
+    assertEquals(SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS, firstBatch.size());
+    assertTrue(firstBatch.containsAll(firstKeys));
+    final var selectedAlways = alwaysFetch.stream().filter(firstBatch::contains).toList();
+    assertEquals(1, selectedAlways.size());
+
+    fetcher.clearBatch();
+    final var secondKeys = new ArrayList<PublicKey>(99);
+    secondKeys.add(selectedAlways.getFirst());
+    for (int i = 0; i < 98; ++i) {
+      secondKeys.add(key(2_000 + i));
+    }
+    fetcher.queue(secondKeys);
+    final var secondBatch = fetcher.createBatch();
+    assertEquals(SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS, secondBatch.size());
+    assertEquals(SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS, Set.copyOf(secondBatch).size());
+    assertTrue(secondBatch.containsAll(secondKeys));
+    assertFalse(fetcher.lock.isLocked());
+  }
+
+  @Test
+  void directAssemblyDropsAMutatedOversizedBatchButKeepsItsNeighbor() {
+    final var rpc = new RecordingRpc();
+    final var always = key(1);
+    final var neighbor = key(2);
+    final var fetcher = (AccountFetcherImpl) createFetcher(rpc, Set.of(always));
+    final var oversizedConsumer = new RecordingConsumer();
+    final var mutableKeys = new ArrayList<PublicKey>();
+    mutableKeys.add(key(3));
+    fetcher.queue(mutableKeys, oversizedConsumer);
+    for (int i = 0; i < SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS; ++i) {
+      mutableKeys.add(key(1_000 + i));
+    }
+    fetcher.queue(List.of(neighbor));
+
+    assertEquals(Set.of(always, neighbor), Set.copyOf(fetcher.createBatch()));
+    assertTrue(oversizedConsumer.exceeded);
+    assertEquals(0, oversizedConsumer.received.size());
+    assertFalse(fetcher.lock.isLocked());
+  }
+
+  @Test
+  void directAssemblyReleasesTheClaimForADroppedUniqueBatch() {
+    final var rpc = new RecordingRpc();
+    final var always = key(1);
+    final var next = key(2);
+    final var fetcher = (AccountFetcherImpl) createFetcher(rpc, Set.of(always));
+    final var consumer = new RecordingConsumer();
+    final var mutableKeys = new ArrayList<PublicKey>();
+    mutableKeys.add(key(3));
+    fetcher.queueUnique(mutableKeys, consumer);
+    for (int i = 0; i < SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS; ++i) {
+      mutableKeys.add(key(1_000 + i));
+    }
+
+    assertEquals(List.of(always), fetcher.createBatch());
+    assertTrue(consumer.exceeded);
+    fetcher.clearBatch();
+
+    fetcher.queueUnique(List.of(next), consumer);
+    assertEquals(Set.of(always, next), Set.copyOf(fetcher.createBatch()));
+    assertFalse(fetcher.lock.isLocked());
+  }
+
+  @Test
+  void directAssemblyMergesWorkThatFitsBehindADeferredBatch() {
+    final var rpc = new RecordingRpc();
+    final var fetcher = (AccountFetcherImpl) createFetcher(rpc, Set.of());
+    final var firstKeys = new ArrayList<PublicKey>(60);
+    final var deferredKeys = new ArrayList<PublicKey>(90);
+    final var fittingKeys = new ArrayList<PublicKey>(30);
+    for (int i = 0; i < 60; ++i) {
+      firstKeys.add(key(1_000 + i));
+    }
+    for (int i = 0; i < 90; ++i) {
+      deferredKeys.add(key(2_000 + i));
+    }
+    for (int i = 0; i < 30; ++i) {
+      fittingKeys.add(key(3_000 + i));
+    }
+    fetcher.queue(firstKeys);
+    fetcher.queue(deferredKeys);
+    fetcher.queue(fittingKeys);
+
+    final var firstBatch = fetcher.createBatch();
+    assertEquals(90, firstBatch.size());
+    assertTrue(firstBatch.containsAll(firstKeys));
+    assertTrue(firstBatch.containsAll(fittingKeys));
+    assertFalse(firstBatch.stream().anyMatch(deferredKeys::contains));
+
+    fetcher.clearBatch();
+    final var secondBatch = fetcher.createBatch();
+    assertEquals(90, secondBatch.size());
+    assertTrue(secondBatch.containsAll(deferredKeys));
+    assertFalse(fetcher.lock.isLocked());
+  }
+
+  @Test
+  void directFullBatchAbsorbsOnlyCoveredWork() {
+    final var rpc = new RecordingRpc();
+    final var fetcher = (AccountFetcherImpl) createFetcher(rpc, Set.of());
+    final var full = new ArrayList<PublicKey>(SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS);
+    for (int i = 0; i < SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS; ++i) {
+      full.add(key(1_000 + i));
+    }
+    final var distinct = key(9_000);
+    fetcher.queue(full);
+    fetcher.queue(List.of(full.get(0), full.get(1)));
+    fetcher.queue(List.of(distinct));
+
+    final var firstBatch = fetcher.createBatch();
+    assertEquals(Set.copyOf(full), Set.copyOf(firstBatch));
+    fetcher.clearBatch();
+    assertEquals(List.of(distinct), fetcher.createBatch());
+    assertFalse(fetcher.lock.isLocked());
+  }
+
+  @Test
+  void directLastDeferredBatchEndsTheScan() {
+    final var rpc = new RecordingRpc();
+    final var fetcher = (AccountFetcherImpl) createFetcher(rpc, Set.of());
+    final var firstKeys = new ArrayList<PublicKey>(60);
+    final var deferredKeys = new ArrayList<PublicKey>(90);
+    for (int i = 0; i < 60; ++i) {
+      firstKeys.add(key(1_000 + i));
+    }
+    for (int i = 0; i < 90; ++i) {
+      deferredKeys.add(key(2_000 + i));
+    }
+    fetcher.queue(firstKeys);
+    fetcher.queue(deferredKeys);
+
+    assertEquals(Set.copyOf(firstKeys), Set.copyOf(fetcher.createBatch()));
+    fetcher.clearBatch();
+    assertEquals(Set.copyOf(deferredKeys), Set.copyOf(fetcher.createBatch()));
+    assertFalse(fetcher.lock.isLocked());
+  }
+
+  @Test
+  void interruptCausesAreRecognizedAcrossTheChain() {
+    assertFalse(AccountFetcherImpl.causedByInterrupt(new IllegalStateException("plain")));
+    assertFalse(AccountFetcherImpl.causedByInterrupt(
+        new IllegalStateException("outer", new IllegalArgumentException("inner"))
+    ));
+    assertTrue(AccountFetcherImpl.causedByInterrupt(
+        new IllegalStateException(
+            "outer",
+            new IllegalArgumentException("middle", new InterruptedException("stop"))
+        )
+    ));
+
+    final var first = new IllegalStateException("first");
+    final var second = new IllegalArgumentException("second");
+    first.initCause(second);
+    second.initCause(first);
+    assertFalse(AccountFetcherImpl.causedByInterrupt(first));
+  }
+
+  @Test
+  void directFailedBatchFailsFuturesRequeuesCallbacksAndReleasesTheLock() {
+    final var rpc = new RecordingRpc();
+    final var requested = key(1);
+    final var fetcher = (AccountFetcherImpl) createFetcher(rpc, Set.of());
+    final var retried = new RecordingConsumer();
+    final var future = fetcher.priorityQueue(List.of(requested));
+    fetcher.queue(List.of(requested), retried);
+    assertEquals(List.of(requested), fetcher.createBatch());
+    assertEquals(2, fetcher.currentBatchSize());
+    final var cause = new IllegalStateException("failed cycle");
+
+    fetcher.failCurrentBatches(cause);
+
+    assertTrue(future.isCompletedExceptionally());
+    assertSame(cause, assertThrows(ExecutionException.class, () -> future.get()).getCause());
+    assertEquals(0, fetcher.currentBatchSize());
+    assertFalse(fetcher.lock.isLocked());
+    assertEquals(List.of(requested), fetcher.createBatch());
+  }
+
+  @Test
+  void directFailedBatchClearsStaleRequestKeys() {
+    final var rpc = new RecordingRpc();
+    final var stale = key(1);
+    final var fresh = key(2);
+    final var fetcher = (AccountFetcherImpl) createFetcher(rpc, Set.of());
+    final var failed = fetcher.priorityQueue(List.of(stale));
+    assertEquals(List.of(stale), fetcher.createBatch());
+
+    fetcher.failCurrentBatches(new IllegalStateException("failed cycle"));
+    fetcher.queue(List.of(fresh));
+
+    assertTrue(failed.isCompletedExceptionally());
+    assertEquals(List.of(fresh), fetcher.createBatch());
+    assertFalse(fetcher.lock.isLocked());
+  }
+
+  @Test
+  void interruptedFailedCycleFailsItsFutureBeforeStopping() {
+    final var rpc = new RecordingRpc();
+    rpc.returnNull = true;
+    final var requested = key(1);
+    final var fetcher = (AccountFetcherImpl) createFetcher(rpc, Set.of());
+    final var failed = fetcher.priorityQueue(List.of(requested));
+
+    try (final var log = LogCapture.attach(AccountFetcher.class.getName())) {
+      Thread.currentThread().interrupt();
+      fetcher.run();
+      log.assertLogged("Unexpected error fetching accounts; continuing to poll.");
+    }
+
+    assertTrue(failed.isCompletedExceptionally());
+    assertFalse(fetcher.lock.isLocked());
+    assertFalse(Thread.currentThread().isInterrupted(), "the terminating sleep consumes the interrupt");
+  }
+
+  @Test
+  void wrappedInterruptFailsTheCycleAndStopsBeforeRetrying() {
+    final var rpc = new RecordingRpc();
+    rpc.accountsReadFailure = new IllegalStateException(
+        "failed response",
+        new IllegalArgumentException("wrapped", new InterruptedException("stop"))
+    );
+    rpc.accountsReadFailureForFirstCalls = 1;
+    rpc.interruptOnCall = 2;
+    final var requested = key(1);
+    rpc.universe.put(requested, account(requested, 1L, new byte[]{1}));
+    final var fetcher = (AccountFetcherImpl) createFetcher(rpc, Set.of());
+    final var failed = fetcher.priorityQueue(List.of(requested));
+    final var retried = new RecordingConsumer();
+    fetcher.queue(List.of(requested), retried);
+
+    try {
+      fetcher.run();
+      assertTrue(failed.isCompletedExceptionally());
+      assertEquals(1, rpc.calls.size());
+      assertEquals(0, retried.received.size());
+      assertTrue(Thread.currentThread().isInterrupted(), "shutdown interrupts remain visible to the caller");
+      assertFalse(fetcher.lock.isLocked());
+    } finally {
+      Thread.interrupted();
+    }
   }
 
   @Test

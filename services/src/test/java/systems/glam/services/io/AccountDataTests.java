@@ -47,4 +47,19 @@ final class AccountDataTests {
     assertTrue(accountData.isAccount());
     assertFalse(AccountData.EMPTY.isAccount());
   }
+
+  @Test
+  void readPassesTheStoredAccountToTheParserAndReturnsItsResult() {
+    final byte[] bytes = {3, 1, 4};
+    final var accountData = new AccountData(bytes, KEY);
+    final var expected = new Object();
+
+    final var actual = accountData.read((pubKey, parsedData) -> {
+      assertSame(KEY, pubKey);
+      assertSame(bytes, parsedData);
+      return expected;
+    });
+
+    assertSame(expected, actual);
+  }
 }
