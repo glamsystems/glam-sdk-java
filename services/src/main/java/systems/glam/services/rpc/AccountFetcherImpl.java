@@ -249,6 +249,12 @@ final class AccountFetcherImpl implements AccountFetcher {
               // Should never happen because an exception is thrown on any attempt to add a batch that exceeds this limit.
               logger.log(WARNING, "Ignoring batch because it exceeds the RPC limit of " + SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS);
               iterator.remove();
+              if (accountBatch instanceof UniqueAccountBatchRecord(_, final AccountConsumer accountConsumer)) {
+                // Dropping the batch must also release the unique-pending claim, or every
+                // later queueUnique for this consumer is a silent no-op and the consumer
+                // never hears from the fetcher again.
+                pendingUniqueConsumers.remove(accountConsumer);
+              }
               try {
                 accountBatch.mutableKeysExceededMaxSize();
               } catch (final RuntimeException ex) {
@@ -348,67 +354,123 @@ final class AccountFetcherImpl implements AccountFetcher {
         delay(pollDelay, pollDelayNanos);
       }
       for (; ; ) {
-        final var keys = createBatch();
+        try {
+          final var keys = createBatch();
 
-        final long requestedAt = System.currentTimeMillis();
-        final var accounts = rpcCaller.courteousGet(
-            rpcClient -> rpcClient.getAccounts(keys),
-            "rpcClient#getAccountsBatch"
-        );
-        final long receivedAt = System.currentTimeMillis();
+          final long requestedAt = System.currentTimeMillis();
+          final var accounts = rpcCaller.courteousGet(
+              rpcClient -> rpcClient.getAccounts(keys),
+              "rpcClient#getAccountsBatch"
+          );
+          final long receivedAt = System.currentTimeMillis();
 
-        final var accountsMap = toMap(keys, accounts);
-        final var clockSysVar = accountsMap.get(SolanaAccounts.MAIN_NET.clockSysVar());
-        if (clockSysVar == null) {
-          for (final var accountInfo : accounts) {
-            if (accountInfo != null) {
-              final var context = accountInfo.context();
-              if (context != null) {
-                final long slot = context.slot();
-                if (slot != 0) {
-                  final long estimatedSlotTime = requestedAt + ((receivedAt - requestedAt) / 2);
-                  this.recentSlot = new StampedSlot(slot, Instant.ofEpochMilli(estimatedSlotTime));
+          final var accountsMap = toMap(keys, accounts);
+          final var clockSysVar = accountsMap.get(SolanaAccounts.MAIN_NET.clockSysVar());
+          if (clockSysVar == null) {
+            for (final var accountInfo : accounts) {
+              if (accountInfo != null) {
+                final var context = accountInfo.context();
+                if (context != null) {
+                  final long slot = context.slot();
+                  if (slot != 0) {
+                    final long estimatedSlotTime = requestedAt + ((receivedAt - requestedAt) / 2);
+                    this.recentSlot = new StampedSlot(slot, Instant.ofEpochMilli(estimatedSlotTime));
+                  }
                 }
               }
             }
-          }
-        } else {
-          final long epochSeconds = ByteUtil.getInt64LE(clockSysVar.data(), 32);
-          this.recentSlot = new StampedSlot(clockSysVar.context().slot(), Instant.ofEpochSecond(epochSeconds));
-        }
-
-        for (final var accountConsumer : alwaysCall) {
-          dispatch(accountConsumer, accounts, accountsMap);
-        }
-
-        for (; ; ) {
-          final var accountBatch = currentBatch.pollFirst();
-          if (accountBatch == null) {
-            lock.lock();
-            try {
-              if (currentBatch.isEmpty()) { // Reset Batch
-                this.currentBatchKeys = this.alwaysFetch;
-                break;
-              }
-            } finally {
-              lock.unlock();
-            }
-          } else if (accountBatch instanceof UniqueAccountBatchRecord(_, final AccountConsumer accountConsumer)) {
-            pendingUniqueConsumers.remove(accountConsumer);
-            dispatch(accountConsumer, accounts, accountsMap);
           } else {
-            dispatch(accountBatch, accounts, accountsMap);
+            final long epochSeconds = ByteUtil.getInt64LE(clockSysVar.data(), 32);
+            this.recentSlot = new StampedSlot(clockSysVar.context().slot(), Instant.ofEpochSecond(epochSeconds));
           }
-        }
 
-        clearBatch();
+          for (final var accountConsumer : alwaysCall) {
+            dispatch(accountConsumer, accounts, accountsMap);
+          }
+
+          for (; ; ) {
+            final var accountBatch = currentBatch.pollFirst();
+            if (accountBatch == null) {
+              lock.lock();
+              try {
+                if (currentBatch.isEmpty()) { // Reset Batch
+                  this.currentBatchKeys = this.alwaysFetch;
+                  break;
+                }
+              } finally {
+                lock.unlock();
+              }
+            } else if (accountBatch instanceof UniqueAccountBatchRecord(_, final AccountConsumer accountConsumer)) {
+              pendingUniqueConsumers.remove(accountConsumer);
+              dispatch(accountConsumer, accounts, accountsMap);
+            } else {
+              dispatch(accountBatch, accounts, accountsMap);
+            }
+          }
+
+          clearBatch();
+        } catch (final RuntimeException ex) {
+          // This catch used to sit outside the loop: the first unexpected throw ended
+          // fetching for every service sharing this fetcher, and -- worse -- every
+          // future queued afterward parked its caller silently and forever. Fail this
+          // cycle's batches over to their owners and keep polling.
+          failCurrentBatches(ex);
+          if (causedByInterrupt(ex)) {
+            // A shutdown interrupt surfacing through the blocking fetch must stop the
+            // loop like the direct InterruptedException below does, not be logged away.
+            Thread.currentThread().interrupt();
+            return;
+          }
+          logger.log(ERROR, "Unexpected error fetching accounts; continuing to poll.", ex);
+        }
 
         delay(pollDelay, pollDelayNanos);
       }
     } catch (final InterruptedException e) {
       // exit
-    } catch (final RuntimeException ex) {
-      logger.log(ERROR, "Unexpected error fetching accounts.", ex);
+    }
+  }
+
+  private static boolean causedByInterrupt(final Throwable ex) {
+    for (var cause = ex.getCause(); cause != null; cause = cause.getCause()) {
+      if (cause instanceof InterruptedException) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Drains the in-flight batches after a failed cycle so no caller is left waiting on
+  /// a future this thread will never complete: a completable batch fails exceptionally
+  /// -- its caller has an error channel -- while callback batches, which have none, are
+  /// re-queued for the next cycle rather than silently dropped (a unique consumer keeps
+  /// its pending claim: it is still pending). The failure was the cycle's, never a
+  /// batch's -- per-batch dispatch is guarded -- so a re-queued batch cannot re-poison.
+  private void failCurrentBatches(final RuntimeException cause) {
+    final var requeue = new ArrayList<AccountBatch>();
+    for (; ; ) {
+      final var accountBatch = currentBatch.pollFirst();
+      if (accountBatch == null) {
+        lock.lock();
+        try {
+          if (currentBatch.isEmpty()) { // Reset Batch
+            this.currentBatchKeys = this.alwaysFetch;
+            break;
+          }
+        } finally {
+          lock.unlock();
+        }
+      } else if (accountBatch instanceof CompletableAccountBatch(_, final CompletableFuture<AccountResult> future)) {
+        future.completeExceptionally(cause);
+      } else {
+        requeue.add(accountBatch);
+      }
+    }
+    clearBatch();
+    // After the reset, so a re-queued batch cannot land back in the drained
+    // currentBatch through the containsAll fast path.
+    for (final var accountBatch : requeue) {
+      queue(false, accountBatch);
     }
   }
 

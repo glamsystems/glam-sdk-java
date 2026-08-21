@@ -2,6 +2,7 @@ package systems.glam.services.rpc;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.encoding.ByteUtil;
@@ -17,6 +18,7 @@ import software.sava.services.core.request_capacity.CapacityState;
 import software.sava.services.core.request_capacity.trackers.RootErrorTracker;
 import software.sava.services.solana.remote.call.CallWeights;
 import software.sava.services.solana.remote.call.RpcCaller;
+import systems.glam.services.tests.LogCapture;
 
 import java.lang.reflect.Proxy;
 import java.math.BigInteger;
@@ -29,7 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.*;
@@ -99,6 +103,8 @@ final class AccountFetcherTests {
     int interruptOnCall = 1;
     long respondDelayMillis;
     boolean returnNull;
+    /// Answers the first N calls with a null body — a poisoned cycle — then recovers.
+    int returnNullForFirstCalls;
 
     SolanaRpcClient client() {
       return (SolanaRpcClient) Proxy.newProxyInstance(
@@ -111,7 +117,7 @@ final class AccountFetcherTests {
               if (respondDelayMillis > 0) {
                 Thread.sleep(respondDelayMillis);
               }
-              if (returnNull) {
+              if (returnNull || calls.size() <= returnNullForFirstCalls) {
                 return java.util.concurrent.CompletableFuture.completedFuture(null);
               }
               if (calls.size() >= interruptOnCall) {
@@ -334,6 +340,78 @@ final class AccountFetcherTests {
     assertThrows(IllegalStateException.class, () -> fetcher.queue(tooMany, consumer));
     // batchable overloads are the escape hatch and must not throw
     assertDoesNotThrow(() -> fetcher.queueBatchable(tooMany, consumer));
+  }
+
+  /// An oversized drop must release the unique-pending claim: without the release the
+  /// consumer's every later queueUnique is a silent no-op and it never hears from the
+  /// fetcher again. The drop is only reachable through a caller-mutated collection
+  /// growing past the limit between queueing and batch assembly, which is exactly what
+  /// this test stages.
+  @Test
+  @Timeout(value = 10, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+  void anOversizedDropReleasesTheUniquePendingClaim() {
+    final var rpc = new RecordingRpc();
+    final var first = key(1);
+    rpc.universe.put(first, account(first, 1L, new byte[]{1}));
+    final var fetcher = createFetcher(rpc, Set.of());
+    final var consumer = new RecordingConsumer();
+
+    final var mutableKeys = new ArrayList<PublicKey>();
+    mutableKeys.add(first);
+    fetcher.queueUnique(mutableKeys, consumer);
+    for (int i = 2; i <= SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS + 1; ++i) {
+      mutableKeys.add(key(i));
+    }
+    fetcher.run();
+    assertTrue(consumer.exceeded, "the dropped batch must be reported to its consumer");
+    assertEquals(0, consumer.received.size());
+
+    Thread.interrupted();
+    // the claim is released: the same consumer's next unique queue is served, where the
+    // leak left this a silent no-op and the run below spinning on an empty queue
+    fetcher.queueUnique(List.of(first), consumer);
+    fetcher.run();
+    assertEquals(1, consumer.received.size(),
+        "a consumer whose batch was dropped must be heard again, not ignored forever");
+    assertFalse(((AccountFetcherImpl) fetcher).lock.isLocked());
+  }
+
+  /// A cycle that fails must fail its in-flight futures over to their owners and keep
+  /// polling: the catch used to sit outside the loop, so the first unexpected throw
+  /// ended fetching for every service sharing this fetcher — and every future queued
+  /// afterward parked its caller silently and forever.
+  @Test
+  @Timeout(value = 10, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+  void aFailedCycleFailsItsFuturesOverAndKeepsPolling() throws Exception {
+    final var rpc = new RecordingRpc();
+    rpc.returnNullForFirstCalls = 1; // cycle one: a null RPC body poisons the dispatch
+    rpc.interruptOnCall = Integer.MAX_VALUE;
+    final var present = key(1);
+    rpc.universe.put(present, account(present, 1L, new byte[]{1}));
+    final var fetcher = createFetcher(rpc, Set.of());
+
+    final var poisoned = fetcher.priorityQueue(List.of(present));
+    // attach before the thread starts: the first cycle's error may land immediately
+    try (final var log = LogCapture.attach(AccountFetcher.class.getName())) {
+      final var pollThread = Thread.ofPlatform().start(fetcher::run);
+      try {
+        final var failure = assertThrows(ExecutionException.class,
+            () -> poisoned.get(5, TimeUnit.SECONDS),
+            "the failed cycle must fail its future over, not leave the caller parked");
+        assertInstanceOf(NullPointerException.class, failure.getCause());
+        log.assertLogged("Unexpected error fetching accounts; continuing to poll.");
+
+        // the loop survived: a fresh future completes normally
+        final var recovered = fetcher.priorityQueue(List.of(present));
+        final var result = recovered.get(5, TimeUnit.SECONDS);
+        assertArrayEquals(new byte[]{1}, result.accountMap().get(present).data());
+      } finally {
+        pollThread.interrupt();
+        pollThread.join(Duration.ofSeconds(5).toMillis());
+      }
+      assertFalse(pollThread.isAlive(), "run() must exit on interrupt");
+    }
+    assertFalse(((AccountFetcherImpl) fetcher).lock.isLocked());
   }
 
   @Test
@@ -996,21 +1074,6 @@ final class AccountFetcherTests {
     }
     assertEquals(2, rpc.calls.size());
     assertEquals(2, consumer.received.size());
-  }
-
-  @Test
-  void aFetchFailureIsLoggedAndEndsTheRunLoop() {
-    final var rpc = new RecordingRpc();
-    rpc.returnNull = true;
-    final var present = key(1);
-    final var fetcher = createFetcher(rpc, Set.of());
-    fetcher.queue(List.of(present), new RecordingConsumer());
-
-    try (final var log = systems.glam.services.tests.LogCapture.attach(AccountFetcher.class.getName())) {
-      // the failure must not leak to the polling thread, and must be reported
-      assertDoesNotThrow(fetcher::run);
-      log.assertLogged("Unexpected error fetching accounts");
-    }
   }
 
   @Test
