@@ -1,5 +1,45 @@
 # Changelog
 
+## [25.17.1](https://github.com/glamsystems/glam-sdk-java/compare/25.17.0...25.17.1) (2026-08-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* **kamino:** move the Kamino cache and Scope contexts to vault-stat-service
+
+### Features
+
+* **gen:** generate ext_marinade. ([c864f93](https://github.com/glamsystems/glam-sdk-java/commit/c864f936c6ce5a50971450687695bde07e5c3e7b))
+* **idl:** build a staged client from every repo IDL that is ahead of chain ([935a7d1](https://github.com/glamsystems/glam-sdk-java/commit/935a7d14fb3c44dcc5b24fe27a50a66c7d74698b))
+* **idl:** generate the three deployed GLAM programs that had no client ([040327b](https://github.com/glamsystems/glam-sdk-java/commit/040327becafb80154314e9488f8a3988771a13a0))
+* **idl:** regenerate every GLAM client against idl-clients 25.19.0 ([1fee3f8](https://github.com/glamsystems/glam-sdk-java/commit/1fee3f85c82382692d327905d1fa6fc3efd75196))
+* **idl:** stage clients for three more programs and pick up redeployed IDLs ([92318b2](https://github.com/glamsystems/glam-sdk-java/commit/92318b285a8a222f29d92dddc8e7e9ed7dbb0adc))
+* **idl:** track every GLAM program against the published repo IDL ([8c9ae50](https://github.com/glamsystems/glam-sdk-java/commit/8c9ae50d626963bc77f3872acc0797ac2a57ed2c))
+* **kamino:** relay Scope OraclePrices writes to scope listeners ([498ef6c](https://github.com/glamsystems/glam-sdk-java/commit/498ef6cee94e420dcefe46fb5822fe60c78006d4))
+* **kamino:** report raw reserve writes on every ingestion path ([8eef619](https://github.com/glamsystems/glam-sdk-java/commit/8eef6194436421066ec04be85f28f7f9e10f3fda))
+
+
+### Bug Fixes
+
+* 4,285,597 runs, no findings. ([28f4815](https://github.com/glamsystems/glam-sdk-java/commit/28f4815cc6c4462bb0e998e01de3d4dfce5d435a))
+* **idl:** read the Kamino IDLs from idl-clients rather than from chain ([cdcc910](https://github.com/glamsystems/glam-sdk-java/commit/cdcc910efd9e55a986197ea29a4fd70cc42de06d))
+* **kamino:** guard each reserve listener against a throwing implementation ([b656457](https://github.com/glamsystems/glam-sdk-java/commit/b6564579ef7f5a3eef59ba781aa0cb92551e7467))
+* **rpc:** contain fetch-loop failures and release dropped unique claims ([6aa001e](https://github.com/glamsystems/glam-sdk-java/commit/6aa001e23a336106a6737e54960de9f25cd746fc))
+* **services:** make fetch failure cleanup finite ([9278933](https://github.com/glamsystems/glam-sdk-java/commit/92789332d7d51f2a4ff5ea6513228063b1e4a335))
+* **state:** reject a base asset absent from a changed assets vector ([b161470](https://github.com/glamsystems/glam-sdk-java/commit/b1614707e96a5b52e3c9ee1eb1b1bd6d2cffdb0f))
+* **state:** reject malformed state-account counts, drop an O(n) walk ([1400043](https://github.com/glamsystems/glam-sdk-java/commit/140004341d148c9a03ff1d4459add04e0db29a65))
+* **test:** make poll-loop fixture lifecycle unconditional and capture thread-safe ([0759f92](https://github.com/glamsystems/glam-sdk-java/commit/0759f92cc48a20de50a4c8a368b0be9c6ae94e26))
+
+
+### Performance Improvements
+
+* **kamino:** defer the program sweep while the websocket is audible ([e9b170d](https://github.com/glamsystems/glam-sdk-java/commit/e9b170d236fd4a9195f138876e24e5367980132e))
+
+
+### Code Refactoring
+
+* **kamino:** move the Kamino cache and Scope contexts to vault-stat-service ([4dee6f1](https://github.com/glamsystems/glam-sdk-java/commit/4dee6f1330ea701a5ef90753a75c7450a999d725))
+
 ## [25.17.0](https://github.com/glamsystems/glam-sdk-java/compare/25.16.0...25.17.0) (2026-07-24)
 
 
