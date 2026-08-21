@@ -7,7 +7,7 @@ changes only when that membership does, while the volatile counts and versions s
 console summaries and the movement log. Ordered by program and channel, and carrying no
 timestamp.
 
-== Next gap (19) ==
+== Next gap (18) ==
 
 GLAM Config: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_config.json differs from the deployed idl.json
   instructions added (2): deprecate_asset_meta, update_fee_authority
@@ -46,8 +46,8 @@ GLAM Staging Loopscale: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/e
 GLAM Staging MarginFi: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_marginfi-staging.json differs from the deployed idl.json
   accounts added (1): StateAccount
 
-GLAM Staging Marinade: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_marinade-staging.json differs from the deployed idl.json
-  types changed (2): AccountType, EngineFieldName
+GLAM Staging Marinade: the metadata IDL at F3FArTonLL2Lia7F596UA1NxxenB2wgK2iuiU18yqTXF differs from the deployed idl.json
+  accounts removed (1): StateAccount
 
 GLAM Staging Mint: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_mint-staging.json differs from the deployed idl.json
   instructions added (5): fulfill_with_ref_nav, price_jupiter_borrow_positions, price_jupiter_earn_positions, price_registered_positions, subscribe_with_ref_nav
@@ -72,10 +72,6 @@ GLAM Staging Registered Positions: the vcs IDL at github:glamsystems/glam-sdk-ts
   accounts added (1): StateAccount
 
 GLAM Staging SPL: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_spl-staging.json differs from the deployed idl.json
-  types changed (1): AccountType
-
-GLAM Staging Stake Pool: the anchor IDL at 9eiBHZbtw5g1Ut5UgpriWrigGjReLfsKaFftKtvPuiFf differs from the deployed idl.json
-  accounts added (1): StateAccount
   types changed (1): AccountType
 
 GLAM Staging Stake Pool: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_stake_pool-staging.json differs from the deployed idl.json

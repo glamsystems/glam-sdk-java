@@ -1,24 +1,24 @@
 {
   "program": "gstgmvM2o7h7GcScvXymH1oFgWskukWWxRHC1UJJ9FJ",
-  "deployed": "anchor",
-  "lastDeploySlot": 394258035,
+  "deployed": "vcs",
+  "lastDeploySlot": 440554901,
   "programDataState": "upgradeable",
   "programDataStateSlot": 439884391,
-  "programDataPayloadSha256": "ce474617c240d8b58613783fa5c3ce9192a052041607ad374dd42ee6fbed3a5d",
+  "programDataPayloadSha256": "d25dc3588999a522c37240c66a64c95220b29381571e6f3c5b21c9ceb5f71d0a",
   "programDataPayloadLength": 354104,
   "channels": {
-    "anchor": {
-      "origin": "E64ABbxYjmrZdXxHsWziLhvgPyJz21dTzB5EHUJPX5Wd",
-      "hash": "5c368327dbf5f4a02ce781ef8b0a60c0b395639458d4d6e58c939ab8f193471a",
-      "matchesDeployed": true,
-      "verbatim": "idl.json"
+    "metadata": {
+      "origin": "F3FArTonLL2Lia7F596UA1NxxenB2wgK2iuiU18yqTXF",
+      "hash": "552c4231973fe6e2a30d5b4b7967d6fa108481ed233921642b66831a4dcc7c2c",
+      "matchesDeployed": false,
+      "file": "metadata.json",
+      "verbatim": "metadata.json"
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_marinade-staging.json",
       "hash": "6352519ef66bbdc6c7dcffb28a95c19bbea38e0f899de0b72a613b782fd6dc71",
-      "matchesDeployed": false,
-      "file": "vcs.json",
-      "verbatim": "vcs.json"
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
     }
   }
 }
