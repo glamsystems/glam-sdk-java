@@ -1,10 +1,11 @@
 # Mutation-testing baseline & triage policy — `services`
 
-Each `pitest<Suite>` run is finalized by `pitest<Suite>Verify`, which diffs the
-run's unkilled mutants (`SURVIVED` and `NO_COVERAGE`) against the accepted
-baseline in `<suite>-accepted.csv` and **fails on anything new**. Baseline keys
-are line-less (`class,method,mutator,STATUS`); `# line` tags are review
-metadata, so source movement alone churns nothing. The canonical policy is
+`pitestServices` is this module's mutation suite; GLAM policy runs it and
+`pitestServicesVerify` before any handoff whose changed code the suite
+reaches. The suite's accepted baseline is `services-accepted.csv`, holding the
+unkilled rows (`SURVIVED` and `NO_COVERAGE`) keyed by class, method, mutator
+and status; its audited timeout set is `services-timeouts.csv`. Every row
+triaged out of debt owes its written argument here. The canonical policy is
 sava-build's `HARDENING.md`, and `hardeningHelp` is the authority on the
 installed plugin's task names; this file records what is accepted *here* and
 why.
@@ -17,16 +18,15 @@ A new unkilled mutant has exactly three legal outcomes:
 3. **Accept it knowingly** — record the reason under "Triaged equivalent
    mutants" below, give the row a short `# <family>` label named in the
    "Family labels" glossary, and write the record with the named task
-   (`pitestServicesBaselineUpdate` / `Union` / `Prune` / `Rebase` as the
-   verify's hint directs). Acceptance is for mutants *equivalent with respect
-   to observable behavior*, not for "hard to test".
+   (`pitestServicesBaselineUpdate` / `Union` / `Prune` / `Rebase`), never
+   by hand. Acceptance is for mutants *equivalent with respect to observable
+   behavior*, not for "hard to test".
 
-Identical rows are sibling mutants of one compound condition — the comparison
-is a multiset; never hand-dedupe the CSV, and never hand-edit record structure
-or provenance stamps. A new mutant replacing a killed one at the same key can
-inherit its acceptance, so treat a line-drift advisory whose written argument
-no longer fits the code as that swap until shown otherwise. Anything beyond
-drift (newly covered, unexplained, changed counts) is triage first, record
+Identical rows are sibling mutants of one compound condition, not duplicates
+to tidy: never hand-dedupe the CSV, and never hand-edit record structure or
+provenance stamps. A row whose written argument here no longer fits the code
+it names is re-argued before it is reused or removed; anything beyond that
+(newly covered, unexplained, changed counts) is triage first, record
 after. Any run that supports a record decision must be history-free
 (`-PnoMutationHistory`).
 
@@ -215,16 +215,20 @@ tails.
 **Accepted (20):** four `HashMap`/`ConcurrentHashMap` capacity-hint math
 mutants; the `deleteScopeConfiguration` null-path guard leg (deletion is
 only driven through disk-backed caches; the deletion direction itself is
-detected); GlobalConfig park-loop legs (`run` 228/230, `forceCacheRefresh`
-double-check gates, `awaitNewGlobalConfig` timeout legs — in-lock timing
-directions whose siblings are detected or timing-equivalent at exactly
-zero nanos); StakePool cold-start overwrite/copy boundaries (`i > 0` and
-`copyOfRange` at exact length are no-op-equivalent), the redundant
-`containsKey` fast path ahead of `putIfAbsent`, and its CAS race-guard
-leg; and the Kamino single-chunk fetch exit plus rebuild-list and
-park-loop legs (`run` 664/669/692/697 — the chunking directions need more
-than `MAX_MULTIPLE_ACCOUNTS` scope accounts to differ, the rebuild is
-idempotent from the set, and the park directions are load-dependent).
+detected); GlobalConfig park-loop legs (`run`'s invalidation exit on a
+null update and its `remainingNanos <= 0 || forceRefresh` break,
+`forceCacheRefresh` double-check gates, `awaitNewGlobalConfig` timeout
+legs — in-lock timing directions whose siblings are detected or
+timing-equivalent at exactly zero nanos); StakePool cold-start
+overwrite/copy boundaries (`i > 0` and `copyOfRange` at exact length are
+no-op-equivalent), the redundant `containsKey` fast path ahead of
+`putIfAbsent`, and its CAS race-guard leg; and the Kamino single-chunk
+fetch exit plus rebuild-list and park-loop legs (`run`'s chunk-loop
+exit at `to == numAccounts`, its `accountsDeleted > 0` list rebuild,
+and the `numReserveChanges > 0` and `remaining <= 0` park legs — the
+chunking directions need more than `MAX_MULTIPLE_ACCOUNTS` scope
+accounts to differ, the rebuild is idempotent from the set, and the
+park directions are load-dependent).
 
 The cold-start pass built the routed-proxy harness named as the previous
 pass's escape: a `SolanaRpcClient` proxy answering `getProgramAccounts` by
@@ -410,28 +414,32 @@ That is the restart path for every on-disk cache here; it now has a test.
 
 ### Naked-receiver survivors (accepted with reasons)
 
-**`ScopeFeedContext.indexes` — dropped `.sorted()`** (line 277). The stream
-sorts `FilteredReserve` by collateral descending, but its source
-`reservesByMint` is *already* maintained in that order: `resortReserves` sorts
-every mutation with `RESERVE_CONTEXT_BY_LIQUIDITY`, which is the same
+**`ScopeFeedContext.indexes` — dropped `.sorted()`** on the `FilteredReserve`
+stream feeding its `limit(4)`. The stream sorts `FilteredReserve` by
+collateral descending, but its source `reservesByMint` is *already* maintained
+in that order: `resortReserves` sorts every mutation with
+`RESERVE_CONTEXT_BY_LIQUIDITY`, which is the same
 descending-unsigned-collateral order, and `Stream.sorted` is stable, so
 reserves contributing several matching entries keep their encounter order
 either way. Re-sorting an already-sorted source cannot change the result.
 Killing it would mean breaking the invariant the rest of the class maintains.
 
-**`KaminoCacheImpl.indexes` — dropped `.sorted()`** (line 176). This one picks
-the highest-liquidity feed across *scope feeds*, so distinguishing it needs two
-feeds whose reserves cover the same mint at different depths. The fixtures hold
-a single feed (the klend one), so sorting one element is a no-op — **unreachable
-in-harness**, not equivalent. The escape is a second `Configuration` +
-`OracleMappings` snapshot (the hubble feed, `ScopeFeedAccounts.SCOPE_MAINNET_HUBBLE_FEED`)
-plus reserves pointing at it; add those and this becomes killable.
+**`KaminoCacheImpl.indexes` — dropped `.sorted()`** on the per-feed
+`FeedIndexes` stream ahead of its `findFirst()`. This one picks the
+highest-liquidity feed across *scope feeds*, so distinguishing it needs two
+feeds whose reserves cover the same mint at different depths. The fixtures
+hold a single feed (the klend one), so sorting one element is a no-op —
+**unreachable in-harness**, not equivalent. The escape is a second
+`Configuration` + `OracleMappings` snapshot (the hubble feed,
+`ScopeFeedAccounts.SCOPE_MAINNET_HUBBLE_FEED`) plus reserves pointing at it;
+add those and this becomes killable.
 
-**`KeyedFlatFileImpl.deleteEntry` — dropped `mappedBuffer.force()`** (line 73).
-Durability only: the swap is already visible through the same mapping and to
-every subsequent read in the process, so no in-process assertion can see whether
-the pages were flushed. Same family as the `force`/lock survivors already
-accepted for this class.
+**`KeyedFlatFileImpl.deleteEntry` — dropped `mappedBuffer.force()`** after the
+swapped-in last entry is written over the deleted slot. Durability only: the
+swap is already visible through the same mapping and to every subsequent read
+in the process, so no in-process assertion can see whether the pages were
+flushed. Same family as the `force`/lock survivors already accepted for this
+class.
 
 ## Recording-collaborator pass (2026-07-22)
 
@@ -490,15 +498,16 @@ differing in exactly that component (plus symmetry, and the deliberate
 exclusion of slot and raw data, so a no-op refresh stays equal).
 
 **`MinGlamStateAccount.hashCode` mixing arithmetic (9 mutants)** — the
-`MathMutator` rows on lines 339-347, each swapping a `31 *` for `31 /` or a
-`+` for a `-` in the accumulator chain. `hashCode`'s only contract is that
-equal accounts hash equally, which every one of these preserves, so nothing
-observable distinguishes them: a different-but-still-well-distributed mixing
-constant is not a defect. The two properties that *do* matter are asserted —
-equal accounts hash equally, and accounts differing in any compared component
-hash differently — and those killed the `return 0` mutant that the contract
-alone would have allowed. Distinguishing the rest would mean asserting exact
-hash values, which pins an implementation detail callers cannot depend on.
+`MathMutator` rows on its nine `result = 31 * result + ...` mixing statements,
+each swapping a `31 *` for `31 /` or a `+` for a `-` in the accumulator chain.
+`hashCode`'s only contract is that equal accounts hash equally, which every
+one of these preserves, so nothing observable distinguishes them: a
+different-but-still-well-distributed mixing constant is not a defect. The two
+properties that *do* matter are asserted — equal accounts hash equally, and
+accounts differing in any compared component hash differently — and those
+killed the `return 0` mutant that the contract alone would have allowed.
+Distinguishing the rest would mean asserting exact hash values, which pins an
+implementation detail callers cannot depend on.
 
 ## EXPERIMENTAL_BIG_INTEGER / EXPERIMENTAL_BIG_DECIMAL trial (2026-07-22)
 
@@ -527,8 +536,10 @@ generated offset constants (collateral, token name, each vault key) — killing
 per-key vault change detection, and the mappings-scan fallback of `indexes`.
 The 24 survivors this deeper coverage newly exposed are accepted as follows:
 
-**Feed-map maintenance invisible through the cache API (updateIfChanged
-392/395/398/399, reIndexReserves 196/198)** — `resortReserves`,
+**Feed-map maintenance invisible through the cache API (`updateIfChanged`'s
+changed path — its `feedContext == null` guard and its `resortReserves` /
+`removePreviousEntry` / `indexReserveContext` calls; `reIndexReserves`'
+price-feed-match and changed-price-chains guards)** — `resortReserves`,
 `removePreviousEntry` and `indexReserveContext` maintain `ScopeFeedContext`'s
 internal by-index/by-mint maps, and the cache exposes those only through
 `indexes()`, which returns null for the fixture's SOL reserve (composite
@@ -537,25 +548,29 @@ the current fixtures**; the named escape is a reserve whose chain heads with a
 direct oracle entry (a second feed snapshot, e.g. the hubble feed), at which
 point these become killable and should be.
 
-**In-lock recheck race guards (handleMappingChange 328, updateIfChanged 386
-retry, handleVaultStateChange 449)** — double-checks between the optimistic
-read and the locked write; single-threaded tests cannot interleave a
-concurrent writer between the two. Deterministically forcing that interleaving
-is the concurrency-harness problem ravina's triage README documents at length;
-accepted with that as the named escape.
+**In-lock recheck race guards (`handleMappingChange`'s in-lock `witness ==
+null || witness.changed(accountInfo)` re-read, `updateIfChanged`'s `previous
+!= witness` retry, `handleVaultStateChange`'s `kaminoVaultContext == previous`
+recheck)** — double-checks between the optimistic read and the locked write;
+single-threaded tests cannot interleave a concurrent writer between the two.
+Deterministically forcing that interleaving is the concurrency-harness problem
+ravina's triage README documents at length; accepted with that as the named
+escape.
 
-**Slot-gate shadowed comparisons (lambda 457 boundary/order)** — the merge
-remapping picks the newer context, but `handleVaultStateChange` line 438
-already rejects non-newer slots before merge is reached, so the remapping only
-ever sees a strictly newer value and its `>=`-vs-`>` boundary cannot be
-observed. Defensive redundancy, equivalent in context.
+**Slot-gate shadowed comparisons (the `vaultStateContextMap.merge` remapping
+lambda, boundary/order)** — the merge remapping picks the newer context, but
+`handleVaultStateChange`'s `Long.compareUnsigned(previous.slot(), slot) >= 0`
+early return already rejects non-newer slots before merge is reached, so the
+remapping only ever sees a strictly newer value and its `>=`-vs-`>` boundary
+cannot be observed. Defensive redundancy, equivalent in context.
 
-**Remaining per-key `createIfChanged` internals (KaminoVaultContext
-112-173, noKeyChange 101)** — the null-transition arms (a key appearing where
-none was, or vanishing to the NULL sentinel). The fixture's keys are all
-present and real; synthesizing null-key variants means hand-building 62KB
-VaultState images. Accepted as unreachable-in-harness; escape: a fixture from
-a vault with an unset farm/lookup-table key.
+**Remaining per-key `createIfChanged` internals (`KaminoVaultContext`'s
+`createIfChanged` key-comparison branches and `noKeyChange`'s `previous ==
+null` arm)** — the null-transition arms (a key appearing where none was, or
+vanishing to the NULL sentinel). The fixture's keys are all present and real;
+synthesizing null-key variants means hand-building 62KB VaultState images.
+Accepted as unreachable-in-harness; escape: a fixture from a vault with an
+unset farm/lookup-table key.
 ## Scope shapes + fetcher batching pass (2026-07-22)
 
 `ScopeFeedContextTests` gained the multi-reserve shapes the single-reserve
@@ -577,18 +592,19 @@ RPC call, shared result map), always-fetch keys restored after the cycle trim,
 and a full batch absorbing a 100%-overlapping request while deferring a
 non-overlapping one to the next cycle.
 **Count guards subsumed by range-length comparison
-(`MinGlamStateAccount.createIfChanged` 217, 235)** — `sameAssets` and
+(`MinGlamStateAccount.createIfChanged`'s `sameAssets` and
+`sameExternalPositions` count guards)** — `sameAssets` and
 `sameExternalPositions` each open with `count == this.section.length &&
 Arrays.equals(bytes...)`. Forcing the count operand true when the counts
 differ changes nothing: the byte ranges are computed from each side's own
 count, so `Arrays.equals` over ranges of different lengths returns false
 immediately and the flag lands false either way. The count check is a
 deliberate short-circuit that skips the byte compare — the same
-fast-path-routing family as HARDENING.md's canonical example. The nine
-branch mutants that *were* observable (per-section reuse vs reparse, the
-enabled flip, and both immutable-base-field guards) are killed by identity
-assertions: content equality cannot tell a reuse from a reparse, so the
-tests pin the array instances.
+fast-path-routing family as HARDENING.md's canonical example. The nine branch
+mutants that *were* observable (per-section reuse vs reparse, the enabled
+flip, and both immutable-base-field guards) are killed by identity assertions:
+content equality cannot tell a reuse from a reparse, so the tests pin the
+array instances.
 
 ## Config parse + global config validation pass (2026-07-22)
 
@@ -612,13 +628,15 @@ overload. This pass also surfaced and fixed a real bug: a checked lookup after
 cache invalidation dereferenced the nulled `assetMetaMap` and threw NPE;
 misses now return null until a valid config is re-accepted.
 
-**Null-state rechecks in `topPriorityForMintChecked` (148/154 EQUAL pairs) and
-invalidation `signalAll` (159)** — each `||` guard yields one killable mutant
-per operand (killed by the decimals-mismatch throw test) and one that only a
-concurrent invalidator between the read unlock and write lock could observe —
-the same in-lock race-guard family as the KaminoCache acceptances, with the
-same concurrency-harness escape. `signalAll` needs a parked waiter to observe;
-same family as the accept-path `signalAll` acceptances (694/709).
+**Null-state rechecks in `topPriorityForMintChecked` (the pre-lock and in-lock
+`globalConfigUpdate == null || assetMetaMap == null` EQUAL pairs) and the
+invalidation `invalidGlobalConfig.signalAll()`** — each `||` guard yields one
+killable mutant per operand (killed by the decimals-mismatch throw test) and
+one that only a concurrent invalidator between the read unlock and write lock
+could observe — the same in-lock race-guard family as the KaminoCache
+acceptances, with the same concurrency-harness escape. `signalAll` needs a
+parked waiter to observe; same family as the `accept`-path
+`invalidGlobalConfig`/`newGlobalConfig` `signalAll` acceptances.
 
 ## Config sections + mint cache pass (2026-07-22)
 
@@ -638,26 +656,29 @@ entries", and `delete` by a two-instance case: it must not report an entry
 whose persistent record was already removed by another cache over the same
 file.
 
-**Absent-vs-empty-parse equivalents (`parseProperties` 286/307/363/368 pairs)**
-— the always-parse direction on `notificationHooks`, `tableCache`,
+**Absent-vs-empty-parse equivalents (the `parseProperties` section-presence
+pairs)** — the always-parse direction on `notificationHooks`, `tableCache`,
 `accountFetcher` and `defensivePolling`: parsing an empty section produces the
 same value the absent path synthesizes (`NotifyClient.createClient([])`
 returns the same noop shape as `setDefaults`; the other three parsers default
 every field to exactly their `createDefault` values). No observable output
 distinguishes them.
 
-**Null-over-null assigns (`parseProperties` 400/405; `DefensivePollingConfig`
-60–76)** — `parseDuration(null)` returns null, so forcing the `!= null` guard
-merely re-assigns null over null; `get()`/`setDefaults` re-default nulls
-either way.
+**Null-over-null assigns (`parseProperties`'
+`minCheckStateDelay`/`maxCheckStateDelay` guards; `DefensivePollingConfig`'s
+five `Parser.parseProperties` duration guards)** — `parseDuration(null)`
+returns null, so forcing the `!= null` guard merely re-assigns null over null;
+`get()`/`setDefaults` re-default nulls either way.
 
-**True-or-throw returns (`FulfillmentServiceConfig.test` 63)** — the base
-`test` either handles a field (returns true) or throws on unknown fields, so
-forcing the propagated return to true is indistinguishable.
+**True-or-throw returns (`FulfillmentServiceConfig.test`'s `super.test(...)`
+fall-through)** — the base `test` either handles a field (returns true) or
+throws on unknown fields, so forcing the propagated return to true is
+indistinguishable.
 
-**Missing-key delete fast path (`MintCacheImpl.delete` 55)** — forcing the
-null-check false sends a missing key into `deleteEntry`, which scans, finds
-nothing, returns 0 and yields the same null; the guard only skips file I/O.
+**Missing-key delete fast path (`MintCacheImpl.delete`'s `removed == null`
+guard)** — forcing the null-check false sends a missing key into
+`deleteEntry`, which scans, finds nothing, returns 0 and yields the same null;
+the guard only skips file I/O.
 
 ## Batch SQL executor pass (2026-07-22)
 
@@ -677,18 +698,20 @@ runner, filling the batch must cut the delay window short, and a waiter in
 those await paths — load-dependent by nature, but each also fails the
 5-second join asserts on a quiet machine.
 
-**Spurious-signal directions (`queue` 207 EQUAL_ELSE/ORDER_IF)** — forcing
-the signal condition true adds a lock cycle and an extra signal to a runner
-that rechecks its guards on wake; no observable difference exists.
+**Spurious-signal directions (`queue`'s signal gate, EQUAL_ELSE/ORDER_IF)**
+— forcing the `isEmpty || pending.size() >= batchSize` signal condition true
+adds a lock cycle and an extra signal to a runner that rechecks its guards
+on wake; no observable difference exists.
 
-**Fast-path skips (`awaitBatchComplete` 145; `run` 72 boundary/ORDER_IF)** —
-the outer `batchComplete` check only skips a lock acquisition around a
+**Fast-path skips (`awaitBatchComplete`'s outer `!batchComplete` check;
+`run`'s `pending.size() < batchSize` fill/wait entry — boundary/ORDER_IF)**
+— the outer `batchComplete` check only skips a lock acquisition around a
 correctly-guarded while; entering the fill/wait block with a full batch
 pending exits the delay window immediately. Both are flicker, not behavior.
 
-**Zero-remaining re-arm (`run` 82 boundary)** — `remainingNanos > 0` vs
-`>= 0` differs only when a wait returns exactly 0, which re-arms one
-zero-nanos await and exits on its negative return.
+**Zero-remaining re-arm (`run`'s batch-delay await window, boundary)** —
+`remainingNanos > 0` vs `>= 0` differs only when a wait returns exactly 0,
+which re-arms one zero-nanos await and exits on its negative return.
 
 **Requeue gap guards — RESOLVED by fix.** The failed-batch walk used to break
 at the first unset slot, and a multi-row `StatementPreparer` (the `int`
@@ -698,11 +721,12 @@ densely by item, `numRows` drives the execute threshold, and the walk requeues
 every slot below `numItems` unconditionally. Pinned by a two-rows-per-item
 failure test (the whole batch retries) and a zero-rows-per-item test (the
 `numItems == batch.length` guard prevents overflow when rows never
-accumulate). The remaining `Arrays.fill` mutant (`run` 76) is now pure GC
-hygiene — it releases references while the runner parks between cycles — and
-is accepted as unobservable.
+accumulate). The remaining `Arrays.fill` mutant (`run`'s pre-park
+`Arrays.fill(batch, null)` batch reset) is now pure GC hygiene — it releases
+references while the runner parks between cycles — and is accepted as
+unobservable.
 
-**Batch-length equality guard (`run` 111 EQUAL_ELSE on `numRows >=
+**Batch-length equality guard (`run` EQUAL_ELSE on `numRows >=
 batchSize`)** — the `||` pairing means one direction only shows when rows and
 items disagree at the boundary; the multi-row and zero-row tests pin the
 observable directions, the residual direction is a redundant re-check.
@@ -747,16 +771,17 @@ aliases the freshly built set directly: it never escapes or changes after the
 return, unlike `createBatchKeys`' snapshot of the shared mutable batch set.
 Every mutant of the reworked loop is killed by the existing tests.
 
-**Accepted equivalents:** `++numCallbacks` (293 — only its zero/nonzero
-distinction is read);
-the `size == MAX` overlap fast path (296 — the general merge loop converges
+**Accepted equivalents:** `createBatch`'s `++numCallbacks` (only its
+zero/nonzero distinction is read);
+the `size == MAX` overlap fast path (the general merge loop converges
 to the same key set for both subset and non-subset neighbors); the WARN-path
-`clearBatch` (257 — later paths re-derive from key sets and the cycle-end
-trim restores the base); the reactive zero-remaining re-arm (321) and
-`unlock` in delay (329 — `await` releases and restores the full hold count,
-masking the drift); the initial-delay recheck (341 — one extra sleep tick);
-the in-lock reset recheck (383 — race-guard family).
-`UniqueAccountBatchRecord.accept` (449) stays `NO_COVERAGE`: the dispatch
+`clearBatch` in the oversized-batch drop (later paths re-derive from key
+sets and the cycle-end trim restores the base); the reactive
+`remainingAwaitNanos <= 0` re-arm and `unlock` in `delay` (`await` releases
+and restores the full hold count, masking the drift); `run`'s initial
+`queue.isEmpty()` delay check (one extra sleep tick); the in-lock
+`currentBatch.isEmpty()` reset recheck (race-guard family).
+`UniqueAccountBatchRecord.accept` stays `NO_COVERAGE`: the dispatch
 loop's `instanceof` branch always intercepts unique records, so the record's
 own delegation is unreachable by design; it must exist to satisfy the
 interface.
@@ -820,14 +845,16 @@ must not absorb the original key's re-acceptance), the same-slot vault gate,
 and the reserves-only vault notification boundary (a fee change updates the
 context silently; only allocation changes notify).
 
-**Accepted:** `handleConfigurationChange` 275 EQUAL_IF — the in-lock
+**Accepted:** `handleConfigurationChange` EQUAL_IF — the in-lock
 `putIfAbsent` double-check's converging direction, same race-guard family as
 the existing `handleMappingChange`/`updateIfChanged` acceptances; its sibling
 is killed by the rekeyed-duplicate test. The remaining KaminoCacheImpl
 survivors are the previously documented families: in-lock rechecks, the
-`signalAll`/`numReserveChanges` concurrency window (333), slot-gate shadowed
-comparisons (457), capacity-hint arithmetic (103), and the `indexes`
-fallback-scan block pending a second-feed fixture.
+`signalAll`/`numReserveChanges` concurrency window in `handleMappingChange`'s
+re-index notify, `handleVaultStateChange`'s merge-remap slot comparison
+shadowed by its same-slot entry gate, the constructor's `accountsNeededSet`
+capacity-hint arithmetic, and the `indexes` fallback-scan block pending a
+second-feed fixture.
 
 ## Vault context + scope indexing pass (2026-07-23)
 
@@ -859,14 +886,15 @@ construction — `withPriceChains` never touches the configuration chain ints
 that key the index maps, and both index paths replace in place — so the call
 was **refactored away** rather than its mutant accepted.
 
-**Accepted (mutual-redundancy family):** `FilteredReserve.compareTo` (244)
-and the `indexes()` `sorted()` naked-receiver (266) — the source by-mint
+**Accepted (mutual-redundancy family):** `FilteredReserve.compareTo`
+and the `indexes()` `sorted()` naked-receiver — the source by-mint
 array is maintained in the same liquidity order the stream sort would
 impose, so removing either ordering is unobservable through `indexes()`;
-the direct by-mint order tests pin the order itself. `removePreviousEntry`
-212 pair — the `numReserves > 0` else-leg guards an empty by-index map that
-is never stored (emptied maps are nulled). `indexReserveByIndex` 162/163 —
-in-place-replace fast paths whose fallback copy path produces the same
+the direct by-mint order tests pin the order itself. The
+`removePreviousEntry` pair — the `numReserves > 0` else-leg guards an empty
+by-index map that is never stored (emptied maps are nulled).
+`indexReserveByIndex`'s `containsKey`/`size() == 1` singleton
+in-place-replace fast paths, whose fallback copy path produces the same
 served content. `parseReserveKeys`/`createIfChanged` residual legs are the
 same short-circuit sibling family as elsewhere.
 
@@ -881,15 +909,17 @@ persistence quietly instead of NPE-ing per accept (the reserves path has no
 null guard and stays mandatory).
 
 **Accepted — length guards subsumed by a length-safe discriminator
-(`accept` 585–616, `acceptReserve` 572; 11 sibling rows):** the truncated
+(`accept`'s dispatch chain, `acceptReserve`; 11 sibling rows):** the truncated
 (3-byte) dispatch tests proved `DISCRIMINATOR.equals(data, 0)` returns false
 on short data rather than reading out of bounds, so forcing any
 `data.length == X.BYTES` guard true routes to a discriminator check that
 rejects the account identically. The guards are pure fast-path routing —
 HARDENING.md's canonical subsumed-guard family. The remaining
-`updateIfChanged` rows (359/363/365/392 double-check guards, 395/398/399
-feed-map maintenance) and `handleMappingChange`/`handleVaultStateChange`
-residues are the previously documented in-lock, signalling, and
+`updateIfChanged` rows (its `putIfAbsent`, its in-lock
+`witness == reserveContext` and `previous != witness` double-check guards,
+and the `feedContext == null` / `onlyCollateralChanged` feed-map maintenance
+legs) and `handleMappingChange`/`handleVaultStateChange` residues are the
+previously documented in-lock, signalling, and
 feed-map-unobservable families; the feed-map escape remains a second scope
 feed fixture whose chains head with a direct oracle entry.
 
@@ -908,21 +938,26 @@ refactor (escape recorded here), not a cleverer test.
 
 `KaminoCache.initService` hygiene, all through real `initService` runs over
 Proxy-backed clients: corrupted mappings/reserve files are **deleted**, not
-just skipped (`Files::delete` 420/453 — a file left in place is re-read and
-re-failed on every start); a stray plain file among the market directories
-is skipped; an empty cold-start reserve scan still creates the reserve
-directory (`loadReserves` 400 — the guard is only reachable when RPC
-returns zero reserves); a null slot in the configuration response is
+just skipped (`Files::delete` in `loadReserves` and `loadMappings` — a file
+left in place is re-read and re-failed on every start); a stray plain file
+among the market directories is skipped; an empty cold-start reserve scan
+still creates the reserve directory (`loadReserves`'s
+`Files.notExists(reserveDataFilePath)` branch — the guard is only reachable
+when RPC returns zero reserves); a null slot in the configuration response is
 skipped, not dereferenced; a missing mappings account fails init **by
 name** (`Oracle Mappings account not found`, not an NPE downstream); and
 warm on-disk configurations covering every fetched feed suppress the
 configuration re-scan — which no-feed reserves (all-zero or nu11 sentinel)
-must not defeat (239/242: the mutant queues the sentinel as a real feed and
-forces the fetch, which the proxy fails loudly).
+must not defeat (the reserve scan's two `Arrays.equals` price-feed sentinel
+checks: the mutant queues the sentinel as a real feed and forces the fetch,
+which the proxy fails loudly).
 
 **Accepted (families already documented):** the six `initService` capacity
 hints (`MathMutator` on `newHashMap(n*3)` / `highestOneBit(n) << 1`), and
-the nine residual operand legs at 258/273/306/324/336 — each is the
+the nine residual operand legs across `initService`'s warm-configuration
+gate (`containsAll(priceFeedsNeeded) && !feedContextMap.isEmpty()`), its
+Configuration, OracleMappings and VaultState length/discriminator
+validations, and its already-indexed reserve skip — each is the
 forced-true direction of a guard whose observable sibling has a named
 killing test in the verify hint; only an input that fails one operand while
 already failing the other could distinguish them.
@@ -932,9 +967,10 @@ already failing the other could distinguish them.
 `META-INF/services` entry (kms-core ≥ 25.5.2, BOM 25.28.3); the suite runs
 green against published artifacts.
 
-**Flip insurance:** `KaminoCacheImpl.persistReserve` 719 `EQUAL_IF` was
-pruned as killed in one run and resurfaced `SURVIVED` in the next — the
-mutant forces `createDirectories` on a directory that already exists, a
+**Flip insurance:** `KaminoCacheImpl.persistReserve`'s
+`Files.notExists(marketFilePath)` guard (`EQUAL_IF`) was pruned as killed in
+one run and resurfaced `SURVIVED` in the next — the mutant forces
+`createDirectories` on a directory that already exists, a
 no-op, so its "kill" was load-dependent. Unioned back with a
 `# flip insurance` label; do not prune it on a run that happens to detect
 it.
@@ -953,8 +989,8 @@ written here.
 Row labels: back-filled 2026-07-23 from the pass sections above — every
 `SURVIVED` row tied to a documented family carries its label, and everything
 unattributable stayed `# untriaged` — the honest default; refine labels when
-a row's family is pinned down, and refreshes seed `# untriaged` on new rows.
-The untriaged rows are the real remaining triage debt, now a printed number.
+a row's family is pinned down. The untriaged rows are the real remaining
+triage debt.
 
 ### 2026-08-21 — Kamino cache moved to vault-stat-service
 
@@ -974,8 +1010,9 @@ registry so those sections still parse.
 ### Family labels
 
 Each accepted row carries a `# <family>` label whose argument is the pass
-section above that triaged it; the verify and debt tasks warn on any label not
-named here. The families:
+section above that triaged it; GLAM policy names every triaged label here in
+the same change as the label, before the next `pitestServicesVerify` or
+`pitestServicesDebt` run. The families:
 
 - `# in-lock race guard` — an optimistic read rechecked under a lock; a
   single-threaded test cannot interleave a writer between the two.
@@ -1024,9 +1061,9 @@ section that does the triage, not here.
 
 ## Test-lifecycle contamination, and the survivor it manufactured (2026-08-06)
 
-`KaminoCacheImpl.run` `VoidMethodCallMutator` (line 672, the "Scope
-OracleMappings account has been deleted" warning) was reported `SURVIVED` and
-briefly recorded here as a PIT coverage-attribution artifact. **That conclusion
+`KaminoCacheImpl.run` `VoidMethodCallMutator` (the "Scope OracleMappings
+account has been deleted" warning) was reported `SURVIVED` and briefly
+recorded here as a PIT coverage-attribution artifact. **That conclusion
 was wrong.** The mutant is killed by
 `KaminoCachePollingTests.thePollLoopAppliesUpdatesAndDropsVanishedScopeAccounts`;
 what made it survive was the fixture leaking state between mutants.
@@ -1076,15 +1113,13 @@ on 2026-08-21.
 Per HARDENING.md: a timeout-detected mutant was observed for *slowness, not
 wrongness* — the watchdog fires whatever the covering assertion says, so for
 these rows the ratchet cannot see a weakened test. The compensating control
-is this listing: `N timed out (load-dependent)` in the verify summary is an
-audited set, not a count, and a **new member outside these families is
-something to look at**, not absorb. Membership churns with load —
-`KILLED <-> TIMED_OUT` drift is benign (both are *detected*, neither is ever
-written to a baseline; the verify prints the drift each run, e.g. this
-snapshot's "3 newly timed out, 5 no longer", and `KeyedFlatFileImpl`'s
-member has moved between `appendEntry` and `overwriteFile` across runs).
-`SURVIVED -> TIMED_OUT` is the flip that matters — the verify names those
-separately; never refresh them out on the strength of one loaded run.
+is this listing: an audited set, not a count, and a **new member outside
+these families is something to look at**, not absorb. Membership churns with
+load — `KILLED <-> TIMED_OUT` drift is benign (both are *detected*), and
+`KeyedFlatFileImpl`'s member has moved between `appendEntry` and
+`overwriteFile` across runs; this snapshot's own churn was 3 newly timed out
+and 5 no longer. `SURVIVED -> TIMED_OUT` is the flip that matters; never
+refresh those out on the strength of one loaded run.
 Snapshot: the 2026-07-26 `qualityGate -PnoMutationHistory` run on plugin
 21.5.15 — 135 rows.
 
@@ -1095,28 +1130,32 @@ causes by class:
 
 ### `db.sql.BatchSqlExecutorImpl` — 29
 
-The producer-consumer batch window. Lost signals (`signalAll`/`signal`
-removed: run:81, queue:212, queue:214) park `awaitBatchComplete` callers
-forever; inverted window gates (`pending.isEmpty()`, `batchComplete`,
-the `awaitNanos` bound loop: run:75/79/85, awaitBatchComplete:146/149,
-queue:208/211) trap a wait that no signal ends or turn the bounded delay
-window unbounded; removed waits (run:82, awaitBatchComplete:150) become
-in-lock hot spins; a removed `addLast` (queue:207) starves the consumer the
-test is awaiting; the failure-requeue mutants (run:125/126) drop retried
-items the test waits to see durably inserted. Lock-call removals
-(awaitBatchComplete:147) kill the waiting thread with
+The producer-consumer batch window. Lost signals (`run`'s
+`batchCompleteCondition.signalAll()`, `queue`'s `startWindow.signal()` and
+`batchLimit.signal()` removed) park `awaitBatchComplete` callers forever;
+inverted window gates (`run`'s `pending.size() < batchSize` refill gate, its
+`while (pending.isEmpty())` wait and its `awaitNanos` bound loop,
+`awaitBatchComplete`'s `!batchComplete` fast path and wait loop, `queue`'s
+`isEmpty || pending.size() >= batchSize` and `isEmpty` signal gates) trap a
+wait that no signal ends or turn the bounded delay window unbounded; removed
+waits (`run`'s `startWindow.await()`, `awaitBatchComplete`'s
+`batchCompleteCondition.await()`) become in-lock hot spins; a removed
+`pending.addLast` in `queue` starves the consumer the test is awaiting; the
+failure-requeue mutants (`run`'s `pending.addFirst(batch[i])` retry loop)
+drop retried items the test waits to see durably inserted. Lock-call
+removals (`awaitBatchComplete`'s `lock.lock()`) kill the waiting thread with
 `IllegalMonitorStateException` under load-dependent timing. The batch
-cursor's post-increment (run:109 Increments, admitted 2026-07-28 as a
-`KILLED <-> TIMED_OUT` drifter) mutated to a decrement indexes `batch[-1]`
-on the second polled item; the `ArrayIndexOutOfBoundsException` kills the
-executor thread outside the `SQLException` requeue path, so
-`awaitBatchComplete` waiters never see `batchComplete` and only the
-watchdog ends the test.
+cursor's post-increment (`run`'s `batch[numItems++] = item` Increments,
+admitted 2026-07-28 as a `KILLED <-> TIMED_OUT` drifter) mutated to a
+decrement indexes `batch[-1]` on the second polled item; the
+`ArrayIndexOutOfBoundsException` kills the executor thread outside the
+`SQLException` requeue path, so `awaitBatchComplete` waiters never see
+`batchComplete` and only the watchdog ends the test.
 
 ```
-awaitBatchComplete:146 EQUAL_ELSE; :147 VoidMethodCall; :149 EQUAL_ELSE; :149 EQUAL_IF; :150 VoidMethodCall
-queue:207 VoidMethodCall; :208 ConditionalsBoundary; :208 EQUAL_IF; :208 ORDER_ELSE; :211 EQUAL_ELSE; :211 EQUAL_IF; :212 VoidMethodCall; :214 VoidMethodCall
-run:75 ORDER_ELSE; :79 EQUAL_ELSE; :79 EQUAL_IF; :81 VoidMethodCall; :82 VoidMethodCall; :85 ConditionalsBoundary; :85 ORDER_ELSE x2; :85 ORDER_IF x2; :96 EQUAL_ELSE; :96 EQUAL_IF; :97 ORDER_ELSE; :109 Increments; :125 ORDER_ELSE; :126 VoidMethodCall
+awaitBatchComplete EQUAL_ELSE x2; EQUAL_IF; VoidMethodCall x2
+queue ConditionalsBoundary; EQUAL_ELSE; EQUAL_IF x2; ORDER_ELSE; VoidMethodCall x3
+run ConditionalsBoundary; EQUAL_ELSE x2; EQUAL_IF x2; Increments; ORDER_ELSE x5; ORDER_IF x2; VoidMethodCall x3
 ```
 
 ### `rpc.AccountFetcherImpl` — 36
@@ -1124,101 +1163,115 @@ run:75 ORDER_ELSE; :79 EQUAL_ELSE; :79 EQUAL_IF; :81 VoidMethodCall; :82 VoidMet
 The harness drives `run()` deterministically and interrupts the thread on
 its *final* batch — so any mutant that keeps the loop from consuming batches
 in order also keeps the exit interrupt from ever firing. Starvation shapes:
-removed enqueue/`signal` or mis-routed batches (lockedQueue:88-97,
-queue:120/138/140/197, queueUnique:105-109, priorityQueue:173,
-priorityQueueUnique:178, validBatch:133 forced-false, createBatch:305);
-removed loop exits (queueBatchable:150 — the `to >= numAccounts` chunk-loop
-exit; :149/157/168 skipped chunk submissions starve downstream); trapped or
-unbounded waits in `delay` (321-340: the reactive `awaitNanos`/`await` loops
-and the non-reactive `sleep` spin); run-loop dispatch/reset guards
-(run:347/348/386/389/396) that leave `currentBatch` never draining.
+removed enqueue/`signal` or mis-routed batches (`lockedQueue`'s
+`currentBatchKeys.containsAll` overlap gate, its priority
+`addFirst`/`addLast` routing and its `newBatch.signal()`; `queue`'s
+`lockedQueue` dispatch and `validBatch` gate; `queueUnique`'s
+`pendingUniqueConsumers.add` claim gate; `priorityQueue`'s and
+`priorityQueueUnique`'s removed delegations to `queue`/`queueUnique`;
+`validBatch` forced-false; `createBatch`'s 100%-overlap
+`batch.containsAll` gate); removed loop exits (`queueBatchable`'s
+`to >= numAccounts` chunk-loop exit, and the skipped chunk submissions
+around it, starve downstream); trapped or unbounded waits in `delay` (the
+reactive `awaitNanos`/`await` loops and the non-reactive `sleep` spin);
+run-loop dispatch/reset guards (`run`'s null-batch and
+`currentBatch.isEmpty()` reset legs) that leave `currentBatch` never
+draining.
 
 ```
-createBatch:305 EQUAL_IF
-delay:321 EQUAL_ELSE; :321 EQUAL_IF; :323 VoidMethodCall; :327 ORDER_ELSE; :331 EQUAL_ELSE; :331 EQUAL_IF; :332 VoidMethodCall; :339 VoidMethodCall; :340 EQUAL_ELSE
-lockedQueue:88 EQUAL_IF; :92 VoidMethodCall; :94 VoidMethodCall; :96 EQUAL_ELSE; :97 VoidMethodCall
-priorityQueue:173 VoidMethodCall
-priorityQueueUnique:178 VoidMethodCall
-queue:120 VoidMethodCall; :138 EQUAL_ELSE; :140 VoidMethodCall; :197 VoidMethodCall
-queueBatchable:149 VoidMethodCall; :150 ConditionalsBoundary; :150 ORDER_ELSE; :150 ORDER_IF; :157 VoidMethodCall; :168 VoidMethodCall
-queueUnique:105 EQUAL_ELSE; :108 EQUAL_ELSE; :109 VoidMethodCall
-run:347 EQUAL_ELSE; :348 VoidMethodCall; :386 EQUAL_ELSE; :389 EQUAL_ELSE; :396 EQUAL_ELSE
-validBatch:133 BooleanFalseReturnVals
+createBatch EQUAL_IF
+delay EQUAL_ELSE x3; EQUAL_IF x2; ORDER_ELSE; VoidMethodCall x3
+lockedQueue EQUAL_ELSE; EQUAL_IF; VoidMethodCall x3
+priorityQueue VoidMethodCall
+priorityQueueUnique VoidMethodCall
+queue EQUAL_ELSE; VoidMethodCall x3
+queueBatchable ConditionalsBoundary; ORDER_ELSE; ORDER_IF; VoidMethodCall x3
+queueUnique EQUAL_ELSE x2; VoidMethodCall
+run EQUAL_ELSE x4; VoidMethodCall
+validBatch BooleanFalseReturnVals
 ```
 
 ### `fulfillment.SingleAssetFulfillmentService` — 21
 
 Two shapes. (a) `accept`'s guards decide whether to `wakeUp()` the
 fulfillment thread; a suppressed wake leaves it parked in `awaitChange`
-while the test waits on fulfillment progress (accept:141-153, including the
-`wakeUp` calls at :142/:153). (b) The slot-ordered CAS loops: flipping
-`witness == null` / `witness == previous` (compareAndSet:166-198) turns a
-bounded compare-and-exchange retry into an infinite spin; the two
-`NullReturnVals` (:169/:176) feed `accept`'s `previousAmount` gates and
-suppress the wake the same way.
+while the test waits on fulfillment progress (`accept`'s `previousAmount`
+comparison gate on the redemption leg, and the token-account length/owner,
+mint, `compareUnsigned` and `outstandingShares().signum()` gates, including
+both `wakeUp()` calls themselves). (b) The slot-ordered CAS loops: flipping
+`witness == null` / `witness == previous` in `compareAndSet` turns a bounded
+compare-and-exchange retry into an infinite spin; the two `NullReturnVals`
+on its `BigDecimal.ZERO` and `previous.outstandingShares()` returns feed
+`accept`'s `previousAmount` gates and suppress the wake the same way.
 
 ```
-accept:141 EQUAL_ELSE x2; :142 VoidMethodCall; :144 EQUAL_ELSE x2; :146 EQUAL_ELSE; :150 ORDER_ELSE; :152 EQUAL_ELSE; :152 ORDER_ELSE; :153 VoidMethodCall
-compareAndSet:166 EQUAL_ELSE; :166 EQUAL_IF; :168 EQUAL_ELSE; :169 NullReturnVals; :173 ORDER_ELSE; :175 EQUAL_ELSE; :176 NullReturnVals; :189 EQUAL_ELSE; :189 EQUAL_IF; :191 EQUAL_ELSE; :198 EQUAL_ELSE
+accept EQUAL_ELSE x6; ORDER_ELSE x2; VoidMethodCall x2
+compareAndSet EQUAL_ELSE x6; EQUAL_IF x2; NullReturnVals x2; ORDER_ELSE
 ```
 
 ### `integrations.kamino.KaminoCacheImpl` — 21
 
 The cache's `run()` loop and its lock discipline. Stalled chunk progression
-(run:642 `from + MAX` arithmetic, :664 removed `to == numAccounts` exit)
-makes the sublist walk infinite; the polling window (run:692/:697 and the
-change-count reset) turns unbounded; removed accept/update/delete calls
-(run:654/660/686, deleteScopeConfiguration:220) or forced deletion legs
-(deleteScopeConfiguration:227/236 — the wrong leg NPEs the cache thread)
-leave the test looping on state that will never arrive; a leaked read lock
-(indexes:213 — removed `unlock` in the finally) blocks the writer; the
-optimistic-recheck flip (updateIfChanged:388) spins the retry loop under
-the write lock; the rpc supplier `NullReturnVals` (lambda:635/675) kill the
-cache thread through the `join`.
+(`run`'s `from + MAX` chunk arithmetic and its removed `to == numAccounts`
+exit) makes the sublist walk infinite; the polling window (`run`'s
+`awaitNanos` bound and its `numReserveChanges` change-count reset) turns
+unbounded; removed accept/update/delete calls (`run`'s `accept`,
+`updateIfChanged` and `deleteScopeConfiguration` calls, and
+`deleteScopeConfiguration`'s own `removeConfig`) or forced deletion legs
+(`deleteScopeConfiguration`'s `configurationsPath`/`mappingsPath` null
+guards — the wrong leg NPEs the cache thread) leave the test looping on
+state that will never arrive; a leaked read lock (`indexes`' removed
+`unlock` in the finally) blocks the writer; the optimistic-recheck flip
+(`updateIfChanged`'s `previous != witness` recheck) spins the retry loop
+under the write lock; the rpc supplier `NullReturnVals` (`lambda$run$0` and
+`lambda$run$1`, the `getProgramAccounts` sweep suppliers) kill the cache
+thread through the `join`.
 
 ```
-deleteScopeConfiguration:220 VoidMethodCall; :227 EQUAL_ELSE; :236 EQUAL_ELSE
-indexes:213 VoidMethodCall
-lambda$run$0:635 NullReturnVals
-lambda$run$1:675 NullReturnVals
-run:642 Math; :649 EQUAL_ELSE; :649 EQUAL_IF; :653 EQUAL_ELSE; :653 EQUAL_IF; :654 VoidMethodCall; :660 VoidMethodCall; :664 EQUAL_ELSE; :686 VoidMethodCall; :689 VoidMethodCall; :692 ConditionalsBoundary; :692 ORDER_IF; :697 ORDER_ELSE
-updateIfChanged:388 EQUAL_ELSE; :388 EQUAL_IF
+deleteScopeConfiguration EQUAL_ELSE x2; VoidMethodCall
+indexes VoidMethodCall
+lambda$run$0 NullReturnVals
+lambda$run$1 NullReturnVals
+run ConditionalsBoundary; EQUAL_ELSE x3; EQUAL_IF x2; Math; ORDER_ELSE; ORDER_IF; VoidMethodCall x4
+updateIfChanged EQUAL_ELSE; EQUAL_IF
 ```
 
 ### `state.GlobalConfigCacheImpl` — 14
 
-The refresh window and its waiters. A removed `priorityQueue` (run:222)
-never feeds `accept`, and the null-state exit gate (run:228) plus window
-bounds (run:230) either exit the service early (the test then awaits updates
-that never come) or park it unbounded; `forceCacheRefresh`'s double-check
-gate and `signal` (203/208/212/214) lose the early-break the test is
-waiting on; `accept`'s `signalAll` (:709) and the `awaitNewGlobalConfig`
-elapsed-bound loop (:722/:724) are the waiter side of the same protocol.
+The refresh window and its waiters. A removed `priorityQueue` in `run`
+never feeds `accept`, and its `globalConfigUpdate`/`assetMetaMap` null exit
+gate plus the `remainingNanos <= 0 || forceRefresh` window bound either exit
+the service early (the test then awaits updates that never come) or park it
+unbounded; `forceCacheRefresh`'s double-checked `forceRefresh` gate and its
+`invalidGlobalConfig.signal()` lose the early-break the test is waiting on;
+`accept`'s `newGlobalConfig.signalAll()` and `awaitNewGlobalConfig`'s
+elapsed-bound `awaitNanos` loop are the waiter side of the same protocol.
 `topPriorityForMintChecked`'s removed `readLock.unlock()` in the finally
-(:145) leaks the read lock: the decimals-mismatch path then parks the same
+leaks the read lock: the decimals-mismatch path then parks the same
 thread on `writeLock.lock()` (a read→write upgrade is impossible on a
 `ReentrantReadWriteLock`), and every later writer parks behind the leaked
 hold (admitted 2026-07-29, first surfaced by `-PstrictTimeoutAudit` under
 gate load; a KILLED↔TIMED_OUT drifter of the leaked-unlock family).
 
 ```
-accept:709 VoidMethodCall
-awaitNewGlobalConfig:722 EQUAL_IF; :724 ORDER_ELSE
-forceCacheRefresh:203 EQUAL_IF; :208 EQUAL_IF; :212 VoidMethodCall; :214 VoidMethodCall
-run:222 VoidMethodCall; :223 VoidMethodCall; :228 EQUAL_ELSE; :228 EQUAL_IF; :230 EQUAL_ELSE; :230 ORDER_IF
-topPriorityForMintChecked:145 VoidMethodCall
+accept VoidMethodCall
+awaitNewGlobalConfig EQUAL_IF; ORDER_ELSE
+forceCacheRefresh EQUAL_IF x2; VoidMethodCall x2
+run EQUAL_ELSE x2; EQUAL_IF; ORDER_IF; VoidMethodCall x2
+topPriorityForMintChecked VoidMethodCall
 ```
 
 ### `fulfillment.BaseFulfillmentService` — 5
 
-The await/wake protocol itself: a removed `signalAll` (wakeUp:129) is a lost
-wake-up; removed `lock`/`unlock` pairs (wakeUp:127/131, awaitChange:138/146)
-either leak the lock every later locker blocks on or kill the service thread
-with `IllegalMonitorStateException` mid-await.
+The await/wake protocol itself: a removed `stateChange.signalAll()` in
+`wakeUp` is a lost wake-up; removed `lock`/`unlock` pairs (`wakeUp`'s and
+`awaitChange`'s `lock.lock()`/`lock.unlock()`) either leak the lock every
+later locker blocks on or kill the service thread with
+`IllegalMonitorStateException` mid-await.
 
 ```
-awaitChange:138 VoidMethodCall; :146 VoidMethodCall
-wakeUp:127 VoidMethodCall; :129 VoidMethodCall; :131 VoidMethodCall
+awaitChange VoidMethodCall x2
+wakeUp VoidMethodCall x3
 ```
 
 ### `state.MinGlamStateAccount` — 2
@@ -1242,22 +1295,23 @@ unvalidated count one constant-sized step at a time, so those paths are finite
 and now die deterministically.
 
 ```
-delegateAclsOffset:91 ORDER_ELSE
-externalPositionsOffset:124 ORDER_ELSE
+delegateAclsOffset ORDER_ELSE
+externalPositionsOffset ORDER_ELSE
 ```
 
 ### Singles — 8
 
-- `ServiceContextImpl.executeTask:143`, `execution.BaseServiceContext.executeTask:55`
+- `ServiceContextImpl.executeTask`, `execution.BaseServiceContext.executeTask`
   (`VoidMethodCall`) — the removed call *is* the task submission; the test
   awaits the task's effect and only the watchdog can end that.
-- `fulfillment.SingleAssetFulfillmentServiceEntrypoint.run:206/:207`
-  (`VoidMethodCall`) — the removed `execute` never starts the
-  epoch-info/fulfillment sub-service the test awaits; `:216` — removed
-  `Thread.sleep(3_000)` turns the `checkConnection` loop into a busy spin.
-- `integrations.IntegLookupTableCacheImpl.run:55/:57` (`VoidMethodCall`) —
+- `fulfillment.SingleAssetFulfillmentServiceEntrypoint.run`
+  (`VoidMethodCall`) — the two removed `executorService.execute` calls never
+  start the epoch-info and fulfillment sub-services the test awaits; the
+  removed `Thread.sleep(3_000)` turns the `checkConnection` loop into a busy
+  spin.
+- `integrations.IntegLookupTableCacheImpl.run` (`VoidMethodCall`) —
   removed `queueBatchable` starves the fetch loop; removed sleep spins it;
   either way the driver never reaches its terminal interrupt.
-- `io.KeyedFlatFileImpl.overwriteFile:118` (`VoidMethodCall`) — the removed
+- `io.KeyedFlatFileImpl.overwriteFile` (`VoidMethodCall`) — the removed
   call is `lock.unlock()` in the finally: the leaked lock blocks every
   subsequent operation on the file (the "leaked unlock" shape verbatim).

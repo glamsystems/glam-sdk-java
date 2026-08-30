@@ -80,10 +80,9 @@ a defect traces into one of the above:
    ratchet. Run its module `test`, then the `pitest<Suite>` owning the file
    (`grep` its `build.gradle.kts` to find which suite claims the class), and
    keep its accepted baselines green.
-2. Editing a mutated file shifts line numbers; pure drift now passes its
-   ratchet on its own with a notice. Anything beyond pure drift (newly
-   covered, unexplained, changed counts) is triage before refresh — same
-   rule as here.
+2. Editing a mutated file shifts line numbers; anything beyond that pure
+   drift (newly covered, unexplained, changed counts) is triage before
+   refresh — same rule as here.
 3. To build against the change before it is published, uncomment the matching
    `includeBuild("../<repo>")` at the bottom of `settings.gradle.kts` (Gradle
    substitutes the published module for the local project — verify with
@@ -91,10 +90,10 @@ a defect traces into one of the above:
    should show `-> project ':ravina:...'`). `sava-build` is different: it is
    resolved in `pluginManagement` via its local test repo — run sava-build's
    `publishSavaBuildTestPublicationToSavaTestRepoRepository`, then build here
-   with `-PsavaBuildLocalRepo=../sava-build/build/sava-test-repo`. The plugin
-   itself announces local-repo resolution (with the last-publish age) at the
-   end of every such build — including configuration-cache hits — so a build
-   that prints no notice did NOT run 0.0.0-test. That publish is not
+   with `-PsavaBuildLocalRepo=../sava-build/build/sava-test-repo`, which
+   substitutes sava-build `0.0.0-test`. Confirm from the build's own output
+   that the run really resolved the local repo before trusting a result from
+   it. That publish is not
    automatic: re-run it after every sava-build edit, or chain the two
    (`(cd ../sava-build && ./gradlew publish...) && ./gradlew check -P...`) so
    the stale case is unreachable. The property lives on the CLI or in
@@ -129,32 +128,32 @@ until the dependency version is bumped.
 The `sdk` and `services` modules register PIT mutation suites via the
 `software.sava.build.feature.hardening` plugin: `pitestSdk` (hand-written sdk
 classes; generated `**.gen.*` code is excluded — its correctness belongs to
-idl-src-gen) and `pitestServices` (everything in `services`). Each suite diffs
-its unkilled mutants against the accepted baseline in the module's
-`config/pitest/` and fails on anything new. The baselines were **seeded with
-the full pre-existing survivor population** — that is untriaged debt made
-explicit, not acceptance; the per-module `config/pitest/README.md` tracks the
-triage state. Fuzzing is underway — three targets, all seeded from mainnet
-snapshots, corpora replayed inside `check`: `services:fuzzAccountData` (the
-compressed persistence format — decode + write/read differential; found and
-fixed an unbounded-decompression hang), `services:fuzzMinGlamStateAccount`
+idl-src-gen) and `pitestServices` (everything in `services`). Each suite's
+accepted baseline lives in the module's `config/pitest/`. The baselines were
+**seeded with the full pre-existing survivor population** — that is untriaged
+debt made explicit, not acceptance; the per-module `config/pitest/README.md`
+tracks the triage state. Fuzzing is underway — three targets, all seeded from
+mainnet snapshots, corpora replayed inside `check`: `services:fuzzAccountData`
+(the compressed persistence format — decode + write/read differential; found
+and fixed an unbounded-decompression hang), `services:fuzzMinGlamStateAccount`
 (the state-account walk over nested length-prefixed ACL sections, plus the
 change-detection re-walk; found a base-asset index landmine), and
 `sdk:fuzzMappingConfig` (the ix-mapper config JSON via
 `ProgramMapConfig.parseConfig`). Register new harnesses in the owning module's
-`hardening` block with `targetClass` AND `seedCorpus` (both are required — a
-missing `seedCorpus` silently skips the replay test).
+`hardening` block with both `targetClass` AND `seedCorpus` — GLAM registers no
+fuzz target without a checked-in corpus to replay.
 
 The full policy is sava-build's `HARDENING.md`; the process contract for
 changes here:
 
 <!-- The block below is the agent-instructions template generated verbatim by
      sava-build's `hardeningAgentTemplate`, pinned by the digest that closes it;
-     `agentsTemplateInSync` (wired into `check`) flags it when the installed
-     plugin's template changes. Re-diff and ACT on each changed bullet (a new
-     bullet may need code, not prose), then move the digest. Do not paraphrase or
-     extend it in place — GLAM-specific ownership, measurements and evidence go
-     under "GLAM-local hardening facts" below it. -->
+     `agentsTemplateInSync` runs inside `check`. On every template-digest move,
+     re-diff with the project-qualified `hardeningAgentTemplateDiff` (e.g.
+     `:sdk:hardeningAgentTemplateDiff`) and ACT on each changed bullet (a new
+     bullet may need code, not prose) before moving the digest. Do not
+     paraphrase or extend it in place — GLAM-specific ownership, measurements
+     and evidence go under "GLAM-local hardening facts" below it. -->
 
 <!-- hardening-template block:start -->
 - **Scale verification to the change.** Iterate with the module's `test`
@@ -194,13 +193,24 @@ changes here:
   setup would otherwise be lost, and never embed PIT coordinates or line numbers.
 - Baseline keys are line-less (`class,method,mutator,STATUS`) — editing
   above a mutated method churns nothing, and `# line` tags are review
-  metadata. A new mutant replacing a killed one at the same key can inherit
+  metadata. Do not copy source line numbers anywhere in
+  `config/pitest/README.md`; this includes acceptance and timeout arguments,
+  retired-incident prose, tables, and inline or fenced coordinate rosters.
+  A roster is narrative evidence, not protected membership: retain line-less
+  class/method/mutator evidence and meaningful multiplicity as `xN`. The
+  current PIT report and the row's `# line` tag are the sole transient locators.
+  A new mutant replacing a
+  killed one at the same key can inherit
   its acceptance, so treat a line-drift advisory whose written argument no
   longer fits the code as that swap until shown otherwise. After review, use
   `BaselineRetag` to refresh only matched line metadata while preserving every
   accepted row; never use an unrelated acceptance or deletion merely to clear
   the advisory. Use the installed plugin's named writer tasks and heed their
-  candidate previews; never hand-edit
+  candidate previews. Before `BaselinePrune` can delete, two distinct completed
+  fresh full history-free previews must have the exact same candidate multiset;
+  its own third fresh write-boundary run must match them too. Candidate drift is a
+  reviewer-stop, and matching bytes do not replace review of the relevant
+  solo/gate load context or each removal criterion. Never hand-edit
   record structure or provenance stamps. A PIT, PIT-plugin/tool-artifact,
   ArcMutate-base, or certificate change uses `pitest<Suite>BaselineRebase`: it
   preserves every old row, seeds new rows `# untriaged`, and stamps the reviewed
@@ -212,7 +222,10 @@ changes here:
   reasons, and provenance. `AGENTS.md` carries this exact generated,
   digest-pinned template with repository-specific facts outside its bounded block,
   but no independently maintained
-  copy of plugin task semantics; use `hardeningHelp` and
+  copy of plugin task semantics. Local prose may name a project-qualified task and
+  say when repository policy requires it; task output, pass/fail or warning
+  conditions, refusals, normalization, and fallback behavior stay in the installed
+  plugin and its help. Use `hardeningHelp` and
   project-qualified `hardeningAgentTemplate` as the installed-version authorities,
   and run the matching read-only `hardeningAgentTemplateDiff` against its explicitly
   bounded block on every template-digest move before acknowledging the new marker.
@@ -286,8 +299,10 @@ changes here:
   all current line-full candidates, but lines cannot define identity: moving imports,
   adding a method, or reflowing code never warns, fails, or requires re-anchoring.
   **Retire.** Remove an admissible liveness member only after the tool reports 3+
-  distinct fresh full-run quiet observations over identical inputs, confirmed under
-  solo/gate load. Plugin bytes are an input; a changed JAR restarts the streak. A
+  distinct fresh full-run quiet observations over identical execution inputs,
+  confirmed under solo/gate load. When retirement semantics are unchanged, a plugin
+  fingerprint change alone does not reset this advisory; captured PIT-input changes
+  do, and unmodeled semantic changes require a timeout-quiet format bump. A
   finite `KILLED`↔`TIMED_OUT` race never certifies: repair it instead of waiting on
   liveness retirement. The quiet stash is a machine-local nomination; never copy or
   merge it, and retain the row without same-input gate confirmation. Assisted
@@ -378,7 +393,13 @@ changes here:
   then packing/process overhead. Run `pitest<Suite>Diagnostic` full and scoped when
   per-process progress is missing; its separate raw streams establish no total order,
   and the last announced mutation is context, not cause. Only a clean fresh full
-  unscoped run can support records or certification.
+  unscoped run can support records or certification. Such a later clean run (or a
+  successful `hardeningCertify`) is sufficient closure for a non-recurring invalid
+  outcome: it does not diagnose that failure, and the invalid attempt creates no
+  mutation-record debt. If certification was interrupted, retry the affected
+  project's whole `hardeningCertify`; its receipt deliberately re-executes every
+  suite in that project in one invocation rather than stitching attempts, while
+  other project receipts remain independent.
   The daemon log
   (`~/.gradle/daemon/<version>/daemon-<pid>.out.log`) keeps a failed build's
   full output even when the shell discarded it — read it before calling a
@@ -399,7 +420,7 @@ changes here:
   waiting. Give test clocks a non-zero origin — a clock starting at 0 makes
   every "start timestamp mutated to 0" mutant equivalent by accident.
 <!-- hardening-template block:end -->
-<!-- hardening-template sha256:90537d1eb1dd -->
+<!-- hardening-template sha256:aa8fe06f420d -->
 
 ### GLAM-local hardening facts
 
@@ -456,8 +477,8 @@ review the resulting corpus diff, and update the corpus provenance notes in
 can tell from a mutated default.
 
 **Family labels.** Every `# <family>` label on an accepted row must be named in
-the owning module's `config/pitest/README.md` "Family labels" glossary, so a
-typo or an orphaned argument surfaces instead of silently opening a bucket.
+the owning module's `config/pitest/README.md` "Family labels" glossary; here a
+row is not triaged until that glossary entry exists.
 
 **Timeout audit.** Both suites' audited timeout sets and their `cause:*`
 classifications live in `config/pitest/<suite>-timeouts.csv`, with the
@@ -465,15 +486,13 @@ structural argument per member under "Timed-out mutants (audited set)" in the
 owning `config/pitest/README.md`.
 
 **Fixture deadlines must sit inside the watchdog budget.** `pitestServices` sets
-`timeoutConst = 1500` and `timeoutFactor = 2.0`, so a covering test's PIT budget
-is `1500ms + 2x its own runtime` — roughly 1.6–2.8s here. A fixture that waits
-longer than that never gets to fail its own assertion: the watchdog fires first
-and reports `TIMED_OUT`, which is the one status the ratchet cannot see a
-weakened assertion behind. This suite carried fourteen 5s fixture deadlines
+`timeoutConst = 1500` and `timeoutFactor = 2.0`, which puts a covering test's
+PIT budget at roughly 1.6–2.8s here. A fixture that waits longer than that never
+gets to fail its own assertion. This suite carried fourteen 5s fixture deadlines
 against that budget; lowering them (1s, and 2s for `MintCacheImplTest`, which
 does ~600ms of real work across 128 virtual threads) converted watchdog
 "detections" into real kills and exposed assertions that had never actually been
-testing anything. **Before classifying any timeout, check this arithmetic first** —
+testing anything. **Before classifying any timeout, check this budget first** —
 a bounded fixture that outlives the budget is a harness defect, not liveness.
 Keep new fixture deadlines well under 1.5s, and prefer a synchronous state
 reader (`lock.getReadLockCount()`, a cache accessor) over any wait at all.

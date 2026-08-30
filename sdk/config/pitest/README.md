@@ -1,13 +1,13 @@
 # Mutation-testing baseline & triage policy — `sdk`
 
-Each `pitest<Suite>` run is finalized by `pitest<Suite>Verify`, which diffs the
-run's unkilled mutants (`SURVIVED` and `NO_COVERAGE`) against the accepted
-baseline in `<suite>-accepted.csv` and **fails on anything new**. Baseline keys
-are line-less (`class,method,mutator,STATUS`); `# line` tags are review
-metadata, so source movement alone churns nothing. The canonical policy is
-sava-build's `HARDENING.md`, and `hardeningHelp` is the authority on the
-installed plugin's task names; this file records what is accepted *here* and
-why.
+`pitestSdk` is this module's mutation suite; GLAM policy runs it and
+`pitestSdkVerify` before any handoff whose changed code the suite reaches. The
+suite's accepted baseline is `sdk-accepted.csv`, holding the unkilled rows
+(`SURVIVED` and `NO_COVERAGE`) keyed by class, method, mutator and status; its
+audited timeout set is `sdk-timeouts.csv`. Every row triaged out of debt owes
+its written argument here. The canonical policy is sava-build's
+`HARDENING.md`, and `hardeningHelp` is the authority on the installed plugin's
+task names; this file records what is accepted *here* and why.
 
 A new unkilled mutant has exactly three legal outcomes:
 
@@ -17,16 +17,15 @@ A new unkilled mutant has exactly three legal outcomes:
 3. **Accept it knowingly** — record the reason under "Triaged equivalent
    mutants" below, give the row a short `# <family>` label named in the
    "Family labels" glossary, and write the record with the named task
-   (`pitestSdkBaselineUpdate` / `Union` / `Prune` / `Rebase` as the verify's
-   hint directs). Acceptance is for mutants *equivalent with respect to
+   (`pitestSdkBaselineUpdate` / `Union` / `Prune` / `Rebase`), never by
+   hand. Acceptance is for mutants *equivalent with respect to
    observable behavior*, not for "hard to test".
 
-Identical rows are sibling mutants of one compound condition — the comparison
-is a multiset; never hand-dedupe the CSV, and never hand-edit record structure
-or provenance stamps. A new mutant replacing a killed one at the same key can
-inherit its acceptance, so treat a line-drift advisory whose written argument
-no longer fits the code as that swap until shown otherwise. Anything beyond
-drift (newly covered, unexplained, changed counts) is triage first, record
+Identical rows are sibling mutants of one compound condition, not duplicates
+to tidy: never hand-dedupe the CSV, and never hand-edit record structure or
+provenance stamps. A row whose written argument here no longer fits the code
+it names is re-argued before it is reused or removed; anything beyond that
+(newly covered, unexplained, changed counts) is triage first, record
 after. Any run that supports a record decision must be history-free
 (`-PnoMutationHistory`).
 
@@ -70,8 +69,9 @@ surface.
 2026-07-23:** `addGlamVaultAccounts` used to route the system program
 through `addAccount`, whose `PublicKey.NONE` sentinel filter is the same
 all-zero key — a silent no-op. It now adds the system program directly
-(always a real account), the test asserts it lands, and the 188
-`VoidMethodCallMutator` mirror acceptance is killed with it.
+(always a real account), the test asserts it lands, and the
+`VoidMethodCallMutator` mirror acceptance on that system-program add is
+killed with it.
 
 **Accepted (residual sibling legs, 15):** forced-true directions of
 null-guards and short-circuit operands across the add\* branch chains —
@@ -101,10 +101,12 @@ accepted survivors now killed: the second-table free-space derivation in
 `batchTableTasks` (a 40-account roll across two partially-filled tables),
 the absent-vault-table guard (a null entry must not register), and the
 unknown-scope-feed guard (no scope accounts for a re-pointed reserve). The
-newly-covered length-guard leg (275 `EQUAL_IF`) was killed rather than
-accepted as subsumed: unlike the services dispatch guards, a truncated
-account with a *valid* discriminator routes into `Obligation.read` and an
-out-of-bounds read — the guard is load-bearing; the test carries that input.
+newly-covered length-guard leg (`addKaminoLendAccounts`'s
+`data().length != Obligation.BYTES` dispatch arm, `EQUAL_IF`) was killed
+rather than accepted as subsumed: unlike the services dispatch guards, a
+truncated account with a *valid* discriminator routes into
+`Obligation.read` and an out-of-bounds read — the guard is load-bearing;
+the test carries that input.
 
 ~~**Remaining `VaultTableBuilderImpl` debt is `main()`.**~~ Resolved
 2026-07-23 by refactor-out-of-existence: the untestable scratch `main()`
@@ -143,10 +145,11 @@ remaining `NO_COVERAGE` blocks — 108 baseline rows dropped:
   wrapSOL variant of this was a real bug), and the program-state variants'
   wrap gate fires only for a wSOL input with `wrapSOL=true`.
 
-**Accepted:** `loadMappingConfigs` 55 `NakedReceiverMutator` — replacing
-`getFileName().toString()` with `path.toString()` cannot change an
-`endsWith(".json")` test, because a path's string form always ends with its
-filename's string form. Equivalent by construction.
+**Accepted:** `loadMappingConfigs`'s `.json` suffix filter,
+`NakedReceiverMutator` — replacing `getFileName().toString()` with
+`path.toString()` cannot change an `endsWith(".json")` test, because a
+path's string form always ends with its filename's string form. Equivalent
+by construction.
 
 ~~**Finding: `addKaminoVaultAccounts` crashes on mint accounts.**~~ **Fixed
 2026-07-23:** it called `TokenAccount.read` on every token-program-owned
@@ -207,9 +210,8 @@ mutants were killed outright by existing tests.
 Baseline rows now carry the family label the acceptance belongs to
 (`# residual sibling legs`, `# unreachable type-check arm`,
 `# equivalent path-suffix`), with the full argument in the pass sections
-above; everything else is `# untriaged`. The verify and debt tasks print the
-per-label counts, and refreshes seed `# untriaged` on new rows — triage
-means replacing the label.
+above; everything else is `# untriaged` — triage means replacing that label
+with the family the row's argument belongs to.
 
 ## Untriaged debt
 
@@ -231,7 +233,7 @@ misses — an absent integration entry or protocol entry — returning false
 rather than throwing. The code was fixed accordingly, subset-mask tests were
 added, and the mutant is killed. No acceptance remains.
 
-### `StateAccountClientImpl.protocolBitmask:88` — `RemoveConditionalMutator_EQUAL_IF`
+### `StateAccountClientImpl.protocolBitmask` — `RemoveConditionalMutator_EQUAL_IF`
 
 `integrationAclMap.get(..) instanceof IntegrationAcl(_, bitmask, _)` compiles
 to a null check plus a type check; the mutated type-check arm is unreachable
@@ -242,12 +244,11 @@ same acceptance when its class is covered.
 
 ## Timed-out mutants (audited set, 2026-07-26)
 
-For exactly these mutants the ratchet cannot see a weakened covering assertion —
-a timeout keeps "detecting" whatever the test asserts — so each member carries an
-admissible cause, and only `cause:liveness` may remain in the set: the mutated
-path must have no path-owned finite completion guarantee. `KILLED <-> TIMED_OUT`
-drift is benign (both are detected, neither is ever baselined); `SURVIVED ->
-TIMED_OUT` is the flip the verify names separately.
+For exactly these mutants a weakened covering assertion would not show up as a
+survivor — a timeout keeps "detecting" whatever the test asserts — so each
+member carries a written cause in `sdk-timeouts.csv` and its structural
+argument here. The strict reading GLAM holds them to: the mutated path must
+have no path-owned finite completion guarantee.
 
 All five members below qualify on the strict reading, and the reason is worth
 stating because it is what separates them from a timeout that is really a
@@ -267,14 +268,14 @@ sava-build `0.0.0-test`.
 
 All five are the same structural cause: the chunking loop's index `i`
 advances only through the per-chunk inner loops, so any mutant that stalls
-chunk formation makes `batchTableTasks` never return. `:119` (the outer
-`i < accounts.length` bound), `:138` (`to = i + add` arithmetic and the
-inner-loop bound — a non-positive `add` yields an empty chunk and `i` stops
-moving), and `:158` (the `tableSpace == 0` rollover — skipping it drives
-`tableSpace` negative, so every later `Math.min(tableSpace, ...)` chunk is
-empty). Watchdog-detected infinite loops, not load-slowed kills — expected
-to be stable members.
+chunk formation makes `batchTableTasks` never return. They land on the
+outer `i < accounts.length` chunk-loop bound, on the `to = i + add` chunk
+arithmetic and its inner-loop bound (a non-positive `add` yields an empty
+chunk and `i` stops moving), and on the `tableSpace == 0` table rollover
+(skipping it drives `tableSpace` negative, so every later
+`Math.min(tableSpace, ...)` chunk is empty). Watchdog-detected infinite
+loops, not load-slowed kills — expected to be stable members.
 
 ```
-batchTableTasks:119 ConditionalsBoundary; :119 ORDER_IF; :138 Math; :138 ORDER_ELSE; :158 EQUAL_ELSE
+batchTableTasks ConditionalsBoundary; EQUAL_ELSE; Math; ORDER_ELSE; ORDER_IF
 ```

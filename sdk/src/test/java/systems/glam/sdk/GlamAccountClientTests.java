@@ -288,10 +288,6 @@ final class GlamAccountClientTests {
     final var staging = GlamAccountClient.createClient(
         SOLANA_ACCOUNTS, GlamAccounts.MAIN_NET_STAGING, FEE_PAYER, STATE_KEY);
     final var stagingCases = List.of(
-        new Case("priceExternalPositions",
-            staging.priceExternalPositions(sol, base, true),
-            staging.priceExternalPositions(sol, base, false),
-            staging.priceExternalPositions(sol, base)),
         new Case("priceLoopscaleLoans",
             staging.priceLoopscaleLoans(sol, base, true),
             staging.priceLoopscaleLoans(sol, base, false),
@@ -342,6 +338,19 @@ final class GlamAccountClientTests {
       assertTrue(priced.byDefault.accounts().contains(createRead(sol)), priced.name);
       assertTrue(priced.byDefault.accounts().contains(createRead(base)), priced.name);
     }
+
+    // priceRegisteredPositions is the exception, and deliberately so: it replaced
+    // priceExternalPositions and takes no oracles at all — the program values the
+    // positions from the observation state — so only the overload routing and the
+    // event-authority swap carry over.
+    final var registered = new Case("priceRegisteredPositions",
+        staging.priceRegisteredPositions(true),
+        staging.priceRegisteredPositions(false),
+        staging.priceRegisteredPositions());
+    assertEquals(registered.noCpi().accounts(), registered.byDefault().accounts(),
+        () -> registered.name() + ": the convenience overload drifted from the no-CPI instruction");
+    assertNotEquals(registered.noCpi().accounts(), registered.cpi().accounts(),
+        () -> registered.name() + ": the CPI branch changed nothing");
   }
 
   @Test
@@ -417,29 +426,28 @@ final class GlamAccountClientTests {
   }
 
   @Test
-  void priceExternalPositionsDefaultKeepsOracleKeys() {
+  void priceRegisteredPositionsDefaultDerivesObservationPDA() {
     final var staging = GlamAccountClient.createClient(
         SOLANA_ACCOUNTS, GlamAccounts.MAIN_NET_STAGING, FEE_PAYER, STATE_KEY
     );
-    final var solOracle = key(51);
-    final var baseOracle = key(52);
-    final var ix = staging.priceExternalPositions(solOracle, baseOracle, false);
+    final var ix = staging.priceRegisteredPositions(false);
 
     final var accounts = ix.accounts();
-    // the overload derives the observation PDA but must not drop the oracles
-    assertEquals(createRead(solOracle), accounts.get(3));
-    assertEquals(createRead(baseOracle), accounts.get(4));
+    // the observation state was a trailing extra account under priceExternalPositions;
+    // priceRegisteredPositions promotes it to the third named account and drops the
+    // oracles, the vault and the global config with it
+    assertEquals(7, accounts.size());
     final var observationPDA = systems.glam.sdk.idl.programs.glam.staging.registered_positions.gen.ExtRpiPDAs
         .observationStatePDA(
             GlamAccounts.MAIN_NET_STAGING.externalPositionProgram(),
             STATE_KEY
         );
-    assertEquals(createRead(observationPDA.publicKey()), accounts.getLast());
+    assertEquals(createRead(observationPDA.publicKey()), accounts.get(2));
     // without CPI events the event authority slot is the mint program itself
-    assertEquals(createRead(GlamAccounts.MAIN_NET_STAGING.mintProgram()), accounts.get(8));
+    assertEquals(createRead(GlamAccounts.MAIN_NET_STAGING.mintProgram()), accounts.get(5));
 
-    final var cpiAccounts = staging.priceExternalPositions(solOracle, baseOracle, true).accounts();
-    assertEquals(createRead(GlamAccounts.MAIN_NET_STAGING.mintEventAuthority()), cpiAccounts.get(8));
+    final var cpiAccounts = staging.priceRegisteredPositions(true).accounts();
+    assertEquals(createRead(GlamAccounts.MAIN_NET_STAGING.mintEventAuthority()), cpiAccounts.get(5));
   }
 
   @Test
@@ -448,7 +456,7 @@ final class GlamAccountClientTests {
     final var a = key(41);
     final var b = key(42);
     assertThrows(IllegalStateException.class, () -> client.priceSingleAssetVault(a, false));
-    assertThrows(IllegalStateException.class, () -> client.priceExternalPositions(a, b, b, false));
+    assertThrows(IllegalStateException.class, () -> client.priceRegisteredPositions(b, false));
     assertThrows(IllegalStateException.class, () -> client.priceLoopscaleLoans(a, b, false));
     assertThrows(IllegalStateException.class, () -> client.priceLoopscaleStrategies(a, b, false));
     assertThrows(IllegalStateException.class, () -> client.priceLoopscaleVaultPositions(a, b, 2, false));

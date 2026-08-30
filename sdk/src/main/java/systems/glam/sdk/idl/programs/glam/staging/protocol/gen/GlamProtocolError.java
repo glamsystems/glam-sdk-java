@@ -16,6 +16,7 @@ public sealed interface GlamProtocolError extends ProgramError permits
     GlamProtocolError.AssetNotBorrowable,
     GlamProtocolError.UnexpectedProgramOwner,
     GlamProtocolError.InvalidAuthority,
+    GlamProtocolError.CannotRemoveCancelTimelockDelegate,
     GlamProtocolError.InvalidAccountType,
     GlamProtocolError.InvalidName,
     GlamProtocolError.InvalidSymbol,
@@ -89,6 +90,7 @@ public sealed interface GlamProtocolError extends ProgramError permits
       case 48009 -> AssetNotBorrowable.INSTANCE;
       case 48010 -> UnexpectedProgramOwner.INSTANCE;
       case 48011 -> InvalidAuthority.INSTANCE;
+      case 48012 -> CannotRemoveCancelTimelockDelegate.INSTANCE;
       case 49000 -> InvalidAccountType.INSTANCE;
       case 49001 -> InvalidName.INSTANCE;
       case 49002 -> InvalidSymbol.INSTANCE;
@@ -232,6 +234,13 @@ public sealed interface GlamProtocolError extends ProgramError permits
 
     public static final InvalidAuthority INSTANCE = new InvalidAuthority(
         48011, "Invalid authority"
+    );
+  }
+
+  record CannotRemoveCancelTimelockDelegate(int code, String msg) implements GlamProtocolError {
+
+    public static final CannotRemoveCancelTimelockDelegate INSTANCE = new CannotRemoveCancelTimelockDelegate(
+        48012, "Cannot remove delegate with CancelTimelock permission via emergency update"
     );
   }
 

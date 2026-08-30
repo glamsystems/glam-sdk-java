@@ -158,6 +158,14 @@ public final class GlamMintPDAs {
     ), program);
   }
 
+  public static ProgramDerivedAddress observationStatePDA(final PublicKey program,
+                                                          final PublicKey glamStateAccount) {
+    return PublicKey.findProgramAddress(List.of(
+      "observation-state".getBytes(US_ASCII),
+      glamStateAccount.toByteArray()
+    ), program);
+  }
+
   public static ProgramDerivedAddress protocolFeeAuthorityAtaPDA(final PublicKey program,
                                                                  final PublicKey protocolFeeAuthorityAccount,
                                                                  final PublicKey depositTokenProgramAccount,

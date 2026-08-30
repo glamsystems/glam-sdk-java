@@ -24,7 +24,8 @@ public sealed interface GlamMintError extends ProgramError permits
     GlamMintError.InsufficientEscrowBalance,
     GlamMintError.TokenAclManagesFreezeThaw,
     GlamMintError.InvalidMintState,
-    GlamMintError.SubscriptionPausedOverdue {
+    GlamMintError.SubscriptionPausedOverdue,
+    GlamMintError.NavDeviationTooLarge {
 
   static GlamMintError getInstance(final int errorCode) {
     return switch (errorCode) {
@@ -49,6 +50,7 @@ public sealed interface GlamMintError extends ProgramError permits
       case 6018 -> TokenAclManagesFreezeThaw.INSTANCE;
       case 6019 -> InvalidMintState.INSTANCE;
       case 6020 -> SubscriptionPausedOverdue.INSTANCE;
+      case 6021 -> NavDeviationTooLarge.INSTANCE;
       default -> null;
     };
   }
@@ -197,6 +199,13 @@ public sealed interface GlamMintError extends ProgramError permits
 
     public static final SubscriptionPausedOverdue INSTANCE = new SubscriptionPausedOverdue(
         6020, "Subscription paused due to overdue requests"
+    );
+  }
+
+  record NavDeviationTooLarge(int code, String msg) implements GlamMintError {
+
+    public static final NavDeviationTooLarge INSTANCE = new NavDeviationTooLarge(
+        6021, "NAV deviation from reference exceeds tolerance"
     );
   }
 }

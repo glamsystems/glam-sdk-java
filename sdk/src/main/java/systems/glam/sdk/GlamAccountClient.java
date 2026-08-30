@@ -152,23 +152,18 @@ public interface GlamAccountClient extends SPLAccountClient {
 
   Instruction priceSingleAssetVault(final PublicKey baseAssetTokenAccount, final boolean cpiEmitEvents);
 
-  Instruction priceExternalPositions(final PublicKey solUSDOracleKey,
-                                     final PublicKey baseAssetUsdOracleKey,
-                                     final PublicKey observationStateKey, final boolean cpiEmitEvents);
+  Instruction priceRegisteredPositions(final PublicKey observationStateKey, final boolean cpiEmitEvents);
 
-  default Instruction priceExternalPositions(final PublicKey solUSDOracleKey,
-                                             final PublicKey baseAssetUsdOracleKey,
-                                             final boolean cpiEmitEvents) {
+  default Instruction priceRegisteredPositions(final boolean cpiEmitEvents) {
     final var observationPDA = ExtRpiPDAs.observationStatePDA(
         glamAccounts().externalPositionProgram(),
         vaultAccounts().glamStateKey()
     );
-    return priceExternalPositions(solUSDOracleKey, baseAssetUsdOracleKey, observationPDA.publicKey(), cpiEmitEvents);
+    return priceRegisteredPositions(observationPDA.publicKey(), cpiEmitEvents);
   }
 
-  default Instruction priceExternalPositions(final PublicKey solUSDOracleKey,
-                                             final PublicKey baseAssetUsdOracleKey) {
-    return priceExternalPositions(solUSDOracleKey, baseAssetUsdOracleKey, false);
+  default Instruction priceRegisteredPositions() {
+    return priceRegisteredPositions(false);
   }
 
   Instruction priceLoopscaleLoans(final PublicKey solUSDOracleKey,

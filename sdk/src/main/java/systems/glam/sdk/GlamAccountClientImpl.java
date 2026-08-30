@@ -428,9 +428,7 @@ class GlamAccountClientImpl implements GlamAccountClient {
   }
 
   @Override
-  public Instruction priceExternalPositions(final PublicKey solUSDOracleKey,
-                                            final PublicKey baseAssetUsdOracleKey,
-                                            final PublicKey observationStateKey, final boolean cpiEmitEvents) {
+  public Instruction priceRegisteredPositions(final PublicKey observationStateKey, final boolean cpiEmitEvents) {
     throw throwStagingOnly();
   }
 

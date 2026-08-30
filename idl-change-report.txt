@@ -7,14 +7,6 @@ nobody took. The standing disagreements live beside this file, at its name with 
 before the extension. Ordered by program and channel, and carrying no timestamp, so
 consecutive runs are worth diffing against each other.
 
-== Movement (5) ==
+== Movement (1) ==
 
-GLAM Staging Marinade: the anchor IDL at E64ABbxYjmrZdXxHsWziLhvgPyJz21dTzB5EHUJPX5Wd disappeared since the last generation
-
-GLAM Staging Marinade: the metadata IDL at F3FArTonLL2Lia7F596UA1NxxenB2wgK2iuiU18yqTXF appeared since the last generation
-
-GLAM Staging Marinade: the program was redeployed at slot 440554901, up from 394258035; the stored program image changed: 354104 payload bytes, was 354104 — review required
-
-GLAM Staging Stake Pool: the anchor IDL at 9eiBHZbtw5g1Ut5UgpriWrigGjReLfsKaFftKtvPuiFf disappeared since the last generation
-
-GLAM Staging Stake Pool: the program was redeployed at slot 440544757, up from 440278827; the stored program image is byte-identical
+GLAM Staging Marinade: the program was redeployed at slot 442709649, up from 440554901, and no IDL channel moved with it; the stored program image changed: 354104 payload bytes, was 354104 — review required

@@ -7,7 +7,7 @@ changes only when that membership does, while the volatile counts and versions s
 console summaries and the movement log. Ordered by program and channel, and carrying no
 timestamp.
 
-== Next gap (18) ==
+== Next gap (16) ==
 
 GLAM Config: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_config.json differs from the deployed idl.json
   instructions added (2): deprecate_asset_meta, update_fee_authority
@@ -49,13 +49,6 @@ GLAM Staging MarginFi: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ex
 GLAM Staging Marinade: the metadata IDL at F3FArTonLL2Lia7F596UA1NxxenB2wgK2iuiU18yqTXF differs from the deployed idl.json
   accounts removed (1): StateAccount
 
-GLAM Staging Mint: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_mint-staging.json differs from the deployed idl.json
-  instructions added (5): fulfill_with_ref_nav, price_jupiter_borrow_positions, price_jupiter_earn_positions, price_registered_positions, subscribe_with_ref_nav
-  instructions removed (1): price_external_positions
-  accounts added (1): ObservationState
-  types added (6): Denomination, DenominationSpec, Observation, ObservationState, PositionObservation, StoredI128
-  errors added (1): NavDeviationTooLarge
-
 GLAM Staging Neutral Trade: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_neutral-staging.json differs from the deployed idl.json
   accounts added (1): StateAccount
 
@@ -64,9 +57,6 @@ GLAM Staging Orca: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_or
 
 GLAM Staging Phoenix: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_phoenix-staging.json differs from the deployed idl.json
   accounts added (1): StateAccount
-
-GLAM Staging Protocol: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_protocol-staging.json differs from the deployed idl.json
-  errors added (1): CannotRemoveCancelTimelockDelegate
 
 GLAM Staging Registered Positions: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_rpi-staging.json differs from the deployed idl.json
   accounts added (1): StateAccount

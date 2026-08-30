@@ -295,25 +295,20 @@ final class GlamStagingAccountClientImpl extends GlamAccountClientImpl implement
   }
 
   @Override
-  public Instruction priceExternalPositions(final PublicKey solUSDOracleKey,
-                                            final PublicKey baseAssetUsdOracleKey,
-                                            final PublicKey observationStateKey,
-                                            final boolean cpiEmitEvents) {
+  public Instruction priceRegisteredPositions(final PublicKey observationStateKey,
+                                              final boolean cpiEmitEvents) {
     final var invoked = glamAccounts.invokedMintIntegrationProgram();
     final var mintProgram = invoked.publicKey();
-    return GlamMintProgram.priceExternalPositions(
+    return GlamMintProgram.priceRegisteredPositions(
         invoked,
         glamVaultAccounts.glamStateKey(),
-        glamVaultAccounts.vaultPublicKey(),
         feePayer.publicKey(),
-        solUSDOracleKey,
-        baseAssetUsdOracleKey,
+        observationStateKey,
         glamAccounts.readMintIntegrationAuthority().publicKey(),
-        globalConfigKey,
         invokedProtocolProgram.publicKey(),
         cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
         mintProgram
-    ).extraAccount(AccountMeta.createRead(observationStateKey));
+    );
   }
 
   @Override

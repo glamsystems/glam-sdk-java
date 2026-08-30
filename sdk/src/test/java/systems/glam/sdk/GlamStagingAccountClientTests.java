@@ -58,7 +58,7 @@ final class GlamStagingAccountClientTests {
     final var solOracle = key(11);
     final var baseOracle = key(12);
     assertMintProgramPricing((c, cpi) -> c.priceSingleAssetVault(key(13), cpi));
-    assertMintProgramPricing((c, cpi) -> c.priceExternalPositions(solOracle, baseOracle, key(14), cpi));
+    assertMintProgramPricing((c, cpi) -> c.priceRegisteredPositions(key(14), cpi));
     assertMintProgramPricing((c, cpi) -> c.priceLoopscaleLoans(solOracle, baseOracle, cpi));
     assertMintProgramPricing((c, cpi) -> c.priceLoopscaleStrategies(solOracle, baseOracle, cpi));
     assertMintProgramPricing((c, cpi) -> c.priceLoopscaleVaultPositions(solOracle, baseOracle, 3, cpi));

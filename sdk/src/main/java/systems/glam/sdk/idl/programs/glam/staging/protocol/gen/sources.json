@@ -1,24 +1,29 @@
 {
   "program": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
   "deployed": "anchor",
-  "lastDeploySlot": 425042533,
+  "lastDeploySlot": 442670286,
   "programDataState": "upgradeable",
   "programDataStateSlot": 439884391,
-  "programDataPayloadSha256": "521a8ec9407a1e4e75e447efa6d0d0dabd379236132998876167072fb16b4a0d",
-  "programDataPayloadLength": 809656,
+  "programDataPayloadSha256": "df99c31f562022f25c4e61013ed64cfd5fe7397baa8ecd41ff79fa0f77037d3b",
+  "programDataPayloadLength": 819896,
   "channels": {
     "anchor": {
       "origin": "5UELoo8jJyAqdh3yziYoG3jpWMN9f3ab8wmmKAkP3mqx",
-      "hash": "4848f327dbc2b8f8aca987ff4ae73ef2327ad10e0f939f8ffe9ecd1abe569182",
+      "hash": "912738dc2c40090066c08c675584a8b3c0131c5daa504315fcbdc140732b4dad",
       "matchesDeployed": true,
       "verbatim": "idl.json"
+    },
+    "metadata": {
+      "origin": "SMGmM9PtEW3VtPFBgDBcnoTf128HpACNz1dxTfHeFJ1",
+      "hash": "912738dc2c40090066c08c675584a8b3c0131c5daa504315fcbdc140732b4dad",
+      "matchesDeployed": true,
+      "verbatim": "metadata.original.json"
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/glam_protocol-staging.json",
       "hash": "912738dc2c40090066c08c675584a8b3c0131c5daa504315fcbdc140732b4dad",
-      "matchesDeployed": false,
-      "file": "vcs.json",
-      "verbatim": "vcs.json"
+      "matchesDeployed": true,
+      "verbatim": "vcs.original.json"
     }
   }
 }

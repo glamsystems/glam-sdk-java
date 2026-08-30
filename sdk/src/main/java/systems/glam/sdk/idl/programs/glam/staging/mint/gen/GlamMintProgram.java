@@ -14,6 +14,8 @@ import systems.glam.sdk.idl.programs.glam.staging.mint.gen.types.MintModel;
 import systems.glam.sdk.idl.programs.glam.staging.mint.gen.types.MintPolicy;
 import systems.glam.sdk.idl.programs.glam.staging.protocol.gen.types.AccountType;
 
+import java.math.BigInteger;
+
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
@@ -24,6 +26,7 @@ import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.accounts.meta.AccountMeta.createRead;
 import static software.sava.core.accounts.meta.AccountMeta.createWritableSigner;
 import static software.sava.core.accounts.meta.AccountMeta.createWrite;
+import static software.sava.core.encoding.ByteUtil.getInt128LE;
 import static software.sava.core.encoding.ByteUtil.getInt16LE;
 import static software.sava.core.encoding.ByteUtil.getInt32LE;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
@@ -1135,6 +1138,146 @@ public final class GlamMintProgram {
     }
   }
 
+  public static final Discriminator FULFILL_WITH_REF_NAV_DISCRIMINATOR = toDiscriminator(214, 80, 104, 122, 65, 144, 19, 209);
+
+  public static List<AccountMeta> fulfillWithRefNavKeys(final SolanaAccounts solanaAccounts,
+                                                        final PublicKey glamStateKey,
+                                                        final PublicKey glamVaultKey,
+                                                        final PublicKey glamMintKey,
+                                                        final PublicKey glamEscrowKey,
+                                                        final PublicKey requestQueueKey,
+                                                        final PublicKey signerKey,
+                                                        final PublicKey escrowMintAtaKey,
+                                                        final PublicKey assetKey,
+                                                        final PublicKey vaultAssetAtaKey,
+                                                        final PublicKey escrowAssetAtaKey,
+                                                        final PublicKey depositTokenProgramKey,
+                                                        final PublicKey token2022ProgramKey,
+                                                        final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWrite(glamMintKey),
+      createRead(glamEscrowKey),
+      createWrite(requestQueueKey),
+      createWritableSigner(signerKey),
+      createWrite(escrowMintAtaKey),
+      createRead(assetKey),
+      createWrite(vaultAssetAtaKey),
+      createWrite(escrowAssetAtaKey),
+      createRead(solanaAccounts.systemProgram()),
+      createRead(depositTokenProgramKey),
+      createRead(token2022ProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram()),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  /// @param limit: Option<u32>
+  /// @param refNav: Option<i128>
+  public static Instruction fulfillWithRefNav(final AccountMeta invokedGlamMintProgramMeta,
+                                              final SolanaAccounts solanaAccounts,
+                                              final PublicKey glamStateKey,
+                                              final PublicKey glamVaultKey,
+                                              final PublicKey glamMintKey,
+                                              final PublicKey glamEscrowKey,
+                                              final PublicKey requestQueueKey,
+                                              final PublicKey signerKey,
+                                              final PublicKey escrowMintAtaKey,
+                                              final PublicKey assetKey,
+                                              final PublicKey vaultAssetAtaKey,
+                                              final PublicKey escrowAssetAtaKey,
+                                              final PublicKey depositTokenProgramKey,
+                                              final PublicKey token2022ProgramKey,
+                                              final PublicKey glamProtocolProgramKey,
+                                              final OptionalLong limit,
+                                              final BigInteger refNav) {
+    final var keys = fulfillWithRefNavKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamMintKey,
+      glamEscrowKey,
+      requestQueueKey,
+      signerKey,
+      escrowMintAtaKey,
+      assetKey,
+      vaultAssetAtaKey,
+      escrowAssetAtaKey,
+      depositTokenProgramKey,
+      token2022ProgramKey,
+      glamProtocolProgramKey
+    );
+    return fulfillWithRefNav(invokedGlamMintProgramMeta, keys, limit, refNav);
+  }
+
+  /// @param limit: Option<u32>
+  /// @param refNav: Option<i128>
+  public static Instruction fulfillWithRefNav(final AccountMeta invokedGlamMintProgramMeta,
+                                              final List<AccountMeta> keys,
+                                              final OptionalLong limit,
+                                              final BigInteger refNav) {
+    final byte[] _data = new byte[
+    8
+    + (limit == null || limit.isEmpty() ? 1 : 5)
+    + (refNav == null ? 1 : 17)
+    ];
+    int i = FULFILL_WITH_REF_NAV_DISCRIMINATOR.write(_data, 0);
+    i += SerDeUtil.writeOptionalUnsignedInt(1, limit, _data, i);
+    SerDeUtil.write128Optional(1, refNav, _data, i);
+
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
+  }
+
+  /// @param limit: Option<u32>
+  /// @param refNav: Option<i128>
+  public record FulfillWithRefNavIxData(Discriminator discriminator, OptionalLong limit, BigInteger refNav) implements SerDe {
+
+    public static FulfillWithRefNavIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int LIMIT_OFFSET = 9;
+
+    public static FulfillWithRefNavIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final OptionalLong limit;
+      if (SerDeUtil.isAbsent(1, _data, i)) {
+        limit = OptionalLong.empty();
+        ++i;
+      } else {
+        ++i;
+        limit = OptionalLong.of(Integer.toUnsignedLong(getInt32LE(_data, i)));
+        i += 4;
+      }
+      final BigInteger refNav;
+      if (SerDeUtil.isAbsent(1, _data, i)) {
+        refNav = null;
+      } else {
+        ++i;
+        refNav = getInt128LE(_data, i);
+      }
+      return new FulfillWithRefNavIxData(discriminator, limit, refNav);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += SerDeUtil.writeOptionalUnsignedInt(1, limit, _data, i);
+      i += SerDeUtil.write128Optional(1, refNav, _data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + (limit == null || limit.isEmpty() ? 1 : (1 + 4)) + (refNav == null ? 1 : (1 + 16));
+    }
+  }
+
   public static final Discriminator INITIALIZE_MINT_DISCRIMINATOR = toDiscriminator(209, 42, 195, 4, 129, 85, 209, 44);
 
   /// Initialize a new GLAM mint with extensions and metadata.
@@ -1770,24 +1913,27 @@ public final class GlamMintProgram {
     }
   }
 
-  public static final Discriminator PRICE_EXTERNAL_POSITIONS_DISCRIMINATOR = toDiscriminator(94, 199, 82, 243, 235, 193, 4, 144);
+  public static final Discriminator PRICE_JUPITER_BORROW_POSITIONS_DISCRIMINATOR = toDiscriminator(55, 251, 33, 55, 80, 17, 18, 154);
 
-  /// Price external positions for a vault
+  /// Prices GLAM-owned Jupiter Borrow Position PDAs tracked in external_positions.
   ///
-  /// Extra accounts required:
-  /// - Observation state account
+  /// Extra accounts for pricing N borrow positions:
+  /// - (position, position_token_account, vault_config, vault_state, current_tick, supply_oracle, borrow_oracle) x N
   ///
-  public static List<AccountMeta> priceExternalPositionsKeys(final AccountMeta invokedGlamMintProgramMeta,
-                                                             final PublicKey glamStateKey,
-                                                             final PublicKey glamVaultKey,
-                                                             final PublicKey signerKey,
-                                                             final PublicKey solUsdOracleKey,
-                                                             final PublicKey baseAssetOracleKey,
-                                                             final PublicKey integrationAuthorityKey,
-                                                             final PublicKey glamConfigKey,
-                                                             final PublicKey glamProtocolKey,
-                                                             final PublicKey eventAuthorityKey,
-                                                             final PublicKey eventProgramKey) {
+  /// Clients should prepend Jupiter Vaults `update_exchange_prices`
+  /// instructions for every distinct vault.
+  ///
+  public static List<AccountMeta> priceJupiterBorrowPositionsKeys(final AccountMeta invokedGlamMintProgramMeta,
+                                                                  final PublicKey glamStateKey,
+                                                                  final PublicKey glamVaultKey,
+                                                                  final PublicKey signerKey,
+                                                                  final PublicKey solUsdOracleKey,
+                                                                  final PublicKey baseAssetOracleKey,
+                                                                  final PublicKey integrationAuthorityKey,
+                                                                  final PublicKey glamConfigKey,
+                                                                  final PublicKey glamProtocolKey,
+                                                                  final PublicKey eventAuthorityKey,
+                                                                  final PublicKey eventProgramKey) {
     return List.of(
       createWrite(glamStateKey),
       createRead(glamVaultKey),
@@ -1802,23 +1948,26 @@ public final class GlamMintProgram {
     );
   }
 
-  /// Price external positions for a vault
+  /// Prices GLAM-owned Jupiter Borrow Position PDAs tracked in external_positions.
   ///
-  /// Extra accounts required:
-  /// - Observation state account
+  /// Extra accounts for pricing N borrow positions:
+  /// - (position, position_token_account, vault_config, vault_state, current_tick, supply_oracle, borrow_oracle) x N
   ///
-  public static Instruction priceExternalPositions(final AccountMeta invokedGlamMintProgramMeta,
-                                                   final PublicKey glamStateKey,
-                                                   final PublicKey glamVaultKey,
-                                                   final PublicKey signerKey,
-                                                   final PublicKey solUsdOracleKey,
-                                                   final PublicKey baseAssetOracleKey,
-                                                   final PublicKey integrationAuthorityKey,
-                                                   final PublicKey glamConfigKey,
-                                                   final PublicKey glamProtocolKey,
-                                                   final PublicKey eventAuthorityKey,
-                                                   final PublicKey eventProgramKey) {
-    final var keys = priceExternalPositionsKeys(
+  /// Clients should prepend Jupiter Vaults `update_exchange_prices`
+  /// instructions for every distinct vault.
+  ///
+  public static Instruction priceJupiterBorrowPositions(final AccountMeta invokedGlamMintProgramMeta,
+                                                        final PublicKey glamStateKey,
+                                                        final PublicKey glamVaultKey,
+                                                        final PublicKey signerKey,
+                                                        final PublicKey solUsdOracleKey,
+                                                        final PublicKey baseAssetOracleKey,
+                                                        final PublicKey integrationAuthorityKey,
+                                                        final PublicKey glamConfigKey,
+                                                        final PublicKey glamProtocolKey,
+                                                        final PublicKey eventAuthorityKey,
+                                                        final PublicKey eventProgramKey) {
+    final var keys = priceJupiterBorrowPositionsKeys(
       invokedGlamMintProgramMeta,
       glamStateKey,
       glamVaultKey,
@@ -1831,17 +1980,103 @@ public final class GlamMintProgram {
       eventAuthorityKey,
       eventProgramKey
     );
-    return priceExternalPositions(invokedGlamMintProgramMeta, keys);
+    return priceJupiterBorrowPositions(invokedGlamMintProgramMeta, keys);
   }
 
-  /// Price external positions for a vault
+  /// Prices GLAM-owned Jupiter Borrow Position PDAs tracked in external_positions.
   ///
-  /// Extra accounts required:
-  /// - Observation state account
+  /// Extra accounts for pricing N borrow positions:
+  /// - (position, position_token_account, vault_config, vault_state, current_tick, supply_oracle, borrow_oracle) x N
   ///
-  public static Instruction priceExternalPositions(final AccountMeta invokedGlamMintProgramMeta,
-                                                   final List<AccountMeta> keys) {
-    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_EXTERNAL_POSITIONS_DISCRIMINATOR);
+  /// Clients should prepend Jupiter Vaults `update_exchange_prices`
+  /// instructions for every distinct vault.
+  ///
+  public static Instruction priceJupiterBorrowPositions(final AccountMeta invokedGlamMintProgramMeta,
+                                                        final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_JUPITER_BORROW_POSITIONS_DISCRIMINATOR);
+  }
+
+  public static final Discriminator PRICE_JUPITER_EARN_POSITIONS_DISCRIMINATOR = toDiscriminator(120, 10, 10, 137, 145, 60, 164, 16);
+
+  /// Prices GLAM-owned Jupiter Earn fToken ATAs tracked in external_positions.
+  ///
+  /// Extra accounts for pricing N earn positions:
+  /// - (f_token_ata, lending, underlying_oracle) x N
+  ///
+  /// Clients should prepend Jupiter Lending `update_rate` instructions for
+  /// every distinct lending account.
+  ///
+  public static List<AccountMeta> priceJupiterEarnPositionsKeys(final AccountMeta invokedGlamMintProgramMeta,
+                                                                final PublicKey glamStateKey,
+                                                                final PublicKey glamVaultKey,
+                                                                final PublicKey signerKey,
+                                                                final PublicKey solUsdOracleKey,
+                                                                final PublicKey baseAssetOracleKey,
+                                                                final PublicKey integrationAuthorityKey,
+                                                                final PublicKey glamConfigKey,
+                                                                final PublicKey glamProtocolKey,
+                                                                final PublicKey eventAuthorityKey,
+                                                                final PublicKey eventProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createWritableSigner(signerKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolKey),
+      createRead(requireNonNullElse(eventAuthorityKey, invokedGlamMintProgramMeta.publicKey())),
+      createRead(requireNonNullElse(eventProgramKey, invokedGlamMintProgramMeta.publicKey()))
+    );
+  }
+
+  /// Prices GLAM-owned Jupiter Earn fToken ATAs tracked in external_positions.
+  ///
+  /// Extra accounts for pricing N earn positions:
+  /// - (f_token_ata, lending, underlying_oracle) x N
+  ///
+  /// Clients should prepend Jupiter Lending `update_rate` instructions for
+  /// every distinct lending account.
+  ///
+  public static Instruction priceJupiterEarnPositions(final AccountMeta invokedGlamMintProgramMeta,
+                                                      final PublicKey glamStateKey,
+                                                      final PublicKey glamVaultKey,
+                                                      final PublicKey signerKey,
+                                                      final PublicKey solUsdOracleKey,
+                                                      final PublicKey baseAssetOracleKey,
+                                                      final PublicKey integrationAuthorityKey,
+                                                      final PublicKey glamConfigKey,
+                                                      final PublicKey glamProtocolKey,
+                                                      final PublicKey eventAuthorityKey,
+                                                      final PublicKey eventProgramKey) {
+    final var keys = priceJupiterEarnPositionsKeys(
+      invokedGlamMintProgramMeta,
+      glamStateKey,
+      glamVaultKey,
+      signerKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolKey,
+      eventAuthorityKey,
+      eventProgramKey
+    );
+    return priceJupiterEarnPositions(invokedGlamMintProgramMeta, keys);
+  }
+
+  /// Prices GLAM-owned Jupiter Earn fToken ATAs tracked in external_positions.
+  ///
+  /// Extra accounts for pricing N earn positions:
+  /// - (f_token_ata, lending, underlying_oracle) x N
+  ///
+  /// Clients should prepend Jupiter Lending `update_rate` instructions for
+  /// every distinct lending account.
+  ///
+  public static Instruction priceJupiterEarnPositions(final AccountMeta invokedGlamMintProgramMeta,
+                                                      final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_JUPITER_EARN_POSITIONS_DISCRIMINATOR);
   }
 
   public static final Discriminator PRICE_KAMINO_OBLIGATIONS_DISCRIMINATOR = toDiscriminator(166, 110, 234, 179, 240, 179, 69, 246);
@@ -2732,6 +2967,59 @@ public final class GlamMintProgram {
     return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_PHOENIX_TRADERS_DISCRIMINATOR);
   }
 
+  public static final Discriminator PRICE_REGISTERED_POSITIONS_DISCRIMINATOR = toDiscriminator(90, 157, 162, 50, 236, 16, 188, 3);
+
+  /// Price registered positions for a vault
+  ///
+  public static List<AccountMeta> priceRegisteredPositionsKeys(final AccountMeta invokedGlamMintProgramMeta,
+                                                               final PublicKey glamStateKey,
+                                                               final PublicKey signerKey,
+                                                               final PublicKey observationStateKey,
+                                                               final PublicKey integrationAuthorityKey,
+                                                               final PublicKey glamProtocolKey,
+                                                               final PublicKey eventAuthorityKey,
+                                                               final PublicKey eventProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(signerKey),
+      createRead(observationStateKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamProtocolKey),
+      createRead(requireNonNullElse(eventAuthorityKey, invokedGlamMintProgramMeta.publicKey())),
+      createRead(requireNonNullElse(eventProgramKey, invokedGlamMintProgramMeta.publicKey()))
+    );
+  }
+
+  /// Price registered positions for a vault
+  ///
+  public static Instruction priceRegisteredPositions(final AccountMeta invokedGlamMintProgramMeta,
+                                                     final PublicKey glamStateKey,
+                                                     final PublicKey signerKey,
+                                                     final PublicKey observationStateKey,
+                                                     final PublicKey integrationAuthorityKey,
+                                                     final PublicKey glamProtocolKey,
+                                                     final PublicKey eventAuthorityKey,
+                                                     final PublicKey eventProgramKey) {
+    final var keys = priceRegisteredPositionsKeys(
+      invokedGlamMintProgramMeta,
+      glamStateKey,
+      signerKey,
+      observationStateKey,
+      integrationAuthorityKey,
+      glamProtocolKey,
+      eventAuthorityKey,
+      eventProgramKey
+    );
+    return priceRegisteredPositions(invokedGlamMintProgramMeta, keys);
+  }
+
+  /// Price registered positions for a vault
+  ///
+  public static Instruction priceRegisteredPositions(final AccountMeta invokedGlamMintProgramMeta,
+                                                     final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, PRICE_REGISTERED_POSITIONS_DISCRIMINATOR);
+  }
+
   public static final Discriminator PRICE_SINGLE_ASSET_VAULT_DISCRIMINATOR = toDiscriminator(93, 213, 219, 25, 38, 74, 9, 167);
 
   /// Prices a single asset vault.
@@ -3531,6 +3819,155 @@ public final class GlamMintProgram {
     @Override
     public int l() {
       return BYTES;
+    }
+  }
+
+  public static final Discriminator SUBSCRIBE_WITH_REF_NAV_DISCRIMINATOR = toDiscriminator(39, 136, 23, 75, 82, 217, 248, 141);
+
+  public static List<AccountMeta> subscribeWithRefNavKeys(final AccountMeta invokedGlamMintProgramMeta,
+                                                          final SolanaAccounts solanaAccounts,
+                                                          final PublicKey glamStateKey,
+                                                          final PublicKey glamVaultKey,
+                                                          final PublicKey glamMintKey,
+                                                          final PublicKey glamEscrowKey,
+                                                          final PublicKey requestQueueKey,
+                                                          final PublicKey signerKey,
+                                                          final PublicKey signerMintAtaKey,
+                                                          final PublicKey escrowMintAtaKey,
+                                                          final PublicKey depositAssetKey,
+                                                          final PublicKey vaultDepositAtaKey,
+                                                          final PublicKey signerDepositAtaKey,
+                                                          final PublicKey signerPolicyKey,
+                                                          final PublicKey depositTokenProgramKey,
+                                                          final PublicKey token2022ProgramKey,
+                                                          final PublicKey policiesProgramKey,
+                                                          final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createWrite(glamMintKey),
+      createRead(glamEscrowKey),
+      createRead(requestQueueKey),
+      createWritableSigner(signerKey),
+      createWrite(signerMintAtaKey),
+      createWrite(escrowMintAtaKey),
+      createRead(depositAssetKey),
+      createWrite(vaultDepositAtaKey),
+      createWrite(signerDepositAtaKey),
+      createWrite(requireNonNullElse(signerPolicyKey, invokedGlamMintProgramMeta.publicKey())),
+      createRead(solanaAccounts.systemProgram()),
+      createRead(depositTokenProgramKey),
+      createRead(token2022ProgramKey),
+      createRead(solanaAccounts.associatedTokenAccountProgram()),
+      createRead(policiesProgramKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  /// @param amountIn: u64
+  /// @param refNav: Option<i128>
+  public static Instruction subscribeWithRefNav(final AccountMeta invokedGlamMintProgramMeta,
+                                                final SolanaAccounts solanaAccounts,
+                                                final PublicKey glamStateKey,
+                                                final PublicKey glamVaultKey,
+                                                final PublicKey glamMintKey,
+                                                final PublicKey glamEscrowKey,
+                                                final PublicKey requestQueueKey,
+                                                final PublicKey signerKey,
+                                                final PublicKey signerMintAtaKey,
+                                                final PublicKey escrowMintAtaKey,
+                                                final PublicKey depositAssetKey,
+                                                final PublicKey vaultDepositAtaKey,
+                                                final PublicKey signerDepositAtaKey,
+                                                final PublicKey signerPolicyKey,
+                                                final PublicKey depositTokenProgramKey,
+                                                final PublicKey token2022ProgramKey,
+                                                final PublicKey policiesProgramKey,
+                                                final PublicKey glamProtocolProgramKey,
+                                                final long amountIn,
+                                                final BigInteger refNav) {
+    final var keys = subscribeWithRefNavKeys(
+      invokedGlamMintProgramMeta,
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamMintKey,
+      glamEscrowKey,
+      requestQueueKey,
+      signerKey,
+      signerMintAtaKey,
+      escrowMintAtaKey,
+      depositAssetKey,
+      vaultDepositAtaKey,
+      signerDepositAtaKey,
+      signerPolicyKey,
+      depositTokenProgramKey,
+      token2022ProgramKey,
+      policiesProgramKey,
+      glamProtocolProgramKey
+    );
+    return subscribeWithRefNav(invokedGlamMintProgramMeta, keys, amountIn, refNav);
+  }
+
+  /// @param amountIn: u64
+  /// @param refNav: Option<i128>
+  public static Instruction subscribeWithRefNav(final AccountMeta invokedGlamMintProgramMeta,
+                                                final List<AccountMeta> keys,
+                                                final long amountIn,
+                                                final BigInteger refNav) {
+    final byte[] _data = new byte[
+    16
+    + (refNav == null ? 1 : 17)
+    ];
+    int i = SUBSCRIBE_WITH_REF_NAV_DISCRIMINATOR.write(_data, 0);
+    putInt64LE(_data, i, amountIn);
+    i += 8;
+    SerDeUtil.write128Optional(1, refNav, _data, i);
+
+    return Instruction.createInstruction(invokedGlamMintProgramMeta, keys, _data);
+  }
+
+  /// @param amountIn: u64
+  /// @param refNav: Option<i128>
+  public record SubscribeWithRefNavIxData(Discriminator discriminator, long amountIn, BigInteger refNav) implements SerDe {
+
+    public static SubscribeWithRefNavIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int AMOUNT_IN_OFFSET = 8;
+    public static final int REF_NAV_OFFSET = 17;
+
+    public static SubscribeWithRefNavIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var amountIn = getInt64LE(_data, i);
+      i += 8;
+      final BigInteger refNav;
+      if (SerDeUtil.isAbsent(1, _data, i)) {
+        refNav = null;
+      } else {
+        ++i;
+        refNav = getInt128LE(_data, i);
+      }
+      return new SubscribeWithRefNavIxData(discriminator, amountIn, refNav);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      putInt64LE(_data, i, amountIn);
+      i += 8;
+      i += SerDeUtil.write128Optional(1, refNav, _data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + 8 + (refNav == null ? 1 : (1 + 16));
     }
   }
 
