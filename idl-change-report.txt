@@ -9,4 +9,4 @@ consecutive runs are worth diffing against each other.
 
 == Movement (1) ==
 
-GLAM Staging Marinade: the program was redeployed at slot 442709649, up from 440554901, and no IDL channel moved with it; the stored program image changed: 354104 payload bytes, was 354104 — review required
+GLAM Staging Phoenix: the program was redeployed at slot 443004427, up from 440311175, and no IDL channel moved with it; the stored program image changed: 521096 payload bytes, was 521096 — review required

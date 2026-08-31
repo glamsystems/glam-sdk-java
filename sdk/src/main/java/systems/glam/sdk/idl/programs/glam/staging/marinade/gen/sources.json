@@ -1,10 +1,10 @@
 {
   "program": "gstgmvM2o7h7GcScvXymH1oFgWskukWWxRHC1UJJ9FJ",
   "deployed": "vcs",
-  "lastDeploySlot": 440554901,
+  "lastDeploySlot": 442709649,
   "programDataState": "upgradeable",
   "programDataStateSlot": 439884391,
-  "programDataPayloadSha256": "d25dc3588999a522c37240c66a64c95220b29381571e6f3c5b21c9ceb5f71d0a",
+  "programDataPayloadSha256": "2a6476b0eb5908667bf601ea26becd169d23c12611f768b956e89852c453073c",
   "programDataPayloadLength": 354104,
   "channels": {
     "metadata": {
