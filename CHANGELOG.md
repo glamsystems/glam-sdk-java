@@ -1,5 +1,22 @@
 # Changelog
 
+## [25.18.0](https://github.com/glamsystems/glam-sdk-java/compare/25.17.1...25.18.0) (2026-09-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* **services:** GlobalConfigListener.onUnexpectedOracleChange gained an AssetMetaContext[] parameter. Overriders of the 3-arg default compiled against an older release keep compiling but silently stop being called; recompile against this release (the @Override check flags the stale signature) and adopt the 4-arg form.
+
+### Features
+
+* **services:** add hasAssetMetaForOracle; answer invalidated-cache queries as a miss ([cee1a93](https://github.com/glamsystems/glam-sdk-java/commit/cee1a9303080eac01c7345b19f1cb5f85516f683))
+* **services:** hand the applied contexts to onUnexpectedOracleChange ([a98bbcc](https://github.com/glamsystems/glam-sdk-java/commit/a98bbccaa3c15477c593a8d895ffb561008cd3f3))
+
+
+### Miscellaneous Chores
+
+* release 25.18.0 ([5752508](https://github.com/glamsystems/glam-sdk-java/commit/5752508b91ed03e16ff3cfbe5d66cbec6d905672))
+
 ## [25.17.1](https://github.com/glamsystems/glam-sdk-java/compare/25.17.0...25.17.1) (2026-08-21)
 
 
