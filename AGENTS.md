@@ -148,15 +148,13 @@ changes here:
 
 <!-- The block below is the agent-instructions template generated verbatim by
      sava-build's `hardeningAgentTemplate`, pinned by the digest that closes it.
-     GLAM policy on every template-digest move: re-diff with the
+     glam-sdk-java policy on every template-digest move: re-diff with the
      project-qualified `hardeningAgentTemplateDiff` (e.g.
      `:sdk:hardeningAgentTemplateDiff`), ACT on each changed bullet (a new
-     bullet may need code, not prose), resolve every candidate named by
-     `hardeningAgentProseAudit` and `hardeningReadmeAudit`, and only then move
-     the digest. See `:sdk:hardeningHelp` for `agentsTemplateInSync`,
-     `hardeningAgentProseAudit` and `hardeningReadmeAudit`. Do not paraphrase
-     or extend the block in place — GLAM-specific ownership, measurements and
-     evidence go under "GLAM-local hardening facts" below it. -->
+     bullet may need code, not prose), and only then move the digest. See
+     `:sdk:hardeningHelp` for the installed task surface. Do not paraphrase or
+     extend the block in place — glam-sdk-java-specific ownership, measurements
+     and evidence go under "GLAM-local hardening facts" below it. -->
 
 <!-- hardening-template block:start -->
 - **Scale verification to the change.** Iterate with the module's `test`
@@ -196,13 +194,10 @@ changes here:
   setup would otherwise be lost, and never embed PIT coordinates or line numbers.
 - Baseline keys are line-less (`class,method,mutator,STATUS`) — editing
   above a mutated method churns nothing, and `# line` tags are review
-  metadata. Do not copy source line numbers anywhere in
-  `config/pitest/README.md`; this includes acceptance and timeout arguments,
-  retired-incident prose, tables, and inline or fenced coordinate rosters.
-  A roster is narrative evidence, not protected membership: retain line-less
-  class/method/mutator evidence and meaningful multiplicity as `xN`
-  (typographic `×N` is equivalent). The
-  current PIT report and the row's `# line` tag are the sole transient locators.
+  metadata. New or edited mutation-evidence prose should use line-less
+  class/method/mutator identifiers rather than source line numbers. Existing prose
+  is not a plugin-upgrade gate; repair a stale locator when ordinary review encounters
+  it. The current PIT report and the row's `# line` tag are the sole transient locators.
   A new mutant replacing a
   killed one at the same key can inherit
   its acceptance, so treat a line-drift advisory whose written argument no
@@ -224,20 +219,14 @@ changes here:
   migration/rollback only with a fleet pin plan. A `[history]` report may check
   the ratchet but cannot support adding, removing, or relabelling
   accepted/timeout records; run `pitest<Suite> -PnoMutationHistory` first.
-- Consumer hardening notes contain only local ownership, measurements, acceptance
-  reasons, and provenance. `AGENTS.md` carries this exact generated,
-  digest-pinned template with repository-specific facts outside its bounded block,
-  but no independently maintained
-  copy of plugin task semantics. Local prose may name a project-qualified task and
-  say when repository policy requires it; task output, pass/fail or warning
-  conditions, refusals, normalization, and fallback behavior stay in the installed
-  plugin and its help. Use `hardeningHelp` and
+- Consumer hardening notes should focus on local ownership, measurements, acceptance
+  reasons, and provenance. Prefer a `hardeningHelp` pointer over a detailed copy of
+  installed task behavior, but do not turn a plugin upgrade into a repository-wide
+  prose migration. `AGENTS.md` carries this exact generated, digest-pinned template
+  with repository-specific facts outside its bounded block. Use `hardeningHelp` and
   project-qualified `hardeningAgentTemplate` as the installed-version authorities,
   and run the matching read-only `hardeningAgentTemplateDiff` against its explicitly
   bounded block on every template-digest move before acknowledging the new marker.
-  `hardeningAgentProseAudit` is a non-failing migration audit for known copied
-  mechanics in repository-owned prose outside that block; review every candidate
-  it names rather than treating a current digest as proof that local prose is clean.
 - **Iterate with `-PmutateOnly=<class-glob>`** while killing a cluster —
   seconds instead of the full suite — then re-run unscoped with
   `-PnoMutationHistory` before any record decision; the tooling refuses to let
@@ -429,7 +418,7 @@ changes here:
   waiting. Give test clocks a non-zero origin — a clock starting at 0 makes
   every "start timestamp mutated to 0" mutant equivalent by accident.
 <!-- hardening-template block:end -->
-<!-- hardening-template sha256:413550d1db9c -->
+<!-- hardening-template sha256:4700f2aad913 -->
 
 ### GLAM-local hardening facts
 
@@ -532,17 +521,11 @@ earlier record commits predate the generator writing a report by default
 (idl-src-gen `42ea388`) and never carried one either way.
 
 `.github/report-evidence.sh` is that sentence as a gate, run over every pushed
-range by the `Report Evidence` workflow. It keys on the movement-implying *lines*
-of a **modified** record — a channel `hash`, `lastDeploySlot`, `programDataState`,
-`programDataPayloadSha256` — and not on the file being touched: an *added* record
-is a first generation with no baseline to have moved against, and a top-level key
-*appearing* with no `-` line is the record format growing a field (`1fee3f8`
-restamped all 24 records that way), not the program moving — a channel `hash`
-still counts on any sign, because a channel appearing is movement. A record moved with no
-generation behind it says so in commit trailers the gate verifies rather than
-merely requires: a `Report-Evidence:` trailer carrying the why in prose, plus one
-`Report-Evidence-Path:` trailer per moved record, whose set must equal exactly the
-records the gate detects; on failure it prints the set, ready to paste.
+range by the `Report Evidence` workflow. Read the script for what it keys on; it
+is the authority, and `1fee3f8` is the local precedent for a format-only restamp
+across all 24 records. A record moved with no generation behind it says so in
+commit trailers: a `Report-Evidence:` trailer carrying the why in prose, plus one
+`Report-Evidence-Path:` trailer per moved record.
 
 The script and `.github/hooks/pre-push` are **vendored, byte-identical copies** of
 `consumer/` in sava-software/idl-src-gen, which is canonical — the audit's key set
