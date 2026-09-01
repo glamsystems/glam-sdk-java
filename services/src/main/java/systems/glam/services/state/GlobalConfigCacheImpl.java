@@ -358,7 +358,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
         );
         logger.log(ERROR, msg);
         for (final var listener : listeners) {
-          listener.onUnexpectedOracleChange(slot, previous, current);
+          listener.onUnexpectedOracleChange(slot, previous, current, assetMetaContexts);
         }
         // return null; TODO: Currently allowed in production env, return null once updated.
       }

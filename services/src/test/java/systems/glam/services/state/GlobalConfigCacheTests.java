@@ -1223,15 +1223,29 @@ final class GlobalConfigCacheTests {
         first.oracleSource(), first.maxAgeSeconds(), first.priority(), first.padding()
     );
     final var called = new AtomicReference<String>();
+    final var capturedContexts = new AtomicReference<AssetMetaContext[]>();
+    final var listener = new GlobalConfigListener() {
+      @Override
+      public void onUnexpectedOracleChange(final long slot,
+                                           final AssetMetaContext previous,
+                                           final AssetMetaContext latest, final AssetMetaContext[] assetMetaContexts) {
+        called.set("onUnexpectedOracleChange");
+        capturedContexts.set(assetMetaContexts);
+      }
+    };
     assertNotNull(previous);
+    final var latestContexts = contexts(config, swapped);
     final var result = GlobalConfigCacheImpl.createMapChecked(
         1L, previous.assetMetaContexts(), cache.assetMetaMap,
-        contexts(config, swapped), NULL_MINT_CACHE, Set.of(new TestGlobalConfigListener(called))
+        latestContexts, NULL_MINT_CACHE, Set.of(listener)
     );
     // deliberately flag-and-continue: the swap is logged and notified but the
     // config is still accepted (see the TODO on this branch in createMapChecked)
     assertNotNull(result, "an unexpected oracle swap is currently allowed");
     assertEquals("onUnexpectedOracleChange", called.get());
+    // the event hands the LATEST (post-swap) contexts, not the previous array also in scope
+    // at the fire site — a listener resyncing from this argument must see what was applied
+    assertSame(latestContexts, capturedContexts.get());
     assertLogged("Unexpected GlobalConfig Oracle Change");
   }
 
@@ -1470,7 +1484,7 @@ final class GlobalConfigCacheTests {
     @Override
     public void onUnexpectedOracleChange(final long slot,
                                          final AssetMetaContext previous,
-                                         final AssetMetaContext latest) {
+                                         final AssetMetaContext latest, final AssetMetaContext[] assetMetaContexts) {
       called.set("onUnexpectedOracleChange");
     }
 

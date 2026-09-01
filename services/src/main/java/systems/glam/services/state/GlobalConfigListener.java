@@ -45,7 +45,7 @@ public interface GlobalConfigListener {
 
   default void onUnexpectedOracleChange(final long slot,
                                         final AssetMetaContext previous,
-                                        final AssetMetaContext latest) {
+                                        final AssetMetaContext latest, final AssetMetaContext[] assetMetaContexts) {
   }
 
   default void onInconsistentDecimals(final long slot,
