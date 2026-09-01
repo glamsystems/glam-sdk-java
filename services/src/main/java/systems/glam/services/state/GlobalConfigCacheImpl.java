@@ -102,6 +102,10 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     readLock.lock();
     try {
       final var assetMetaMap = this.assetMetaMap;
+      if (assetMetaMap == null) {
+        // the cache has been invalidated; treat as a miss until a valid config is re-accepted
+        return null;
+      }
       final var assetMetaEntries = assetMetaMap.get(mint);
       return assetMetaEntries == null ? null : assetMetaEntries[0];
     } finally {
@@ -113,7 +117,23 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   public boolean hasAssetMetaForMint(final PublicKey mint) {
     readLock.lock();
     try {
-      return assetMetaMap.containsKey(mint);
+      final var assetMetaMap = this.assetMetaMap;
+      // null: the cache has been invalidated; a miss, never an NPE — callers gate
+      // alerts on this inside listener dispatch that would swallow the throw
+      return assetMetaMap != null && assetMetaMap.containsKey(mint);
+    } finally {
+      readLock.unlock();
+    }
+  }
+
+  @Override
+  public boolean hasAssetMetaForOracle(final PublicKey oracle) {
+    readLock.lock();
+    try {
+      final var globalConfigUpdate = this.globalConfigUpdate;
+      // null: invalidated — a miss, never an NPE, for the same reason as hasAssetMetaForMint
+      return globalConfigUpdate != null
+          && Arrays.stream(globalConfigUpdate.assetMetaContexts()).anyMatch(meta -> meta.oracle().equals(oracle));
     } finally {
       readLock.unlock();
     }

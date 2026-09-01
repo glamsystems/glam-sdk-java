@@ -131,6 +131,13 @@ public interface GlobalConfigCache extends Runnable {
 
   boolean hasAssetMetaForMint(final PublicKey mint);
 
+  /// True when `oracle` is any entry's configured pricing oracle — the reverse of
+  /// [#hasAssetMetaForMint]. For a `KaminoReserve`-source entry the oracle is the
+  /// reserve account itself, so this answers "would swapping this account's price
+  /// source silently substitute the oracle GLAM prices through" — a hazard the
+  /// cadence-health monitor cannot see, since it only detects prices *stopping*.
+  boolean hasAssetMetaForOracle(final PublicKey oracle);
+
   AssetMetaContext solAssetMeta();
 
   AssetMetaContext topPriorityForMintChecked(final PublicKey mint);

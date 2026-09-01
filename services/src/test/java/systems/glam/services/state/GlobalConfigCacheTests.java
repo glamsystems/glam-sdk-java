@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -1917,5 +1918,86 @@ final class GlobalConfigCacheTests {
     GlobalConfigCacheImpl.persistGlobalConfig(blocked, new byte[]{1, 2, 3});
     assertLogged("Failed to write GlobalConfig to file");
     assertTrue(Files.isDirectory(blocked));
+  }
+
+  /// A decimals invalidation nulls `assetMetaMap` and `globalConfigUpdate` under the
+  /// write lock. The unchecked queries used to NPE on the nulled map — and because
+  /// callers like the Kamino monitor gates run inside listener dispatch that swallows
+  /// RuntimeExceptions, the failure mode was silent alert loss. Invalidated must read
+  /// as "no config": a miss, never a crash.
+  @Test
+  void anInvalidatedCacheAnswersQueriesAsAMissNotAnNpe(@TempDir final Path tempDir) {
+    // armed only after the cache loads, so the initial config is accepted; then it
+    // reports a decimals value one off the configured one for the probed mint
+    final var probe = new AtomicReference<AssetMetaContext>();
+    final var mismatched = new MintCache() {
+      @Override
+      public MintContext get(final PublicKey mintPubkey) {
+        final var meta = probe.get();
+        return meta != null && meta.asset().equals(mintPubkey)
+            ? MintContext.createContext(SolanaAccounts.MAIN_NET, mintPubkey, meta.decimals() + 1, 0)
+            : null;
+      }
+
+      @Override
+      public MintContext setGet(final MintContext mintContext) {
+        return null;
+      }
+
+      @Override
+      public MintContext delete(final PublicKey mintPubkey) {
+        return null;
+      }
+
+      @Override
+      public void close() {
+      }
+    };
+    final var cache = createCache(tempDir, mismatched);
+    final var meta = cache.globalConfigUpdate().assetMetaContexts()[0];
+    probe.set(meta);
+    final var mint = meta.asset();
+    assertTrue(cache.hasAssetMetaForMint(mint), "the fixture mint must be configured before invalidation");
+
+    assertThrows(IllegalStateException.class, () -> cache.topPriorityForMintChecked(mint));
+    assertLogged("GlobalConfig decimals for Asset does not match Mint");
+
+    assertFalse(cache.hasAssetMetaForMint(mint));
+    assertNull(cache.topPriorityForMint(mint));
+    assertFalse(cache.hasAssetMetaForOracle(meta.oracle()));
+    // every miss path released its read lock
+    assertEquals(0, cache.lock.getReadLockCount());
+    assertFalse(cache.lock.isWriteLocked());
+  }
+
+  /// The reverse relevance question the Kamino monitor's escalation rule asks:
+  /// "is this account a configured pricing oracle anywhere in the GlobalConfig".
+  /// Scans every entry — not just each mint's top priority — because several
+  /// entries can share a mint and several assets one oracle; and it must never
+  /// confuse subjects, so a configured MINT key answers false.
+  @Test
+  void hasAssetMetaForOracleMatchesAnyEntrysOracleAndNothingElse(@TempDir final Path tempDir) {
+    final var cache = createCache(tempDir);
+    final var metas = cache.globalConfigUpdate().assetMetaContexts();
+    assertTrue(metas.length > 0, "the fixture config must carry entries");
+    for (final var meta : metas) {
+      assertTrue(cache.hasAssetMetaForOracle(meta.oracle()), meta.toJson());
+    }
+    // the query runs under the read lock and must release it: a leaked hold would block the
+    // next config write forever, which no assertion on the answer alone could see
+    assertEquals(0, cache.lock.getReadLockCount());
+    // a mint that is nobody's oracle must answer false — subject confusion kill
+    final var oracles = Arrays.stream(metas).map(AssetMetaContext::oracle).collect(Collectors.toSet());
+    final var mintOnly = Arrays.stream(metas)
+        .map(AssetMetaContext::asset)
+        .filter(asset -> !oracles.contains(asset))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("fixture has no mint that is not also an oracle"));
+    assertFalse(cache.hasAssetMetaForOracle(mintOnly));
+
+    final byte[] fresh = new byte[PublicKey.PUBLIC_KEY_LENGTH];
+    fresh[0] = (byte) 0xEE;
+    fresh[31] = (byte) 0xEE;
+    assertFalse(cache.hasAssetMetaForOracle(PublicKey.createPubKey(fresh)));
   }
 }
