@@ -39,10 +39,12 @@ plus service components for operating against it.
   (`fulfillment/`), batched SQL (`db/sql/`), and instruction execution
   (`execution/`).
 - `examples/` — scratch/example module; not part of the hardening surface.
-- `glam/` (untracked) — mapping configs cloned from
-  `glamsystems/ix-mapper-ts` by `./downloadMappings.sh`; the sdk jar embeds
-  `glam/mapping-configs-v1` as `glam/ix-mappings`. Run the script after a
-  fresh clone if the sdk jar task complains.
+- `glam/` (untracked) — mapping configs from `glamsystems/ix-mapper-ts` at
+  the commit `./downloadMappings.sh` pins (`MAPPINGS_REF`); the sdk `jar` task
+  runs the script itself and embeds `glam/mapping-configs-v1` as
+  `glam/ix-mappings`, refusing to build or to write an archive without them.
+  `./syncMappings.sh [sha]` moves the pin; commit the pin change with the
+  jar it produces.
 - `Integ.*` files are git-ignored scratch — present on a dev machine, absent
   in CI. Never make anything depend on them.
 
@@ -550,5 +552,7 @@ skips it, so the two answer different halves.
   separate generated trees, and instruction layouts can differ between them.
 - The generated `gen` trees are large (hundreds of files); searches are much
   faster when scoped to the hand-written packages (`-not -path '*/gen/*'`).
-- The sdk jar embeds the untracked `glam/mapping-configs-v1` directory; a
-  clean clone needs `./downloadMappings.sh` before the jar is meaningful.
+- The sdk jar embeds the untracked `glam/mapping-configs-v1` directory and
+  materializes it itself at the pinned ix-mapper-ts commit; a jar without
+  `glam/ix-mappings/*.json` entries fails the `jar` task rather than
+  publishing empty, which is what every release before the pin did.
