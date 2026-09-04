@@ -1,11 +1,12 @@
 IDL gap report
 
-Every channel that disagrees with the idl.json its program was generated from — a standing
-state, true again on every run until someone deploys what the divergent channel already
-publishes. A dashboard to read rather than a diff to review: an entry names its members and
-changes only when that membership does, while the volatile counts and versions stay on the
-console summaries and the movement log. Ordered by program and channel, and carrying no
-timestamp.
+Every channel that disagrees with the idl.json its program was generated from, and every
+review a config records against a deploy slot — standing states, true again on every run
+until someone deploys what the divergent channel already publishes or reviews the deploy
+that retired the verdict. A dashboard to read rather than a diff to review: an entry names
+its members and changes only when that membership does, while the volatile counts and
+versions stay on the console summaries and the movement log. Ordered by program and channel,
+and carrying no timestamp.
 
 == Next gap (16) ==
 

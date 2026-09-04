@@ -7,6 +7,6 @@ nobody took. The standing disagreements live beside this file, at its name with 
 before the extension. Ordered by program and channel, and carrying no timestamp, so
 consecutive runs are worth diffing against each other.
 
-== Movement (0) ==
+== Movement (1) ==
 
-Nothing moved since the last generation.
+GLAM Staging Stake Pool: the program was redeployed at slot 444081677, up from 443824185, and no IDL channel moved with it (the metadata IDL was last written at slot 444081694, since this deploy, and the document is unchanged); the stored program image changed: 402888 payload bytes, was 402888 — review required
