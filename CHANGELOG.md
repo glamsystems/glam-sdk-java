@@ -1,5 +1,12 @@
 # Changelog
 
+## [25.18.1](https://github.com/glamsystems/glam-sdk-java/compare/25.18.0...25.18.1) (2026-09-04)
+
+
+### Bug Fixes
+
+* **sdk:** the published jar ships the mapping configs ([8bf8ff3](https://github.com/glamsystems/glam-sdk-java/commit/8bf8ff38d74628a56940a9e333c954e05daac482))
+
 ## [25.18.0](https://github.com/glamsystems/glam-sdk-java/compare/25.17.1...25.18.0) (2026-09-01)
 
 
