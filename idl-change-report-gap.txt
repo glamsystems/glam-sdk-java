@@ -8,7 +8,7 @@ its members and changes only when that membership does, while the volatile count
 versions stay on the console summaries and the movement log. Ordered by program and channel,
 and carrying no timestamp.
 
-== Next gap (16) ==
+== Next gap (15) ==
 
 GLAM Config: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_config.json differs from the deployed idl.json
   instructions added (2): deprecate_asset_meta, update_fee_authority
@@ -23,10 +23,11 @@ GLAM Marinade: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_marina
 
 GLAM Mint: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_mint.json differs from the deployed idl.json
   instructions added (7): fulfill_with_ref_nav, price_jupiter_borrow_positions, price_jupiter_earn_positions, price_marginfi_accounts, price_orca_whirlpool_positions, price_registered_positions, subscribe_with_ref_nav
+  instructions changed (1): claim_fees
   accounts added (1): ObservationState
   types added (6): Denomination, DenominationSpec, Observation, ObservationState, PositionObservation, StoredI128
   types changed (3): AssetMeta, GlobalConfig, MintPolicy
-  errors added (5): InsufficientEscrowBalance, InvalidMintState, NavDeviationTooLarge, SubscriptionPausedOverdue, TokenAclManagesFreezeThaw
+  errors added (6): EscrowSourceNotAllowed, InsufficientEscrowBalance, InvalidMintState, NavDeviationTooLarge, SubscriptionPausedOverdue, TokenAclManagesFreezeThaw
 
 GLAM Protocol: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_protocol.json differs from the deployed idl.json
   instructions added (1): set_protocol_policy_by_integration_authority
@@ -61,9 +62,6 @@ GLAM Staging Phoenix: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext
 
 GLAM Staging Registered Positions: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_rpi-staging.json differs from the deployed idl.json
   accounts added (1): StateAccount
-
-GLAM Staging SPL: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_spl-staging.json differs from the deployed idl.json
-  types changed (1): AccountType
 
 GLAM Staging Stake Pool: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_stake_pool-staging.json differs from the deployed idl.json
   accounts added (1): StateAccount

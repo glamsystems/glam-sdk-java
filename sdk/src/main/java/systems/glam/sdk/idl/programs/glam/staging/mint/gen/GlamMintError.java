@@ -25,7 +25,8 @@ public sealed interface GlamMintError extends ProgramError permits
     GlamMintError.TokenAclManagesFreezeThaw,
     GlamMintError.InvalidMintState,
     GlamMintError.SubscriptionPausedOverdue,
-    GlamMintError.NavDeviationTooLarge {
+    GlamMintError.NavDeviationTooLarge,
+    GlamMintError.EscrowSourceNotAllowed {
 
   static GlamMintError getInstance(final int errorCode) {
     return switch (errorCode) {
@@ -51,6 +52,7 @@ public sealed interface GlamMintError extends ProgramError permits
       case 6019 -> InvalidMintState.INSTANCE;
       case 6020 -> SubscriptionPausedOverdue.INSTANCE;
       case 6021 -> NavDeviationTooLarge.INSTANCE;
+      case 6022 -> EscrowSourceNotAllowed.INSTANCE;
       default -> null;
     };
   }
@@ -206,6 +208,13 @@ public sealed interface GlamMintError extends ProgramError permits
 
     public static final NavDeviationTooLarge INSTANCE = new NavDeviationTooLarge(
         6021, "NAV deviation from reference exceeds tolerance"
+    );
+  }
+
+  record EscrowSourceNotAllowed(int code, String msg) implements GlamMintError {
+
+    public static final EscrowSourceNotAllowed INSTANCE = new EscrowSourceNotAllowed(
+        6022, "Escrow shares cannot be burned or force-transferred by a manager"
     );
   }
 }

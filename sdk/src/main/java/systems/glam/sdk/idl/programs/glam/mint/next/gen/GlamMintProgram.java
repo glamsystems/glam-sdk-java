@@ -277,7 +277,7 @@ public final class GlamMintProgram {
                                                 final PublicKey depositTokenProgramKey,
                                                 final PublicKey token2022ProgramKey) {
     return List.of(
-      createRead(glamStateKey),
+      createWrite(glamStateKey),
       createWrite(glamVaultKey),
       createWrite(glamMintKey),
       createRead(glamEscrowKey),

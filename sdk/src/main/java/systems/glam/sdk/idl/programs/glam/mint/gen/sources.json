@@ -15,7 +15,7 @@
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/glam_mint.json",
-      "hash": "e9c7614ed1288ae7e092bcba95cf959a7f671cd4a1ee8d38532bb522a5949b0e",
+      "hash": "014aa768712e38d60ca8dff3a24aa177cd4df1b8ea2e95786b989cc2e11b3967",
       "matchesDeployed": false,
       "file": "vcs.json",
       "verbatim": "vcs.json"
