@@ -7,10 +7,12 @@ nobody took. The standing disagreements live beside this file, at its name with 
 before the extension. Ordered by program and channel, and carrying no timestamp, so
 consecutive runs are worth diffing against each other.
 
-== Movement (2) ==
+== Movement (3) ==
 
-GLAM Staging Mint: the anchor IDL at 28HSbEepgNUC7f5ceJ1FPacJXNiAo6ScrbXJpQj3EhHv moved since the last generation: instructions ~1, errors +1
-  instructions changed (1): claim_fees
-  errors added (1): EscrowSourceNotAllowed
+GLAM Staging Jupiter: the metadata IDL at H1u4sYrxg7Knb1HYTCZMPkCdanYVAf9tGD5gehqxygJt moved since the last generation: errors +1
+  errors added (1): GlamAccountInRemainingAccounts
 
-GLAM Staging Mint: the program was redeployed at slot 445467293, up from 427332645; the stored program image changed: 2029536 payload bytes, was 1901704 — review required
+GLAM Staging Jupiter: the program was redeployed at slot 446813853, up from 442618664; the stored program image changed: 491456 payload bytes, was 491456 — review required
+
+GLAM Staging Jupiter: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_jupiter-staging.json moved since the last generation: errors +1
+  errors added (1): GlamAccountInRemainingAccounts

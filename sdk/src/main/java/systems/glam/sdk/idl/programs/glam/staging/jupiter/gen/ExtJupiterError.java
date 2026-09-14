@@ -11,7 +11,8 @@ public sealed interface ExtJupiterError extends ProgramError permits
     ExtJupiterError.DuplicateMutableAccount,
     ExtJupiterError.InvalidRemainingAccountIndices,
     ExtJupiterError.RemainingAccountsCountMismatch,
-    ExtJupiterError.NoopOperate {
+    ExtJupiterError.NoopOperate,
+    ExtJupiterError.GlamAccountInRemainingAccounts {
 
   static ExtJupiterError getInstance(final int errorCode) {
     return switch (errorCode) {
@@ -23,6 +24,7 @@ public sealed interface ExtJupiterError extends ProgramError permits
       case 6005 -> InvalidRemainingAccountIndices.INSTANCE;
       case 6006 -> RemainingAccountsCountMismatch.INSTANCE;
       case 6007 -> NoopOperate.INSTANCE;
+      case 6008 -> GlamAccountInRemainingAccounts.INSTANCE;
       default -> null;
     };
   }
@@ -80,6 +82,13 @@ public sealed interface ExtJupiterError extends ProgramError permits
 
     public static final NoopOperate INSTANCE = new NoopOperate(
         6007, "Jupiter operate instruction must request at least one position change"
+    );
+  }
+
+  record GlamAccountInRemainingAccounts(int code, String msg) implements ExtJupiterError {
+
+    public static final GlamAccountInRemainingAccounts INSTANCE = new GlamAccountInRemainingAccounts(
+        6008, "Remaining accounts must not include the GLAM state, the vault, the integration authority, or a token account the vault owns"
     );
   }
 }

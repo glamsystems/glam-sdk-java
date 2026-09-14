@@ -1,21 +1,21 @@
 {
   "program": "gstgJbGqoE3p1SdFA2dET9tcaCzNqGcdD8wpbGctnU9",
   "deployed": "metadata",
-  "lastDeploySlot": 442618664,
+  "lastDeploySlot": 446813853,
   "programDataState": "upgradeable",
   "programDataStateSlot": 439884391,
-  "programDataPayloadSha256": "77da92d309670a0dbc3e905e436a940def04a30adb264845a3aeb49c2efa2e78",
+  "programDataPayloadSha256": "df007102ca369ae4e58e1e61725776543439213c2d7a225cbb1f3290f5e1b8f8",
   "programDataPayloadLength": 491456,
   "channels": {
     "metadata": {
       "origin": "H1u4sYrxg7Knb1HYTCZMPkCdanYVAf9tGD5gehqxygJt",
-      "hash": "0c83fd575636e737c9c7716d6ed870f309c8c77ed088621b860da6be724a010c",
+      "hash": "90fd0e1ca89d826b3b4028a3db4b67451d6f28245b427ef15cfc8e19bc37ecc4",
       "matchesDeployed": true,
       "verbatim": "idl.json"
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_jupiter-staging.json",
-      "hash": "c03e1f21a721cdc8a007a679b652309431bef12236531ced03e54c950c651a78",
+      "hash": "a232ca613e253c970073d73c880514d2f9ee603a06bf69b85ce881b0595cd5e4",
       "matchesDeployed": false,
       "file": "vcs.json",
       "verbatim": "vcs.json"
