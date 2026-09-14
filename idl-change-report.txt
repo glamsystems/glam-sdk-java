@@ -7,12 +7,6 @@ nobody took. The standing disagreements live beside this file, at its name with 
 before the extension. Ordered by program and channel, and carrying no timestamp, so
 consecutive runs are worth diffing against each other.
 
-== Movement (3) ==
+== Movement (1) ==
 
-GLAM Staging Jupiter: the metadata IDL at H1u4sYrxg7Knb1HYTCZMPkCdanYVAf9tGD5gehqxygJt moved since the last generation: errors +1
-  errors added (1): GlamAccountInRemainingAccounts
-
-GLAM Staging Jupiter: the program was redeployed at slot 446813853, up from 442618664; the stored program image changed: 491456 payload bytes, was 491456 — review required
-
-GLAM Staging Jupiter: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_jupiter-staging.json moved since the last generation: errors +1
-  errors added (1): GlamAccountInRemainingAccounts
+GLAM Staging Protocol: the program was redeployed at slot 446999833, up from 445449608, and no IDL channel moved with it (the anchor IDL was last written at slot 446999989, since this deploy, and the document is unchanged; the metadata IDL was last written at slot 442616475, before the previous deploy); the stored program image changed: 819896 payload bytes, was 819896 — review required
