@@ -81,11 +81,11 @@
 # the re-add is indistinguishable from a first generation), a record rewritten compact
 # (the generator always pretty-prints; the anchored grep assumes it), and merge commits
 # (--no-merges; the consumer repositories have no human merges and release-please's
-# never touch a record). One legitimate shape is known to trip the evidence check
-# rather than escape it: a second consecutive member-less movement (an unmodeled IDL
-# section moved, versions unchanged) renders a report byte-identical to the first, so
-# the blob cannot change (idl-src-gen#5 is the fix — self-distinguishing entries);
-# until then the trailers are the honest answer for that commit.
+# never touch a record). A generator older than idl-src-gen's fix for #5 rendered a
+# second consecutive member-less movement (an unmodeled IDL section moved, versions
+# unchanged) byte-identical to the first, so the blob could not change and that record
+# commit needed the trailers; a moved entry now names the hash pair it moved between,
+# so consecutive reports differ and the shape no longer arises.
 set -uo pipefail
 
 # Pathspecs below are repo-relative; run from anywhere inside the repository.

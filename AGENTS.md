@@ -522,6 +522,14 @@ swallowed them silently, which is how `92318b2` lost its report — the three
 earlier record commits predate the generator writing a report by default
 (idl-src-gen `42ea388`) and never carried one either way.
 
+`genSrc.sh` refuses to start (exit 6) while the movement report on disk carries entries and
+its content is not what HEAD holds — the report of a run whose records were committed
+without it, or of a run not committed at all. A second generation would compare against
+the records the first already rewrote, report nothing, and overwrite the only copy of what
+it saw. The refusal spells out how to keep the report and when discarding it is still safe;
+`reportGuard.sh` beside `genSrc.sh` in idl-src-gen is the check, and it never refuses a
+fresh checkout, whose report is exactly HEAD's.
+
 `.github/report-evidence.sh` is that sentence as a gate, run over every pushed
 range by the `Report Evidence` workflow. Read the script for what it keys on; it
 is the authority, and `1fee3f8` is the local precedent for a format-only restamp
