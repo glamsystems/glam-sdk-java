@@ -803,6 +803,25 @@ reset leaves the shared key set dirty and poisons the neighbor's assembly. The
 older statement described the narrower no-neighbor fixture; the current
 neighbor-isolation test kills the removal.
 
+**Follow-up (2026-09-16):** the loop-heartbeat seam made two of the accepted
+equivalents above observable, and their rows were pruned from two matching
+fresh history-free previews plus the prune run's own. All three ran on a
+loaded machine (load average 35-40 on 10 cores), which is acceptable here
+because each is an assertion kill that load can only turn into `TIMED_OUT`,
+never back into `SURVIVED`. `unlock` in `delay`: the reactive heartbeat
+tests join the loop thread out of `run()` and assert `lock.isLocked()` is
+false, which a leaked hold fails synchronously. `run`'s initial
+`queue.isEmpty()` delay check: its "one extra sleep tick" is now one extra
+heartbeat tick against an exact count. The `delay,VoidMethodCallMutator,
+SURVIVED` row had also come to stand in front of every
+`LoopHeartbeat::tick` removal in `delay`, which share its key, so a dropped
+tick would have matched the accepted row instead of surfacing as debt. The
+untriaged `BaseDelegateServiceConfig.createAccountFetcher` `NO_COVERAGE`
+row went with them: the heartbeat overload test drives the configured
+fetcher. `lockedQueue`'s `EQUAL_IF` (the `if (reactive)` signal guard)
+stays: killed in one preview, survived the next three -- a wanderer, not a
+removal.
+
 ## Global config init paths pass (2026-07-23)
 
 `GlobalConfigCache.initCache`'s three entry conditions are now all pinned: a

@@ -16,7 +16,6 @@ systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parsePropert
 systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 375
 systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 407
 systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 412
-systems.glam.services.config.BaseDelegateServiceConfig,createAccountFetcher,NullReturnValsMutator,NO_COVERAGE # untriaged # line 215
 systems.glam.services.config.BaseDelegateServiceConfig,createEpochInfoService,NullReturnValsMutator,NO_COVERAGE # untriaged # line 154
 systems.glam.services.config.BaseDelegateServiceConfig,createExecutionServiceContext,NullReturnValsMutator,NO_COVERAGE # untriaged # line 206
 systems.glam.services.config.BaseDelegateServiceConfig,createInstructionProcessor,NullReturnValsMutator,NO_COVERAGE # untriaged # line 160
@@ -128,12 +127,10 @@ systems.glam.services.rpc.AccountFetcherImpl,createBatch,VoidMethodCallMutator,N
 systems.glam.services.rpc.AccountFetcherImpl,createBatch,IncrementsMutator,SURVIVED # accepted equivalent # line 340
 systems.glam.services.rpc.AccountFetcherImpl,createBatch,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # accepted equivalent # line 343
 systems.glam.services.rpc.AccountFetcherImpl,delay,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent # line 376
-systems.glam.services.rpc.AccountFetcherImpl,delay,VoidMethodCallMutator,SURVIVED # accepted equivalent # line 349
 systems.glam.services.rpc.AccountFetcherImpl,lockedQueue,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent # line 129
 systems.glam.services.rpc.AccountFetcherImpl,priorityQueueBatchable,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 196
 systems.glam.services.rpc.AccountFetcherImpl,queueBatchable,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent # line 179
 systems.glam.services.rpc.AccountFetcherImpl,run,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent # line 446
-systems.glam.services.rpc.AccountFetcherImpl,run,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent # line 389
 systems.glam.services.state.GlobalConfigCache,createMap,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 144
 systems.glam.services.state.GlobalConfigCache,createMap,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged # line 144
 systems.glam.services.state.GlobalConfigCacheImpl,accept,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 693
