@@ -21,9 +21,10 @@
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/glam_protocol-staging.json",
-      "hash": "912738dc2c40090066c08c675584a8b3c0131c5daa504315fcbdc140732b4dad",
-      "matchesDeployed": true,
-      "verbatim": "vcs.original.json"
+      "hash": "af7fdad8667ce0440d48c6c9d7cd480c1d0b20800bd1916c0fcdea42e9d9240d",
+      "matchesDeployed": false,
+      "file": "vcs.json",
+      "verbatim": "vcs.json"
     }
   }
 }

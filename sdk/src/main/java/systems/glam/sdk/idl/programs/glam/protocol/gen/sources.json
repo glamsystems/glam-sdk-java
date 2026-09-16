@@ -15,7 +15,7 @@
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/glam_protocol.json",
-      "hash": "482131d89ec0656ed01772b54d982f00935257e83a6750e2fe4bf10b323c9099",
+      "hash": "735870a96e12a60878e352488bef8009f614c3ad80110dfdc0ef097a3a91b488",
       "matchesDeployed": false,
       "file": "vcs.json",
       "verbatim": "vcs.json"
