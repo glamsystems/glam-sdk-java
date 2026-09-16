@@ -1,5 +1,20 @@
 # Changelog
 
+## [25.18.1](https://github.com/glamsystems/glam-sdk-java/compare/25.18.0...25.18.1) (2026-09-16)
+
+
+### Features
+
+* **services:** tick a LoopHeartbeat once per cycle of every long-running loop ([fc7b0d9](https://github.com/glamsystems/glam-sdk-java/commit/fc7b0d92cf44184bbd622774c4cccef4cec5108f))
+
+
+### Bug Fixes
+
+* **sdk:** the published jar ships the mapping configs ([8bf8ff3](https://github.com/glamsystems/glam-sdk-java/commit/8bf8ff38d74628a56940a9e333c954e05daac482))
+* **services:** reset the batch executor's backoff tier on every committed batch ([bb830ff](https://github.com/glamsystems/glam-sdk-java/commit/bb830ff4060fa2af30fd8d273d4325ce60edaf30))
+* **services:** reset the requeue cursor after a failed batch so a second failure cannot requeue it again ([1d2e0c1](https://github.com/glamsystems/glam-sdk-java/commit/1d2e0c1d2e53dc8997f29cb7d8c77db4b30dccff))
+* **services:** tick the batch executor heartbeat per committed batch, not per drain ([ae193a3](https://github.com/glamsystems/glam-sdk-java/commit/ae193a318751d8ce742f17e0df71ba0afd2281f9))
+
 ## [25.18.0](https://github.com/glamsystems/glam-sdk-java/compare/25.17.1...25.18.0) (2026-09-01)
 
 
