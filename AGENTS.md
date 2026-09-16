@@ -567,10 +567,22 @@ skips it, so the two answer different halves.
 - Every long-running `services` loop (`BatchSqlExecutor`, `AccountFetcher`,
   `GlobalConfigCache`, `StakePoolCache`) takes a trailing
   `systems.glam.services.LoopHeartbeat` through a factory overload and ticks
-  it once per completed cycle; the factory javadoc and each `run()` say what
-  the cycle is and where the tick sits. The heartbeat-less factories pass
-  `LoopHeartbeat.NONE` and behave exactly as before. A supervisor that ticks
-  a lifeline from that hook must set its dead-after threshold above the
-  loop's own idle cadence: `batchDelay` and a reactive fetcher's `fetchDelay`
-  are each floored at 100ms as the idle window, a polling fetcher's and the
-  caches' `fetchDelay` are used as configured.
+  it once per completed cycle, on its own thread; the factory javadoc and
+  each `run()` say what the cycle is and where the tick sits. A tick must be
+  prompt and must not block or throw: an idle batch executor and a reactive
+  fetcher tick under the lock their producers queue through, and every loop
+  ends on a throwing tick. The heartbeat-less factories pass
+  `LoopHeartbeat.NONE`; the one behavioural difference from before the seam
+  is that an idle `BatchSqlExecutor` and an idle reactive `AccountFetcher`
+  park in timed waits (one wake-up per idle window) instead of indefinitely.
+  A supervisor that ticks a lifeline from that hook sets its dead-after
+  threshold above the loop's longest *healthy* cycle, not just its idle
+  cadence: a batch executor idles on `batchDelay` floored at 100ms, but while
+  the database is failing its cycle is the datasource's connection timeout
+  plus the backoff delay (`Backoff.fibonacci(1, 21)` by default, so up to
+  21s); a reactive fetcher idles on `fetchDelay` floored at 100ms; a polling
+  fetcher and the caches tick once per `fetchDelay` as configured plus the
+  RPC call and consumer callbacks of one pass (`DefensivePollingConfig`
+  defaults: global config 1m, stake pools 12h -- a cadence no plausible
+  threshold covers, so leave such a loop exit-only or override its
+  threshold).

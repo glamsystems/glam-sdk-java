@@ -9,8 +9,8 @@ final class LoopHeartbeatTests {
 
   @Test
   void theNoneHeartbeatAcceptsEveryTickSilently() {
-    // NONE is what every factory without a heartbeat parameter passes: a loop
-    // ticking it must behave exactly as it did before the seam existed
+    // NONE is what every factory without a heartbeat parameter passes: ticking
+    // it must never disturb the loop
     for (int i = 0; i < 3; ++i) {
       assertDoesNotThrow(LoopHeartbeat.NONE::tick);
     }
