@@ -5,6 +5,7 @@ import software.sava.core.accounts.SolanaAccounts;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.GlobalConfig;
+import systems.glam.services.LoopHeartbeat;
 import systems.glam.services.io.FileUtils;
 import systems.glam.services.mints.AssetMetaContext;
 import systems.glam.services.mints.MintCache;
@@ -33,6 +34,31 @@ public interface GlobalConfigCache extends Runnable {
                                                         final RpcCaller rpcCaller,
                                                         final AccountFetcher accountFetcher,
                                                         final Duration fetchDelay) {
+    return initCache(
+        globalConfigFilePath,
+        configProgram, globalConfigKey,
+        solanaAccounts,
+        mintCache,
+        rpcCaller,
+        accountFetcher,
+        fetchDelay,
+        LoopHeartbeat.NONE
+    );
+  }
+
+  /// `heartbeat` ticks once per cycle of [#run]: a refresh queued to the account fetcher and
+  /// its `fetchDelay` waited out (or cut short by [#forceCacheRefresh]) -- once per delay
+  /// while idle, never while the loop is parked on the write lock behind a listener that
+  /// does not return. The invalidation exit does not tick; it is an exit.
+  static CompletableFuture<GlobalConfigCache> initCache(final Path globalConfigFilePath,
+                                                        final PublicKey configProgram,
+                                                        final PublicKey globalConfigKey,
+                                                        final SolanaAccounts solanaAccounts,
+                                                        final MintCache mintCache,
+                                                        final RpcCaller rpcCaller,
+                                                        final AccountFetcher accountFetcher,
+                                                        final Duration fetchDelay,
+                                                        final LoopHeartbeat heartbeat) {
     if (Files.exists(globalConfigFilePath)) {
       final byte[] data = FileUtils.readAccountData(globalConfigFilePath).data();
       if (data.length > 0) {
@@ -47,7 +73,8 @@ public interface GlobalConfigCache extends Runnable {
             mintCache,
             accountFetcher,
             fetchDelay,
-            globalConfigUpdate, assetMetaMap
+            globalConfigUpdate, assetMetaMap,
+            heartbeat
         );
         return CompletableFuture.completedFuture(cache);
       }
@@ -86,7 +113,8 @@ public interface GlobalConfigCache extends Runnable {
             mintCache,
             accountFetcher,
             fetchDelay,
-            globalConfigUpdate, assetMetaMap
+            globalConfigUpdate, assetMetaMap,
+            heartbeat
         );
         if (!mintsNeeded.isEmpty()) {
           accountFetcher.priorityQueueBatchable(mintsNeeded, cache);

@@ -36,6 +36,7 @@ import systems.comodal.jsoniter.FieldBufferPredicate;
 import systems.comodal.jsoniter.FieldMatcher;
 import systems.comodal.jsoniter.JsonIterator;
 import systems.glam.sdk.GlamAccounts;
+import systems.glam.services.LoopHeartbeat;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.ServiceContextImpl;
 import systems.glam.services.execution.ExecutionServiceContext;
@@ -212,11 +213,17 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
 
   @Override
   public AccountFetcher createAccountFetcher(final Set<PublicKey> alwaysFetch) {
+    return createAccountFetcher(alwaysFetch, LoopHeartbeat.NONE);
+  }
+
+  @Override
+  public AccountFetcher createAccountFetcher(final Set<PublicKey> alwaysFetch, final LoopHeartbeat heartbeat) {
     return AccountFetcher.createFetcher(
         accountFetcherConfig.fetchDelay(),
         accountFetcherConfig.reactive(),
         rpcCaller,
-        alwaysFetch
+        alwaysFetch,
+        heartbeat
     );
   }
 

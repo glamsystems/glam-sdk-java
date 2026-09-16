@@ -3,6 +3,7 @@ package systems.glam.services.rpc;
 import software.sava.core.accounts.PublicKey;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
+import systems.glam.services.LoopHeartbeat;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -24,7 +25,21 @@ public interface AccountFetcher extends Runnable {
                                       final boolean reactive,
                                       final RpcCaller rpcCaller,
                                       final Set<PublicKey> alwaysFetch) {
-    return new AccountFetcherImpl(fetchDelay, reactive, rpcCaller, alwaysFetch);
+    return createFetcher(fetchDelay, reactive, rpcCaller, alwaysFetch, LoopHeartbeat.NONE);
+  }
+
+  /// `heartbeat` ticks once per cycle of [#run]. A polling fetcher ticks after every
+  /// `fetchDelay` sleep -- once per fetched batch while work flows, once per delay while
+  /// idle -- so a fetcher stuck inside an RPC call goes quiet while an idle one stays alive.
+  /// A reactive fetcher ticks once its minimum delay has elapsed and then, while nothing is
+  /// queued, once per idle window: `fetchDelay` floored at
+  /// `AccountFetcherImpl.IDLE_TICK_FLOOR_NANOS`, so a zero delay does not spin the park.
+  static AccountFetcher createFetcher(final Duration fetchDelay,
+                                      final boolean reactive,
+                                      final RpcCaller rpcCaller,
+                                      final Set<PublicKey> alwaysFetch,
+                                      final LoopHeartbeat heartbeat) {
+    return new AccountFetcherImpl(fetchDelay, reactive, rpcCaller, alwaysFetch, heartbeat);
   }
 
   StampedSlot recentSlot();

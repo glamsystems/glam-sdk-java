@@ -9,9 +9,11 @@ import software.sava.idl.clients.spl.stakepool.StakePoolState;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.Context;
 import software.sava.services.solana.remote.call.RpcCaller;
+import systems.glam.services.LoopHeartbeat;
 import systems.glam.services.io.FileUtils;
 import systems.glam.services.io.KeyedFlatFile;
 import systems.glam.services.tests.LogCapture;
+import systems.glam.services.tests.RecordingHeartbeat;
 
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -21,7 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -38,12 +42,12 @@ final class StakePoolCacheTests {
     for (final var tooSmall : new Duration[]{Duration.ZERO, Duration.ofNanos(999_999), Duration.ofMillis(-1)}) {
       final var ex = assertThrows(
           IllegalArgumentException.class,
-          () -> new StakePoolCacheImpl(tooSmall, null, List.of(), Map.of(), Map.of())
+          () -> new StakePoolCacheImpl(tooSmall, null, List.of(), Map.of(), Map.of(), LoopHeartbeat.NONE)
       );
       assertTrue(ex.getMessage().contains("at least one millisecond"), ex.getMessage());
     }
     // exactly the floor is accepted
-    assertNotNull(new StakePoolCacheImpl(Duration.ofMillis(1), null, List.of(), Map.of(), Map.of()));
+    assertNotNull(new StakePoolCacheImpl(Duration.ofMillis(1), null, List.of(), Map.of(), Map.of(), LoopHeartbeat.NONE));
   }
 
   private static PublicKey key(final int id) {
@@ -134,6 +138,48 @@ final class StakePoolCacheTests {
         Duration.ofMillis(30),
         rpcCaller
     ).join();
+  }
+
+  private static StakePoolCache initCache(final Path tempDir,
+                                          final RpcCaller rpcCaller,
+                                          final LoopHeartbeat heartbeat) {
+    // one millisecond is the floor the poll loop accepts: the sleep between the
+    // passes below is real, so keep it at the floor
+    return StakePoolCache.initCache(
+        Executors.newVirtualThreadPerTaskExecutor(),
+        tempDir.resolve("pools"),
+        POOLS,
+        MARINADE,
+        Duration.ofMillis(1),
+        rpcCaller,
+        heartbeat
+    ).join();
+  }
+
+  @Test
+  void theRunLoopTicksOncePerPassOverEveryProgram(@TempDir final Path tempDir) throws Exception {
+    final var fetched = new ConcurrentLinkedQueue<PublicKey>();
+    final var running = new AtomicBoolean(false);
+    final var heartbeat = new RecordingHeartbeat();
+    try (final var cache = initCache(tempDir, rpcCaller(program -> {
+      if (running.get()) {
+        fetched.add(program);
+        // the second pass is the last: leave through the sleep, not the heartbeat,
+        // so a missing tick fails the count below instead of hanging the loop
+        if (fetched.size() == 6) {
+          Thread.currentThread().interrupt();
+        }
+      }
+      return List.of();
+    }), heartbeat)) {
+      assertEquals(0, heartbeat.ticks(), "the cold-start fetch is initialisation, not a cycle");
+      running.set(true);
+      cache.run();
+      // two passes over the three configured programs, and exactly one tick after each
+      assertEquals(6, fetched.size());
+      assertEquals(3, fetched.stream().distinct().count());
+      assertEquals(2, heartbeat.ticks());
+    }
   }
 
   @Test
@@ -314,6 +360,7 @@ final class StakePoolCacheTests {
         FileUtils.resolveAccountPath(tempDir, POOLS.stakePoolProgram())
     );
     try (flatFile) {
+      final var heartbeat = new RecordingHeartbeat();
       final var failing = new StakePoolCacheImpl(
           Duration.ofMillis(10),
           rpcCaller(program -> {
@@ -321,12 +368,15 @@ final class StakePoolCacheTests {
           }),
           List.of(),
           Map.of(POOLS.stakePoolProgram(), flatFile),
-          new ConcurrentHashMap<>()
+          new ConcurrentHashMap<>(),
+          heartbeat
       );
       try (final var logs = LogCapture.attach(StakePoolCache.class.getName())) {
         failing.run();
         logs.assertLogged("Unexpected error fetching stake pool accounts.");
       }
+      // the failure is an exit, not a completed cycle
+      assertEquals(0, heartbeat.ticks());
     }
   }
 }

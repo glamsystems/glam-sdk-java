@@ -19,6 +19,7 @@ import software.sava.services.solana.remote.call.RpcCaller;
 import software.sava.services.solana.transactions.*;
 import software.sava.services.solana.websocket.WebSocketManager;
 import systems.glam.sdk.GlamAccounts;
+import systems.glam.services.LoopHeartbeat;
 import systems.glam.services.ServiceContext;
 import systems.glam.services.execution.ExecutionServiceContext;
 import systems.glam.services.execution.InstructionProcessor;
@@ -118,4 +119,8 @@ public interface DelegateServiceConfig {
                                                         final InstructionProcessor instructionProcessor);
 
   AccountFetcher createAccountFetcher(final Set<PublicKey> alwaysFetch);
+
+  /// The configured fetcher with a supervisor's `heartbeat` -- see
+  /// [AccountFetcher#createFetcher(Duration, boolean, RpcCaller, Set, LoopHeartbeat)].
+  AccountFetcher createAccountFetcher(final Set<PublicKey> alwaysFetch, final LoopHeartbeat heartbeat);
 }

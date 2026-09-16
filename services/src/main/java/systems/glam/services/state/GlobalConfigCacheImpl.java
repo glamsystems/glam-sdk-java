@@ -6,6 +6,7 @@ import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.GlobalConfig;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.OracleSource;
+import systems.glam.services.LoopHeartbeat;
 import systems.glam.services.mints.AssetMetaContext;
 import systems.glam.services.mints.MintCache;
 import systems.glam.services.mints.MintContext;
@@ -46,6 +47,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
   private final Condition invalidGlobalConfig;
   private final Condition newGlobalConfig;
   private final Set<GlobalConfigListener> listeners;
+  private final LoopHeartbeat heartbeat;
 
   volatile GlobalConfigUpdate globalConfigUpdate;
   volatile Map<PublicKey, AssetMetaContext[]> assetMetaMap;
@@ -58,7 +60,8 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
                         final AccountFetcher accountFetcher,
                         final Duration fetchDelay,
                         final GlobalConfigUpdate globalConfigUpdate,
-                        final Map<PublicKey, AssetMetaContext[]> assetMetaMap) {
+                        final Map<PublicKey, AssetMetaContext[]> assetMetaMap,
+                        final LoopHeartbeat heartbeat) {
     this.globalConfigFilePath = globalConfigFilePath;
     this.configProgram = configProgram;
     this.globalConfigKey = globalConfigKey;
@@ -75,6 +78,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     this.globalConfigUpdate = globalConfigUpdate;
     this.assetMetaMap = assetMetaMap;
     this.listeners = ConcurrentHashMap.newKeySet();
+    this.heartbeat = heartbeat;
   }
 
   @Override
@@ -235,6 +239,11 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
     }
   }
 
+  /// A cycle is one refresh queued to the account fetcher followed by its delay window,
+  /// which a forced refresh may cut short. The heartbeat ticks after the wait, so an idle
+  /// loop ticks once per `fetchDelay` while one parked on the write lock -- held by an
+  /// `accept` whose listener never returns -- or inside the fetcher's queue lock goes
+  /// quiet. The invalidation return leaves without a tick: that is an exit, not a cycle.
   @Override
   public void run() {
     try {
@@ -254,6 +263,7 @@ final class GlobalConfigCacheImpl implements GlobalConfigCache, Consumer<Account
         } finally {
           writeLock.unlock();
         }
+        heartbeat.tick();
       }
     } catch (final InterruptedException e) {
       // exit

@@ -564,3 +564,13 @@ skips it, so the two answer different halves.
   materializes it itself at the pinned ix-mapper-ts commit; a jar without
   `glam/ix-mappings/*.json` entries fails the `jar` task rather than
   publishing empty, which is what every release before the pin did.
+- Every long-running `services` loop (`BatchSqlExecutor`, `AccountFetcher`,
+  `GlobalConfigCache`, `StakePoolCache`) takes a trailing
+  `systems.glam.services.LoopHeartbeat` through a factory overload and ticks
+  it once per completed cycle; the factory javadoc and each `run()` say what
+  the cycle is and where the tick sits. The heartbeat-less factories pass
+  `LoopHeartbeat.NONE` and behave exactly as before. A supervisor that ticks
+  a lifeline from that hook must set its dead-after threshold above the
+  loop's own idle cadence: `batchDelay` and a reactive fetcher's `fetchDelay`
+  are each floored at 100ms as the idle window, a polling fetcher's and the
+  caches' `fetchDelay` are used as configured.

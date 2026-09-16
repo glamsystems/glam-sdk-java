@@ -6,6 +6,7 @@ import software.sava.idl.clients.spl.stakepool.StakePoolState;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.solana.remote.call.RpcCaller;
+import systems.glam.services.LoopHeartbeat;
 import systems.glam.services.io.KeyedFlatFile;
 
 import java.time.Duration;
@@ -24,12 +25,14 @@ final class StakePoolCacheImpl implements StakePoolCache, Consumer<AccountInfo<b
   private final List<Filter> stakePoolFilters;
   private final Map<PublicKey, KeyedFlatFile<StakePoolContext>> stakePoolFileChannelByProgram;
   private final Map<PublicKey, StakePoolContext> stakePoolContextByMint;
+  private final LoopHeartbeat heartbeat;
 
   StakePoolCacheImpl(final Duration fetchDelay,
                      final RpcCaller rpcCaller,
                      final List<Filter> stakePoolFilters,
                      final Map<PublicKey, KeyedFlatFile<StakePoolContext>> stakePoolFileChannelByProgram,
-                     final Map<PublicKey, StakePoolContext> stakePoolContextByMint) {
+                     final Map<PublicKey, StakePoolContext> stakePoolContextByMint,
+                     final LoopHeartbeat heartbeat) {
     // This delay is slept between polling passes; below a millisecond that
     // sleep rounds to nothing and the loop spins a core.
     if (fetchDelay.toMillis() < 1) {
@@ -42,6 +45,7 @@ final class StakePoolCacheImpl implements StakePoolCache, Consumer<AccountInfo<b
     this.stakePoolFilters = stakePoolFilters;
     this.stakePoolFileChannelByProgram = stakePoolFileChannelByProgram;
     this.stakePoolContextByMint = stakePoolContextByMint;
+    this.heartbeat = heartbeat;
   }
 
   List<AccountInfo<byte[]>> fetchStateAccounts(final PublicKey stakePoolProgram) {
@@ -51,6 +55,10 @@ final class StakePoolCacheImpl implements StakePoolCache, Consumer<AccountInfo<b
     );
   }
 
+  /// A cycle is one pass over every configured stake-pool program: each fetched and its
+  /// accounts indexed. The heartbeat ticks after the pass and before the sleep, so an idle
+  /// cache ticks once per `fetchDelay` while one stuck inside a program-accounts call goes
+  /// quiet. A poll failure ends the loop without a tick: that is an exit, not a cycle.
   @Override
   public void run() {
     try {
@@ -59,6 +67,7 @@ final class StakePoolCacheImpl implements StakePoolCache, Consumer<AccountInfo<b
           final var stateAccounts = fetchStateAccounts(stakePoolProgram);
           stateAccounts.parallelStream().forEach(this);
         }
+        heartbeat.tick();
         //noinspection BusyWait
         Thread.sleep(fetchDelay);
       }

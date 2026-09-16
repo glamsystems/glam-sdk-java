@@ -17,7 +17,9 @@ import systems.glam.services.io.FileUtils;
 import systems.glam.services.mints.AssetMetaContext;
 import systems.glam.services.mints.MintCache;
 import systems.glam.services.mints.MintContext;
+import systems.glam.services.tests.RecordingHeartbeat;
 import systems.glam.services.tests.ResourceUtil;
+import systems.glam.services.tests.Workers;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -1585,6 +1587,102 @@ final class GlobalConfigCacheTests {
     ).join();
   }
 
+  private static GlobalConfigCacheImpl createCache(final Path tempDir,
+                                                   final systems.glam.services.rpc.AccountFetcher fetcher,
+                                                   final Duration fetchDelay,
+                                                   final systems.glam.services.LoopHeartbeat heartbeat) {
+    final var globalConfigFile = FileUtils.resolveCompressedAccountPath(tempDir, GLOBAL_CONFIG_KEY);
+    try {
+      FileUtils.writeCompressedAccountData(tempDir, GLOBAL_CONFIG_KEY, globalConfigData);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return (GlobalConfigCacheImpl) GlobalConfigCache.initCache(
+        globalConfigFile,
+        GlamAccounts.MAIN_NET.configProgram(),
+        GLOBAL_CONFIG_KEY,
+        SolanaAccounts.MAIN_NET,
+        NULL_MINT_CACHE,
+        null,
+        fetcher,
+        fetchDelay,
+        heartbeat
+    ).join();
+  }
+
+  /// Counts the run loop's consumer-style refresh requests and hands each call's ordinal
+  /// to `onQueue` on the queueing thread -- the loop's own -- so a test can interrupt or
+  /// invalidate from inside the cycle it wants to be the last, and a removed tick then
+  /// fails a count instead of hanging the loop.
+  private static systems.glam.services.rpc.AccountFetcher refreshCountingFetcher(
+      final java.util.concurrent.atomic.AtomicInteger consumerQueues,
+      final java.util.function.IntConsumer onQueue) {
+    return (systems.glam.services.rpc.AccountFetcher) java.lang.reflect.Proxy.newProxyInstance(
+        systems.glam.services.rpc.AccountFetcher.class.getClassLoader(),
+        new Class<?>[]{systems.glam.services.rpc.AccountFetcher.class},
+        (proxy, method, args) -> {
+          if (method.getName().equals("priorityQueue") && method.getReturnType() == void.class) {
+            onQueue.accept(consumerQueues.incrementAndGet());
+            return null;
+          }
+          throw new UnsupportedOperationException(method.getName());
+        }
+    );
+  }
+
+  @Test
+  void theRunLoopTicksOncePerRefreshCycle(@TempDir final Path tempDir) throws InterruptedException {
+    final var consumerQueues = new java.util.concurrent.atomic.AtomicInteger();
+    final var heartbeat = new RecordingHeartbeat();
+    // a zero delay makes every wait lapse at once; the third refresh request
+    // interrupts the loop, whose wait then throws before that cycle completes
+    final var fetcher = refreshCountingFetcher(consumerQueues, call -> {
+      if (call == 3) {
+        Thread.currentThread().interrupt();
+      }
+    });
+    final var cache = createCache(tempDir, fetcher, Duration.ZERO, heartbeat);
+
+    // on its own thread: a loop that stops re-queuing -- a lapsed delay no longer
+    // ending its wait -- never reaches the third request, and must fail the bounded
+    // join rather than spin the test thread until the watchdog
+    final var worker = new Thread(cache::run, "global-config-cache");
+    worker.start();
+    Workers.joinWithin(worker, "the third refresh request must interrupt the loop out of its wait");
+
+    // two cycles waited out their delay; the interrupted third is an exit
+    assertEquals(3, consumerQueues.get());
+    assertEquals(2, heartbeat.ticks());
+    assertUnlocked(cache);
+  }
+
+  @Test
+  void theInvalidationExitDoesNotTick(@TempDir final Path tempDir) throws InterruptedException {
+    final var consumerQueues = new java.util.concurrent.atomic.AtomicInteger();
+    final var heartbeat = new RecordingHeartbeat();
+    final var cacheRef = new AtomicReference<GlobalConfigCacheImpl>();
+    // the second refresh request finds the cache invalidated, as a rejected
+    // replacement would leave it: the loop must return, not count a cycle
+    final var fetcher = refreshCountingFetcher(consumerQueues, call -> {
+      if (call == 2) {
+        final var cache = cacheRef.get();
+        cache.globalConfigUpdate = null;
+        cache.assetMetaMap = null;
+      }
+    });
+    final var cache = createCache(tempDir, fetcher, Duration.ZERO, heartbeat);
+    cacheRef.set(cache);
+
+    final var worker = new Thread(cache::run, "global-config-cache");
+    worker.start();
+    Workers.joinWithin(worker, "the invalidated cache must end the loop at its next wake-up");
+
+    assertEquals(2, consumerQueues.get());
+    assertEquals(1, heartbeat.ticks());
+    assertNull(cache.globalConfig());
+    assertUnlocked(cache);
+  }
+
   private static void awaitTrue(final String what, final java.util.function.BooleanSupplier condition) throws InterruptedException {
     final long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(1);
     while (!condition.getAsBoolean()) {
@@ -1958,6 +2056,9 @@ final class GlobalConfigCacheTests {
     probe.set(meta);
     final var mint = meta.asset();
     assertTrue(cache.hasAssetMetaForMint(mint), "the fixture mint must be configured before invalidation");
+    // the query released its read lock: the mismatch path below takes the write lock on
+    // this same thread, and a leaked read hold would park it there instead of failing here
+    assertUnlocked(cache);
 
     assertThrows(IllegalStateException.class, () -> cache.topPriorityForMintChecked(mint));
     assertLogged("GlobalConfig decimals for Asset does not match Mint");

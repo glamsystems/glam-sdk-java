@@ -1,6 +1,7 @@
 package systems.glam.services.db.sql;
 
 import software.sava.services.core.remote.call.Backoff;
+import systems.glam.services.LoopHeartbeat;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Array;
@@ -19,6 +20,9 @@ import static java.lang.System.Logger.Level.INFO;
 final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
 
   private static final System.Logger logger = System.getLogger(BatchSqlExecutor.class.getName());
+  /// An idle runner re-arms its batch delay as the heartbeat period; below this floor a
+  /// delay is a flush hint, not a pacing interval, and re-arming it would spin the idle loop.
+  static final long IDLE_TICK_FLOOR_NANOS = TimeUnit.MILLISECONDS.toNanos(100);
 
   private final Class<T> componentType;
   private final DataSource datasource;
@@ -27,7 +31,10 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
   private final int batchSize;
   private final StatementPreparer<T> statementPreparer;
   private final long batchDelayNanos;
+  /// Package-private so a test can pin the floor the public constructor applies.
+  final long idleTickNanos;
   private final Backoff backoff;
+  private final LoopHeartbeat heartbeat;
   private final ConcurrentLinkedDeque<T> pending;
   /// Package-private so tests can assert the lock is released; a leaked lock
   /// blocks every other caller and no result assertion can see it.
@@ -45,7 +52,28 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
                        final int batchSize,
                        final StatementPreparer<T> statementPreparer,
                        final Duration batchDelay,
-                       final Backoff backoff) {
+                       final Backoff backoff,
+                       final LoopHeartbeat heartbeat) {
+    this(
+        componentType,
+        datasource, statement, batchSize, statementPreparer,
+        batchDelay, Math.max(batchDelay.toNanos(), IDLE_TICK_FLOOR_NANOS),
+        backoff,
+        heartbeat
+    );
+  }
+
+  // package-private for tests: the idle window is otherwise the batch delay floored at
+  // IDLE_TICK_FLOOR_NANOS, and a test of the idle heartbeat should not wait out real windows
+  BatchSqlExecutorImpl(final Class<T> componentType,
+                       final DataSource datasource,
+                       final String statement,
+                       final int batchSize,
+                       final StatementPreparer<T> statementPreparer,
+                       final Duration batchDelay,
+                       final long idleTickNanos,
+                       final Backoff backoff,
+                       final LoopHeartbeat heartbeat) {
     this.componentType = componentType;
     this.datasource = datasource;
     this.statement = statement;
@@ -53,7 +81,9 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
     this.batchSize = batchSize;
     this.statementPreparer = statementPreparer;
     this.batchDelayNanos = batchDelay.toNanos();
+    this.idleTickNanos = idleTickNanos;
     this.backoff = backoff;
+    this.heartbeat = heartbeat;
     this.pending = new ConcurrentLinkedDeque<>();
     this.lock = new ReentrantLock();
     this.startWindow = lock.newCondition();
@@ -62,6 +92,13 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
     this.batchComplete = true;
   }
 
+  /// A cycle is one turn of the loop: the runner wakes with work (or finds a full batch
+  /// already pending), waits out the batch window, drains everything pending and executes
+  /// it -- or fails and backs off. The heartbeat ticks once at the end of that turn, so a
+  /// runner stuck in getConnection, executeBatch, commit or the backoff never ticks. The
+  /// runner only wakes when work is queued, so while idle it re-arms `idleTickNanos` at a
+  /// time instead of parking indefinitely and ticks each time a window lapses with nothing
+  /// queued: an idle executor is visibly alive, at the cost of one timed wake-up per window.
   @Override
   public void run() {
     try {
@@ -79,7 +116,12 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
             while (pending.isEmpty()) {
               this.batchComplete = true;
               this.batchCompleteCondition.signalAll();
-              startWindow.await();
+              startWindow.awaitNanos(idleTickNanos);
+              // queue() adds before it signals, so a wake-up that still finds nothing
+              // pending is a lapsed idle window (or a spurious wake-up), not work arriving.
+              if (pending.isEmpty()) {
+                heartbeat.tick();
+              }
             }
             this.batchComplete = false;
             for (remainingNanos = batchDelayNanos; pending.size() < batchSize && remainingNanos > 0; ) {
@@ -133,6 +175,8 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
           //noinspection BusyWait
           Thread.sleep(backoffDelay);
         }
+        // the drain (or its contained failure and backoff) completed: one cycle
+        heartbeat.tick();
       }
     } catch (final InterruptedException e) {
       // exit

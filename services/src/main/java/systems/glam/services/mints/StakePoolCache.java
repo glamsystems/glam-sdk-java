@@ -9,6 +9,7 @@ import software.sava.idl.clients.spl.stakepool.StakePoolAccounts;
 import software.sava.idl.clients.spl.stakepool.StakePoolState;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.solana.remote.call.RpcCaller;
+import systems.glam.services.LoopHeartbeat;
 import systems.glam.services.io.FileUtils;
 import systems.glam.services.io.KeyedFlatFile;
 
@@ -37,6 +38,26 @@ public interface StakePoolCache extends Runnable, AutoCloseable {
                                                      final MarinadeAccounts marinadeAccounts,
                                                      final Duration fetchDelay,
                                                      final RpcCaller rpcCaller) {
+    return initCache(
+        taskExecutor,
+        stakePoolStateCacheDirectory,
+        stakePoolAccounts, marinadeAccounts,
+        fetchDelay,
+        rpcCaller,
+        LoopHeartbeat.NONE
+    );
+  }
+
+  /// `heartbeat` ticks once per cycle of [#run]: every configured stake-pool program
+  /// fetched and indexed, before the `fetchDelay` sleep -- so an idle cache ticks once per
+  /// delay and one stuck inside a program-accounts call goes quiet.
+  static CompletableFuture<StakePoolCache> initCache(final ExecutorService taskExecutor,
+                                                     final Path stakePoolStateCacheDirectory,
+                                                     final StakePoolAccounts stakePoolAccounts,
+                                                     final MarinadeAccounts marinadeAccounts,
+                                                     final Duration fetchDelay,
+                                                     final RpcCaller rpcCaller,
+                                                     final LoopHeartbeat heartbeat) {
     final var multiValidatorStakePoolProgram = stakePoolAccounts.stakePoolProgram();
 //    final var singleValidatorStakePoolProgram = stakePoolAccounts.singleValidatorStakePoolProgram();
     final var sanctumMultiValidatorStakePoolProgram = stakePoolAccounts.sanctumMultiValidatorStakePoolProgram();
@@ -65,7 +86,8 @@ public interface StakePoolCache extends Runnable, AutoCloseable {
                 rpcCaller,
                 stakePoolFilters,
                 stakePoolFileChannelByProgram,
-                stakePoolContextByMint
+                stakePoolContextByMint,
+                heartbeat
             );
 
             for (final var entry : stakePoolFileChannelByProgram.entrySet()) {

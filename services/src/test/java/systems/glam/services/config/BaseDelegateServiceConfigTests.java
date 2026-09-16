@@ -5,6 +5,8 @@ import org.junit.jupiter.api.io.TempDir;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.util.LamportDecimal;
 import systems.comodal.jsoniter.JsonIterator;
+import systems.glam.services.tests.RecordingHeartbeat;
+import systems.glam.services.tests.Workers;
 
 import java.math.BigDecimal;
 import java.net.http.HttpClient;
@@ -12,6 +14,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -113,6 +116,25 @@ final class BaseDelegateServiceConfigTests {
     // absent sections with no synthesized default stay null
     assertNull(config.formatter());
     assertNull(config.feeProviders());
+  }
+
+  @Test
+  void theConfiguredAccountFetcherCarriesTheSupervisorsHeartbeat() throws InterruptedException {
+    final var properties = minimalRpcProperties("");
+    // the polling floor, so the idle fetcher's own sleeps stay negligible
+    properties.setProperty("accountFetcher.fetchDelay", "PT0.001S");
+    final var config = parseProperties(properties);
+    // the original overload still builds a fetcher, backed by the NONE heartbeat
+    assertNotNull(config.createAccountFetcher(Set.of()));
+
+    // an idle polling fetcher touches no RPC: it only sleeps and ticks, and the
+    // second tick interrupts it, so the heartbeat must have reached the loop
+    final var heartbeat = new RecordingHeartbeat(2);
+    final var fetcher = config.createAccountFetcher(Set.of(), heartbeat);
+    final var worker = new Thread(fetcher::run, "configured-account-fetcher");
+    worker.start();
+    Workers.joinWithin(worker, "the configured fetcher never ticked the supplied heartbeat");
+    assertEquals(2, heartbeat.ticks());
   }
 
   @Test

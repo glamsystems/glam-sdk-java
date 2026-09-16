@@ -2,7 +2,10 @@ package systems.glam.services.db.sql;
 
 import org.junit.jupiter.api.Test;
 import software.sava.services.core.remote.call.Backoff;
+import systems.glam.services.LoopHeartbeat;
 import systems.glam.services.tests.LogCapture;
+import systems.glam.services.tests.RecordingHeartbeat;
+import systems.glam.services.tests.Workers;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Proxy;
@@ -13,6 +16,8 @@ import java.sql.Statement;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.*;
@@ -118,6 +123,180 @@ final class BatchSqlExecutorTests {
         Duration.ZERO,
         Backoff.single(MILLISECONDS, 0)
     );
+  }
+
+  private static BatchSqlExecutorImpl<String> createExecutor(final FakeJdbc jdbc,
+                                                             final int batchSize,
+                                                             final List<String> prepared,
+                                                             final Duration batchDelay,
+                                                             final LoopHeartbeat heartbeat) {
+    return (BatchSqlExecutorImpl<String>) BatchSqlExecutor.create(
+        String.class,
+        jdbc.dataSource(),
+        "INSERT INTO items (v) VALUES (?)",
+        batchSize,
+        (ps, item) -> {
+          prepared.add(item);
+          return 1;
+        },
+        batchDelay,
+        Backoff.single(MILLISECONDS, 0),
+        heartbeat
+    );
+  }
+
+  @Test
+  void aDrainTicksOnceHoweverManySubBatchesItExecutes() {
+    final var jdbc = new FakeJdbc();
+    jdbc.interruptOnExecution = 3;
+    final var prepared = new ArrayList<String>();
+    final var heartbeat = new RecordingHeartbeat();
+    final var executor = createExecutor(jdbc, 2, prepared, Duration.ZERO, heartbeat);
+    for (int i = 0; i < 5; ++i) {
+      executor.queue("item" + i);
+    }
+
+    executor.run();
+
+    // one wake-up drained the whole queue as three sub-batches: one cycle, one tick
+    assertEquals(3, jdbc.executions);
+    assertEquals(1, heartbeat.ticks());
+    assertFalse(executor.lock.isLocked());
+  }
+
+  @Test
+  void aFailedBatchStillTicksAfterItsBackoff() {
+    final var jdbc = new FakeJdbc();
+    jdbc.failFirst = 1;
+    jdbc.interruptOnExecution = 2;
+    final var prepared = new ArrayList<String>();
+    final var heartbeat = new RecordingHeartbeat();
+    final var executor = createExecutor(jdbc, 2, prepared, Duration.ZERO, heartbeat);
+    executor.queue("a");
+    executor.queue("b");
+
+    executor.run();
+
+    // the failed cycle is contained by the loop's catch and counts as a turn,
+    // then the retry succeeds: two cycles, two ticks
+    assertEquals(List.of("a", "b", "a", "b"), prepared);
+    assertEquals(2, jdbc.executions);
+    assertEquals(1, jdbc.commits);
+    assertEquals(2, heartbeat.ticks());
+  }
+
+  @Test
+  void aCycleCutShortInItsBackoffDoesNotTick() {
+    final var jdbc = new FakeJdbc();
+    jdbc.failFirst = 1;
+    jdbc.interruptOnExecution = 1;
+    final var prepared = new ArrayList<String>();
+    final var heartbeat = new RecordingHeartbeat();
+    final var executor = createExecutor(jdbc, 2, prepared, Duration.ZERO, heartbeat);
+    executor.queue("a");
+    executor.queue("b");
+
+    executor.run();
+
+    // the interrupt lands in the backoff sleep: the loop exits mid-cycle, so
+    // nothing completed and nothing ticked
+    assertEquals(1, jdbc.executions);
+    assertEquals(0, heartbeat.ticks());
+  }
+
+  /// The idle-window seam: a one-millisecond window so the idle tests wait out
+  /// windows, not the production floor.
+  private static BatchSqlExecutorImpl<String> createIdleExecutor(final FakeJdbc jdbc,
+                                                                 final int batchSize,
+                                                                 final List<String> prepared,
+                                                                 final LoopHeartbeat heartbeat) {
+    return new BatchSqlExecutorImpl<>(
+        String.class,
+        jdbc.dataSource(),
+        "INSERT INTO items (v) VALUES (?)",
+        batchSize,
+        (ps, item) -> {
+          prepared.add(item);
+          return 1;
+        },
+        Duration.ofMillis(1),
+        MILLISECONDS.toNanos(1),
+        Backoff.single(MILLISECONDS, 0),
+        heartbeat
+    );
+  }
+
+  @Test
+  void theIdleWindowIsTheBatchDelayFlooredAtTheProductionFloor() {
+    final var jdbc = new FakeJdbc();
+    final var prepared = new ArrayList<String>();
+    // a flush hint below the floor would spin the idle loop: the floor wins
+    final var hinted = createExecutor(jdbc, 2, prepared, Duration.ofMillis(1), LoopHeartbeat.NONE);
+    assertEquals(BatchSqlExecutorImpl.IDLE_TICK_FLOOR_NANOS, hinted.idleTickNanos);
+    assertEquals(MILLISECONDS.toNanos(100), hinted.idleTickNanos);
+    // a pacing delay above it is the idle cadence as configured
+    final var paced = createExecutor(jdbc, 2, prepared, Duration.ofMillis(250), LoopHeartbeat.NONE);
+    assertEquals(MILLISECONDS.toNanos(250), paced.idleTickNanos);
+  }
+
+  @Test
+  void anIdleRunnerTicksOncePerLapsedWindow() throws InterruptedException {
+    final var jdbc = new FakeJdbc();
+    final var prepared = new ArrayList<String>();
+    // the heartbeat interrupts the runner on its third idle tick: the re-armed
+    // window then throws instead of parking, and run() exits on its own
+    final var heartbeat = new RecordingHeartbeat(3);
+    final var executor = createIdleExecutor(jdbc, 2, prepared, heartbeat);
+
+    final var worker = new Thread(executor::run, "batch-sql-idle-runner");
+    worker.start();
+    Workers.joinWithin(worker, "an idle runner must keep ticking on its window and honour the interrupt");
+
+    // nothing was ever queued: every tick was an idle window, no statement ran
+    assertEquals(3, heartbeat.ticks());
+    assertEquals(0, jdbc.executions);
+    assertTrue(prepared.isEmpty());
+    assertTrue(executor.batchComplete);
+    assertFalse(executor.lock.isLocked());
+  }
+
+  @Test
+  void workArrivingWhileParkedTicksOnlyForItsDrain() throws InterruptedException {
+    final var jdbc = new FakeJdbc();
+    final var prepared = new ArrayList<String>();
+    final var ticks = new AtomicInteger();
+    final var parked = new CountDownLatch(1);
+    // an idle tick is taken under the executor's lock, so once it lands the runner
+    // holds the lock until it re-arms its window and parks: the lock is the seam
+    final var executor = createIdleExecutor(jdbc, 1, prepared, () -> {
+      ticks.incrementAndGet();
+      parked.countDown();
+    });
+
+    final var worker = new Thread(executor::run, "batch-sql-runner");
+    worker.start();
+    try {
+      assertTrue(parked.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS), "the idle runner never ticked");
+      final int idleTicks;
+      executor.lock.lock();
+      try {
+        // holding the lock the runner is inside its timed wait, so this count is
+        // stable and the item lands before that wait's own emptiness check
+        idleTicks = ticks.get();
+        executor.queue("a");
+      } finally {
+        executor.lock.unlock();
+      }
+      Workers.joinWithin(worker, "the queued item must wake the runner, which then exits on the fake's interrupt");
+
+      // the wake-up that found work is not an idle window: only the drain ticked
+      assertEquals(List.of("a"), prepared);
+      assertEquals(1, jdbc.executions);
+      assertEquals(idleTicks + 1, ticks.get());
+      assertFalse(executor.lock.isLocked());
+    } finally {
+      worker.interrupt();
+    }
   }
 
   @Test
@@ -243,9 +422,10 @@ final class BatchSqlExecutorTests {
     final var worker = new Thread(executor::run, "batch-sql-runner");
     worker.start();
     try {
-      // the runner parks awaiting the first item
+      // the runner parks awaiting the first item -- a timed park, since an idle
+      // runner re-arms its window to keep its heartbeat ticking
       awaitTrue("runner parked on an empty queue",
-          () -> executor.batchComplete && worker.getState() == Thread.State.WAITING);
+          () -> executor.batchComplete && worker.getState() == Thread.State.TIMED_WAITING);
 
       // the first item must signal the start window
       executor.queue("a");

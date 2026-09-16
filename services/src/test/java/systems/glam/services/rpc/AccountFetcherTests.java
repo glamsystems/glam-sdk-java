@@ -18,7 +18,10 @@ import software.sava.services.core.request_capacity.CapacityState;
 import software.sava.services.core.request_capacity.trackers.RootErrorTracker;
 import software.sava.services.solana.remote.call.CallWeights;
 import software.sava.services.solana.remote.call.RpcCaller;
+import systems.glam.services.LoopHeartbeat;
 import systems.glam.services.tests.LogCapture;
+import systems.glam.services.tests.RecordingHeartbeat;
+import systems.glam.services.tests.Workers;
 
 import java.lang.reflect.Proxy;
 import java.math.BigInteger;
@@ -31,9 +34,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -46,6 +51,11 @@ import static org.junit.jupiter.api.Assertions.*;
 /// InterruptedException path -- the pending interrupt makes that sleep throw
 /// immediately rather than wait.
 final class AccountFetcherTests {
+
+  /// An idle window that cannot lapse inside any fixture deadline: with it, the only
+  /// way out of a reactive park is the queue signal (or a tick's interrupt), so a lost
+  /// signal or a missing tick fails the join instead of being masked by the next window.
+  private static final long NEVER_LAPSES_NANOS = TimeUnit.HOURS.toNanos(1);
 
   private static final class TestClock implements NanoClock {
 
@@ -205,6 +215,204 @@ final class AccountFetcherTests {
     // interrupts the thread on its last batch, so the sleep throws at once
     // rather than actually waiting
     return AccountFetcher.createFetcher(Duration.ofMillis(1), false, createCaller(rpc), alwaysFetch);
+  }
+
+  private AccountFetcher createFetcher(final RecordingRpc rpc,
+                                       final Set<PublicKey> alwaysFetch,
+                                       final LoopHeartbeat heartbeat) {
+    return AccountFetcher.createFetcher(Duration.ofMillis(1), false, createCaller(rpc), alwaysFetch, heartbeat);
+  }
+
+  @Test
+  void aPollingCycleTicksOnceAfterItsSleep() {
+    final var rpc = new RecordingRpc();
+    rpc.interruptOnCall = 2;
+    final var heartbeat = new RecordingHeartbeat();
+    final var fetcher = createFetcher(rpc, Set.of(), heartbeat);
+    // a full batch and a one-key batch cannot share one request: two cycles,
+    // and the fake's interrupt on the second makes its trailing sleep throw
+    // before any tick could land there
+    final var full = new ArrayList<PublicKey>(SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS);
+    for (int i = 1; i <= SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS; ++i) {
+      full.add(key(i));
+    }
+    final var first = new RecordingConsumer();
+    final var second = new RecordingConsumer();
+    fetcher.queue(full, first);
+    fetcher.queue(List.of(key(1_000)), second);
+
+    fetcher.run();
+
+    assertEquals(2, rpc.calls.size());
+    assertEquals(1, first.received.size());
+    assertEquals(1, second.received.size());
+    // exactly one completed cycle sat between the two fetches
+    assertEquals(1, heartbeat.ticks());
+    assertFalse(((AccountFetcherImpl) fetcher).lock.isLocked());
+  }
+
+  @Test
+  void aFailedCycleContainedByTheLoopStillTicks() {
+    final var rpc = new RecordingRpc();
+    rpc.returnNullForFirstCalls = 1; // cycle one: a null RPC body poisons the dispatch
+    rpc.interruptOnCall = 2;
+    final var present = key(1);
+    rpc.universe.put(present, account(present, 1L, new byte[]{1}));
+    final var heartbeat = new RecordingHeartbeat();
+    final var fetcher = createFetcher(rpc, Set.of(), heartbeat);
+    final var consumer = new RecordingConsumer();
+    fetcher.queue(List.of(present), consumer);
+
+    try (final var log = LogCapture.attach(AccountFetcher.class.getName())) {
+      fetcher.run();
+      log.assertLogged("Unexpected error fetching accounts; continuing to poll.");
+    }
+
+    // the callback batch was re-queued and served by the second cycle
+    assertEquals(2, rpc.calls.size());
+    assertEquals(1, consumer.received.size());
+    assertArrayEquals(new byte[]{1}, consumer.received.getFirst().get(present).data());
+    // the failed cycle completed through its catch: it ticked like any other
+    assertEquals(1, heartbeat.ticks());
+    assertFalse(((AccountFetcherImpl) fetcher).lock.isLocked());
+  }
+
+  @Test
+  void anIdlePollingFetcherTicksOncePerDelay() throws InterruptedException {
+    final var rpc = new RecordingRpc();
+    // the third idle tick interrupts the loop, whose next sleep then throws
+    final var heartbeat = new RecordingHeartbeat(3);
+    // a polling fetcher's cadence is its fetch delay -- what a supervisor sizes its
+    // threshold from -- so the reactive idle window must play no part: hand it one
+    // that never lapses and the ticks still have to arrive once per millisecond sleep
+    final var fetcher = new AccountFetcherImpl(
+        Duration.ofMillis(1), false, createCaller(rpc), Set.of(),
+        NEVER_LAPSES_NANOS,
+        heartbeat
+    );
+
+    final var worker = new Thread(fetcher::run, "idle-account-fetcher");
+    worker.start();
+    Workers.joinWithin(worker, "an idle polling fetcher must keep ticking on its delay and honour the interrupt");
+
+    assertEquals(3, heartbeat.ticks());
+    assertTrue(rpc.calls.isEmpty(), "nothing was queued, so nothing may have been fetched");
+    assertFalse(((AccountFetcherImpl) fetcher).lock.isLocked());
+  }
+
+  @Test
+  void aReactiveFetcherTicksAfterItsMinimumDelayThenParksForWork() throws InterruptedException {
+    final var rpc = new RecordingRpc();
+    rpc.interruptOnCall = Integer.MAX_VALUE;
+    final var present = key(1);
+    rpc.universe.put(present, account(present, 1L, new byte[]{1}));
+    // the tick lands after the minimum delay and before the park: interrupting
+    // there makes the park throw, so the loop exits without a second batch. The
+    // park's window never lapses, so no idle tick can stand in for the cycle's own
+    final var heartbeat = new RecordingHeartbeat(1);
+    final var fetcher = createReactiveFetcher(rpc, NEVER_LAPSES_NANOS, heartbeat);
+    final var consumer = new RecordingConsumer();
+    fetcher.queue(List.of(present), consumer);
+
+    final var worker = new Thread(fetcher::run, "reactive-account-fetcher");
+    worker.start();
+    Workers.joinWithin(worker, "the cycle's tick must land before the reactive fetcher parks");
+
+    assertEquals(1, rpc.calls.size());
+    assertEquals(1, consumer.received.size());
+    assertEquals(1, heartbeat.ticks());
+    assertFalse(((AccountFetcherImpl) fetcher).lock.isLocked());
+  }
+
+  /// The idle-window seam: a reactive fetcher with a zero minimum delay and the given
+  /// idle window -- one millisecond so the idle tests wait out windows rather than the
+  /// production floor, or [#NEVER_LAPSES_NANOS] so nothing but the signal ends a park.
+  private AccountFetcherImpl createReactiveFetcher(final RecordingRpc rpc,
+                                                   final long idleTickNanos,
+                                                   final LoopHeartbeat heartbeat) {
+    return new AccountFetcherImpl(
+        Duration.ZERO, true, createCaller(rpc), Set.of(),
+        idleTickNanos,
+        heartbeat
+    );
+  }
+
+  @Test
+  void theIdleWindowIsTheFetchDelayFlooredAtTheProductionFloor() {
+    final var rpc = new RecordingRpc();
+    // a reactive fetcher accepts a zero delay as its batching hint; re-arming
+    // that as the idle window would spin the park, so the floor wins
+    final var hinted = (AccountFetcherImpl) AccountFetcher.createFetcher(
+        Duration.ZERO, true, createCaller(rpc), Set.of(), LoopHeartbeat.NONE
+    );
+    assertEquals(AccountFetcherImpl.IDLE_TICK_FLOOR_NANOS, hinted.idleTickNanos);
+    assertEquals(MILLISECONDS.toNanos(100), hinted.idleTickNanos);
+    // a pacing delay above it is the idle cadence as configured
+    final var paced = (AccountFetcherImpl) AccountFetcher.createFetcher(
+        Duration.ofMillis(250), true, createCaller(rpc), Set.of(), LoopHeartbeat.NONE
+    );
+    assertEquals(MILLISECONDS.toNanos(250), paced.idleTickNanos);
+  }
+
+  @Test
+  void anIdleReactiveFetcherTicksOncePerLapsedWindow() throws InterruptedException {
+    final var rpc = new RecordingRpc();
+    // one tick ends the (empty) minimum delay, then the park re-arms its window
+    // and ticks each time it lapses with nothing queued; the third tick interrupts
+    // the loop, whose next park throws instead of waiting
+    final var heartbeat = new RecordingHeartbeat(3);
+    final var fetcher = createReactiveFetcher(rpc, MILLISECONDS.toNanos(1), heartbeat);
+
+    final var worker = new Thread(fetcher::run, "idle-reactive-account-fetcher");
+    worker.start();
+    Workers.joinWithin(worker, "an idle reactive fetcher must keep ticking on its window and honour the interrupt");
+
+    assertEquals(3, heartbeat.ticks());
+    assertTrue(rpc.calls.isEmpty(), "nothing was queued, so nothing may have been fetched");
+    assertFalse(fetcher.lock.isLocked());
+  }
+
+  @Test
+  void workArrivingWhileAReactiveFetcherIsParkedTicksOnlyForItsCycle() throws InterruptedException {
+    final var rpc = new RecordingRpc();
+    rpc.interruptOnCall = 1;
+    final var present = key(1);
+    rpc.universe.put(present, account(present, 1L, new byte[]{1}));
+    final var ticks = new AtomicInteger();
+    final var parked = new CountDownLatch(1);
+    // every tick is taken under the fetcher's lock, so once one lands the runner
+    // holds the lock until it re-arms its window and parks: the lock is the seam
+    final var fetcher = createReactiveFetcher(rpc, MILLISECONDS.toNanos(1), () -> {
+      ticks.incrementAndGet();
+      parked.countDown();
+    });
+    final var consumer = new RecordingConsumer();
+
+    final var worker = new Thread(fetcher::run, "reactive-account-fetcher");
+    worker.start();
+    try {
+      assertTrue(parked.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS), "the reactive fetcher never ticked");
+      final int idleTicks;
+      fetcher.lock.lock();
+      try {
+        // holding the lock the runner is inside its timed park, so this count is
+        // stable and the batch lands before that park's own emptiness check
+        idleTicks = ticks.get();
+        fetcher.queue(List.of(present), consumer);
+      } finally {
+        fetcher.lock.unlock();
+      }
+      Workers.joinWithin(worker, "the queued batch must wake the runner, which then exits on the fake's interrupt");
+
+      // the wake-up that found work is not an idle window, and the fake's interrupt
+      // makes the next cycle's minimum delay throw before it can tick: no new ticks
+      assertEquals(1, rpc.calls.size());
+      assertEquals(1, consumer.received.size());
+      assertEquals(idleTicks, ticks.get());
+      assertFalse(fetcher.lock.isLocked());
+    } finally {
+      worker.interrupt();
+    }
   }
 
   @Test
@@ -807,20 +1015,21 @@ final class AccountFetcherTests {
     final var rpc = new RecordingRpc();
     final var present = key(1);
     rpc.universe.put(present, account(present, 42L, new byte[]{1}));
-    final var fetcher = AccountFetcher.createFetcher(Duration.ZERO, true, createCaller(rpc), Set.of());
+    // the park's idle window never lapses here, so only the queue signal can end it
+    final var fetcher = createReactiveFetcher(rpc, NEVER_LAPSES_NANOS, LoopHeartbeat.NONE);
     final var consumer = new RecordingConsumer();
 
     final var worker = new Thread(fetcher::run, "account-fetcher");
     try (final var log = LogCapture.attach(AccountFetcher.class.getName())) {
       worker.start();
       try {
-        // a reactive fetcher parks on the condition; it must not busy-spin
-        awaitTrue("the reactive fetcher parked", () -> worker.getState() == Thread.State.WAITING);
+        // a reactive fetcher parks on the condition; it must not busy-spin -- a
+        // timed park, since an idle fetcher re-arms its window to keep its heartbeat ticking
+        awaitTrue("the reactive fetcher parked", () -> worker.getState() == Thread.State.TIMED_WAITING);
 
         // queueing must signal the parked fetcher awake
         fetcher.queue(List.of(present), consumer);
-        worker.join(5_000);
-        assertFalse(worker.isAlive(), "the queue signal never woke the reactive fetcher");
+        Workers.joinWithin(worker, "the queue signal never woke the reactive fetcher");
       } finally {
         worker.interrupt();
       }

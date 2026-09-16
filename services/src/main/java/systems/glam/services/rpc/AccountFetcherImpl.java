@@ -6,6 +6,7 @@ import software.sava.core.encoding.ByteUtil;
 import software.sava.rpc.json.http.client.SolanaRpcClient;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.services.solana.remote.call.RpcCaller;
+import systems.glam.services.LoopHeartbeat;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -13,6 +14,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -22,9 +24,15 @@ import static java.lang.System.Logger.Level.WARNING;
 final class AccountFetcherImpl implements AccountFetcher {
 
   private static final System.Logger logger = System.getLogger(AccountFetcher.class.getName());
+  /// An idle reactive fetcher re-arms its poll delay as the heartbeat period; below this
+  /// floor the delay is a batching hint (reactive fetchers accept zero), not a pacing
+  /// interval, and re-arming it would spin the idle park.
+  static final long IDLE_TICK_FLOOR_NANOS = TimeUnit.MILLISECONDS.toNanos(100);
 
   private final Duration pollDelay;
   private final long pollDelayNanos;
+  /// Package-private so a test can pin the floor the public constructor applies.
+  final long idleTickNanos;
   private final boolean reactive;
   private final RpcCaller rpcCaller;
   private final Set<PublicKey> alwaysFetch;
@@ -37,6 +45,7 @@ final class AccountFetcherImpl implements AccountFetcher {
   private final ConcurrentLinkedDeque<AccountBatch> queue;
   private final ConcurrentLinkedDeque<AccountBatch> currentBatch;
   private final Set<AccountConsumer> alwaysCall;
+  private final LoopHeartbeat heartbeat;
 
   private volatile Set<PublicKey> currentBatchKeys;
   private volatile StampedSlot recentSlot;
@@ -44,7 +53,23 @@ final class AccountFetcherImpl implements AccountFetcher {
   AccountFetcherImpl(final Duration fetchDelay,
                      final boolean reactive,
                      final RpcCaller rpcCaller,
-                     final Set<PublicKey> alwaysFetch) {
+                     final Set<PublicKey> alwaysFetch,
+                     final LoopHeartbeat heartbeat) {
+    this(
+        fetchDelay, reactive, rpcCaller, alwaysFetch,
+        Math.max(fetchDelay.toNanos(), IDLE_TICK_FLOOR_NANOS),
+        heartbeat
+    );
+  }
+
+  // package-private for tests: the reactive idle window is otherwise the fetch delay floored
+  // at IDLE_TICK_FLOOR_NANOS, and a test of the idle heartbeat should not wait out real windows
+  AccountFetcherImpl(final Duration fetchDelay,
+                     final boolean reactive,
+                     final RpcCaller rpcCaller,
+                     final Set<PublicKey> alwaysFetch,
+                     final long idleTickNanos,
+                     final LoopHeartbeat heartbeat) {
     // The polling path sleeps for this delay between passes; below a
     // millisecond that sleep rounds to nothing and the loop spins a core.
     // Reactive fetchers wait on a condition instead, so any delay works there.
@@ -55,6 +80,7 @@ final class AccountFetcherImpl implements AccountFetcher {
     }
     this.pollDelay = fetchDelay;
     this.pollDelayNanos = fetchDelay.toNanos();
+    this.idleTickNanos = idleTickNanos;
     this.reactive = reactive;
     this.rpcCaller = rpcCaller;
     this.alwaysFetch = Set.copyOf(alwaysFetch);
@@ -67,6 +93,7 @@ final class AccountFetcherImpl implements AccountFetcher {
     this.currentBatch = new ConcurrentLinkedDeque<>();
     this.currentBatchKeys = this.alwaysFetch;
     this.alwaysCall = ConcurrentHashMap.newKeySet(32);
+    this.heartbeat = heartbeat;
   }
 
   @Override
@@ -331,6 +358,14 @@ final class AccountFetcherImpl implements AccountFetcher {
     }
   }
 
+  /// A cycle is one batch assembled, fetched and dispatched (or failed over to its owners),
+  /// followed by this delay; the heartbeat ticks inside the delay so that a fetcher stuck in
+  /// the RPC call or a consumer callback never reaches it. Polling: one tick per sleep, which
+  /// is once per cycle while work flows and once per `pollDelay` while the queue is empty.
+  /// Reactive: one tick once the minimum delay has elapsed, then, while nothing is queued,
+  /// one more each time an `idleTickNanos` park lapses with the queue still empty -- so an
+  /// idle reactive fetcher is visibly alive at the cost of one timed wake-up per window,
+  /// and a wake-up that finds work is not an idle window and does not tick.
   private void delay(final Duration pollDelay, final long pollDelayNanos) throws InterruptedException {
     if (reactive) {
       // Break out on the first batch received after the minimum delay has been met.
@@ -342,8 +377,14 @@ final class AccountFetcherImpl implements AccountFetcher {
             break;
           }
         }
+        heartbeat.tick();
         while (queue.isEmpty()) {
-          newBatch.await();
+          newBatch.awaitNanos(idleTickNanos);
+          // lockedQueue adds before it signals, so a wake-up that still finds the queue
+          // empty is a lapsed idle window (or a spurious wake-up), not work arriving.
+          if (queue.isEmpty()) {
+            heartbeat.tick();
+          }
         }
       } finally {
         lock.unlock();
@@ -351,6 +392,7 @@ final class AccountFetcherImpl implements AccountFetcher {
     } else {
       do { // Amortize (pollDelay / 2) after an initial batch is added.
         Thread.sleep(pollDelay);
+        heartbeat.tick();
       } while (queue.isEmpty());
     }
   }
