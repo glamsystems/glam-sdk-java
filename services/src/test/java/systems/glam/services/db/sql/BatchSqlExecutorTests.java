@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntConsumer;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.*;
@@ -57,13 +58,17 @@ final class BatchSqlExecutorTests {
   }
 
   /// Counts commits and executeBatch calls; can fail the first N executions and
-  /// interrupts the running thread once `interruptOnExecution` is reached.
+  /// interrupts the running thread once `interruptOnExecution` is reached. `onExecution`
+  /// runs on the runner's thread with each execution's ordinal before the fake decides
+  /// its fate: a producer hooked there can queue into the executor mid-drain.
   private static final class FakeJdbc {
 
     int executions;
     int commits;
     int failFirst;
     int interruptOnExecution = 1;
+    IntConsumer onExecution = execution -> {
+    };
 
     DataSource dataSource() {
       final var preparedStatement = (PreparedStatement) Proxy.newProxyInstance(
@@ -71,7 +76,7 @@ final class BatchSqlExecutorTests {
           new Class<?>[]{PreparedStatement.class},
           (proxy, method, args) -> switch (method.getName()) {
             case "executeBatch" -> {
-              ++executions;
+              onExecution.accept(++executions);
               if (executions >= interruptOnExecution) {
                 Thread.currentThread().interrupt();
               }
@@ -146,7 +151,27 @@ final class BatchSqlExecutorTests {
   }
 
   @Test
-  void aDrainTicksOnceHoweverManySubBatchesItExecutes() {
+  void aSingleCommittedBatchTicksOnce() {
+    final var jdbc = new FakeJdbc();
+    final var prepared = new ArrayList<String>();
+    final var heartbeat = new RecordingHeartbeat();
+    final var executor = createExecutor(jdbc, 3, prepared, Duration.ZERO, heartbeat);
+    executor.queue("a");
+    executor.queue("b");
+    executor.queue("c");
+
+    executor.run();
+
+    // one batch, one commit, one tick -- and nothing extra once the queue is found empty
+    assertEquals(List.of("a", "b", "c"), prepared);
+    assertEquals(1, jdbc.executions);
+    assertEquals(1, jdbc.commits);
+    assertEquals(1, heartbeat.ticks());
+    assertFalse(executor.lock.isLocked());
+  }
+
+  @Test
+  void aDrainTicksOncePerCommittedBatch() {
     final var jdbc = new FakeJdbc();
     jdbc.interruptOnExecution = 3;
     final var prepared = new ArrayList<String>();
@@ -158,9 +183,42 @@ final class BatchSqlExecutorTests {
 
     executor.run();
 
-    // one wake-up drained the whole queue as three sub-batches: one cycle, one tick
+    // one wake-up drained the whole queue as two full batches and the odd remainder:
+    // three commits, three ticks -- the remainder's commit is a cycle like any other
     assertEquals(3, jdbc.executions);
-    assertEquals(1, heartbeat.ticks());
+    assertEquals(3, jdbc.commits);
+    assertEquals(3, heartbeat.ticks());
+    assertFalse(executor.lock.isLocked());
+  }
+
+  @Test
+  void aProducerThatKeepsTheQueueAheadOfTheRunnerTicksPerCommittedBatch() {
+    final var jdbc = new FakeJdbc();
+    final int batches = 4;
+    jdbc.interruptOnExecution = batches;
+    final var prepared = new ArrayList<String>();
+    final var heartbeat = new RecordingHeartbeat();
+    final var executor = createExecutor(jdbc, 1, prepared, Duration.ZERO, heartbeat);
+    // the producer queues the next item during each execution, before the runner polls
+    // again: the queue is never empty while commits keep succeeding, so the runner never
+    // returns to its idle wait and a tick taken only there, or only after a drain that
+    // ends, would never land
+    jdbc.onExecution = execution -> {
+      if (execution < batches) {
+        executor.queue("item" + execution);
+      }
+    };
+    executor.queue("item0");
+
+    executor.run();
+
+    // every committed batch ticked, and the fake's interrupt then ended the run at the
+    // idle wait before any idle window could lapse
+    assertEquals(List.of("item0", "item1", "item2", "item3"), prepared);
+    assertEquals(batches, jdbc.executions);
+    assertEquals(batches, jdbc.commits);
+    assertEquals(batches, heartbeat.ticks());
+    assertTrue(executor.batchComplete);
     assertFalse(executor.lock.isLocked());
   }
 
@@ -177,8 +235,8 @@ final class BatchSqlExecutorTests {
 
     executor.run();
 
-    // the failed cycle is contained by the loop's catch and counts as a turn,
-    // then the retry succeeds: two cycles, two ticks
+    // the contained failure ticks once after its backoff (a retrying runner is alive),
+    // then the retry's commit ticks once more: two ticks
     assertEquals(List.of("a", "b", "a", "b"), prepared);
     assertEquals(2, jdbc.executions);
     assertEquals(1, jdbc.commits);
@@ -198,8 +256,8 @@ final class BatchSqlExecutorTests {
 
     executor.run();
 
-    // the interrupt lands in the backoff sleep: the loop exits mid-cycle, so
-    // nothing completed and nothing ticked
+    // the interrupt lands in the backoff sleep, ahead of the failure's tick: nothing
+    // committed and nothing was slept through, so nothing ticked
     assertEquals(1, jdbc.executions);
     assertEquals(0, heartbeat.ticks());
   }

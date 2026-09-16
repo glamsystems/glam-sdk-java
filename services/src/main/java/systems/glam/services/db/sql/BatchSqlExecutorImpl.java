@@ -92,13 +92,16 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
     this.batchComplete = true;
   }
 
-  /// A cycle is one turn of the loop: the runner wakes with work (or finds a full batch
-  /// already pending), waits out the batch window, drains everything pending and executes
-  /// it -- or fails and backs off. The heartbeat ticks once at the end of that turn, so a
-  /// runner stuck in getConnection, executeBatch, commit or the backoff never ticks. The
-  /// runner only wakes when work is queued, so while idle it re-arms `idleTickNanos` at a
-  /// time instead of parking indefinitely and ticks each time a window lapses with nothing
-  /// queued: an idle executor is visibly alive, at the cost of one timed wake-up per window.
+  /// A cycle is one committed batch. The runner wakes with work (or finds a full batch
+  /// already pending), waits out the batch window, then drains everything pending as
+  /// batches of `batchSize` rows and ticks once after each batch's commit -- a drain of N
+  /// batches ticks N times, so a producer that keeps the queue ahead of the runner keeps it
+  /// ticking. A failed batch ticks once after its contained backoff: a runner that keeps
+  /// failing and retrying is alive, one stuck in getConnection, executeBatch, commit or the
+  /// backoff sleep is not. The runner only wakes when work is queued, so while idle it
+  /// re-arms `idleTickNanos` at a time instead of parking indefinitely and ticks each time a
+  /// window lapses with nothing queued: an idle executor is visibly alive, at the cost of
+  /// one timed wake-up per window.
   @Override
   public void run() {
     try {
@@ -145,6 +148,8 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
                   );
                   numItems = 0;
                   numRows = 0;
+                  // a committed batch is one cycle
+                  heartbeat.tick();
                 }
                 break;
               }
@@ -159,6 +164,7 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
                 );
                 numItems = 0;
                 numRows = 0;
+                heartbeat.tick();
               }
             }
           }
@@ -174,9 +180,9 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
           final long backoffDelay = backoff.delay(errorCount, TimeUnit.MILLISECONDS);
           //noinspection BusyWait
           Thread.sleep(backoffDelay);
+          // the failure was contained and its backoff slept through: a retrying runner is alive
+          heartbeat.tick();
         }
-        // the drain (or its contained failure and backoff) completed: one cycle
-        heartbeat.tick();
       }
     } catch (final InterruptedException e) {
       // exit

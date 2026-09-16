@@ -33,13 +33,13 @@ systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,Remov
 systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 68
 systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 72
 systems.glam.services.config.DefensivePollingConfig$Parser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 76
-systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent # line 190
-systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # accepted equivalent # line 252
-systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,RemoveConditionalMutator_ORDER_IF,SURVIVED # accepted equivalent # line 252
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent # line 112
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,RemoveConditionalMutator_ORDER_IF,SURVIVED # accepted equivalent # line 112
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,VoidMethodCallMutator,SURVIVED # accepted equivalent # line 113
-systems.glam.services.db.sql.BatchSqlExecutorImpl,run,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent # line 127
+systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,RemoveConditionalMutator_EQUAL_IF,SURVIVED # accepted equivalent # line 196
+systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # accepted equivalent # line 258
+systems.glam.services.db.sql.BatchSqlExecutorImpl,queue,RemoveConditionalMutator_ORDER_IF,SURVIVED # accepted equivalent # line 258
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent # line 115
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,RemoveConditionalMutator_ORDER_IF,SURVIVED # accepted equivalent # line 115
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,VoidMethodCallMutator,SURVIVED # accepted equivalent # line 116
+systems.glam.services.db.sql.BatchSqlExecutorImpl,run,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent # line 130
 systems.glam.services.execution.ExecutionServiceContext,createContext,NullReturnValsMutator,NO_COVERAGE # untriaged # line 22
 systems.glam.services.execution.FormatUtil,formatInstructionException,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 64
 systems.glam.services.execution.FormatUtil,formatTransactionResult,NakedReceiverMutator,SURVIVED # untriaged # line 105

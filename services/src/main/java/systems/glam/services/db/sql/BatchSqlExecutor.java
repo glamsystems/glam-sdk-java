@@ -23,11 +23,12 @@ public interface BatchSqlExecutor<T> extends Runnable {
     );
   }
 
-  /// `heartbeat` ticks once per cycle of [#run]: after every drain of the pending queue
-  /// (or its contained failure and backoff), and, while idle, each time a batch-delay
-  /// window lapses with nothing queued -- so an idle executor stays visibly alive and one
-  /// stuck inside a statement goes quiet. The idle window is `batchDelay` floored at
-  /// `BatchSqlExecutorImpl.IDLE_TICK_FLOOR_NANOS`.
+  /// `heartbeat` ticks once per cycle of [#run]: after every committed batch (a drain of N
+  /// batches ticks N times, however long a producer keeps the queue ahead of the runner),
+  /// after every contained failure's backoff, and, while idle, each time a batch-delay
+  /// window lapses with nothing queued -- so an idle or retrying executor stays visibly
+  /// alive and one stuck inside a statement goes quiet. The idle window is `batchDelay`
+  /// floored at `BatchSqlExecutorImpl.IDLE_TICK_FLOOR_NANOS`.
   static <T> BatchSqlExecutor<T> create(final Class<T> componentType,
                                         final DataSource datasource,
                                         final String statement,
