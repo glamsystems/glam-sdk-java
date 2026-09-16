@@ -173,6 +173,10 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
           for (int i = numItems - 1; i >= 0; --i) {
             pending.addFirst(batch[i]);
           }
+          // the batch is back in the queue and nothing is in flight: a retry that fails
+          // before it polls again (getConnection, prepareStatement) must not requeue these
+          // slots a second time -- or, once the fill/wait block has cleared them, push nulls
+          numItems = 0;
           final var sqlState = e.getSQLState();
           logger.log(ERROR, "Failed {0} times to write {1}: [ state => {2}, errorCode => {3}, cause => {4}, message => {5} ]",
               ++errorCount, componentType.getSimpleName(), sqlState, e.getErrorCode(), e.getCause(), e.getMessage()

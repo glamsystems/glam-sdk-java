@@ -731,6 +731,25 @@ batchSize`)** — the `||` pairing means one direction only shows when rows and
 items disagree at the boundary; the multi-row and zero-row tests pin the
 observable directions, the residual direction is a redundant re-check.
 
+**Follow-up (2026-09-16, stale requeue cursor — RESOLVED by fix):** the
+per-batch heartbeat review traced the requeue path one failure further and
+found `numItems` left standing after the walk. A retry that then failed
+before polling again (`getConnection` or `prepareStatement` throwing) walked
+the same slots a second time: a full failed batch was requeued twice and
+written twice, and a sub-batch-size remainder -- whose slots the fill/wait
+block's `Arrays.fill(batch, null)` had already cleared -- pushed a null into
+the deque, so the `NullPointerException` ended `run()` through the
+runtime-error catch and stranded everything queued. The catch now resets
+`numItems` once the batch is back in the queue. Pinned by
+`aConnectionFailureAfterARequeuedFullBatchDoesNotRequeueItAgain` (written
+exactly once after its single requeue) and
+`aConnectionFailureAfterARequeuedRemainderKeepsTheRunnerAlive` (no
+`Unexpected error`, the retry commits), each driven by the fake's
+`failConnection` ordinal. No mutator targets a local reset, so the fix adds
+no mutant; the `Arrays.fill` GC-hygiene acceptance above is now strictly
+true -- before it, the fill turned this double failure from a duplicate
+write into a dead runner.
+
 ## Fetcher batching + reactive mode pass (2026-07-23)
 
 Killed ~40 `AccountFetcherImpl` survivors and fixed two real bugs the

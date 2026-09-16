@@ -60,12 +60,16 @@ final class BatchSqlExecutorTests {
   /// Counts commits and executeBatch calls; can fail the first N executions and
   /// interrupts the running thread once `interruptOnExecution` is reached. `onExecution`
   /// runs on the runner's thread with each execution's ordinal before the fake decides
-  /// its fate: a producer hooked there can queue into the executor mid-drain.
+  /// its fate: a producer hooked there can queue into the executor mid-drain. The
+  /// `failConnection`th getConnection call (0: never) fails instead of handing out the
+  /// connection, so a retry can be made to fail before it reaches a statement.
   private static final class FakeJdbc {
 
     int executions;
     int commits;
+    int connections;
     int failFirst;
+    int failConnection;
     int interruptOnExecution = 1;
     IntConsumer onExecution = execution -> {
     };
@@ -106,7 +110,12 @@ final class BatchSqlExecutorTests {
           DataSource.class.getClassLoader(),
           new Class<?>[]{DataSource.class},
           (proxy, method, args) -> switch (method.getName()) {
-            case "getConnection" -> connection;
+            case "getConnection" -> {
+              if (++connections == failConnection) {
+                throw new SQLException("pool exhausted", "08001", 0);
+              }
+              yield connection;
+            }
             default -> throw new UnsupportedOperationException(method.getName());
           }
       );
@@ -636,5 +645,66 @@ final class BatchSqlExecutorTests {
     assertEquals(2, jdbc.executions);
     // only the successful execution commits
     assertEquals(1, jdbc.commits);
+  }
+
+  @Test
+  void aConnectionFailureAfterARequeuedFullBatchDoesNotRequeueItAgain() {
+    final var jdbc = new FakeJdbc();
+    // the full batch fails, is requeued, then the retry's getConnection fails before any
+    // statement: that failure has nothing in flight to hand back
+    jdbc.failFirst = 1;
+    jdbc.failConnection = 2;
+    jdbc.interruptOnExecution = 2;
+    final var prepared = new ArrayList<String>();
+    final var heartbeat = new RecordingHeartbeat();
+    final var executor = createExecutor(jdbc, 2, prepared, Duration.ZERO, heartbeat);
+    executor.queue("a");
+    executor.queue("b");
+
+    try (final var log = LogCapture.attach(BatchSqlExecutor.class.getName())) {
+      executor.run();
+      log.assertLogged("Failed 2 times");
+      assertTrue(log.messages().stream().noneMatch(m -> m.contains("Unexpected error")),
+          () -> String.join("\n", log.messages()));
+    }
+
+    // the batch is written exactly once after its single requeue, not a second copy of
+    // it from the connection failure
+    assertEquals(List.of("a", "b", "a", "b"), prepared);
+    assertEquals(3, jdbc.connections);
+    assertEquals(2, jdbc.executions);
+    assertEquals(1, jdbc.commits);
+    // the two contained failures each ticked after their backoff, then the commit
+    assertEquals(3, heartbeat.ticks());
+    assertFalse(executor.lock.isLocked());
+  }
+
+  @Test
+  void aConnectionFailureAfterARequeuedRemainderKeepsTheRunnerAlive() {
+    final var jdbc = new FakeJdbc();
+    // a sub-batch-size remainder fails and is requeued; the runner then passes through
+    // the fill/wait block, which clears batch[], before the retry's getConnection fails
+    jdbc.failFirst = 1;
+    jdbc.failConnection = 2;
+    jdbc.interruptOnExecution = 2;
+    final var prepared = new ArrayList<String>();
+    final var heartbeat = new RecordingHeartbeat();
+    final var executor = createExecutor(jdbc, 2, prepared, Duration.ZERO, heartbeat);
+    executor.queue("a");
+
+    try (final var log = LogCapture.attach(BatchSqlExecutor.class.getName())) {
+      executor.run();
+      log.assertLogged("Failed 2 times");
+      // requeueing the cleared slots would push a null into the deque and end the run
+      assertTrue(log.messages().stream().noneMatch(m -> m.contains("Unexpected error")),
+          () -> String.join("\n", log.messages()));
+    }
+
+    assertEquals(List.of("a", "a"), prepared);
+    assertEquals(3, jdbc.connections);
+    assertEquals(2, jdbc.executions);
+    assertEquals(1, jdbc.commits);
+    assertEquals(3, heartbeat.ticks());
+    assertFalse(executor.lock.isLocked());
   }
 }
