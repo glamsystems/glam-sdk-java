@@ -148,6 +148,9 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
                   );
                   numItems = 0;
                   numRows = 0;
+                  // a committed batch ends the failure streak: the next failure backs off
+                  // from the first tier again, not from wherever the last outage left it
+                  errorCount = 0;
                   // a committed batch is one cycle
                   heartbeat.tick();
                 }
@@ -164,6 +167,7 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
                 );
                 numItems = 0;
                 numRows = 0;
+                errorCount = 0;
                 heartbeat.tick();
               }
             }

@@ -252,6 +252,56 @@ final class BatchSqlExecutorTests {
     assertEquals(2, heartbeat.ticks());
   }
 
+  /// A committed batch ends the failure streak: the backoff tier is chosen by the count of
+  /// consecutive failures since the last commit, so an executor that failed once during an
+  /// outage weeks ago does not back off from that outage's tier on its next failure.
+  @Test
+  void aCommittedBatchResetsTheBackoffTier() {
+    final var jdbc = new FakeJdbc();
+    jdbc.failFirst = 1;                // execution 1 fails, execution 2 (the retry) commits
+    jdbc.interruptOnExecution = 4;     // execution 4 (the second retry) commits, then the loop exits
+    final var prepared = new ArrayList<String>();
+    final var delays = new ArrayList<Long>();
+    final var backoff = (Backoff) Proxy.newProxyInstance(
+        Backoff.class.getClassLoader(),
+        new Class<?>[]{Backoff.class},
+        (proxy, method, args) -> switch (method.getName()) {
+          case "delay" -> {
+            delays.add((Long) args[0]);
+            yield 0L;
+          }
+          default -> throw new UnsupportedOperationException(method.getName());
+        }
+    );
+    final var executor = BatchSqlExecutor.create(
+        String.class,
+        jdbc.dataSource(),
+        "INSERT INTO items (v) VALUES (?)",
+        1,
+        (ps, item) -> {
+          prepared.add(item);
+          return 1;
+        },
+        Duration.ZERO,
+        backoff,
+        LoopHeartbeat.NONE
+    );
+    jdbc.onExecution = execution -> {
+      if (execution == 2) {
+        executor.queue("b");           // arrives while the retry of "a" is executing
+      } else if (execution == 3) {
+        jdbc.failFirst = 3;            // the first attempt at "b" fails too
+      }
+    };
+    executor.queue("a");
+
+    executor.run();
+
+    assertEquals(List.of("a", "a", "b", "b"), prepared);
+    assertEquals(2, jdbc.commits);
+    assertEquals(List.of(1L, 1L), delays, "the second failure follows a commit, so it backs off from the first tier again");
+  }
+
   @Test
   void aCycleCutShortInItsBackoffDoesNotTick() {
     final var jdbc = new FakeJdbc();
