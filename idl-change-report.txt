@@ -7,10 +7,6 @@ nobody took. The standing disagreements live beside this file, at its name with 
 before the extension. Ordered by program and channel, and carrying no timestamp, so
 consecutive runs are worth diffing against each other.
 
-== Movement (2) ==
+== Movement (0) ==
 
-GLAM Protocol: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_protocol.json moved since the last generation, 482131d89ec0656ed01772b54d982f00935257e83a6750e2fe4bf10b323c9099 -> 735870a96e12a60878e352488bef8009f614c3ad80110dfdc0ef097a3a91b488: errors +1
-  errors added (1): InvalidNotifyAndSettle
-
-GLAM Staging Protocol: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_protocol-staging.json moved since the last generation, 912738dc2c40090066c08c675584a8b3c0131c5daa504315fcbdc140732b4dad -> af7fdad8667ce0440d48c6c9d7cd480c1d0b20800bd1916c0fcdea42e9d9240d: errors +1
-  errors added (1): InvalidNotifyAndSettle
+Nothing moved since the last generation.
