@@ -15,9 +15,10 @@
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/glam_mint-staging.json",
-      "hash": "98bcbcf548226fc6a08d600125761b36ee88679e0795a4b9a6ec31cc17db7b41",
-      "matchesDeployed": true,
-      "verbatim": "vcs.original.json"
+      "hash": "20e980b296645cc7d9de44c6afc5c9fc483309b2a945c6d1557d12dc3f9303d8",
+      "matchesDeployed": false,
+      "file": "vcs.json",
+      "verbatim": "vcs.json"
     }
   }
 }

@@ -7,6 +7,16 @@ nobody took. The standing disagreements live beside this file, at its name with 
 before the extension. Ordered by program and channel, and carrying no timestamp, so
 consecutive runs are worth diffing against each other.
 
-== Movement (0) ==
+== Movement (4) ==
 
-Nothing moved since the last generation.
+GLAM Mint: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_mint.json moved since the last generation, 014aa768712e38d60ca8dff3a24aa177cd4df1b8ea2e95786b989cc2e11b3967 -> c85fe747d1d778608653e7a396be2169dce6d6efb27fb2cb5f5842ea24562034: instructions -2
+  instructions removed (2): price_drift_users, price_drift_vault_depositors
+
+GLAM Protocol: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_protocol.json moved since the last generation, 735870a96e12a60878e352488bef8009f614c3ad80110dfdc0ef097a3a91b488 -> 4d88d32395fc849d63e0952a40c1bd172186f79bb83e3661e94d6aa02182cc0d: errors +3
+  errors added (3): InvalidObligationOwner, ObligationStale, ReserveStale
+
+GLAM Staging Mint: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_mint-staging.json moved since the last generation, 98bcbcf548226fc6a08d600125761b36ee88679e0795a4b9a6ec31cc17db7b41 -> 20e980b296645cc7d9de44c6afc5c9fc483309b2a945c6d1557d12dc3f9303d8: instructions -2
+  instructions removed (2): price_drift_users, price_drift_vault_depositors
+
+GLAM Staging Protocol: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_protocol-staging.json moved since the last generation, af7fdad8667ce0440d48c6c9d7cd480c1d0b20800bd1916c0fcdea42e9d9240d -> 031b3aba37cd395129014036f534ffb7ead985dad4c2d210c8dccd2b23d1c56b: errors +3
+  errors added (3): InvalidObligationOwner, ObligationStale, ReserveStale

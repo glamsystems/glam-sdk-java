@@ -75,7 +75,10 @@ public sealed interface GlamProtocolError extends ProgramError permits
     GlamProtocolError.LockUp,
     GlamProtocolError.PolicyNotSet,
     GlamProtocolError.UnsupportedOracleSource,
-    GlamProtocolError.InvalidNotifyAndSettle {
+    GlamProtocolError.InvalidNotifyAndSettle,
+    GlamProtocolError.ObligationStale,
+    GlamProtocolError.ReserveStale,
+    GlamProtocolError.InvalidObligationOwner {
 
   static GlamProtocolError getInstance(final int errorCode) {
     return switch (errorCode) {
@@ -151,6 +154,9 @@ public sealed interface GlamProtocolError extends ProgramError permits
       case 52004 -> PolicyNotSet.INSTANCE;
       case 52005 -> UnsupportedOracleSource.INSTANCE;
       case 52006 -> InvalidNotifyAndSettle.INSTANCE;
+      case 52007 -> ObligationStale.INSTANCE;
+      case 52008 -> ReserveStale.INSTANCE;
+      case 52009 -> InvalidObligationOwner.INSTANCE;
       default -> null;
     };
   }
@@ -656,6 +662,27 @@ public sealed interface GlamProtocolError extends ProgramError permits
 
     public static final InvalidNotifyAndSettle INSTANCE = new InvalidNotifyAndSettle(
         52006, "Notify-and-settle period exceeds the maximum"
+    );
+  }
+
+  record ObligationStale(int code, String msg) implements GlamProtocolError {
+
+    public static final ObligationStale INSTANCE = new ObligationStale(
+        52007, "Kamino obligation is stale or its price status is incomplete"
+    );
+  }
+
+  record ReserveStale(int code, String msg) implements GlamProtocolError {
+
+    public static final ReserveStale INSTANCE = new ReserveStale(
+        52008, "Kamino reserve is stale or its price status is incomplete"
+    );
+  }
+
+  record InvalidObligationOwner(int code, String msg) implements GlamProtocolError {
+
+    public static final InvalidObligationOwner INSTANCE = new InvalidObligationOwner(
+        52009, "Kamino obligation is not owned by the vault"
     );
   }
 }
