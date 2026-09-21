@@ -27,6 +27,45 @@ import static software.sava.core.programs.Discriminator.toDiscriminator;
 
 public final class ExtRpiProgram {
 
+  public static final Discriminator PRICE_REGISTERED_POSITIONS_DISCRIMINATOR = toDiscriminator(90, 157, 162, 50, 236, 16, 188, 3);
+
+  /// Price the vault's registered positions and record the amount on the GLAM state.
+  ///
+  public static List<AccountMeta> priceRegisteredPositionsKeys(final PublicKey glamStateKey,
+                                                               final PublicKey observationStateKey,
+                                                               final PublicKey integrationAuthorityKey,
+                                                               final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(observationStateKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  /// Price the vault's registered positions and record the amount on the GLAM state.
+  ///
+  public static Instruction priceRegisteredPositions(final AccountMeta invokedExtRpiProgramMeta,
+                                                     final PublicKey glamStateKey,
+                                                     final PublicKey observationStateKey,
+                                                     final PublicKey integrationAuthorityKey,
+                                                     final PublicKey glamProtocolProgramKey) {
+    final var keys = priceRegisteredPositionsKeys(
+      glamStateKey,
+      observationStateKey,
+      integrationAuthorityKey,
+      glamProtocolProgramKey
+    );
+    return priceRegisteredPositions(invokedExtRpiProgramMeta, keys);
+  }
+
+  /// Price the vault's registered positions and record the amount on the GLAM state.
+  ///
+  public static Instruction priceRegisteredPositions(final AccountMeta invokedExtRpiProgramMeta,
+                                                     final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedExtRpiProgramMeta, keys, PRICE_REGISTERED_POSITIONS_DISCRIMINATOR);
+  }
+
   public static final Discriminator REMOVE_REGISTERED_POSITION_DISCRIMINATOR = toDiscriminator(102, 188, 200, 90, 244, 35, 5, 7);
 
   /// Remove a registered position from the registry.

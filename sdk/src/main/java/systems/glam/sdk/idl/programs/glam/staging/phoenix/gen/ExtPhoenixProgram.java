@@ -730,6 +730,57 @@ public final class ExtPhoenixProgram {
     }
   }
 
+  public static final Discriminator PRICE_PHOENIX_TRADERS_DISCRIMINATOR = toDiscriminator(112, 90, 177, 46, 145, 191, 219, 213);
+
+  /// Prices the vault's Phoenix trader accounts and records the amount on the GLAM state.
+  ///
+  public static List<AccountMeta> pricePhoenixTradersKeys(final PublicKey glamStateKey,
+                                                          final PublicKey glamVaultKey,
+                                                          final PublicKey solUsdOracleKey,
+                                                          final PublicKey baseAssetOracleKey,
+                                                          final PublicKey integrationAuthorityKey,
+                                                          final PublicKey glamConfigKey,
+                                                          final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  /// Prices the vault's Phoenix trader accounts and records the amount on the GLAM state.
+  ///
+  public static Instruction pricePhoenixTraders(final AccountMeta invokedExtPhoenixProgramMeta,
+                                                final PublicKey glamStateKey,
+                                                final PublicKey glamVaultKey,
+                                                final PublicKey solUsdOracleKey,
+                                                final PublicKey baseAssetOracleKey,
+                                                final PublicKey integrationAuthorityKey,
+                                                final PublicKey glamConfigKey,
+                                                final PublicKey glamProtocolProgramKey) {
+    final var keys = pricePhoenixTradersKeys(
+      glamStateKey,
+      glamVaultKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolProgramKey
+    );
+    return pricePhoenixTraders(invokedExtPhoenixProgramMeta, keys);
+  }
+
+  /// Prices the vault's Phoenix trader accounts and records the amount on the GLAM state.
+  ///
+  public static Instruction pricePhoenixTraders(final AccountMeta invokedExtPhoenixProgramMeta,
+                                                final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, PRICE_PHOENIX_TRADERS_DISCRIMINATOR);
+  }
+
   public static final Discriminator REGISTER_TRADER_DISCRIMINATOR = toDiscriminator(75, 243, 224, 167, 1, 5, 51, 32);
 
   /// Initializes a Phoenix trader account (parent or child subaccount) owned by the vault.

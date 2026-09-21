@@ -1152,6 +1152,202 @@ public final class ExtLoopscaleProgram {
     }
   }
 
+  public static final Discriminator PRICE_LOOPSCALE_LOANS_DISCRIMINATOR = toDiscriminator(106, 180, 138, 193, 90, 3, 24, 42);
+
+  /// Price the vault's Loopscale loans and record the amount on the GLAM state.
+  ///
+  public static List<AccountMeta> priceLoopscaleLoansKeys(final PublicKey glamStateKey,
+                                                          final PublicKey glamVaultKey,
+                                                          final PublicKey solUsdOracleKey,
+                                                          final PublicKey baseAssetOracleKey,
+                                                          final PublicKey integrationAuthorityKey,
+                                                          final PublicKey glamConfigKey,
+                                                          final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  /// Price the vault's Loopscale loans and record the amount on the GLAM state.
+  ///
+  public static Instruction priceLoopscaleLoans(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                                final PublicKey glamStateKey,
+                                                final PublicKey glamVaultKey,
+                                                final PublicKey solUsdOracleKey,
+                                                final PublicKey baseAssetOracleKey,
+                                                final PublicKey integrationAuthorityKey,
+                                                final PublicKey glamConfigKey,
+                                                final PublicKey glamProtocolProgramKey) {
+    final var keys = priceLoopscaleLoansKeys(
+      glamStateKey,
+      glamVaultKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolProgramKey
+    );
+    return priceLoopscaleLoans(invokedExtLoopscaleProgramMeta, keys);
+  }
+
+  /// Price the vault's Loopscale loans and record the amount on the GLAM state.
+  ///
+  public static Instruction priceLoopscaleLoans(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                                final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, PRICE_LOOPSCALE_LOANS_DISCRIMINATOR);
+  }
+
+  public static final Discriminator PRICE_LOOPSCALE_STRATEGIES_DISCRIMINATOR = toDiscriminator(169, 52, 25, 11, 96, 138, 10, 174);
+
+  /// Price the vault's Loopscale lender strategies and record the amount on the GLAM state.
+  ///
+  public static List<AccountMeta> priceLoopscaleStrategiesKeys(final PublicKey glamStateKey,
+                                                               final PublicKey glamVaultKey,
+                                                               final PublicKey solUsdOracleKey,
+                                                               final PublicKey baseAssetOracleKey,
+                                                               final PublicKey integrationAuthorityKey,
+                                                               final PublicKey glamConfigKey,
+                                                               final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  /// Price the vault's Loopscale lender strategies and record the amount on the GLAM state.
+  ///
+  public static Instruction priceLoopscaleStrategies(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                                     final PublicKey glamStateKey,
+                                                     final PublicKey glamVaultKey,
+                                                     final PublicKey solUsdOracleKey,
+                                                     final PublicKey baseAssetOracleKey,
+                                                     final PublicKey integrationAuthorityKey,
+                                                     final PublicKey glamConfigKey,
+                                                     final PublicKey glamProtocolProgramKey) {
+    final var keys = priceLoopscaleStrategiesKeys(
+      glamStateKey,
+      glamVaultKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolProgramKey
+    );
+    return priceLoopscaleStrategies(invokedExtLoopscaleProgramMeta, keys);
+  }
+
+  /// Price the vault's Loopscale lender strategies and record the amount on the GLAM state.
+  ///
+  public static Instruction priceLoopscaleStrategies(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                                     final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, PRICE_LOOPSCALE_STRATEGIES_DISCRIMINATOR);
+  }
+
+  public static final Discriminator PRICE_LOOPSCALE_VAULT_POSITIONS_DISCRIMINATOR = toDiscriminator(98, 229, 99, 154, 94, 139, 124, 220);
+
+  /// Price the vault's Loopscale user vault positions and record the amount on the GLAM state.
+  ///
+  public static List<AccountMeta> priceLoopscaleVaultPositionsKeys(final PublicKey glamStateKey,
+                                                                   final PublicKey glamVaultKey,
+                                                                   final PublicKey solUsdOracleKey,
+                                                                   final PublicKey baseAssetOracleKey,
+                                                                   final PublicKey integrationAuthorityKey,
+                                                                   final PublicKey glamConfigKey,
+                                                                   final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  /// Price the vault's Loopscale user vault positions and record the amount on the GLAM state.
+  ///
+  /// @param numVaults: u8
+  public static Instruction priceLoopscaleVaultPositions(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                                         final PublicKey glamStateKey,
+                                                         final PublicKey glamVaultKey,
+                                                         final PublicKey solUsdOracleKey,
+                                                         final PublicKey baseAssetOracleKey,
+                                                         final PublicKey integrationAuthorityKey,
+                                                         final PublicKey glamConfigKey,
+                                                         final PublicKey glamProtocolProgramKey,
+                                                         final int numVaults) {
+    final var keys = priceLoopscaleVaultPositionsKeys(
+      glamStateKey,
+      glamVaultKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolProgramKey
+    );
+    return priceLoopscaleVaultPositions(invokedExtLoopscaleProgramMeta, keys, numVaults);
+  }
+
+  /// Price the vault's Loopscale user vault positions and record the amount on the GLAM state.
+  ///
+  /// @param numVaults: u8
+  public static Instruction priceLoopscaleVaultPositions(final AccountMeta invokedExtLoopscaleProgramMeta,
+                                                         final List<AccountMeta> keys,
+                                                         final int numVaults) {
+    final byte[] _data = new byte[9];
+    int i = PRICE_LOOPSCALE_VAULT_POSITIONS_DISCRIMINATOR.write(_data, 0);
+    _data[i] = (byte) numVaults;
+
+    return Instruction.createInstruction(invokedExtLoopscaleProgramMeta, keys, _data);
+  }
+
+  /// @param numVaults: u8
+  public record PriceLoopscaleVaultPositionsIxData(Discriminator discriminator, int numVaults) implements SerDe {
+
+    public static PriceLoopscaleVaultPositionsIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int BYTES = 9;
+
+    public static final int NUM_VAULTS_OFFSET = 8;
+
+    public static PriceLoopscaleVaultPositionsIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var numVaults = _data[i] & 0xFF;
+      return new PriceLoopscaleVaultPositionsIxData(discriminator, numVaults);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      _data[i] = (byte) numVaults;
+      ++i;
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
   public static final Discriminator REPAY_PRINCIPAL_DISCRIMINATOR = toDiscriminator(229, 67, 83, 65, 77, 84, 80, 141);
 
   /// Repay principal on a Loopscale loan.

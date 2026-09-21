@@ -1224,6 +1224,75 @@ public final class ExtMarginfiProgram {
     }
   }
 
+  public static final Discriminator PRICE_MARGINFI_ACCOUNTS_DISCRIMINATOR = toDiscriminator(146, 215, 180, 231, 191, 188, 42, 235);
+
+  /// Prices the vault's Marginfi accounts and records the amount on the GLAM state.
+  ///
+  /// Clients must refresh active banks and call Marginfi `lending_account_pulse_health`
+  /// in the same transaction before this ix.
+  ///
+  /// Extra accounts for pricing N Marginfi accounts:
+  /// - marginfi_account x N
+  ///
+  public static List<AccountMeta> priceMarginfiAccountsKeys(final PublicKey glamStateKey,
+                                                            final PublicKey glamVaultKey,
+                                                            final PublicKey solUsdOracleKey,
+                                                            final PublicKey baseAssetOracleKey,
+                                                            final PublicKey integrationAuthorityKey,
+                                                            final PublicKey glamConfigKey,
+                                                            final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  /// Prices the vault's Marginfi accounts and records the amount on the GLAM state.
+  ///
+  /// Clients must refresh active banks and call Marginfi `lending_account_pulse_health`
+  /// in the same transaction before this ix.
+  ///
+  /// Extra accounts for pricing N Marginfi accounts:
+  /// - marginfi_account x N
+  ///
+  public static Instruction priceMarginfiAccounts(final AccountMeta invokedExtMarginfiProgramMeta,
+                                                  final PublicKey glamStateKey,
+                                                  final PublicKey glamVaultKey,
+                                                  final PublicKey solUsdOracleKey,
+                                                  final PublicKey baseAssetOracleKey,
+                                                  final PublicKey integrationAuthorityKey,
+                                                  final PublicKey glamConfigKey,
+                                                  final PublicKey glamProtocolProgramKey) {
+    final var keys = priceMarginfiAccountsKeys(
+      glamStateKey,
+      glamVaultKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolProgramKey
+    );
+    return priceMarginfiAccounts(invokedExtMarginfiProgramMeta, keys);
+  }
+
+  /// Prices the vault's Marginfi accounts and records the amount on the GLAM state.
+  ///
+  /// Clients must refresh active banks and call Marginfi `lending_account_pulse_health`
+  /// in the same transaction before this ix.
+  ///
+  /// Extra accounts for pricing N Marginfi accounts:
+  /// - marginfi_account x N
+  ///
+  public static Instruction priceMarginfiAccounts(final AccountMeta invokedExtMarginfiProgramMeta,
+                                                  final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedExtMarginfiProgramMeta, keys, PRICE_MARGINFI_ACCOUNTS_DISCRIMINATOR);
+  }
+
   public static final Discriminator SET_MARGINFI_POLICY_DISCRIMINATOR = toDiscriminator(161, 236, 171, 232, 25, 67, 129, 198);
 
   /// Set the Marginfi policy (group, bank, and borrow-token allowlists).

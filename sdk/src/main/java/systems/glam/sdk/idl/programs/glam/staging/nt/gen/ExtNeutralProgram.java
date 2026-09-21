@@ -162,6 +162,57 @@ public final class ExtNeutralProgram {
     return Instruction.createInstruction(invokedExtNeutralProgramMeta, keys, INITIALIZE_BUNDLE_DEPOSITOR_DISCRIMINATOR);
   }
 
+  public static final Discriminator PRICE_NEUTRAL_BUNDLE_DEPOSITORS_DISCRIMINATOR = toDiscriminator(202, 93, 205, 29, 37, 180, 127, 102);
+
+  /// Prices the vault's NT bundle depositor positions and records the amount on the GLAM state.
+  ///
+  public static List<AccountMeta> priceNeutralBundleDepositorsKeys(final PublicKey glamStateKey,
+                                                                   final PublicKey glamVaultKey,
+                                                                   final PublicKey solUsdOracleKey,
+                                                                   final PublicKey baseAssetOracleKey,
+                                                                   final PublicKey integrationAuthorityKey,
+                                                                   final PublicKey glamConfigKey,
+                                                                   final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  /// Prices the vault's NT bundle depositor positions and records the amount on the GLAM state.
+  ///
+  public static Instruction priceNeutralBundleDepositors(final AccountMeta invokedExtNeutralProgramMeta,
+                                                         final PublicKey glamStateKey,
+                                                         final PublicKey glamVaultKey,
+                                                         final PublicKey solUsdOracleKey,
+                                                         final PublicKey baseAssetOracleKey,
+                                                         final PublicKey integrationAuthorityKey,
+                                                         final PublicKey glamConfigKey,
+                                                         final PublicKey glamProtocolProgramKey) {
+    final var keys = priceNeutralBundleDepositorsKeys(
+      glamStateKey,
+      glamVaultKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolProgramKey
+    );
+    return priceNeutralBundleDepositors(invokedExtNeutralProgramMeta, keys);
+  }
+
+  /// Prices the vault's NT bundle depositor positions and records the amount on the GLAM state.
+  ///
+  public static Instruction priceNeutralBundleDepositors(final AccountMeta invokedExtNeutralProgramMeta,
+                                                         final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedExtNeutralProgramMeta, keys, PRICE_NEUTRAL_BUNDLE_DEPOSITORS_DISCRIMINATOR);
+  }
+
   public static final Discriminator REQUEST_DEPOSIT_DISCRIMINATOR = toDiscriminator(243, 202, 197, 215, 135, 97, 213, 109);
 
   /// Requests a NT bundle deposit from the GLAM vault's token account.

@@ -1243,6 +1243,136 @@ public final class ExtOrcaProgram {
     }
   }
 
+  public static final Discriminator PRICE_ORCA_WHIRLPOOL_POSITIONS_DISCRIMINATOR = toDiscriminator(3, 81, 117, 34, 5, 238, 158, 232);
+
+  /// Prices the vault's Orca Whirlpools positions and records the amount on the GLAM state.
+  ///
+  /// Remaining accounts for each position:
+  /// - position
+  /// - position_token_account
+  /// - whirlpool
+  /// - tick_array_lower
+  /// - tick_array_upper
+  /// - token_mint_a
+  /// - token_oracle_a
+  /// - token_mint_b
+  /// - token_oracle_b
+  /// - optional reward_mint, reward_oracle pairs for initialized rewards with nonzero value
+  ///
+  public static List<AccountMeta> priceOrcaWhirlpoolPositionsKeys(final PublicKey glamStateKey,
+                                                                  final PublicKey glamVaultKey,
+                                                                  final PublicKey solUsdOracleKey,
+                                                                  final PublicKey baseAssetOracleKey,
+                                                                  final PublicKey integrationAuthorityKey,
+                                                                  final PublicKey glamConfigKey,
+                                                                  final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  /// Prices the vault's Orca Whirlpools positions and records the amount on the GLAM state.
+  ///
+  /// Remaining accounts for each position:
+  /// - position
+  /// - position_token_account
+  /// - whirlpool
+  /// - tick_array_lower
+  /// - tick_array_upper
+  /// - token_mint_a
+  /// - token_oracle_a
+  /// - token_mint_b
+  /// - token_oracle_b
+  /// - optional reward_mint, reward_oracle pairs for initialized rewards with nonzero value
+  ///
+  /// @param numPositions: u8
+  public static Instruction priceOrcaWhirlpoolPositions(final AccountMeta invokedExtOrcaProgramMeta,
+                                                        final PublicKey glamStateKey,
+                                                        final PublicKey glamVaultKey,
+                                                        final PublicKey solUsdOracleKey,
+                                                        final PublicKey baseAssetOracleKey,
+                                                        final PublicKey integrationAuthorityKey,
+                                                        final PublicKey glamConfigKey,
+                                                        final PublicKey glamProtocolProgramKey,
+                                                        final int numPositions) {
+    final var keys = priceOrcaWhirlpoolPositionsKeys(
+      glamStateKey,
+      glamVaultKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolProgramKey
+    );
+    return priceOrcaWhirlpoolPositions(invokedExtOrcaProgramMeta, keys, numPositions);
+  }
+
+  /// Prices the vault's Orca Whirlpools positions and records the amount on the GLAM state.
+  ///
+  /// Remaining accounts for each position:
+  /// - position
+  /// - position_token_account
+  /// - whirlpool
+  /// - tick_array_lower
+  /// - tick_array_upper
+  /// - token_mint_a
+  /// - token_oracle_a
+  /// - token_mint_b
+  /// - token_oracle_b
+  /// - optional reward_mint, reward_oracle pairs for initialized rewards with nonzero value
+  ///
+  /// @param numPositions: u8
+  public static Instruction priceOrcaWhirlpoolPositions(final AccountMeta invokedExtOrcaProgramMeta,
+                                                        final List<AccountMeta> keys,
+                                                        final int numPositions) {
+    final byte[] _data = new byte[9];
+    int i = PRICE_ORCA_WHIRLPOOL_POSITIONS_DISCRIMINATOR.write(_data, 0);
+    _data[i] = (byte) numPositions;
+
+    return Instruction.createInstruction(invokedExtOrcaProgramMeta, keys, _data);
+  }
+
+  /// @param numPositions: u8
+  public record PriceOrcaWhirlpoolPositionsIxData(Discriminator discriminator, int numPositions) implements SerDe {
+
+    public static PriceOrcaWhirlpoolPositionsIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int BYTES = 9;
+
+    public static final int NUM_POSITIONS_OFFSET = 8;
+
+    public static PriceOrcaWhirlpoolPositionsIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var numPositions = _data[i] & 0xFF;
+      return new PriceOrcaWhirlpoolPositionsIxData(discriminator, numPositions);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      _data[i] = (byte) numPositions;
+      ++i;
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
   public static final Discriminator REPOSITION_LIQUIDITY_V_2_DISCRIMINATOR = toDiscriminator(191, 169, 224, 11, 131, 19, 158, 253);
 
   /// Reposition liquidity into a new Orca Whirlpools tick range.

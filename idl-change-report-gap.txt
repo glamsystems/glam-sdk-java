@@ -41,12 +41,15 @@ GLAM Staging Exponent: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ex
   accounts added (1): StateAccount
 
 GLAM Staging Jupiter: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_jupiter-staging.json differs from the deployed idl.json
+  instructions removed (2): price_jupiter_borrow_positions, price_jupiter_earn_positions
   accounts added (1): StateAccount
 
 GLAM Staging Loopscale: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_loopscale-staging.json differs from the deployed idl.json
+  instructions removed (3): price_loopscale_loans, price_loopscale_strategies, price_loopscale_vault_positions
   accounts added (1): StateAccount
 
 GLAM Staging MarginFi: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_marginfi-staging.json differs from the deployed idl.json
+  instructions removed (1): price_marginfi_accounts
   accounts added (1): StateAccount
 
 GLAM Staging Marinade: the metadata IDL at F3FArTonLL2Lia7F596UA1NxxenB2wgK2iuiU18yqTXF differs from the deployed idl.json
@@ -56,18 +59,22 @@ GLAM Staging Mint: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_m
   instructions removed (2): price_drift_users, price_drift_vault_depositors
 
 GLAM Staging Neutral Trade: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_neutral-staging.json differs from the deployed idl.json
+  instructions removed (1): price_neutral_bundle_depositors
   accounts added (1): StateAccount
 
 GLAM Staging Orca: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_orca-staging.json differs from the deployed idl.json
+  instructions removed (1): price_orca_whirlpool_positions
   accounts added (1): StateAccount
 
 GLAM Staging Phoenix: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_phoenix-staging.json differs from the deployed idl.json
+  instructions removed (1): price_phoenix_traders
   accounts added (1): StateAccount
 
 GLAM Staging Protocol: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_protocol-staging.json differs from the deployed idl.json
   errors added (4): InvalidNotifyAndSettle, InvalidObligationOwner, ObligationStale, ReserveStale
 
 GLAM Staging Registered Positions: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_rpi-staging.json differs from the deployed idl.json
+  instructions removed (1): price_registered_positions
   accounts added (1): StateAccount
 
 GLAM Staging Stake Pool: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_stake_pool-staging.json differs from the deployed idl.json

@@ -1485,6 +1485,144 @@ public final class ExtJupiterProgram {
     }
   }
 
+  public static final Discriminator PRICE_JUPITER_BORROW_POSITIONS_DISCRIMINATOR = toDiscriminator(55, 251, 33, 55, 80, 17, 18, 154);
+
+  /// Prices the vault's Jupiter Borrow position PDAs and records the amount on the GLAM state.
+  ///
+  /// Extra accounts for pricing N borrow positions:
+  /// - (position, position_token_account, vault_config, vault_state, current_tick, supply_oracle, borrow_oracle) x N
+  ///
+  /// Clients should prepend Jupiter Vaults `update_exchange_prices`
+  /// instructions for every distinct vault.
+  ///
+  public static List<AccountMeta> priceJupiterBorrowPositionsKeys(final PublicKey glamStateKey,
+                                                                  final PublicKey glamVaultKey,
+                                                                  final PublicKey solUsdOracleKey,
+                                                                  final PublicKey baseAssetOracleKey,
+                                                                  final PublicKey integrationAuthorityKey,
+                                                                  final PublicKey glamConfigKey,
+                                                                  final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  /// Prices the vault's Jupiter Borrow position PDAs and records the amount on the GLAM state.
+  ///
+  /// Extra accounts for pricing N borrow positions:
+  /// - (position, position_token_account, vault_config, vault_state, current_tick, supply_oracle, borrow_oracle) x N
+  ///
+  /// Clients should prepend Jupiter Vaults `update_exchange_prices`
+  /// instructions for every distinct vault.
+  ///
+  public static Instruction priceJupiterBorrowPositions(final AccountMeta invokedExtJupiterProgramMeta,
+                                                        final PublicKey glamStateKey,
+                                                        final PublicKey glamVaultKey,
+                                                        final PublicKey solUsdOracleKey,
+                                                        final PublicKey baseAssetOracleKey,
+                                                        final PublicKey integrationAuthorityKey,
+                                                        final PublicKey glamConfigKey,
+                                                        final PublicKey glamProtocolProgramKey) {
+    final var keys = priceJupiterBorrowPositionsKeys(
+      glamStateKey,
+      glamVaultKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolProgramKey
+    );
+    return priceJupiterBorrowPositions(invokedExtJupiterProgramMeta, keys);
+  }
+
+  /// Prices the vault's Jupiter Borrow position PDAs and records the amount on the GLAM state.
+  ///
+  /// Extra accounts for pricing N borrow positions:
+  /// - (position, position_token_account, vault_config, vault_state, current_tick, supply_oracle, borrow_oracle) x N
+  ///
+  /// Clients should prepend Jupiter Vaults `update_exchange_prices`
+  /// instructions for every distinct vault.
+  ///
+  public static Instruction priceJupiterBorrowPositions(final AccountMeta invokedExtJupiterProgramMeta,
+                                                        final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedExtJupiterProgramMeta, keys, PRICE_JUPITER_BORROW_POSITIONS_DISCRIMINATOR);
+  }
+
+  public static final Discriminator PRICE_JUPITER_EARN_POSITIONS_DISCRIMINATOR = toDiscriminator(120, 10, 10, 137, 145, 60, 164, 16);
+
+  /// Prices the vault's Jupiter Earn fToken ATAs and records the amount on the GLAM state.
+  ///
+  /// Extra accounts for pricing N earn positions:
+  /// - (f_token_ata, lending, underlying_oracle) x N
+  ///
+  /// Clients should prepend Jupiter Lending `update_rate` instructions for
+  /// every distinct lending account.
+  ///
+  public static List<AccountMeta> priceJupiterEarnPositionsKeys(final PublicKey glamStateKey,
+                                                                final PublicKey glamVaultKey,
+                                                                final PublicKey solUsdOracleKey,
+                                                                final PublicKey baseAssetOracleKey,
+                                                                final PublicKey integrationAuthorityKey,
+                                                                final PublicKey glamConfigKey,
+                                                                final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createRead(glamVaultKey),
+      createRead(solUsdOracleKey),
+      createRead(baseAssetOracleKey),
+      createRead(integrationAuthorityKey),
+      createRead(glamConfigKey),
+      createRead(glamProtocolProgramKey)
+    );
+  }
+
+  /// Prices the vault's Jupiter Earn fToken ATAs and records the amount on the GLAM state.
+  ///
+  /// Extra accounts for pricing N earn positions:
+  /// - (f_token_ata, lending, underlying_oracle) x N
+  ///
+  /// Clients should prepend Jupiter Lending `update_rate` instructions for
+  /// every distinct lending account.
+  ///
+  public static Instruction priceJupiterEarnPositions(final AccountMeta invokedExtJupiterProgramMeta,
+                                                      final PublicKey glamStateKey,
+                                                      final PublicKey glamVaultKey,
+                                                      final PublicKey solUsdOracleKey,
+                                                      final PublicKey baseAssetOracleKey,
+                                                      final PublicKey integrationAuthorityKey,
+                                                      final PublicKey glamConfigKey,
+                                                      final PublicKey glamProtocolProgramKey) {
+    final var keys = priceJupiterEarnPositionsKeys(
+      glamStateKey,
+      glamVaultKey,
+      solUsdOracleKey,
+      baseAssetOracleKey,
+      integrationAuthorityKey,
+      glamConfigKey,
+      glamProtocolProgramKey
+    );
+    return priceJupiterEarnPositions(invokedExtJupiterProgramMeta, keys);
+  }
+
+  /// Prices the vault's Jupiter Earn fToken ATAs and records the amount on the GLAM state.
+  ///
+  /// Extra accounts for pricing N earn positions:
+  /// - (f_token_ata, lending, underlying_oracle) x N
+  ///
+  /// Clients should prepend Jupiter Lending `update_rate` instructions for
+  /// every distinct lending account.
+  ///
+  public static Instruction priceJupiterEarnPositions(final AccountMeta invokedExtJupiterProgramMeta,
+                                                      final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedExtJupiterProgramMeta, keys, PRICE_JUPITER_EARN_POSITIONS_DISCRIMINATOR);
+  }
+
   public static final Discriminator SET_BORROW_POLICY_DISCRIMINATOR = toDiscriminator(199, 94, 106, 205, 150, 227, 206, 68);
 
   /// Set the Jupiter Borrow policy on the GLAM state.
