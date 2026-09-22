@@ -41,7 +41,7 @@ plus service components for operating against it.
 - `examples/` — scratch/example module; not part of the hardening surface.
 - `mapping-configs-v1/` and `mapping-configs-v1-staging/` (tracked) — the v1
   ix-mapper mapping configs, one file per source program, projected one way
-  from `glamsystems/glam` (`scripts/ix-mapper-gen`, generated there from the
+  from `glamsystems/glam` (`anchor_v1/ix-mapper`, generated there from the
   managed IDL stores) by its public-repo sync, whose commits record the glam
   commit. Never edit them here: a change lands in glam and arrives with the
   next sync. The sdk's `processResources` embeds both sets as

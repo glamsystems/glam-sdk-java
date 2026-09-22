@@ -46,7 +46,7 @@ hardening {
 
 // The jar embeds the ix-mapper mapping configs under glam/ix-mappings/{production,staging}:
 // the two directories at the repository root that glamsystems/glam projects here (its
-// scripts/ix-mapper-gen sets, generated from its managed IDL stores). They are copied at
+// anchor_v1/ix-mapper sets, generated from its managed IDL stores). They are copied at
 // processResources time, so tests read the bytes the jar ships, beside an index the loader
 // reads, since a jar cannot be listed. `from()` on a directory that does not exist copies
 // nothing without a word, and every published sdk jar before the embedding shipped empty for
