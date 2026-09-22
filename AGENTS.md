@@ -50,7 +50,8 @@ plus service components for operating against it.
   `GlamAccounts.createMapper(factory)` read them back, so a consumer supplies
   no directory.
 - `Integ.*` files are git-ignored scratch — present on a dev machine, absent
-  in CI. Never make anything depend on them.
+  in CI. Never make anything depend on them. `ix-mappings.source` beside them names the glam commit
+  they were projected from; the sync writes it and the build reads it, never git history.
 
 ## Build & test
 

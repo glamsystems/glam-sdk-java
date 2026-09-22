@@ -57,25 +57,23 @@ val mappingSets = linkedMapOf(
   "staging" to rootDir.resolve("mapping-configs-v1-staging"),
 )
 
+// The sync that projects the sets writes the glam commit beside them, in a tracked file the
+// build declares as an input: provenance read from the tree, never from git history, so a
+// shallow clone and an incremental build agree on it. The first import wrote it by hand.
+val mappingsSource = rootDir.resolve("ix-mappings.source")
+
 val ixMappingsIndex = tasks.register("ixMappingsIndex") {
   description = "Writes glam/ix-mappings/index.json: each environment's embedded config file names and the glam commit they were projected from."
   val sets = mappingSets
-  val root = rootDir
+  val sourceFile = mappingsSource
   sets.values.forEach { inputs.dir(it) }
+  inputs.file(sourceFile)
   val indexFile = layout.buildDirectory.file("ix-mappings/index.json")
   outputs.file(indexFile)
   doLast {
-    // The sync that projects the sets records the glam commit in its message.
-    val log = ProcessBuilder(listOf("git", "log", "-1", "--format=%B", "--") + sets.values.map { it.relativeTo(root).path })
-        .directory(root)
-        .redirectErrorStream(true)
-        .start()
-    val message = log.inputStream.bufferedReader().readText()
-    val source = if (log.waitFor() == 0) {
-      Regex("Synced from glamsystems/glam ([0-9a-f]{40})").find(message)?.groupValues?.get(1)?.let { "glamsystems/glam@$it" } ?: "unrecorded"
-    } else {
-      "unrecorded"
-    }
+    check(sourceFile.isFile) { "${sourceFile.name} is missing beside the mapping sets; the sync that projects them writes it." }
+    val source = sourceFile.readText().trim()
+    check(Regex("glamsystems/glam@[0-9a-f]{40}").matches(source)) { "${sourceFile.name} holds '$source', not glamsystems/glam@<commit>." }
     val entries = sets.entries.joinToString(",\n") { (env, dir) ->
       val files = dir.listFiles { file -> file.isFile && file.name.endsWith(".json") }.orEmpty().sortedBy { it.name }
       check(files.isNotEmpty()) { "No mapping configs under $dir; the sdk jar must not ship without the $env set." }

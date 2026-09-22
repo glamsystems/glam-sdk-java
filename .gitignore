@@ -38,6 +38,7 @@
 !/mapping-configs-v1/**
 !/mapping-configs-v1-staging/
 !/mapping-configs-v1-staging/**
+!/ix-mappings.source
 
 ### CI ###
 !/.github/
