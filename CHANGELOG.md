@@ -1,5 +1,12 @@
 # Changelog
 
+## [25.18.2](https://github.com/glamsystems/glam-sdk-java/compare/25.18.1...25.18.2) (2026-09-22)
+
+
+### Features
+
+* **sdk:** add pricing instructions for Loopscale loans, strategies, vault positions, Neutral Trade bundle depositors, and Registered Positions ([0f9be4f](https://github.com/glamsystems/glam-sdk-java/commit/0f9be4fe4c3cb5d155145c377e08a6d54d0c9189))
+
 ## [25.18.1](https://github.com/glamsystems/glam-sdk-java/compare/25.18.0...25.18.1) (2026-09-16)
 
 
