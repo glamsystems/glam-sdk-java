@@ -1,0 +1,79 @@
+{
+  "program_id": "CCTPV2vPZJS2u2BBsUoscuikbYjnpFmbFsvVuJdgUMQe",
+  "proxy_program_id": "gstgxS9yTioViNKdsM4DC33k1TU9un2VCYDQK8fAeSA",
+  "instructions": [
+    {
+      "src_ix_name": "deposit_for_burn",
+      "src_discriminator": [215, 60, 61, 46, 114, 55, 128, 176],
+      "dst_ix_name": "cctp_deposit_for_burn",
+      "dst_discriminator": [132, 90, 36, 35, 103, 197, 143, 91],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "CCTPV2vPZJS2u2BBsUoscuikbYjnpFmbFsvVuJdgUMQe",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "CCTPV2Sm4AdWt5296sk4P66VBZ7bEhcARwFaaS9YPbeC",
+          "index": 17,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "CCTPV2vPZJS2u2BBsUoscuikbYjnpFmbFsvVuJdgUMQe",
+          "index": 18,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "index": 19,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": [
+        -1, -1, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, -1, -1, -1, -1, 20, -1
+      ]
+    }
+  ]
+}
