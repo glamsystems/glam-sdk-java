@@ -2,6 +2,7 @@ package systems.glam.sdk;
 
 import org.junit.jupiter.api.Test;
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.accounts.meta.AccountMeta;
 import systems.glam.sdk.proxy.DynamicGlamAccountFactory;
 
 import java.io.IOException;
@@ -115,5 +116,30 @@ final class EmbeddedMappingsTests {
       assertEquals(mapper.invokedProxyProgram(), viaProgram.invokedProxyProgram());
       assertNotNull(viaProgram.programProxy(SYSTEM_PROGRAM));
     }
+  }
+  /// The index records the glam commit the sets were projected from as the tracked
+  /// ix-mappings.source states it; a build never consults git history for it.
+  @Test
+  void theIndexRecordsTheSourceTheTrackedFileStates() throws IOException {
+    final var stated = Files.readString(Path.of("..", "ix-mappings.source")).trim();
+    assertTrue(stated.matches("glamsystems/glam@[0-9a-f]{40}"), stated);
+    assertEquals(stated, EmbeddedMappings.index().source());
+  }
+
+  /// A protocol program the sdk does not know is refused, not served staging's set.
+  @Test
+  void anUnknownProtocolProgramIsRefused() {
+    final var custom = AccountMeta.createInvoked(fromBase58Encoded("So11111111111111111111111111111111111111112"));
+    final var factory = DynamicGlamAccountFactory.createFactory(GlamAccounts.MAIN_NET.integrationAuthorities(), 8);
+    final var refused = assertThrows(IllegalArgumentException.class, () -> GlamVaultAccounts.createMapper(custom, factory));
+    assertTrue(refused.getMessage().contains(custom.publicKey().toBase58() + " is neither GLAM protocol program"), refused.getMessage());
+    final var accounts = GlamAccountsBuilder.builder()
+        .protocolProgram(custom.publicKey())
+        .configProgram(GlamAccounts.MAIN_NET.configProgram())
+        .mintProgram(GlamAccounts.MAIN_NET.mintProgram())
+        .policyProgram(GlamAccounts.MAIN_NET.policyProgram())
+        .create();
+    assertThrows(IllegalArgumentException.class, () -> accounts.createMapper(factory));
+    assertTrue(GlamEnv.ofProtocolProgram(custom.publicKey()).isEmpty());
   }
 }
