@@ -12,6 +12,9 @@
 # blocking half, run where amending is still legal.
 name: Report Evidence
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
