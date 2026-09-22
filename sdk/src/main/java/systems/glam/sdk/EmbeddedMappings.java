@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /// The ix-mapper mapping configs the sdk jar carries: one file per source program under
@@ -41,7 +42,16 @@ public final class EmbeddedMappings {
   }
 
   public static Index index() {
-    return JsonIterator.parse(readResource(INDEX_RESOURCE)).parseObject(new IndexParser());
+    return parseIndex(readResource(INDEX_RESOURCE));
+  }
+
+  static Index parseIndex(final byte[] json) {
+    return JsonIterator.parse(json).parseObject(new IndexParser());
+  }
+
+  /// The jar directory of an environment's set, as the build writes it: the lowercase name.
+  static String directory(final GlamEnv env) {
+    return RESOURCE_ROOT + env.name().toLowerCase(Locale.ROOT) + '/';
   }
 
   /// Every config embedded for the environment. Each holds to it: a config whose proxy program
@@ -71,21 +81,33 @@ public final class EmbeddedMappings {
   }
 
   static List<ProgramMapConfig> load(final GlamEnv env, final Set<PublicKey> glamPrograms) {
-    final var files = index().files(env);
+    return load(index(), env, glamPrograms, EmbeddedMappings::readResource);
+  }
+
+  /// The loader over any index and resource reader, so a test can hand it a set the jar does
+  /// not carry and watch each refusal.
+  static List<ProgramMapConfig> load(final Index index,
+                                     final GlamEnv env,
+                                     final Set<PublicKey> glamPrograms,
+                                     final Function<String, byte[]> resources) {
+    final var files = index.files(env);
     if (files.isEmpty()) {
       throw new IllegalStateException("The sdk jar embeds no " + env + " mapping configs.");
     }
-    final var directory = RESOURCE_ROOT + env.name().toLowerCase(Locale.ROOT) + '/';
+    final var directory = directory(env);
     final var accountMetaCache = new HashMap<AccountMeta, AccountMeta>(256);
     final var indexedAccountMetaCache = new HashMap<IndexedAccountMeta, IndexedAccountMeta>(256);
     final var configs = new ArrayList<ProgramMapConfig>(files.size());
     for (final var file : files) {
       final var resource = directory + file;
       final var config = ProgramMapConfig.parseConfig(
-          accountMetaCache, indexedAccountMetaCache, JsonIterator.parse(readResource(resource))
+          accountMetaCache, indexedAccountMetaCache, JsonIterator.parse(resources.apply(resource))
       );
       final var proxy = config.invokedProxyProgram();
-      if (proxy != null && !glamPrograms.contains(proxy.publicKey())) {
+      if (proxy == null) {
+        throw new IllegalStateException(resource + " names no proxy program.");
+      }
+      if (!glamPrograms.contains(proxy.publicKey())) {
         throw new IllegalStateException(String.format(
             "%s proxies through %s, which is not a %s GLAM program.", resource, proxy.publicKey().toBase58(), env
         ));

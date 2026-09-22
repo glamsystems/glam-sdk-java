@@ -8,6 +8,7 @@ import systems.glam.sdk.proxy.DynamicGlamAccountFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
@@ -141,5 +142,69 @@ final class EmbeddedMappingsTests {
         .create();
     assertThrows(IllegalArgumentException.class, () -> accounts.createMapper(factory));
     assertTrue(GlamEnv.ofProtocolProgram(custom.publicKey()).isEmpty());
+  }
+  private static byte[] utf8(final String text) {
+    return text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+  }
+
+  /// The index names source, production and staging, every one: an index another writer
+  /// produced without one of them cannot load half a set silently.
+  @Test
+  void theIndexParserRefusesAMissingField() {
+    final var whole = "{\"source\": \"s\", \"production\": [\"a.json\"], \"staging\": [\"b.json\"]}";
+    assertEquals(List.of("a.json"), EmbeddedMappings.parseIndex(utf8(whole)).production());
+    for (final var missing : List.of("source", "production", "staging")) {
+      final var json = whole.replaceFirst("\"" + missing + "\": [^,}]+,? ?", "").replace(", }", "}");
+      final var refused = assertThrows(IllegalStateException.class, () -> EmbeddedMappings.parseIndex(utf8(json)), json);
+      assertTrue(refused.getMessage().contains("must name source, production and staging"), refused.getMessage());
+    }
+  }
+
+  @Test
+  void theIndexParserRefusesAnUnknownField() {
+    final var refused = assertThrows(IllegalStateException.class, () -> EmbeddedMappings.parseIndex(
+        utf8("{\"source\": \"s\", \"production\": [], \"staging\": [], \"extra\": 1}")));
+    assertTrue(refused.getMessage().contains("declares an unknown field extra"), refused.getMessage());
+  }
+
+  /// A file name is a plain `<program>.json`: no path, no other extension, no null. The loader
+  /// joins it to the environment's directory, so anything else would read outside the set.
+  @Test
+  void theIndexParserRefusesANameThatIsNotAConfigFileName() {
+    for (final var name : List.of("null", "\"x.txt\"", "\"a/b.json\"", "\"a\\\\b.json\"")) {
+      final var json = "{\"source\": \"s\", \"production\": [" + name + "], \"staging\": []}";
+      final var refused = assertThrows(IllegalStateException.class, () -> EmbeddedMappings.parseIndex(utf8(json)), json);
+      assertTrue(refused.getMessage().contains("which is not a config file name"), refused.getMessage());
+    }
+  }
+
+  @Test
+  void aMissingResourceIsRefusedByName() {
+    final var refused = assertThrows(IllegalStateException.class, () -> EmbeddedMappings.readResource("glam/ix-mappings/nope.json"));
+    assertEquals("The sdk jar does not carry glam/ix-mappings/nope.json.", refused.getMessage());
+  }
+
+  /// The set's directory in the jar is the lowercase environment name the build writes;
+  /// a case-insensitive filesystem would hide a wrong case until the jar is read on Linux.
+  @Test
+  void theSetDirectoryIsTheLowercaseEnvironmentName() {
+    assertEquals("glam/ix-mappings/production/", EmbeddedMappings.directory(GlamEnv.PRODUCTION));
+    assertEquals("glam/ix-mappings/staging/", EmbeddedMappings.directory(GlamEnv.STAGING));
+  }
+
+  /// An environment the index lists no file for is refused rather than served an empty mapper,
+  /// and a config that names no proxy program is refused by its resource name.
+  @Test
+  void anEmptySetOrAConfigWithoutAProxyIsRefused() {
+    final var own = EmbeddedMappings.glamPrograms(GlamAccounts.MAIN_NET);
+    final var empty = new EmbeddedMappings.Index("s", List.of(), List.of("x.json"));
+    final var none = assertThrows(IllegalStateException.class,
+        () -> EmbeddedMappings.load(empty, GlamEnv.PRODUCTION, own, EmbeddedMappings::readResource));
+    assertEquals("The sdk jar embeds no PRODUCTION mapping configs.", none.getMessage());
+    final var index = new EmbeddedMappings.Index("s", List.of("x.json"), List.of());
+    final var noProxy = assertThrows(IllegalStateException.class,
+        () -> EmbeddedMappings.load(index, GlamEnv.PRODUCTION, own,
+            resource -> utf8("{\"program_id\": \"11111111111111111111111111111111\", \"instructions\": []}")));
+    assertEquals("glam/ix-mappings/production/x.json names no proxy program.", noProxy.getMessage());
   }
 }
