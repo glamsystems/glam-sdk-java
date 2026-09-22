@@ -7,47 +7,6 @@ nobody took. The standing disagreements live beside this file, at its name with 
 before the extension. Ordered by program and channel, and carrying no timestamp, so
 consecutive runs are worth diffing against each other.
 
-== Movement (18) ==
+== Movement (0) ==
 
-GLAM Staging Bridge: the program was redeployed at slot 448900440, up from 440312688, and no IDL channel moved with it (the metadata IDL was last written at slot 440312801, between the previous deploy and this one; nothing has been written for this deploy); the stored program image changed: 716168 payload bytes, was 716168 — review required
-
-GLAM Staging Exponent: the program was redeployed at slot 448902549, up from 440291652, and no IDL channel moved with it (the metadata IDL was last written at slot 440292306, between the previous deploy and this one; nothing has been written for this deploy); the stored program image changed: 435264 payload bytes, was 435264 — review required
-
-GLAM Staging Jupiter: the metadata IDL at H1u4sYrxg7Knb1HYTCZMPkCdanYVAf9tGD5gehqxygJt moved since the last generation, 90fd0e1ca89d826b3b4028a3db4b67451d6f28245b427ef15cfc8e19bc37ecc4 -> e28ef0352d163990ae644ad7be92a967dd543d7bafa00c7508f5ac5934968ef8: instructions +2
-  instructions added (2): price_jupiter_borrow_positions, price_jupiter_earn_positions
-
-GLAM Staging Jupiter: the program was redeployed at slot 448883554, up from 446813853; the stored program image changed: 534568 payload bytes, was 491456 — review required
-
-GLAM Staging Loopscale: the metadata IDL at CEjFveZPPQXbCPMCr9gzM5fUhgEzo87zJues3RyDoffP moved since the last generation, 54208af83c3b9a297f305a95c077fa87269ece0c0c35b14c4c2c26ff27c4d6b3 -> 955d84fe25776c2e8870b550d2a26ea78ce0b39d94960d1ed1f16ccee41bc33f: instructions +3
-  instructions added (3): price_loopscale_loans, price_loopscale_strategies, price_loopscale_vault_positions
-
-GLAM Staging Loopscale: the program was redeployed at slot 448886567, up from 440320309; the stored program image changed: 779064 payload bytes, was 766128 — review required
-
-GLAM Staging MarginFi: the metadata IDL at 87Fjq93Dgd2LRrjHwzJAWVxFHzVUXNQM6UxtMueixz26 moved since the last generation, e8b65c53ca6aaa8653868b071f1b80beb0e5bcd862ea2f9f72fca9fd0e361ea2 -> 4634c4a405ea0bada1e58eda87eb33517ede90f2bb94abe2e4f4fe29961c14c0: instructions +1
-  instructions added (1): price_marginfi_accounts
-
-GLAM Staging MarginFi: the program was redeployed at slot 448892606, up from 440294731; the stored program image changed: 482008 payload bytes, was 482008 — review required
-
-GLAM Staging Marinade: the program was redeployed at slot 448903953, up from 442709649, and no IDL channel moved with it (the metadata IDL was last written at slot 442709678, between the previous deploy and this one; nothing has been written for this deploy); the stored program image changed: 354104 payload bytes, was 354104 — review required
-
-GLAM Staging Neutral Trade: the metadata IDL at FXMmNwpRUpa17rKKTqNCQpKYtqAUv6Z1kPgZmspVhxjh moved since the last generation, cac0cf63f23b5d355ef72054e4135d35ed1d8e397af777f9337244b13569763d -> a2fa08a5d0282844584ca12b22eaa13041efd6340d1e85203cbe155b607d782d: instructions +1
-  instructions added (1): price_neutral_bundle_depositors
-
-GLAM Staging Neutral Trade: the program was redeployed at slot 448893796, up from 440288167; the stored program image changed: 438680 payload bytes, was 428440 — review required
-
-GLAM Staging Orca: the metadata IDL at xuV58p3UoHjVGQGzkA3kuRoaBLZVnaKv8NM9LM5rfrh moved since the last generation, 0c41824a02b233ea37db3add146634706bf1241c852059a9f226d026905e381a -> 1ea018a3a35e8484ef09485bf6850a4e09eb2a5e79fb573ded5a6cdb88d4c7f5: instructions +1
-  instructions added (1): price_orca_whirlpool_positions
-
-GLAM Staging Orca: the program was redeployed at slot 448894934, up from 440318987; the stored program image changed: 759504 payload bytes, was 759504 — review required
-
-GLAM Staging Phoenix: the metadata IDL at 22diim3gWRQ6xWUCRydriSAY1MwAzuNA5FbQHXpu4VS1 moved since the last generation, f8b1165b3112135f9bbf132b58ebcf2b975cbacf49605e6aaf1fe735b7b156d0 -> ff0714782e81ebdada4ac70b12bd9073bd5b0e3198faa2b2e4778be2d1aefd01: instructions +1
-  instructions added (1): price_phoenix_traders
-
-GLAM Staging Phoenix: the program was redeployed at slot 448888020, up from 443004427; the stored program image changed: 521096 payload bytes, was 521096 — review required
-
-GLAM Staging Registered Positions: the metadata IDL at E9pRGjhgCLeSHoiDTMewHD9XXJQUJ8XjXiBL9sxehtYK moved since the last generation, 3c74feb5f6891eee4ee937f80d505a5552f67e9d517988185d7dab4c04d6e9f5 -> 1ec30cc9a72632358f3e3800c71404cd4072176faf3e4963f783d05f5a74141b: instructions +1
-  instructions added (1): price_registered_positions
-
-GLAM Staging Registered Positions: the program was redeployed at slot 448884995, up from 440311559; the stored program image changed: 628408 payload bytes, was 628408 — review required
-
-GLAM Staging Stake Pool: the program was redeployed at slot 448905338, up from 444081677, and no IDL channel moved with it (the metadata IDL was last written at slot 444081694, between the previous deploy and this one; nothing has been written for this deploy); the stored program image changed: 402888 payload bytes, was 402888 — review required
+Nothing moved since the last generation.
