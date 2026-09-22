@@ -3,65 +3,6 @@
   "proxy_program_id": "gstgo1EgmTp2PbLSaL6Qg57P7uADx3aiRZrMsewEdSy",
   "instructions": [
     {
-      "src_ix_name": "close_position_with_token_extensions",
-      "src_discriminator": [1, 182, 135, 59, 155, 25, 99, 223],
-      "dst_ix_name": "close_position_with_token_extensions",
-      "dst_discriminator": [1, 182, 135, 59, 155, 25, 99, 223],
-      "dynamic_accounts": [
-        {
-          "name": "glam_state",
-          "index": 0,
-          "writable": true,
-          "signer": false
-        },
-        {
-          "name": "glam_vault",
-          "index": 1,
-          "writable": true,
-          "signer": false
-        },
-        {
-          "name": "glam_signer",
-          "index": 2,
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "integration_authority",
-          "index": 3,
-          "writable": false,
-          "signer": false
-        }
-      ],
-      "static_accounts": [
-        {
-          "account": "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
-          "index": 4,
-          "writable": false,
-          "signer": false
-        },
-        {
-          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
-          "index": 5,
-          "writable": false,
-          "signer": false
-        },
-        {
-          "account": "11111111111111111111111111111111",
-          "index": 6,
-          "writable": false,
-          "signer": false
-        },
-        {
-          "account": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
-          "index": 11,
-          "writable": false,
-          "signer": false
-        }
-      ],
-      "index_map": [-1, 7, 8, 9, 10, -1]
-    },
-    {
       "src_ix_name": "collect_fees_v2",
       "src_discriminator": [207, 117, 95, 191, 229, 180, 226, 15],
       "dst_ix_name": "collect_fees_v2",
