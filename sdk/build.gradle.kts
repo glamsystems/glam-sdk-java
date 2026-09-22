@@ -53,14 +53,14 @@ hardening {
 // exactly that reason, so the index task refuses an empty set and the archive is checked
 // after it is written.
 val mappingSets = linkedMapOf(
-  "production" to rootDir.resolve("mapping-configs-v1"),
-  "staging" to rootDir.resolve("mapping-configs-v1-staging"),
+  "production" to rootDir.resolve("mapping/production"),
+  "staging" to rootDir.resolve("mapping/staging"),
 )
 
 // The sync that projects the sets writes the glam commit beside them, in a tracked file the
 // build declares as an input: provenance read from the tree, never from git history, so a
 // shallow clone and an incremental build agree on it. The first import wrote it by hand.
-val mappingsSource = rootDir.resolve("ix-mappings.source")
+val mappingsSource = rootDir.resolve("mapping/SOURCE")
 
 val ixMappingsIndex = tasks.register("ixMappingsIndex") {
   description = "Writes glam/ix-mappings/index.json: each environment's embedded config file names and the glam commit they were projected from."

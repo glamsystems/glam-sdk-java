@@ -9,7 +9,7 @@ Arbitrary bytes parsed as ix-mapper mapping-config JSON, exactly as
 `RuntimeException` out. Seeds:
 
 - `system.json` — the system-program mapping config (inlined, matches the
-  `glam/mapping-configs-v1` shape).
+  `glam/mapping/production` shape).
 - `token.json` — a real multi-instruction config from the download, if present.
 - `empty-object` / `no-instructions` — minimal shapes pinning the
   empty-and-absent-instruction paths.

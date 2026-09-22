@@ -39,7 +39,7 @@ plus service components for operating against it.
   (`fulfillment/`), batched SQL (`db/sql/`), and instruction execution
   (`execution/`).
 - `examples/` — scratch/example module; not part of the hardening surface.
-- `mapping-configs-v1/` and `mapping-configs-v1-staging/` (tracked) — the v1
+- `mapping/production/` and `mapping/staging/` (tracked) — the v1
   ix-mapper mapping configs, one file per source program, projected one way
   from `glamsystems/glam` (`anchor_v1/ix-mapper`, generated there from the
   managed IDL stores) by its public-repo sync, whose commits record the glam
@@ -50,7 +50,7 @@ plus service components for operating against it.
   `GlamAccounts.createMapper(factory)` read them back, so a consumer supplies
   no directory.
 - `Integ.*` files are git-ignored scratch — present on a dev machine, absent
-  in CI. Never make anything depend on them. `ix-mappings.source` beside them names the glam commit
+  in CI. Never make anything depend on them. `mapping/SOURCE` beside them names the glam commit
   they were projected from; the sync writes it and the build reads it, never git history.
 
 ## Build & test
@@ -565,8 +565,8 @@ skips it, so the two answer different halves.
   separate generated trees, and instruction layouts can differ between them.
 - The generated `gen` trees are large (hundreds of files); searches are much
   faster when scoped to the hand-written packages (`-not -path '*/gen/*'`).
-- The sdk jar embeds the tracked `mapping-configs-v1` and
-  `mapping-configs-v1-staging` sets as `glam/ix-mappings/{production,staging}`
+- The sdk jar embeds the tracked `mapping/production` and
+  `mapping/staging` sets as `glam/ix-mappings/{production,staging}`
   with an index; a jar without them fails the `jar` task rather than
   publishing empty, which is what every release before the embedding did.
 - Every long-running `services` loop (`BatchSqlExecutor`, `AccountFetcher`,

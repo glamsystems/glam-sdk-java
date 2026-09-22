@@ -25,7 +25,7 @@ final class EmbeddedMappingsTests {
 
   private static Path repositorySet(final GlamEnv env) {
     // the test runs with the module directory as its working directory
-    return Path.of("..").resolve(env == GlamEnv.PRODUCTION ? "mapping-configs-v1" : "mapping-configs-v1-staging");
+    return Path.of("..", "mapping", env == GlamEnv.PRODUCTION ? "production" : "staging");
   }
 
   @Test
@@ -119,10 +119,10 @@ final class EmbeddedMappingsTests {
     }
   }
   /// The index records the glam commit the sets were projected from as the tracked
-  /// ix-mappings.source states it; a build never consults git history for it.
+  /// mapping/SOURCE states it; a build never consults git history for it.
   @Test
   void theIndexRecordsTheSourceTheTrackedFileStates() throws IOException {
-    final var stated = Files.readString(Path.of("..", "ix-mappings.source")).trim();
+    final var stated = Files.readString(Path.of("..", "mapping", "SOURCE")).trim();
     assertTrue(stated.matches("glamsystems/glam@[0-9a-f]{40}"), stated);
     assertEquals(stated, EmbeddedMappings.index().source());
   }

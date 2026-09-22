@@ -34,11 +34,6 @@
 !/idl-change-report-gap.txt
 
 ### ix-mapper mapping configs, projected here by glamsystems/glam's public-repo sync ###
-!/mapping-configs-v1/
-!/mapping-configs-v1/**
-!/mapping-configs-v1-staging/
-!/mapping-configs-v1-staging/**
-!/ix-mappings.source
 
 ### CI ###
 !/.github/
@@ -89,3 +84,5 @@ crash-*
 Crash_*.java
 *.hprof
 hs_err_pid*.log
+!/mapping/
+!/mapping/**
