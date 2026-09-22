@@ -83,7 +83,7 @@ public interface GlamAccounts {
   /// The configs the sdk jar embeds for this deployment, each proxying through one of these
   /// accounts' GLAM programs.
   default List<ProgramMapConfig> embeddedMappingConfigs() {
-    return EmbeddedMappings.load(GlamEnv.from(protocolProgram()), EmbeddedMappings.glamPrograms(this));
+    return EmbeddedMappings.load(EmbeddedMappings.environmentOf(protocolProgram()), EmbeddedMappings.glamPrograms(this));
   }
 
   Map<PublicKey, AccountMeta> integrationAuthorities();

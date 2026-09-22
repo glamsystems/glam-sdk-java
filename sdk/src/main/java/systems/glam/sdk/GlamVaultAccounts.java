@@ -88,7 +88,7 @@ public interface GlamVaultAccounts {
   /// belongs to; see [EmbeddedMappings].
   static TransactionMapper<GlamVaultAccounts> createMapper(final AccountMeta invokedGlamProgram,
                                                            final DynamicGlamAccountFactory dynamicGlamAccountFactory) {
-    final var env = GlamEnv.from(invokedGlamProgram.publicKey());
+    final var env = EmbeddedMappings.environmentOf(invokedGlamProgram.publicKey());
     return createMapper(invokedGlamProgram, EmbeddedMappings.load(env), dynamicGlamAccountFactory);
   }
 

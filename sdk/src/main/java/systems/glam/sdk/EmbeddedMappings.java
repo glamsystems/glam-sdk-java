@@ -51,6 +51,17 @@ public final class EmbeddedMappings {
     return load(env, glamPrograms(env.glamAccounts()));
   }
 
+  /// The environment whose embedded set serves a protocol program. A program the sdk does not
+  /// know is refused: the sets carry their environment's proxy ids, so serving staging's set
+  /// for it, as reading everything but production as staging would, would send instructions
+  /// to programs the caller never named.
+  static GlamEnv environmentOf(final PublicKey protocolProgram) {
+    return GlamEnv.ofProtocolProgram(protocolProgram).orElseThrow(() -> new IllegalArgumentException(
+        "The sdk jar embeds mapping sets for production and staging only; " + protocolProgram.toBase58()
+            + " is neither GLAM protocol program. Supply a mappings directory instead."
+    ));
+  }
+
   /// The programs a config of these accounts may proxy through: the protocol program and every
   /// integration program the accounts name.
   static Set<PublicKey> glamPrograms(final GlamAccounts glamAccounts) {
