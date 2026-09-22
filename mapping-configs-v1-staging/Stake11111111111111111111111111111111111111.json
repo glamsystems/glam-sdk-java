@@ -41,7 +41,7 @@
           "signer": false
         }
       ],
-      "index_map": [4, -1, -1]
+      "index_map": [4, -1]
     },
     {
       "src_ix_name": "deactivate",
@@ -217,7 +217,7 @@
           "signer": false
         }
       ],
-      "index_map": [4, -1, -1, -1]
+      "index_map": [4, -1, -1]
     }
   ]
 }
