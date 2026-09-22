@@ -31,6 +31,12 @@
           "index": 3,
           "writable": false,
           "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 10,
+          "writable": false,
+          "signer": false
         }
       ],
       "static_accounts": [
@@ -53,7 +59,7 @@
           "signer": false
         }
       ],
-      "index_map": []
+      "index_map": [7, 8, 9, -1, 11, 12, 13, 14, 15, 16]
     },
     {
       "src_ix_name": "cancel_orders_by_id",
@@ -84,6 +90,12 @@
           "index": 3,
           "writable": false,
           "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 10,
+          "writable": false,
+          "signer": false
         }
       ],
       "static_accounts": [
@@ -106,7 +118,7 @@
           "signer": false
         }
       ],
-      "index_map": []
+      "index_map": [7, 8, 9, -1, 11, 12, 13, 14, 15, 16]
     },
     {
       "src_ix_name": "cancel_up_to",
@@ -137,6 +149,12 @@
           "index": 3,
           "writable": false,
           "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 10,
+          "writable": false,
+          "signer": false
         }
       ],
       "static_accounts": [
@@ -159,7 +177,7 @@
           "signer": false
         }
       ],
-      "index_map": []
+      "index_map": [7, 8, 9, -1, 11, 12, 13, 14, 15, 16]
     },
     {
       "src_ix_name": "deposit_funds",
@@ -190,6 +208,12 @@
           "index": 3,
           "writable": false,
           "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 10,
+          "writable": false,
+          "signer": false
         }
       ],
       "static_accounts": [
@@ -212,7 +236,7 @@
           "signer": false
         }
       ],
-      "index_map": []
+      "index_map": [7, 8, 9, -1, 11, 12, 13, 14, 15, 16]
     },
     {
       "src_ix_name": "place_limit_order",
@@ -243,6 +267,12 @@
           "index": 3,
           "writable": false,
           "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 10,
+          "writable": false,
+          "signer": false
         }
       ],
       "static_accounts": [
@@ -265,7 +295,7 @@
           "signer": false
         }
       ],
-      "index_map": []
+      "index_map": [7, 8, 9, -1, 11, 12, 13, 14, 15, 16]
     },
     {
       "src_ix_name": "place_market_order",
@@ -296,6 +326,12 @@
           "index": 3,
           "writable": false,
           "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 10,
+          "writable": false,
+          "signer": false
         }
       ],
       "static_accounts": [
@@ -318,7 +354,7 @@
           "signer": false
         }
       ],
-      "index_map": []
+      "index_map": [7, 8, 9, -1, 11, 12, 13, 14, 15, 16]
     },
     {
       "src_ix_name": "place_multi_limit_order",
@@ -349,6 +385,12 @@
           "index": 3,
           "writable": false,
           "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 10,
+          "writable": false,
+          "signer": false
         }
       ],
       "static_accounts": [
@@ -371,7 +413,7 @@
           "signer": false
         }
       ],
-      "index_map": []
+      "index_map": [7, 8, 9, -1, 11, 12, 13, 14, 15, 16]
     },
     {
       "src_ix_name": "sync_parent_to_child",
@@ -424,7 +466,7 @@
           "signer": false
         }
       ],
-      "index_map": []
+      "index_map": [7, 8, 9, 10, 11, 12, 13]
     },
     {
       "src_ix_name": "transfer_collateral",
@@ -455,6 +497,12 @@
           "index": 3,
           "writable": false,
           "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 10,
+          "writable": false,
+          "signer": false
         }
       ],
       "static_accounts": [
@@ -477,7 +525,7 @@
           "signer": false
         }
       ],
-      "index_map": []
+      "index_map": [7, 8, 9, -1, 11, 12, 13, 14, 15]
     },
     {
       "src_ix_name": "transfer_collateral_child_to_parent",
@@ -530,7 +578,7 @@
           "signer": false
         }
       ],
-      "index_map": []
+      "index_map": [7, 8, 9, 10, 11, 12, 13, 14, 15]
     },
     {
       "src_ix_name": "update_trader_state",
@@ -583,7 +631,7 @@
           "signer": false
         }
       ],
-      "index_map": []
+      "index_map": [7, 8, 9, 10, 11, 12, 13]
     },
     {
       "src_ix_name": "withdraw_funds",
@@ -614,6 +662,12 @@
           "index": 3,
           "writable": false,
           "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 10,
+          "writable": false,
+          "signer": false
         }
       ],
       "static_accounts": [
@@ -636,7 +690,7 @@
           "signer": false
         }
       ],
-      "index_map": []
+      "index_map": [7, 8, 9, -1, 11, 12, 13, 14, 15, 16, 17, 18]
     }
   ]
 }

@@ -5,6 +5,7 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.programs.Discriminator;
+import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.spl.system.gen.SystemProgram;
 import systems.glam.sdk.GlamEnv;
 import systems.glam.sdk.GlamVaultAccounts;
@@ -12,6 +13,8 @@ import systems.glam.sdk.idl.programs.glam.cctp.gen.ExtCctpProgram;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolProgram;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.ExtBridgeProgram;
 import systems.glam.sdk.proxy.DynamicGlamAccountFactory;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static software.sava.core.accounts.PublicKey.fromBase58Encoded;
@@ -100,5 +103,57 @@ final class EmbeddedMapperTests {
           env + ": deposit_for_burn maps onto the wrong handler"
       );
     }
+  }
+  private static final PublicKey PHOENIX = fromBase58Encoded("EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih");
+
+  /// ext_phoenix takes the native accounts as remaining accounts after its own seven and
+  /// requires the trader wallet to be the vault. The vault PDA cannot sign a transaction, so the
+  /// mapper seats it at that position without the signer bit and forwards the rest in place; the
+  /// fee payer is the only signer left. (Review finding on glamsystems/glam#1393: the earlier
+  /// empty index map forwarded the trader with its signer bit, an unsignable transaction.)
+  @Test
+  void aPhoenixDepositSeatsTheVaultAsTheTraderWithoutASignerBit() {
+    final var glamAccounts = GlamEnv.STAGING.glamAccounts();
+    final var vaultAccounts = GlamVaultAccounts.createAccounts(glamAccounts, FEE_PAYER, STATE_KEY);
+    final var vault = vaultAccounts.vaultPublicKey();
+    final var mapper = glamAccounts.createMapper(
+        DynamicGlamAccountFactory.createFactory(glamAccounts.integrationAuthorities(), 8)
+    );
+    final var other = fromBase58Encoded("So11111111111111111111111111111111111111112");
+    // native deposit_funds: phoenix program, log authority, global configuration, trader wallet
+    // (signer), trader token account, trader account, global vault, token program, global trader
+    // index, active trader buffer; the client builds it with the vault as the trader
+    final var deposit = Instruction.createInstruction(
+        PHOENIX,
+        List.of(
+            AccountMeta.createRead(PHOENIX),
+            AccountMeta.createRead(other),
+            AccountMeta.createWrite(other),
+            AccountMeta.createReadOnlySigner(vault),
+            AccountMeta.createWrite(other),
+            AccountMeta.createWrite(other),
+            AccountMeta.createWrite(other),
+            AccountMeta.createRead(SolanaAccounts.MAIN_NET.tokenProgram()),
+            AccountMeta.createWrite(other),
+            AccountMeta.createWrite(other)
+        ),
+        new byte[]{(byte) 202, 39, 52, (byte) 211, 53, 20, (byte) 250, 88, 1, 0, 0, 0, 0, 0, 0, 0}
+    );
+    final var mapped = mapper.mapInstruction(AccountMeta.createWritableSigner(FEE_PAYER), vaultAccounts, deposit);
+
+    assertEquals(glamAccounts.phoenixIntegrationProgram(), mapped.programId().publicKey());
+    final var seats = mapped.accounts();
+    assertEquals(17, seats.size(), "seven extension accounts then the ten native ones");
+    assertEquals(vault, seats.get(10).publicKey(), "the trader wallet position carries the vault");
+    assertFalse(seats.get(10).signer(), "the vault PDA does not sign; the program signs for it");
+    assertEquals(PHOENIX, seats.get(7).publicKey(), "the native accounts forward in place");
+    assertEquals(SolanaAccounts.MAIN_NET.tokenProgram(), seats.get(14).publicKey());
+    final var signers = new java.util.ArrayList<Integer>();
+    for (int i = 0; i < seats.size(); ++i) {
+      if (seats.get(i).signer()) {
+        signers.add(i);
+      }
+    }
+    assertEquals(List.of(2), signers, "the fee payer is the only signer");
   }
 }
