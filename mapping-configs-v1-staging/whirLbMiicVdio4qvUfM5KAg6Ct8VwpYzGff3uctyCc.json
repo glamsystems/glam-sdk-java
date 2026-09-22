@@ -59,7 +59,7 @@
           "signer": false
         }
       ],
-      "index_map": [7, -1, 8, 9, 10, -1]
+      "index_map": [-1, 7, 8, 9, 10, -1]
     },
     {
       "src_ix_name": "collect_fees_v2",

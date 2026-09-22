@@ -374,59 +374,6 @@
       "index_map": []
     },
     {
-      "src_ix_name": "register_trader",
-      "src_discriminator": [75, 243, 224, 167, 1, 5, 51, 32],
-      "dst_ix_name": "register_trader",
-      "dst_discriminator": [75, 243, 224, 167, 1, 5, 51, 32],
-      "dynamic_accounts": [
-        {
-          "name": "glam_state",
-          "index": 0,
-          "writable": true,
-          "signer": false
-        },
-        {
-          "name": "glam_vault",
-          "index": 1,
-          "writable": true,
-          "signer": false
-        },
-        {
-          "name": "glam_signer",
-          "index": 2,
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "integration_authority",
-          "index": 3,
-          "writable": false,
-          "signer": false
-        }
-      ],
-      "static_accounts": [
-        {
-          "account": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
-          "index": 4,
-          "writable": false,
-          "signer": false
-        },
-        {
-          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
-          "index": 5,
-          "writable": false,
-          "signer": false
-        },
-        {
-          "account": "11111111111111111111111111111111",
-          "index": 9,
-          "writable": false,
-          "signer": false
-        }
-      ],
-      "index_map": [-1, 6, 7, -1, -1, 8, -1]
-    },
-    {
       "src_ix_name": "sync_parent_to_child",
       "src_discriminator": [175, 137, 217, 11, 235, 39, 150, 19],
       "dst_ix_name": "sync_parent_to_child",

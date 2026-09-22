@@ -160,65 +160,6 @@
         }
       ],
       "index_map": [-1, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, -1]
-    },
-    {
-      "src_ix_name": "request_withdrawal",
-      "src_discriminator": [251, 85, 121, 205, 56, 201, 12, 177],
-      "dst_ix_name": "request_withdrawal",
-      "dst_discriminator": [251, 85, 121, 205, 56, 201, 12, 177],
-      "dynamic_accounts": [
-        {
-          "name": "glam_state",
-          "index": 0,
-          "writable": true,
-          "signer": false
-        },
-        {
-          "name": "glam_vault",
-          "index": 1,
-          "writable": true,
-          "signer": false
-        },
-        {
-          "name": "glam_signer",
-          "index": 2,
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "integration_authority",
-          "index": 3,
-          "writable": false,
-          "signer": false
-        }
-      ],
-      "static_accounts": [
-        {
-          "account": "BUNDDh4P5XviMm1f3gCvnq2qKx6TGosAGnoUK12e7cXU",
-          "index": 4,
-          "writable": false,
-          "signer": false
-        },
-        {
-          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
-          "index": 5,
-          "writable": false,
-          "signer": false
-        },
-        {
-          "account": "11111111111111111111111111111111",
-          "index": 6,
-          "writable": false,
-          "signer": false
-        },
-        {
-          "account": "SysvarRent111111111111111111111111111111111",
-          "index": 12,
-          "writable": false,
-          "signer": false
-        }
-      ],
-      "index_map": [-1, 7, 8, 9, 10, 11, -1, -1]
     }
   ]
 }
