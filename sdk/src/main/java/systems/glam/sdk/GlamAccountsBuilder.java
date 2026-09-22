@@ -10,6 +10,7 @@ import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintPDAs;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.ExtBridgePDAs;
 import systems.glam.sdk.idl.programs.glam.staging.cctp.gen.ExtCctpPDAs;
+import systems.glam.sdk.idl.programs.glam.staging.exponent.gen.ExtExponentPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.registered_positions.gen.ExtRpiPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.jupiter.gen.ExtJupiterPDAs;
 import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.ExtLoopscalePDAs;
@@ -34,6 +35,7 @@ public final class GlamAccountsBuilder {
   private PublicKey policyProgram;
   private PublicKey bridgeIntegrationProgram = PublicKey.NONE;
   private PublicKey cctpIntegrationProgram = PublicKey.NONE;
+  private PublicKey exponentIntegrationProgram = PublicKey.NONE;
   private PublicKey externalPositionProgram = PublicKey.NONE;
   private PublicKey jupiterIntegrationProgram = PublicKey.NONE;
   private PublicKey kaminoIntegrationProgram = PublicKey.NONE;
@@ -71,13 +73,14 @@ public final class GlamAccountsBuilder {
   }
 
   public GlamAccounts create() {
-    final var map = HashMap.<PublicKey, AccountMeta>newHashMap(15);
+    final var map = HashMap.<PublicKey, AccountMeta>newHashMap(16);
     return new GlamAccountsRecord(
         createInvoked(protocolProgram),
         configProgram, GlamConfigPDAs.globalConfigPDA(configProgram),
         policyProgram,
         putIfNotNull(map, bridgeIntegrationProgram, ExtBridgePDAs::integrationAuthorityPDA),
         putIfNotNull(map, cctpIntegrationProgram, ExtCctpPDAs::integrationAuthorityPDA),
+        putIfNotNull(map, exponentIntegrationProgram, ExtExponentPDAs::integrationAuthorityPDA),
         putIfNotNull(map, externalPositionProgram, ExtRpiPDAs::integrationAuthorityPDA),
         putIfNotNull(map, jupiterIntegrationProgram, ExtJupiterPDAs::integrationAuthorityPDA),
         putIfNotNull(map, kaminoIntegrationProgram, ExtKaminoPDAs::integrationAuthorityPDA),
@@ -147,6 +150,15 @@ public final class GlamAccountsBuilder {
 
   public GlamAccountsBuilder cctpIntegrationProgram(final String cctpIntegrationProgram) {
     return cctpIntegrationProgram(createKey(cctpIntegrationProgram));
+  }
+
+  public GlamAccountsBuilder exponentIntegrationProgram(final PublicKey exponentIntegrationProgram) {
+    this.exponentIntegrationProgram = exponentIntegrationProgram;
+    return this;
+  }
+
+  public GlamAccountsBuilder exponentIntegrationProgram(final String exponentIntegrationProgram) {
+    return exponentIntegrationProgram(createKey(exponentIntegrationProgram));
   }
 
   public GlamAccountsBuilder driftIntegrationProgram(final PublicKey driftIntegrationProgram) {

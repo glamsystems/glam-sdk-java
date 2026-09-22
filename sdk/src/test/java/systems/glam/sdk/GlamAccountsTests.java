@@ -67,6 +67,9 @@ final class GlamAccountsTests {
     assertEquals(invokedSystem, accounts.invokedBridgeIntegrationProgram());
     assertEquals(systemProgram, accounts.bridgeIntegrationProgram());
     assertNull(accounts.readBridgeIntegrationAuthority());
+    assertEquals(invokedSystem, accounts.invokedExponentIntegrationProgram());
+    assertEquals(systemProgram, accounts.exponentIntegrationProgram());
+    assertNull(accounts.readExponentIntegrationAuthority());
     assertEquals(invokedSystem, accounts.invokedExternalPositionProgram());
     assertEquals(systemProgram, accounts.externalPositionProgram());
     assertNull(accounts.readExternalPositionAuthority());
@@ -175,6 +178,7 @@ final class GlamAccountsTests {
     assertEquals(expected.mintEventAuthority(), actual.mintEventAuthority());
     assertEquals(expected.invokedBridgeIntegrationProgram(), actual.invokedBridgeIntegrationProgram());
     assertEquals(expected.invokedCctpIntegrationProgram(), actual.invokedCctpIntegrationProgram());
+    assertEquals(expected.invokedExponentIntegrationProgram(), actual.invokedExponentIntegrationProgram());
     assertEquals(expected.invokedExternalPositionProgram(), actual.invokedExternalPositionProgram());
     assertEquals(expected.invokedJupiterIntegrationProgram(), actual.invokedJupiterIntegrationProgram());
     assertEquals(expected.invokedKaminoIntegrationProgram(), actual.invokedKaminoIntegrationProgram());
@@ -229,6 +233,7 @@ final class GlamAccountsTests {
         .policyProgram("po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY")
         .bridgeIntegrationProgram("gstgxS9yTioViNKdsM4DC33k1TU9un2VCYDQK8fAeSA")
         .cctpIntegrationProgram("gstgcuRwiX2FpmtigowB1TnVi3fPkZC9TEmVnc5sdxW")
+        .exponentIntegrationProgram("gstgx5AbCFq4mfYKbZP23YDC7XZFUx2EURiG3PcWX6W")
         .externalPositionProgram("gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX")
         .jupiterIntegrationProgram("gstgJbGqoE3p1SdFA2dET9tcaCzNqGcdD8wpbGctnU9")
         .kaminoIntegrationProgram("gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq")
@@ -250,6 +255,7 @@ final class GlamAccountsTests {
         .policyProgram(POLICY_PROGRAM)
         .bridgeIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.bridgeIntegrationProgram())
         .cctpIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.cctpIntegrationProgram())
+        .exponentIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.exponentIntegrationProgram())
         .externalPositionProgram(GlamAccounts.MAIN_NET_STAGING.externalPositionProgram())
         .jupiterIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.jupiterIntegrationProgram())
         .kaminoIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.kaminoIntegrationProgram())
@@ -272,9 +278,10 @@ final class GlamAccountsTests {
         fromBase58Encoded("gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"),
         staging.protocolProgram()
     );
-    // every staging integration program is present: 14 distinct authorities
-    assertEquals(14, staging.integrationAuthorities().size());
+    // every staging integration program is present: 15 distinct authorities
+    assertEquals(15, staging.integrationAuthorities().size());
     assertNotNull(staging.readBridgeIntegrationAuthority());
+    assertNotNull(staging.readExponentIntegrationAuthority());
     assertNotNull(staging.readExternalPositionAuthority());
     assertNotNull(staging.readJupiterIntegrationAuthority());
     assertNotNull(staging.readLoopscaleIntegrationAuthority());

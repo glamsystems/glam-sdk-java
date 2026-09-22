@@ -32,6 +32,7 @@ public interface GlamAccounts {
       .policyProgram("po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY")
       .bridgeIntegrationProgram("gstgxS9yTioViNKdsM4DC33k1TU9un2VCYDQK8fAeSA")
       .cctpIntegrationProgram("gstgcuRwiX2FpmtigowB1TnVi3fPkZC9TEmVnc5sdxW")
+      .exponentIntegrationProgram("gstgx5AbCFq4mfYKbZP23YDC7XZFUx2EURiG3PcWX6W")
       .externalPositionProgram("gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX")
       .jupiterIntegrationProgram("gstgJbGqoE3p1SdFA2dET9tcaCzNqGcdD8wpbGctnU9")
       .kaminoIntegrationProgram("gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq")
@@ -102,6 +103,12 @@ public interface GlamAccounts {
   PublicKey cctpIntegrationProgram();
 
   AccountMeta readCctpIntegrationAuthority();
+
+  AccountMeta invokedExponentIntegrationProgram();
+
+  PublicKey exponentIntegrationProgram();
+
+  AccountMeta readExponentIntegrationAuthority();
 
   AccountMeta invokedExternalPositionProgram();
 
