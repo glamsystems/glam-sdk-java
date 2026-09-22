@@ -3,11 +3,13 @@ package systems.glam.sdk;
 import software.sava.core.accounts.ProgramDerivedAddress;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
+import systems.glam.ix.proxy.ProgramMapConfig;
 import systems.glam.ix.proxy.TransactionMapper;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintPDAs;
 import systems.glam.sdk.proxy.DynamicGlamAccountFactory;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 public interface GlamAccounts {
@@ -68,6 +70,19 @@ public interface GlamAccounts {
   default TransactionMapper<GlamVaultAccounts> createMapper(final Path mappingsDirectory,
                                                             final DynamicGlamAccountFactory dynamicGlamAccountFactory) {
     return GlamVaultAccounts.createMapper(invokedProtocolProgram(), mappingsDirectory, dynamicGlamAccountFactory);
+  }
+
+  /// The mapper over the configs the sdk jar embeds for this deployment, production for
+  /// [#MAIN_NET] and staging for [#MAIN_NET_STAGING], with no directory to supply. The
+  /// [#createMapper(Path, DynamicGlamAccountFactory)] overload stays for a local set.
+  default TransactionMapper<GlamVaultAccounts> createMapper(final DynamicGlamAccountFactory dynamicGlamAccountFactory) {
+    return GlamVaultAccounts.createMapper(invokedProtocolProgram(), embeddedMappingConfigs(), dynamicGlamAccountFactory);
+  }
+
+  /// The configs the sdk jar embeds for this deployment, each proxying through one of these
+  /// accounts' GLAM programs.
+  default List<ProgramMapConfig> embeddedMappingConfigs() {
+    return EmbeddedMappings.load(GlamEnv.from(protocolProgram()), EmbeddedMappings.glamPrograms(this));
   }
 
   Map<PublicKey, AccountMeta> integrationAuthorities();

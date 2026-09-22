@@ -84,6 +84,14 @@ public interface GlamVaultAccounts {
     return createMapper(invokedGlamProgram, loadMappingConfigs(mappingsDirectory), dynamicGlamAccountFactory);
   }
 
+  /// The mapper over the configs the sdk jar embeds for the deployment the invoked program
+  /// belongs to; see [EmbeddedMappings].
+  static TransactionMapper<GlamVaultAccounts> createMapper(final AccountMeta invokedGlamProgram,
+                                                           final DynamicGlamAccountFactory dynamicGlamAccountFactory) {
+    final var env = GlamEnv.from(invokedGlamProgram.publicKey());
+    return createMapper(invokedGlamProgram, EmbeddedMappings.load(env), dynamicGlamAccountFactory);
+  }
+
   GlamAccounts glamAccounts();
 
   PublicKey feePayer();

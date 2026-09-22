@@ -1,0 +1,695 @@
+{
+  "program_id": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+  "proxy_program_id": "gstgPL7r9aYedDDsXNtLpr4atYtNvY7zubAWWstqS3L",
+  "instructions": [
+    {
+      "src_ix_name": "cancel_all",
+      "src_discriminator": [98, 191, 75, 220, 115, 40, 71, 237],
+      "dst_ix_name": "cancel_all",
+      "dst_discriminator": [98, 191, 75, 220, 115, 40, 71, 237],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": []
+    },
+    {
+      "src_ix_name": "cancel_orders_by_id",
+      "src_discriminator": [234, 204, 126, 94, 222, 22, 141, 24],
+      "dst_ix_name": "cancel_orders_by_id",
+      "dst_discriminator": [234, 204, 126, 94, 222, 22, 141, 24],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": []
+    },
+    {
+      "src_ix_name": "cancel_up_to",
+      "src_discriminator": [26, 209, 244, 253, 59, 175, 227, 54],
+      "dst_ix_name": "cancel_up_to",
+      "dst_discriminator": [26, 209, 244, 253, 59, 175, 227, 54],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": []
+    },
+    {
+      "src_ix_name": "deposit_funds",
+      "src_discriminator": [202, 39, 52, 211, 53, 20, 250, 88],
+      "dst_ix_name": "deposit_funds",
+      "dst_discriminator": [202, 39, 52, 211, 53, 20, 250, 88],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": []
+    },
+    {
+      "src_ix_name": "place_limit_order",
+      "src_discriminator": [108, 176, 33, 186, 146, 229, 1, 197],
+      "dst_ix_name": "place_limit_order",
+      "dst_discriminator": [108, 176, 33, 186, 146, 229, 1, 197],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": []
+    },
+    {
+      "src_ix_name": "place_market_order",
+      "src_discriminator": [90, 118, 192, 252, 192, 99, 39, 145],
+      "dst_ix_name": "place_market_order",
+      "dst_discriminator": [90, 118, 192, 252, 192, 99, 39, 145],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": []
+    },
+    {
+      "src_ix_name": "place_multi_limit_order",
+      "src_discriminator": [236, 208, 221, 172, 141, 226, 129, 84],
+      "dst_ix_name": "place_multi_limit_order",
+      "dst_discriminator": [236, 208, 221, 172, 141, 226, 129, 84],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": []
+    },
+    {
+      "src_ix_name": "register_trader",
+      "src_discriminator": [75, 243, 224, 167, 1, 5, 51, 32],
+      "dst_ix_name": "register_trader",
+      "dst_discriminator": [75, 243, 224, 167, 1, 5, 51, 32],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 9,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": [-1, 6, 7, -1, -1, 8, -1]
+    },
+    {
+      "src_ix_name": "sync_parent_to_child",
+      "src_discriminator": [175, 137, 217, 11, 235, 39, 150, 19],
+      "dst_ix_name": "sync_parent_to_child",
+      "dst_discriminator": [175, 137, 217, 11, 235, 39, 150, 19],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": []
+    },
+    {
+      "src_ix_name": "transfer_collateral",
+      "src_discriminator": [157, 163, 63, 27, 242, 72, 251, 97],
+      "dst_ix_name": "transfer_collateral",
+      "dst_discriminator": [157, 163, 63, 27, 242, 72, 251, 97],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": []
+    },
+    {
+      "src_ix_name": "transfer_collateral_child_to_parent",
+      "src_discriminator": [51, 100, 177, 115, 139, 135, 247, 139],
+      "dst_ix_name": "transfer_collateral_child_to_parent",
+      "dst_discriminator": [51, 100, 177, 115, 139, 135, 247, 139],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": []
+    },
+    {
+      "src_ix_name": "update_trader_state",
+      "src_discriminator": [249, 139, 82, 44, 126, 66, 133, 220],
+      "dst_ix_name": "update_trader_state",
+      "dst_discriminator": [249, 139, 82, 44, 126, 66, 133, 220],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": []
+    },
+    {
+      "src_ix_name": "withdraw_funds",
+      "src_discriminator": [241, 36, 29, 111, 208, 31, 104, 217],
+      "dst_ix_name": "withdraw_funds",
+      "dst_discriminator": [241, 36, 29, 111, 208, 31, 104, 217],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": []
+    }
+  ]
+}

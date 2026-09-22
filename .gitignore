@@ -17,14 +17,12 @@
 !/CHANGELOG.md
 !/LICENSE
 !/README.md
-!/downloadMappings.sh
 !/gradle.properties
 !/gradlew
 !/gradlew.bat
 !/main_net_programs.json
 !/release-please-config.json
 !/settings.gradle.kts
-!/syncMappings.sh
 
 # Both reports idl-src-gen emits from one run: the movement events this run saw, and the
 # standing gap dashboard beside it. The gap file needs its own rule -- it is named by the
@@ -34,6 +32,12 @@
 # generator writing a report by default and had none to lose).
 !/idl-change-report.txt
 !/idl-change-report-gap.txt
+
+### ix-mapper mapping configs, projected here by glamsystems/glam's public-repo sync ###
+!/mapping-configs-v1/
+!/mapping-configs-v1/**
+!/mapping-configs-v1-staging/
+!/mapping-configs-v1-staging/**
 
 ### CI ###
 !/.github/

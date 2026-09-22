@@ -1,0 +1,158 @@
+{
+  "program_id": "jupr81YtYssSyPt8jbnGuiWon5f6x9TcDEFxYe3Bdzi",
+  "proxy_program_id": "gstgJbGqoE3p1SdFA2dET9tcaCzNqGcdD8wpbGctnU9",
+  "instructions": [
+    {
+      "src_ix_name": "init_position",
+      "src_discriminator": [197, 20, 10, 1, 97, 160, 177, 91],
+      "dst_ix_name": "borrow_init_position",
+      "dst_discriminator": [92, 209, 176, 14, 75, 243, 107, 230],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "jupr81YtYssSyPt8jbnGuiWon5f6x9TcDEFxYe3Bdzi",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+          "index": 14,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "Sysvar1nstructions1111111111111111111111111",
+          "index": 15,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+          "index": 16,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "SysvarRent111111111111111111111111111111111",
+          "index": 17,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": [-1, 7, 8, 9, 10, 11, 12, 13, -1, -1, -1, -1, -1]
+    },
+    {
+      "src_ix_name": "operate",
+      "src_discriminator": [217, 106, 208, 99, 116, 151, 42, 135],
+      "dst_ix_name": "borrow_operate",
+      "dst_discriminator": [46, 121, 58, 48, 13, 5, 117, 188],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "jupr81YtYssSyPt8jbnGuiWon5f6x9TcDEFxYe3Bdzi",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "jupeiUmn818Jg1ekPURTpr4mFo29p46vygyykFJ3wZC",
+          "index": 35,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "jupnw4B6Eqs7ft6rxpzYLJZYSnrpRgPcr589n5Kv4oc",
+          "index": 36,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+          "index": 39,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": [
+        -1, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+        25, 26, 27, 28, 29, 30, 31, 32, 33, 34, -1, -1, 37, 38, -1, -1
+      ],
+      "program_id_placeholder_indices": [3, 4, 5, 26, 27]
+    }
+  ]
+}

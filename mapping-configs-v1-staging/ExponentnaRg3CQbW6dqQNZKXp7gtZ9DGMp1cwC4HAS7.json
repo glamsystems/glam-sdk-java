@@ -1,0 +1,183 @@
+{
+  "program_id": "ExponentnaRg3CQbW6dqQNZKXp7gtZ9DGMp1cwC4HAS7",
+  "proxy_program_id": "gstgx5AbCFq4mfYKbZP23YDC7XZFUx2EURiG3PcWX6W",
+  "instructions": [
+    {
+      "src_ix_name": "wrapper_buy_pt",
+      "src_discriminator": [29],
+      "dst_ix_name": "wrapper_buy_pt",
+      "dst_discriminator": [6, 127, 6, 136, 226, 194, 250, 168],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "ExponentnaRg3CQbW6dqQNZKXp7gtZ9DGMp1cwC4HAS7",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "index": 13,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": [-1, 7, 8, 9, 10, 11, 12, -1, 14, 15, 16, -1]
+    },
+    {
+      "src_ix_name": "wrapper_merge",
+      "src_discriminator": [39],
+      "dst_ix_name": "wrapper_merge",
+      "dst_discriminator": [177, 36, 171, 125, 89, 198, 144, 219],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "ExponentnaRg3CQbW6dqQNZKXp7gtZ9DGMp1cwC4HAS7",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "index": 16,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": [-1, 7, 8, 9, 10, 11, 12, 13, 14, 15, -1, 17, 18, -1, 19, -1]
+    },
+    {
+      "src_ix_name": "wrapper_sell_pt",
+      "src_discriminator": [30],
+      "dst_ix_name": "wrapper_sell_pt",
+      "dst_discriminator": [127, 65, 108, 12, 72, 21, 50, 200],
+      "dynamic_accounts": [
+        {
+          "name": "glam_state",
+          "index": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_vault",
+          "index": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "glam_signer",
+          "index": 2,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "index": 3,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "static_accounts": [
+        {
+          "account": "ExponentnaRg3CQbW6dqQNZKXp7gtZ9DGMp1cwC4HAS7",
+          "index": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "index": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "11111111111111111111111111111111",
+          "index": 6,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "account": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "index": 13,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "index_map": [-1, 7, 8, 9, 10, 11, 12, -1, 14, 15, 16, -1]
+    }
+  ]
+}

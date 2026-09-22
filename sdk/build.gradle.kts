@@ -44,36 +44,71 @@ hardening {
   }
 }
 
-// The jar embeds the mapping configs under glam/ix-mappings. The source directory is an
-// untracked sparse checkout that only ./downloadMappings.sh creates, and `from()` on a
-// directory that does not exist copies nothing without a word — every published sdk jar
-// before this task shipped empty for exactly that reason. The download is therefore part
-// of the jar's own graph, and the archive is checked after it is written.
-val downloadMappings = tasks.register<Exec>("downloadMappings") {
-  description = "Materializes the pinned ix-mapper-ts mapping configs under the untracked glam/ directory."
-  workingDir = rootDir
-  commandLine("./downloadMappings.sh")
+// The jar embeds the ix-mapper mapping configs under glam/ix-mappings/{production,staging}:
+// the two directories at the repository root that glamsystems/glam projects here (its
+// scripts/ix-mapper-gen sets, generated from its managed IDL stores). They are copied at
+// processResources time, so tests read the bytes the jar ships, beside an index the loader
+// reads, since a jar cannot be listed. `from()` on a directory that does not exist copies
+// nothing without a word, and every published sdk jar before the embedding shipped empty for
+// exactly that reason, so the index task refuses an empty set and the archive is checked
+// after it is written.
+val mappingSets = linkedMapOf(
+  "production" to rootDir.resolve("mapping-configs-v1"),
+  "staging" to rootDir.resolve("mapping-configs-v1-staging"),
+)
+
+val ixMappingsIndex = tasks.register("ixMappingsIndex") {
+  description = "Writes glam/ix-mappings/index.json: each environment's embedded config file names and the glam commit they were projected from."
+  val sets = mappingSets
+  val root = rootDir
+  sets.values.forEach { inputs.dir(it) }
+  val indexFile = layout.buildDirectory.file("ix-mappings/index.json")
+  outputs.file(indexFile)
+  doLast {
+    // The sync that projects the sets records the glam commit in its message.
+    val log = ProcessBuilder(listOf("git", "log", "-1", "--format=%B", "--") + sets.values.map { it.relativeTo(root).path })
+        .directory(root)
+        .redirectErrorStream(true)
+        .start()
+    val message = log.inputStream.bufferedReader().readText()
+    val source = if (log.waitFor() == 0) {
+      Regex("Synced from glamsystems/glam ([0-9a-f]{40})").find(message)?.groupValues?.get(1)?.let { "glamsystems/glam@$it" } ?: "unrecorded"
+    } else {
+      "unrecorded"
+    }
+    val entries = sets.entries.joinToString(",\n") { (env, dir) ->
+      val files = dir.listFiles { file -> file.isFile && file.name.endsWith(".json") }.orEmpty().sortedBy { it.name }
+      check(files.isNotEmpty()) { "No mapping configs under $dir; the sdk jar must not ship without the $env set." }
+      "  \"$env\": [" + files.joinToString(", ") { "\"" + it.name + "\"" } + "]"
+    }
+    val file = indexFile.get().asFile
+    file.parentFile.mkdirs()
+    file.writeText("{\n  \"source\": \"$source\",\n$entries\n}\n")
+  }
+}
+
+tasks.named<ProcessResources>("processResources") {
+  mappingSets.forEach { (env, dir) ->
+    from(dir) {
+      include("*.json")
+      into("glam/ix-mappings/$env")
+    }
+  }
+  from(ixMappingsIndex) {
+    into("glam/ix-mappings")
+  }
 }
 
 tasks.named<Jar>("jar") {
-  dependsOn(downloadMappings)
-  val mappings = rootDir.resolve("glam/mapping-configs-v1")
-  from(mappings) {
-    include("**/*.json")
-    into("glam/ix-mappings")
-  }
-  doFirst {
-    val configs = mappings.listFiles { file -> file.isFile && file.name.endsWith(".json") }.orEmpty()
-    check(configs.isNotEmpty()) {
-      "No mapping configs under $mappings; the sdk jar must not ship without them (./downloadMappings.sh)."
-    }
-  }
   doLast {
     ZipFile(archiveFile.get().asFile).use { archive ->
-      val embedded = archive.entries().asSequence()
-          .count { entry -> entry.name.startsWith("glam/ix-mappings/") && entry.name.endsWith(".json") }
-      check(embedded > 0) { "${archiveFile.get().asFile.name} was written without any glam/ix-mappings/*.json entry." }
-      logger.lifecycle("${archiveFile.get().asFile.name} embeds $embedded mapping config(s) under glam/ix-mappings.")
+      val entries = archive.entries().asSequence().map { it.name }.toList()
+      for (env in listOf("production", "staging")) {
+        val embedded = entries.count { it.startsWith("glam/ix-mappings/$env/") && it.endsWith(".json") }
+        check(embedded > 0) { "${archiveFile.get().asFile.name} was written without any glam/ix-mappings/$env/*.json entry." }
+        logger.lifecycle("${archiveFile.get().asFile.name} embeds $embedded $env mapping config(s).")
+      }
+      check("glam/ix-mappings/index.json" in entries) { "${archiveFile.get().asFile.name} was written without glam/ix-mappings/index.json." }
     }
   }
 }

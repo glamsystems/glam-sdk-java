@@ -39,12 +39,16 @@ plus service components for operating against it.
   (`fulfillment/`), batched SQL (`db/sql/`), and instruction execution
   (`execution/`).
 - `examples/` — scratch/example module; not part of the hardening surface.
-- `glam/` (untracked) — mapping configs from `glamsystems/ix-mapper-ts` at
-  the commit `./downloadMappings.sh` pins (`MAPPINGS_REF`); the sdk `jar` task
-  runs the script itself and embeds `glam/mapping-configs-v1` as
-  `glam/ix-mappings`, refusing to build or to write an archive without them.
-  `./syncMappings.sh [sha]` moves the pin; commit the pin change with the
-  jar it produces.
+- `mapping-configs-v1/` and `mapping-configs-v1-staging/` (tracked) — the v1
+  ix-mapper mapping configs, one file per source program, projected one way
+  from `glamsystems/glam` (`scripts/ix-mapper-gen`, generated there from the
+  managed IDL stores) by its public-repo sync, whose commits record the glam
+  commit. Never edit them here: a change lands in glam and arrives with the
+  next sync. The sdk's `processResources` embeds both sets as
+  `glam/ix-mappings/{production,staging}` beside a build-time `index.json`,
+  `jar` refuses an archive without them, and `EmbeddedMappings` /
+  `GlamAccounts.createMapper(factory)` read them back, so a consumer supplies
+  no directory.
 - `Integ.*` files are git-ignored scratch — present on a dev machine, absent
   in CI. Never make anything depend on them.
 
@@ -560,10 +564,10 @@ skips it, so the two answer different halves.
   separate generated trees, and instruction layouts can differ between them.
 - The generated `gen` trees are large (hundreds of files); searches are much
   faster when scoped to the hand-written packages (`-not -path '*/gen/*'`).
-- The sdk jar embeds the untracked `glam/mapping-configs-v1` directory and
-  materializes it itself at the pinned ix-mapper-ts commit; a jar without
-  `glam/ix-mappings/*.json` entries fails the `jar` task rather than
-  publishing empty, which is what every release before the pin did.
+- The sdk jar embeds the tracked `mapping-configs-v1` and
+  `mapping-configs-v1-staging` sets as `glam/ix-mappings/{production,staging}`
+  with an index; a jar without them fails the `jar` task rather than
+  publishing empty, which is what every release before the embedding did.
 - Every long-running `services` loop (`BatchSqlExecutor`, `AccountFetcher`,
   `GlobalConfigCache`, `StakePoolCache`) takes a trailing
   `systems.glam.services.LoopHeartbeat` through a factory overload and ticks
