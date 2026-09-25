@@ -53,6 +53,7 @@ recompiled root. `build.gradle.kts` is the authoritative definition.
 | 2026-07-23 (interface defaults + proxy + pricing) | 62 | 36 | 26 | 688/750 (92%) |
 | 2026-07-23 (findings fixed, main() removed) | 38 | 13 | 25 | 690/728 (94%) |
 | 2026-09-24 (lut package removed) | 24 | 13 | 11 | 464/488 (95%) |
+| 2026-09-25 (ix-mapper mapping documents) | 22 | 12 | 10 | 454/476 (95%) |
 
 The 2026-07-23 vault-table-builder, kamino-lend + fetch and findings-fixed
 passes covered `lut.VaultTableBuilderImpl`, the vault address-lookup-table
@@ -68,16 +69,16 @@ remaining `NO_COVERAGE` blocks — 108 baseline rows dropped:
 
 - **`VaultTableBuilder` interface defaults + `Builder`** (the `lut` package,
   deleted 2026-09-24).
-- **`GlamVaultAccounts`**: `loadMappingConfigs` against a temp directory
-  holding a valid config, a wrong-extension file, an unreadable `.json`,
-  and a *directory named* `nested.json` (the regular-file filter is what
-  stands between it and a crash in the parser); both `createMapper`
-  overloads. The mapping-config JSON is inlined so tests never depend on
-  the untracked `glam/` download.
-- **`proxy.CachedDynamicGlamAccountFactory`**: every dynamic-account name
-  routed through `setAccount` into a live array (each slot must hold
-  exactly the meta the name stands for), unknown/null names rejected, and
-  the cache pinned by identity across equal configs.
+- **`GlamVaultAccounts`** (since removed, 2026-09-25): `loadMappingConfigs`
+  against a temp directory holding a valid config, a wrong-extension file, an
+  unreadable `.json`, and a *directory named* `nested.json` (the regular-file
+  filter is what stood between it and a crash in the parser); both
+  `createMapper` overloads. The mapping-config JSON was inlined so tests never
+  depended on the untracked `glam/` download.
+- **`proxy.CachedDynamicGlamAccountFactory`** (since removed, 2026-09-25):
+  every dynamic-account name routed through `setAccount` into a live array
+  (each slot must hold exactly the meta the name stands for), unknown/null
+  names rejected, and the cache pinned by identity across equal configs.
 - **`GlamAccountClient(+Impl)` pricing family**: all thirteen convenience
   overloads equal their no-CPI form (this family produced the real
   dropped-oracle-keys bug), the four production `cpiEmitEvents` branches
@@ -91,11 +92,11 @@ remaining `NO_COVERAGE` blocks — 108 baseline rows dropped:
   wrapSOL variant of this was a real bug), and the program-state variants'
   wrap gate fires only for a wSOL input with `wrapSOL=true`.
 
-**Accepted:** `loadMappingConfigs`'s `.json` suffix filter,
-`NakedReceiverMutator` — replacing `getFileName().toString()` with
-`path.toString()` cannot change an `endsWith(".json")` test, because a
-path's string form always ends with its filename's string form. Equivalent
-by construction.
+**Accepted** (row pruned with the method on 2026-09-25): `loadMappingConfigs`'s
+`.json` suffix filter, `NakedReceiverMutator` — replacing
+`getFileName().toString()` with `path.toString()` cannot change an
+`endsWith(".json")` test, because a path's string form always ends with its
+filename's string form. Equivalent by construction.
 
 The multiset migration added no new mutants: the verify's baseline comparison
 became a multiset (one row per sibling mutant of a compound condition, not one
@@ -145,7 +146,8 @@ mutants were killed outright by existing tests.
 ## Row labels (2026-07-23)
 
 Baseline rows now carry the family label the acceptance belongs to
-(`# unreachable type-check arm`, `# equivalent path-suffix`), with the full
+(`# unreachable type-check arm`; `# equivalent path-suffix` until its only
+row left with `loadMappingConfigs` on 2026-09-25, see below), with the full
 argument in the pass sections above; everything else is `# untriaged` —
 triage means replacing that label with the family the row's argument belongs
 to.
@@ -195,6 +197,42 @@ in context because the map's values are always `IntegrationAcl` — the only
 observable branch is the null (absent program) case, which is covered. The
 staging twin (`StagingStateAccountClientImpl.protocolBitmask`) will earn the
 same acceptance when its class is covered.
+
+## ix-mapper mapping documents (2026-09-25)
+
+ix-mapper-java 25.1.0 replaced its index-map configs with the mapping
+documents ix-mapper-ts generates (`src/generated/mapping/<environment>/`),
+and with them the whole `DynamicAccount` factory API. The sdk's side shrank
+to two seams: `GlamAccounts.createMapper` builds an ix-proxy
+`InstructionMapper` from one environment's documents and refuses another
+environment's, and `GlamVaultAccounts.mappingContext()` hands the mapper a
+vault's state, vault and fee-payer keys plus the integration-authority lookup.
+Deleted: `GlamVaultAccounts.loadMappingConfigs` and both `createMapper`
+statics, the `systems.glam.sdk.proxy` package (`DynamicGlamAccountFactory`,
+`CachedDynamicGlamAccountFactory`, the five `Indexed*` records) with
+`CachedDynamicGlamAccountFactoryTests`, and the `fuzzMappingConfig` target
+with its corpus — the sdk parses no external input of its own any more;
+ix-proxy's `fuzzMappingConfig` and `fuzzIxMapper` cover the parser and the
+mapper. The passages above that argued `loadMappingConfigs` and the proxy
+factory stand as dated history.
+
+The new seams are covered by `GlamAccountsMapperTests` (mapper built from the
+checked-in system-program documents under `src/test/resources/mapping/`,
+environment guard both ways, ix-proxy's own refusal of an empty document set,
+and a vault SOL transfer mapped against the generated
+`GlamProtocolProgram.systemTransfer` layout plus the document's trailing
+Token-program seat) and `GlamVaultAccountsTests.mappingContextCarriesTheVaultAndItsAuthorities`
+(every integration authority resolved through the context, unknown programs
+to null). The fresh history-free `pitestSdk` observation that day (471
+mutants, 449 detected) killed every mutant of the new code and left exactly
+two accepted rows unmatched, which `pitestSdkBaselinePrune` removed after two
+matching previews (baseline 24 -> 22): `GlamAccounts,createMapper`
+`NullReturnValsMutator` (`NO_COVERAGE`, now covered and killed) and
+`GlamVaultAccounts,lambda$loadMappingConfigs$1` `NakedReceiverMutator`
+(`# equivalent path-suffix`, the deleted `.json` suffix filter). No other row
+carried that family, so it leaves the label list above and is named here as
+history. The same write refreshed `GlamAccounts,main`'s `# line` tag
+(170 -> 206) for the methods added above it; the row itself is unchanged.
 
 ## Timed-out mutants (audited set, 2026-07-26)
 

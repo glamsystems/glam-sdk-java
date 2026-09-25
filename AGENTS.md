@@ -28,22 +28,27 @@ plus service components for operating against it.
   - **Hand-written layer**: `GlamAccountClient` (extends sava's
     `SPLAccountClient`; `createClient` picks the staging vs prod impl by
     protocol program), `GlamAccounts` / `GlamVaultAccounts` (program IDs and
-    PDA derivation), `proxy/` (dynamic account remapping — resolves
-    ix-mapper `DynamicAccountConfig`s against a vault's accounts, with a
-    caching factory), and the hand-written Jupiter swap wrapper in
-    `idl/programs/glam/jupiter/`.
+    PDA derivation, and the ix-mapper seam: `GlamAccounts.createMapper`
+    builds an ix-proxy `InstructionMapper` from one environment's mapping
+    documents and refuses another environment's, and
+    `GlamVaultAccounts.mappingContext()` is what a mapping needs from a
+    vault — state, vault, fee payer as signer, integration authorities), and
+    the hand-written Jupiter swap wrapper in `idl/programs/glam/jupiter/`.
 - `services/` (`systems.glam.services`) — delegate-service runtime layered on
   the sdk: account fetching (`rpc/AccountFetcher`), caches (`mints/`,
   `state/GlobalConfigCache`), the integration service context
   (`integrations/`), the fulfillment service (`fulfillment/`), batched SQL
   (`db/sql/`), and instruction execution (`execution/`).
 - `examples/` — scratch/example module; not part of the hardening surface.
-- `glam/` (untracked) — mapping configs from `glamsystems/ix-mapper-ts` at
-  the commit `./downloadMappings.sh` pins (`MAPPINGS_REF`); the sdk `jar` task
-  runs the script itself and embeds `glam/mapping-configs-v1` as
-  `glam/ix-mappings`, refusing to build or to write an archive without them.
-  `./syncMappings.sh [sha]` moves the pin; commit the pin change with the
-  jar it produces.
+- `glam/` (untracked) — the mapping documents from `glamsystems/ix-mapper-ts`
+  at the commit `./downloadMappings.sh` pins (`MAPPINGS_REF`), one directory
+  per environment under `glam/src/generated/mapping/{production,staging}`;
+  the sdk `jar` task runs the script itself and embeds them as
+  `glam/ix-mappings/<environment>/*.json`, refusing to build or to write an
+  archive without both environments. `./syncMappings.sh [sha]` moves the pin;
+  commit the pin change with the jar it produces, and refresh the
+  system-program fixtures under `sdk/src/test/resources/mapping/` if the
+  pinned document changed (their README says how).
 - `Integ.*` files are git-ignored scratch — present on a dev machine, absent
   in CI. Never make anything depend on them.
 
@@ -72,6 +77,7 @@ through the Solana BOM (`solanaBOMVersion` in `gradle/sava.properties`):
 | `../ravina` | `software.sava.services.*` — RPC calling, backoff/retry, request capacity, load balancing, tx monitoring, epoch service, config parsing (`BackoffConfig`, `ServiceConfigUtil`) |
 | `../sava` | `software.sava.core.*` / `software.sava.rpc.*` — keys, instructions, transactions, RPC client |
 | `../idl-clients` | `software.sava.idl.clients.*` — SPL, Kamino, Jupiter, Marinade clients |
+| `../ix-mapper-java` | `systems.glam.ix_proxy` — the mapping-document parser and the instruction mapper (`ix-proxy`), with their fuzz targets and the ix-mapper-ts conformance suite |
 | `../sava-build` | the convention plugin, the hardening feature, and `HARDENING.md` itself |
 
 **A fix belongs in the repo that owns the code, not worked around here.** When
@@ -133,14 +139,15 @@ idl-src-gen) and `pitestServices` (everything in `services`). Each suite's
 accepted baseline lives in the module's `config/pitest/`. The baselines were
 **seeded with the full pre-existing survivor population** — that is untriaged
 debt made explicit, not acceptance; the per-module `config/pitest/README.md`
-tracks the triage state. Fuzzing is underway — three targets, all seeded from
+tracks the triage state. Fuzzing is underway — two targets, both seeded from
 mainnet snapshots, corpora replayed inside `check`: `services:fuzzAccountData`
 (the compressed persistence format — decode + write/read differential; found
-and fixed an unbounded-decompression hang), `services:fuzzMinGlamStateAccount`
+and fixed an unbounded-decompression hang) and `services:fuzzMinGlamStateAccount`
 (the state-account walk over nested length-prefixed ACL sections, plus the
-change-detection re-walk; found a base-asset index landmine), and
-`sdk:fuzzMappingConfig` (the ix-mapper config JSON via
-`ProgramMapConfig.parseConfig`). Register new harnesses in the owning module's
+change-detection re-walk; found a base-asset index landmine). The sdk parses
+no external input of its own any more: the mapping documents are read by
+ix-proxy, whose own `fuzzMappingConfig` and `fuzzIxMapper` targets cover the
+parser and the mapper. Register new harnesses in the owning module's
 `hardening` block with both `targetClass` AND `seedCorpus` — GLAM registers no
 fuzz target without a checked-in corpus to replay.
 
@@ -559,10 +566,13 @@ skips it, so the two answer different halves.
   separate generated trees, and instruction layouts can differ between them.
 - The generated `gen` trees are large (hundreds of files); searches are much
   faster when scoped to the hand-written packages (`-not -path '*/gen/*'`).
-- The sdk jar embeds the untracked `glam/mapping-configs-v1` directory and
-  materializes it itself at the pinned ix-mapper-ts commit; a jar without
-  `glam/ix-mappings/*.json` entries fails the `jar` task rather than
-  publishing empty, which is what every release before the pin did.
+- The sdk jar embeds the untracked `glam/src/generated/mapping` documents and
+  materializes them itself at the pinned ix-mapper-ts commit; a jar without
+  `glam/ix-mappings/<environment>/*.json` entries for both environments fails
+  the `jar` task rather than publishing empty, which is what every release
+  before the pin did. A mapper built from one environment's documents is
+  refused by the other environment's `GlamAccounts`: the proxy program ids
+  differ, and a wrong mapper would fail on chain, not here.
 - Every long-running `services` loop (`BatchSqlExecutor`, `AccountFetcher`,
   `GlobalConfigCache`, `StakePoolCache`) takes a trailing
   `systems.glam.services.LoopHeartbeat` through a factory overload and ticks

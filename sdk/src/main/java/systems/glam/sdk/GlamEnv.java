@@ -4,13 +4,15 @@ import software.sava.core.accounts.PublicKey;
 
 public enum GlamEnv {
 
-  PRODUCTION(GlamAccounts.MAIN_NET),
-  STAGING(GlamAccounts.MAIN_NET_STAGING);
+  PRODUCTION(GlamAccounts.MAIN_NET, "production"),
+  STAGING(GlamAccounts.MAIN_NET_STAGING, "staging");
 
   private final GlamAccounts glamAccounts;
+  private final String mappingEnvironment;
 
-  GlamEnv(final GlamAccounts glamAccounts) {
+  GlamEnv(final GlamAccounts glamAccounts, final String mappingEnvironment) {
     this.glamAccounts = glamAccounts;
+    this.mappingEnvironment = mappingEnvironment;
   }
 
   public static GlamEnv from(final PublicKey protocolProgram) {
@@ -25,5 +27,11 @@ public enum GlamEnv {
 
   public GlamAccounts glamAccounts() {
     return glamAccounts;
+  }
+
+  /// The name an ix-mapper mapping document carries in its `environment` field for this deployment; the
+  /// documents of one environment live under `glam/ix-mappings/<mappingEnvironment>` in the sdk jar.
+  public String mappingEnvironment() {
+    return mappingEnvironment;
   }
 }

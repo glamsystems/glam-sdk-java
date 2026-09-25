@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 #
-# Moves the mapping-config pin in downloadMappings.sh to ix-mapper-ts's current default
-# branch head (or to the commit given as the first argument) and re-materializes glam/.
-# The pin change is the reviewable diff; commit it with the jar it produces.
+# Moves the mapping-document pin in downloadMappings.sh to ix-mapper-ts's current default
+# branch head (or to the commit given as the first argument), re-materializes glam/, and
+# refreshes the system-program fixtures the sdk's mapper tests read
+# (sdk/src/test/resources/mapping) from the newly pinned documents. The pin change and
+# any fixture change are the reviewable diff; commit them with the jar they produce.
 
 set -euo pipefail
 
@@ -33,3 +35,9 @@ else
   echo "syncMappings: pin moved $current -> $target"
 fi
 ./downloadMappings.sh
+
+# the checked-in fixtures are copies of the pinned documents; keep them so
+readonly system_program="11111111111111111111111111111111.json"
+for environment in production staging; do
+  cp "glam/src/generated/mapping/$environment/$system_program" "sdk/src/test/resources/mapping/$environment/$system_program"
+done

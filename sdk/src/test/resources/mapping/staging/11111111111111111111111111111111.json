@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "environment": "staging",
+  "program_id": "11111111111111111111111111111111",
+  "proxy_program_id": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+  "provenance": {
+    "generator": "idl-src-gen@51f2f4d10f5b053033ef81672c0ec924173b2a86",
+    "source_idl": "glam managed anchor_v1/idls/external/system (revision 7c70ebdc8bcf, idl bb1a83194457)",
+    "proxy_idl": "glam managed anchor_v1/idls/glam/glam_protocol_staging (revision ab88e0796ef2, idl 4b154b17ee04)",
+    "config_revision": 1
+  },
+  "instructions": [
+    {
+      "name": "advance_nonce_account",
+      "discriminator": [4, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "allocate",
+      "discriminator": [8, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "allocate_with_seed",
+      "discriminator": [9, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "assign",
+      "discriminator": [1, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "assign_with_seed",
+      "discriminator": [10, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "authorize_nonce_account",
+      "discriminator": [7, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "create_account",
+      "discriminator": [0, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "create_account_allow_prefund",
+      "discriminator": [13, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "create_account_with_seed",
+      "discriminator": [3, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "initialize_nonce_account",
+      "discriminator": [6, 0, 0, 0],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "transfer",
+      "discriminator": [2, 0, 0, 0],
+      "disposition": "map",
+      "handler": {
+        "name": "system_transfer",
+        "discriminator": [167, 164, 195, 155, 219, 152, 191, 230]
+      },
+      "source_accounts": [
+        {
+          "name": "source",
+          "writable": true,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "destination",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "source",
+          "source": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "none"
+      }
+    },
+    {
+      "name": "transfer_sol_with_seed",
+      "discriminator": [11, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "upgrade_nonce_account",
+      "discriminator": [12, 0, 0, 0],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "withdraw_nonce_account",
+      "discriminator": [5, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    }
+  ]
+}

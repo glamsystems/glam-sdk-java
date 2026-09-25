@@ -3,11 +3,14 @@ package systems.glam.sdk;
 import software.sava.core.accounts.ProgramDerivedAddress;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
-import systems.glam.ix.proxy.TransactionMapper;
+import systems.glam.ix.proxy.InstructionMapper;
+import systems.glam.ix.proxy.MappingDocument;
+import systems.glam.ix.proxy.MappingDocumentException;
+import systems.glam.ix.proxy.MappingDocuments;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintPDAs;
-import systems.glam.sdk.proxy.DynamicGlamAccountFactory;
 
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Map;
 
 public interface GlamAccounts {
@@ -30,6 +33,7 @@ public interface GlamAccounts {
       .policyProgram("po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY")
       .bridgeIntegrationProgram("gstgxS9yTioViNKdsM4DC33k1TU9un2VCYDQK8fAeSA")
       .cctpIntegrationProgram("gstgcuRwiX2FpmtigowB1TnVi3fPkZC9TEmVnc5sdxW")
+      .exponentIntegrationProgram("gstgx5AbCFq4mfYKbZP23YDC7XZFUx2EURiG3PcWX6W")
       .externalPositionProgram("gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX")
       .jupiterIntegrationProgram("gstgJbGqoE3p1SdFA2dET9tcaCzNqGcdD8wpbGctnU9")
       .kaminoIntegrationProgram("gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq")
@@ -65,12 +69,45 @@ public interface GlamAccounts {
     return GlamMintPDAs.requestQueuePDA(mintProgram(), mint);
   }
 
-  default TransactionMapper<GlamVaultAccounts> createMapper(final Path mappingsDirectory,
-                                                            final DynamicGlamAccountFactory dynamicGlamAccountFactory) {
-    return GlamVaultAccounts.createMapper(invokedProtocolProgram(), mappingsDirectory, dynamicGlamAccountFactory);
+  /// The ix-mapper environment these programs are deployed to, as a mapping document names it in its
+  /// `environment` field: [GlamEnv#mappingEnvironment()] of the deployment the protocol program belongs to.
+  default String mappingEnvironment() {
+    return GlamEnv.from(protocolProgram()).mappingEnvironment();
+  }
+
+  /// An instruction mapper over `documents`, which must all describe this environment: the proxy programs a
+  /// document of another environment names are not the ones these accounts hold, and an instruction mapped
+  /// through them would fail on chain rather than here.
+  ///
+  /// @throws IllegalArgumentException if the documents describe another environment
+  /// @throws MappingDocumentException if no mapper can be built from the documents (none, two for one
+  ///                                  program, or mixed environments)
+  default InstructionMapper createMapper(final Collection<MappingDocument> documents) {
+    final var mapper = InstructionMapper.createMapper(documents);
+    final var environment = mappingEnvironment();
+    if (!environment.equals(mapper.environment())) {
+      throw new IllegalArgumentException(String.format(
+          "The mapping documents describe the '%s' environment, but these accounts (protocol program %s) are '%s'.",
+          mapper.environment(), protocolProgram(), environment
+      ));
+    }
+    return mapper;
+  }
+
+  /// [#createMapper(Collection)] over every `.json` document directly under `mappingsDirectory`, such as the
+  /// environment's directory the sdk jar embeds under `glam/ix-mappings/`.
+  default InstructionMapper createMapper(final Path mappingsDirectory) {
+    return createMapper(MappingDocuments.readDirectory(mappingsDirectory));
   }
 
   Map<PublicKey, AccountMeta> integrationAuthorities();
+
+  /// The authority `integrationProgram`, a GLAM proxy program, signs its CPIs with, or null when these accounts
+  /// hold no such program; the lookup a [systems.glam.ix.proxy.MappingContext] takes.
+  default PublicKey integrationAuthority(final PublicKey integrationProgram) {
+    final var authority = integrationAuthorities().get(integrationProgram);
+    return authority == null ? null : authority.publicKey();
+  }
 
   AccountMeta readMintIntegrationAuthority();
 
@@ -87,6 +124,12 @@ public interface GlamAccounts {
   PublicKey cctpIntegrationProgram();
 
   AccountMeta readCctpIntegrationAuthority();
+
+  AccountMeta invokedExponentIntegrationProgram();
+
+  PublicKey exponentIntegrationProgram();
+
+  AccountMeta readExponentIntegrationAuthority();
 
   AccountMeta invokedExternalPositionProgram();
 

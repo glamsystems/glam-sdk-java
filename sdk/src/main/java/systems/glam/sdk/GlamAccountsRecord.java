@@ -15,6 +15,7 @@ public record GlamAccountsRecord(AccountMeta invokedProtocolProgram,
                                  PublicKey policyProgram,
                                  AccountMeta invokedBridgeIntegrationProgram,
                                  AccountMeta invokedCctpIntegrationProgram,
+                                 AccountMeta invokedExponentIntegrationProgram,
                                  AccountMeta invokedExternalPositionProgram,
                                  AccountMeta invokedJupiterIntegrationProgram,
                                  AccountMeta invokedKaminoIntegrationProgram,
@@ -64,6 +65,16 @@ public record GlamAccountsRecord(AccountMeta invokedProtocolProgram,
   @Override
   public AccountMeta readCctpIntegrationAuthority() {
     return integrationAuthorities.get(cctpIntegrationProgram());
+  }
+
+  @Override
+  public PublicKey exponentIntegrationProgram() {
+    return invokedExponentIntegrationProgram.publicKey();
+  }
+
+  @Override
+  public AccountMeta readExponentIntegrationAuthority() {
+    return integrationAuthorities.get(exponentIntegrationProgram());
   }
 
   @Override

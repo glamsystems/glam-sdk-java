@@ -46,11 +46,9 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.staging.registered_positions.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.spl.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.stake_pool.gen;
-  exports systems.glam.sdk.proxy;
   exports systems.glam.sdk;
   requires java.base;
   requires java.net.http;
-  requires systems.comodal.json_iterator;
   requires transitive software.sava.core;
   requires transitive software.sava.idl.clients.bundle;
   requires transitive software.sava.idl.clients.spl;

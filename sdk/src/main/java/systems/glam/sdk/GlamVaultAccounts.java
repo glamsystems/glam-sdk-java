@@ -3,19 +3,8 @@ package systems.glam.sdk;
 import software.sava.core.accounts.ProgramDerivedAddress;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
-import systems.comodal.jsoniter.JsonIterator;
-import systems.glam.ix.proxy.IndexedAccountMeta;
-import systems.glam.ix.proxy.ProgramMapConfig;
-import systems.glam.ix.proxy.TransactionMapper;
+import systems.glam.ix.proxy.MappingContext;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolPDAs;
-import systems.glam.sdk.proxy.DynamicGlamAccountFactory;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
 
 public interface GlamVaultAccounts {
 
@@ -40,46 +29,6 @@ public interface GlamVaultAccounts {
     return GlamVaultAccounts.createAccounts(GlamAccounts.MAIN_NET, feePayer, glamStatePublicKey);
   }
 
-  static List<ProgramMapConfig> loadMappingConfigs(final Path mappingsDirectory) {
-    final var accountMetaCache = new HashMap<AccountMeta, AccountMeta>(256);
-    final var indexedAccountMetaCache = new HashMap<IndexedAccountMeta, IndexedAccountMeta>(256);
-    try {
-      try (final var paths = Files.walk(mappingsDirectory, 1)) {
-        return paths.parallel()
-            .filter(Files::isRegularFile)
-            .filter(Files::isReadable)
-            .filter(f -> f.getFileName().toString().endsWith(".json"))
-            .map(filePath -> {
-              try {
-                final var ji = JsonIterator.parse(Files.readAllBytes(filePath));
-                return ProgramMapConfig.parseConfig(accountMetaCache, indexedAccountMetaCache, ji);
-              } catch (final IOException e) {
-                throw new UncheckedIOException(e);
-              }
-            })
-            .toList();
-      }
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  static TransactionMapper<GlamVaultAccounts> createMapper(final AccountMeta invokedGlamProgram,
-                                                           final List<ProgramMapConfig> mappingConfigs,
-                                                           final DynamicGlamAccountFactory dynamicGlamAccountFactory) {
-    return TransactionMapper.createMapper(
-        invokedGlamProgram,
-        dynamicGlamAccountFactory,
-        mappingConfigs
-    );
-  }
-
-  static TransactionMapper<GlamVaultAccounts> createMapper(final AccountMeta invokedGlamProgram,
-                                                           final Path mappingsDirectory,
-                                                           final DynamicGlamAccountFactory dynamicGlamAccountFactory) {
-    return createMapper(invokedGlamProgram, loadMappingConfigs(mappingsDirectory), dynamicGlamAccountFactory);
-  }
-
   GlamAccounts glamAccounts();
 
   PublicKey feePayer();
@@ -99,6 +48,13 @@ public interface GlamVaultAccounts {
   AccountMeta writeVault();
 
   AccountMeta readVault();
+
+  /// What the ix-mapper needs from this vault to rewrite an instruction into its GLAM proxy equivalent: the
+  /// state and vault keys, the fee payer as the signer, and the integration authority of each proxy program
+  /// the [#glamAccounts()] hold.
+  default MappingContext mappingContext() {
+    return new MappingContext(glamStateKey(), vaultPublicKey(), feePayer(), glamAccounts()::integrationAuthority);
+  }
 
   ProgramDerivedAddress mintPDA(final int id);
 
