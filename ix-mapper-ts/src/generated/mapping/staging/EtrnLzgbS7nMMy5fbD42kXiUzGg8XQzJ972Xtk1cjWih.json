@@ -1,0 +1,2315 @@
+{
+  "schema_version": 1,
+  "environment": "staging",
+  "program_id": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+  "proxy_program_id": "gstgPL7r9aYedDDsXNtLpr4atYtNvY7zubAWWstqS3L",
+  "provenance": {
+    "generator": "idl-src-gen@51f2f4d10f5b053033ef81672c0ec924173b2a86",
+    "source_idl": "glam managed anchor_v1/idls/external/phoenix (revision 5cf0f2d806d4, idl a5ad7ff67fd3)",
+    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_phoenix_staging (revision 999879b97137, idl 9687f84b921a)",
+    "config_revision": 1
+  },
+  "instructions": [
+    {
+      "name": "cancel_all",
+      "discriminator": [98, 191, 75, 220, 115, 40, 71, 237],
+      "disposition": "map",
+      "handler": {
+        "name": "cancel_all",
+        "discriminator": [98, 191, 75, 220, 115, 40, 71, 237]
+      },
+      "source_accounts": [
+        {
+          "name": "phoenix_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "phoenix_log_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_configuration",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "trader_wallet",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "trader_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "perp_asset_map",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "global_trader_index",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "active_trader_buffer",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "orderbook",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "splines",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 7,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 8,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 9,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "cancel_orders_by_id",
+      "discriminator": [234, 204, 126, 94, 222, 22, 141, 24],
+      "disposition": "map",
+      "handler": {
+        "name": "cancel_orders_by_id",
+        "discriminator": [234, 204, 126, 94, 222, 22, 141, 24]
+      },
+      "source_accounts": [
+        {
+          "name": "phoenix_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "phoenix_log_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_configuration",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "trader_wallet",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "trader_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "perp_asset_map",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "global_trader_index",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "active_trader_buffer",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "orderbook",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "splines",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 7,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 8,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 9,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "cancel_stop_loss",
+      "discriminator": [120, 201, 10, 102, 12, 9, 111, 126],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "cancel_up_to",
+      "discriminator": [26, 209, 244, 253, 59, 175, 227, 54],
+      "disposition": "map",
+      "handler": {
+        "name": "cancel_up_to",
+        "discriminator": [26, 209, 244, 253, 59, 175, 227, 54]
+      },
+      "source_accounts": [
+        {
+          "name": "phoenix_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "phoenix_log_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_configuration",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "trader_wallet",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "trader_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "perp_asset_map",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "global_trader_index",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "active_trader_buffer",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "orderbook",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "splines",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 7,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 8,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 9,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "clear_expired_orders",
+      "discriminator": [128, 95, 102, 169, 146, 205, 248, 94],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "close_matched_positions",
+      "discriminator": [112, 174, 32, 120, 93, 113, 10, 161],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "consume_withdraw_queue",
+      "discriminator": [228, 40, 211, 139, 39, 212, 116, 113],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "create_permission",
+      "discriminator": [190, 182, 26, 164, 156, 221, 8, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "delegate_trader",
+      "discriminator": [3, 164, 192, 106, 119, 91, 122, 224],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "deposit_funds",
+      "discriminator": [202, 39, 52, 211, 53, 20, 250, 88],
+      "disposition": "map",
+      "handler": {
+        "name": "deposit_funds",
+        "discriminator": [202, 39, 52, 211, 53, 20, 250, 88]
+      },
+      "source_accounts": [
+        {
+          "name": "phoenix_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "phoenix_log_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_configuration",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "trader_wallet",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "trader_token_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "trader_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "global_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_trader_index",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "active_trader_buffer",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 7,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 8,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 9,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "execute_stop_loss",
+      "discriminator": [38, 122, 90, 90, 182, 241, 7, 4],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "force_cancel_all",
+      "discriminator": [201, 0, 188, 127, 41, 55, 80, 48],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "force_cancel_risk_increasing",
+      "discriminator": [41, 55, 217, 35, 92, 72, 42, 238],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "liquidate_via_market_order",
+      "discriminator": [251, 241, 184, 108, 70, 70, 127, 198],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "liquidation_transfer",
+      "discriminator": [57, 218, 215, 68, 174, 23, 204, 127],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "log",
+      "discriminator": [141, 230, 214, 242, 9, 209, 207, 170],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "place_limit_order",
+      "discriminator": [108, 176, 33, 186, 146, 229, 1, 197],
+      "disposition": "map",
+      "handler": {
+        "name": "place_limit_order",
+        "discriminator": [108, 176, 33, 186, 146, 229, 1, 197]
+      },
+      "source_accounts": [
+        {
+          "name": "phoenix_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "phoenix_log_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_configuration",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "trader_wallet",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "trader_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "perp_asset_map",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "global_trader_index",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "active_trader_buffer",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "orderbook",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "splines",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 7,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 8,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 9,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "place_market_order",
+      "discriminator": [90, 118, 192, 252, 192, 99, 39, 145],
+      "disposition": "map",
+      "handler": {
+        "name": "place_market_order",
+        "discriminator": [90, 118, 192, 252, 192, 99, 39, 145]
+      },
+      "source_accounts": [
+        {
+          "name": "phoenix_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "phoenix_log_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_configuration",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "trader_wallet",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "trader_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "perp_asset_map",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "global_trader_index",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "active_trader_buffer",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "orderbook",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "splines",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 7,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 8,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 9,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "place_multi_limit_order",
+      "discriminator": [236, 208, 221, 172, 141, 226, 129, 84],
+      "disposition": "map",
+      "handler": {
+        "name": "place_multi_limit_order",
+        "discriminator": [236, 208, 221, 172, 141, 226, 129, 84]
+      },
+      "source_accounts": [
+        {
+          "name": "phoenix_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "phoenix_log_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_configuration",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "trader_wallet",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "trader_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "perp_asset_map",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "global_trader_index",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "active_trader_buffer",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "orderbook",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "splines",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 7,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 8,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 9,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "place_stop_loss",
+      "discriminator": [236, 46, 164, 66, 235, 92, 162, 137],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "register_trader",
+      "discriminator": [75, 243, 224, 167, 1, 5, 51, 32],
+      "disposition": "unsupported",
+      "reason": "not derived: source account 'phoenix_program' (position 0) has no destination slot and no header/static replacement — the extension may predate it"
+    },
+    {
+      "name": "revoke_permission",
+      "discriminator": [116, 82, 33, 181, 121, 144, 249, 227],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_permission",
+      "discriminator": [70, 126, 41, 194, 245, 189, 128, 8],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_trader_capabilities_delegated",
+      "discriminator": [207, 170, 17, 21, 53, 35, 88, 151],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_trader_capability",
+      "discriminator": [191, 72, 45, 190, 214, 250, 182, 213],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "sync_parent_to_child",
+      "discriminator": [175, 137, 217, 11, 235, 39, 150, 19],
+      "disposition": "map",
+      "handler": {
+        "name": "sync_parent_to_child",
+        "discriminator": [175, 137, 217, 11, 235, 39, 150, 19]
+      },
+      "source_accounts": [
+        {
+          "name": "phoenix_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "phoenix_log_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_configuration",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "trader_wallet",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "parent_trader_account",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "child_trader_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "global_trader_index",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 3,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "sync_trader_capabilities",
+      "discriminator": [154, 64, 87, 130, 130, 34, 138, 0],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "transfer_collateral",
+      "discriminator": [157, 163, 63, 27, 242, 72, 251, 97],
+      "disposition": "map",
+      "handler": {
+        "name": "transfer_collateral",
+        "discriminator": [157, 163, 63, 27, 242, 72, 251, 97]
+      },
+      "source_accounts": [
+        {
+          "name": "phoenix_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "phoenix_log_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_configuration",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "trader_wallet",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "src_trader_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "dst_trader_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "perp_asset_map",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_trader_index",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "active_trader_buffer",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 6,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 7,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 8,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "transfer_collateral_child_to_parent",
+      "discriminator": [51, 100, 177, 115, 139, 135, 247, 139],
+      "disposition": "map",
+      "handler": {
+        "name": "transfer_collateral_child_to_parent",
+        "discriminator": [51, 100, 177, 115, 139, 135, 247, 139]
+      },
+      "source_accounts": [
+        {
+          "name": "phoenix_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "phoenix_log_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_configuration",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "trader_wallet",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "child_trader_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "parent_trader_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "perp_asset_map",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_trader_index",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "active_trader_buffer",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 3,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 6,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 7,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 8,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "uncross_crank",
+      "discriminator": [196, 121, 94, 253, 139, 42, 252, 147],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "update_oracle_prices",
+      "discriminator": [31, 180, 61, 161, 248, 128, 43, 94],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_oracle_prices_with_ordering",
+      "discriminator": [164, 0, 14, 250, 58, 198, 25, 24],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_spline_parameters",
+      "discriminator": [241, 91, 139, 170, 18, 41, 203, 22],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_spline_price",
+      "discriminator": [45, 155, 200, 52, 37, 214, 187, 140],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_trader_state",
+      "discriminator": [249, 139, 82, 44, 126, 66, 133, 220],
+      "disposition": "map",
+      "handler": {
+        "name": "update_trader_state",
+        "discriminator": [249, 139, 82, 44, 126, 66, 133, 220]
+      },
+      "source_accounts": [
+        {
+          "name": "phoenix_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "phoenix_log_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_configuration",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "trader_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "perp_asset_map",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_trader_index",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "active_trader_buffer",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 3,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "withdraw_funds",
+      "discriminator": [241, 36, 29, 111, 208, 31, 104, 217],
+      "disposition": "map",
+      "handler": {
+        "name": "withdraw_funds",
+        "discriminator": [241, 36, 29, 111, 208, 31, 104, 217]
+      },
+      "source_accounts": [
+        {
+          "name": "phoenix_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "phoenix_log_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_configuration",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "trader_wallet",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "trader_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "perp_asset_map",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "global_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "destination_token_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "global_trader_index",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "active_trader_buffer",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "withdraw_queue",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 7,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 8,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 9,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 17,
+          "kind": "source",
+          "source": 10,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 18,
+          "kind": "source",
+          "source": 11,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    }
+  ]
+}

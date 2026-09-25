@@ -1,0 +1,366 @@
+{
+  "schema_version": 1,
+  "environment": "staging",
+  "program_id": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+  "proxy_program_id": "gstgs9nJgX8PmRHWAAEP9H7xT3ZkaPWSGPYbj3mXdTa",
+  "provenance": {
+    "generator": "idl-src-gen@51f2f4d10f5b053033ef81672c0ec924173b2a86",
+    "source_idl": "glam managed anchor_v1/idls/external/spl_token (revision 3626047321fa, idl 33add106ed36)",
+    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_spl_staging (revision c79b4b9b248a, idl 0deb38392545)",
+    "config_revision": 1
+  },
+  "instructions": [
+    {
+      "name": "amount_to_ui_amount",
+      "discriminator": [23],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "approve",
+      "discriminator": [4],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "approve_checked",
+      "discriminator": [13],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "batch",
+      "discriminator": [255],
+      "disposition": "unsupported",
+      "reason": "declares no accounts: which accounts it takes, and which of them sign, is not in the IDL"
+    },
+    {
+      "name": "burn",
+      "discriminator": [8],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "burn_checked",
+      "discriminator": [15],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "close_account",
+      "discriminator": [9],
+      "disposition": "map",
+      "handler": {
+        "name": "token_close_account",
+        "discriminator": [240, 32, 179, 154, 96, 110, 43, 79]
+      },
+      "source_accounts": [
+        {
+          "name": "account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "destination",
+          "writable": true,
+          "signer": false,
+          "expect": "glam_signer"
+        },
+        {
+          "name": "owner",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "freeze_account",
+      "discriminator": [10],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "get_account_data_size",
+      "discriminator": [21],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "initialize_account",
+      "discriminator": [1],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "initialize_account2",
+      "discriminator": [16],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "initialize_account3",
+      "discriminator": [18],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "initialize_immutable_owner",
+      "discriminator": [22],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "initialize_mint",
+      "discriminator": [0],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "initialize_mint2",
+      "discriminator": [20],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "initialize_multisig",
+      "discriminator": [2],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "initialize_multisig2",
+      "discriminator": [19],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "mint_to",
+      "discriminator": [7],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "mint_to_checked",
+      "discriminator": [14],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "revoke",
+      "discriminator": [5],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_authority",
+      "discriminator": [6],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "sync_native",
+      "discriminator": [17],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "thaw_account",
+      "discriminator": [11],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "transfer",
+      "discriminator": [3],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "transfer_checked",
+      "discriminator": [12],
+      "disposition": "map",
+      "handler": {
+        "name": "token_transfer_checked",
+        "discriminator": [169, 178, 117, 156, 169, 191, 199, 116]
+      },
+      "source_accounts": [
+        {
+          "name": "source",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "mint",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "destination",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "ui_amount_to_amount",
+      "discriminator": [24],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "unwrap_lamports",
+      "discriminator": [45],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "withdraw_excess_lamports",
+      "discriminator": [38],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    }
+  ]
+}

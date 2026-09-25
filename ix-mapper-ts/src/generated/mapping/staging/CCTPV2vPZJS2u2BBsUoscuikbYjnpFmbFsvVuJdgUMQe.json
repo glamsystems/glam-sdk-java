@@ -1,0 +1,418 @@
+{
+  "schema_version": 1,
+  "environment": "staging",
+  "program_id": "CCTPV2vPZJS2u2BBsUoscuikbYjnpFmbFsvVuJdgUMQe",
+  "proxy_program_id": "gstgxS9yTioViNKdsM4DC33k1TU9un2VCYDQK8fAeSA",
+  "provenance": {
+    "generator": "idl-src-gen@51f2f4d10f5b053033ef81672c0ec924173b2a86",
+    "source_idl": "glam managed anchor_v1/idls/external/token_messenger_minter_v2 (revision c66d97e292c8, idl b9ac2aa0ddac)",
+    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_bridge_staging (revision 35b7ee65d130, idl 661e6e913c0e)",
+    "config_revision": 1
+  },
+  "instructions": [
+    {
+      "name": "accept_ownership",
+      "discriminator": [172, 23, 43, 13, 238, 213, 85, 150],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "add_local_token",
+      "discriminator": [213, 199, 205, 18, 98, 124, 73, 198],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "add_remote_token_messenger",
+      "discriminator": [12, 149, 172, 165, 111, 202, 24, 33],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "burn_token_custody",
+      "discriminator": [233, 136, 180, 175, 112, 41, 62, 71],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "denylist_account",
+      "discriminator": [101, 116, 197, 112, 81, 249, 75, 194],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "deposit_for_burn",
+      "discriminator": [215, 60, 61, 46, 114, 55, 128, 176],
+      "disposition": "map",
+      "handler": {
+        "name": "cctp_deposit_for_burn",
+        "discriminator": [132, 90, 36, 35, 103, 197, 143, 91]
+      },
+      "source_accounts": [
+        {
+          "name": "owner",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "event_rent_payer",
+          "writable": true,
+          "signer": true,
+          "expect": "glam_signer"
+        },
+        {
+          "name": "sender_authority_pda",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "burn_token_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "denylist_account",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "message_transmitter",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_messenger",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "remote_token_messenger",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_minter",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "local_token",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "burn_token_mint",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "message_sent_event_data",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "message_transmitter_program",
+          "writable": false,
+          "signer": false,
+          "expect": "CCTPV2Sm4AdWt5296sk4P66VBZ7bEhcARwFaaS9YPbeC"
+        },
+        {
+          "name": "token_messenger_minter_program",
+          "writable": false,
+          "signer": false,
+          "expect": "CCTPV2vPZJS2u2BBsUoscuikbYjnpFmbFsvVuJdgUMQe"
+        },
+        {
+          "name": "token_program",
+          "writable": false,
+          "signer": false,
+          "expect": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "writable": false,
+          "signer": false,
+          "expect": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "program",
+          "writable": false,
+          "signer": false,
+          "expect": "CCTPV2vPZJS2u2BBsUoscuikbYjnpFmbFsvVuJdgUMQe"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "CCTPV2vPZJS2u2BBsUoscuikbYjnpFmbFsvVuJdgUMQe",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 2,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 3,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 6,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 7,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 8,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 9,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 10,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 11,
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 17,
+          "kind": "static",
+          "address": "CCTPV2Sm4AdWt5296sk4P66VBZ7bEhcARwFaaS9YPbeC",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 18,
+          "kind": "static",
+          "address": "CCTPV2vPZJS2u2BBsUoscuikbYjnpFmbFsvVuJdgUMQe",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 19,
+          "kind": "static",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 20,
+          "kind": "source",
+          "source": 16,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "deposit_for_burn_with_hook",
+      "discriminator": [111, 245, 62, 131, 204, 108, 223, 155],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "handle_receive_finalized_message",
+      "discriminator": [186, 252, 239, 70, 86, 180, 110, 95],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "handle_receive_unfinalized_message",
+      "discriminator": [200, 169, 175, 20, 200, 58, 182, 61],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "initialize",
+      "discriminator": [175, 175, 109, 31, 13, 152, 155, 237],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "link_token_pair",
+      "discriminator": [68, 162, 24, 104, 125, 46, 130, 12],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "pause",
+      "discriminator": [211, 22, 221, 251, 74, 121, 193, 47],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "remove_local_token",
+      "discriminator": [27, 43, 66, 170, 188, 44, 109, 97],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "remove_remote_token_messenger",
+      "discriminator": [65, 114, 66, 85, 169, 98, 177, 146],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_fee_recipient",
+      "discriminator": [227, 18, 215, 42, 237, 246, 151, 66],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_max_burn_amount_per_message",
+      "discriminator": [30, 128, 145, 240, 70, 237, 109, 207],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_min_fee",
+      "discriminator": [114, 198, 35, 3, 41, 196, 194, 246],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_min_fee_controller",
+      "discriminator": [195, 142, 74, 84, 234, 94, 180, 113],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_token_controller",
+      "discriminator": [88, 6, 98, 10, 79, 59, 15, 24],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "transfer_ownership",
+      "discriminator": [65, 177, 215, 73, 53, 45, 99, 47],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "undenylist_account",
+      "discriminator": [57, 36, 43, 168, 62, 172, 33, 39],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "unlink_token_pair",
+      "discriminator": [52, 198, 100, 114, 104, 174, 85, 58],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "unpause",
+      "discriminator": [169, 144, 4, 38, 10, 141, 188, 255],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_denylister",
+      "discriminator": [193, 66, 198, 201, 84, 57, 14, 222],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_pauser",
+      "discriminator": [140, 171, 211, 132, 57, 201, 16, 254],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    }
+  ]
+}

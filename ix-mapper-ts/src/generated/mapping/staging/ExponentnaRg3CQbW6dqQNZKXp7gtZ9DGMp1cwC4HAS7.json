@@ -1,0 +1,884 @@
+{
+  "schema_version": 1,
+  "environment": "staging",
+  "program_id": "ExponentnaRg3CQbW6dqQNZKXp7gtZ9DGMp1cwC4HAS7",
+  "proxy_program_id": "gstgx5AbCFq4mfYKbZP23YDC7XZFUx2EURiG3PcWX6W",
+  "provenance": {
+    "generator": "idl-src-gen@51f2f4d10f5b053033ef81672c0ec924173b2a86",
+    "source_idl": "glam managed anchor_v1/idls/external/exponent_core (revision a8d92bfc0776, idl 2e84927ce940)",
+    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_exponent_staging (revision 04b387ad24f9, idl b7958bc6431e)",
+    "config_revision": 1
+  },
+  "instructions": [
+    {
+      "name": "add_emission",
+      "discriminator": [18],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "add_farm",
+      "discriminator": [22],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "add_lp_tokens_metadata",
+      "discriminator": [41],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "add_market_emission",
+      "discriminator": [25],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "buy_yt",
+      "discriminator": [0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "claim_farm_emissions",
+      "discriminator": [24],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "collect_emission",
+      "discriminator": [19],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "collect_interest",
+      "discriminator": [6],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "collect_treasury_emission",
+      "discriminator": [20],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "collect_treasury_interest",
+      "discriminator": [21],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "deposit_yt",
+      "discriminator": [7],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "init_lp_position",
+      "discriminator": [13],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "init_market_two",
+      "discriminator": [10],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "initialize_vault",
+      "discriminator": [2],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "initialize_yield_position",
+      "discriminator": [3],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "market_collect_emission",
+      "discriminator": [16],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "market_deposit_lp",
+      "discriminator": [14],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "market_two_deposit_liquidity",
+      "discriminator": [11],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "market_two_withdraw_liquidity",
+      "discriminator": [12],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "market_withdraw_lp",
+      "discriminator": [15],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "merge",
+      "discriminator": [5],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "modify_farm",
+      "discriminator": [23],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "modify_market_setting",
+      "discriminator": [27],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "modify_vault_setting",
+      "discriminator": [26],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "realloc_market",
+      "discriminator": [40],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "sell_yt",
+      "discriminator": [1],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "stage_yt_yield",
+      "discriminator": [9],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "strip",
+      "discriminator": [4],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "trade_pt",
+      "discriminator": [17],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "withdraw_yt",
+      "discriminator": [8],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "wrapper_buy_pt",
+      "discriminator": [29],
+      "disposition": "map",
+      "handler": {
+        "name": "wrapper_buy_pt",
+        "discriminator": [6, 127, 6, 136, 226, 194, 250, 168]
+      },
+      "source_accounts": [
+        {
+          "name": "buyer",
+          "writable": true,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "market",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_sy_trader",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_pt_trader",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_sy_escrow",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_pt_escrow",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "address_lookup_table",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_program",
+          "writable": false,
+          "signer": false,
+          "expect": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "sy_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_fee_treasury_sy",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "event_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "program",
+          "writable": false,
+          "signer": false,
+          "expect": "ExponentnaRg3CQbW6dqQNZKXp7gtZ9DGMp1cwC4HAS7"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "ExponentnaRg3CQbW6dqQNZKXp7gtZ9DGMp1cwC4HAS7",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 2,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 3,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 6,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "static",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 8,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 9,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 10,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "wrapper_buy_yt",
+      "discriminator": [31],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "wrapper_collect_interest",
+      "discriminator": [33],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "wrapper_merge",
+      "discriminator": [39],
+      "disposition": "map",
+      "handler": {
+        "name": "wrapper_merge",
+        "discriminator": [177, 36, 171, 125, 89, 198, 144, 219]
+      },
+      "source_accounts": [
+        {
+          "name": "merger",
+          "writable": true,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "token_sy_merger",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "escrow_sy",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_yt_merger",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_pt_merger",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "mint_yt",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "mint_pt",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "vault_address_lookup_table",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_program",
+          "writable": false,
+          "signer": false,
+          "expect": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "vault_robot_yield_position",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "sy_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "system_program",
+          "writable": false,
+          "signer": false,
+          "expect": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "program",
+          "writable": false,
+          "signer": false,
+          "expect": "ExponentnaRg3CQbW6dqQNZKXp7gtZ9DGMp1cwC4HAS7"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "ExponentnaRg3CQbW6dqQNZKXp7gtZ9DGMp1cwC4HAS7",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 2,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 3,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 7,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 8,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 9,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "static",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 17,
+          "kind": "source",
+          "source": 11,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 18,
+          "kind": "source",
+          "source": 12,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 19,
+          "kind": "source",
+          "source": 14,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "wrapper_provide_liquidity",
+      "discriminator": [28],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "wrapper_provide_liquidity_base",
+      "discriminator": [36],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "wrapper_provide_liquidity_classic",
+      "discriminator": [37],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "wrapper_sell_pt",
+      "discriminator": [30],
+      "disposition": "map",
+      "handler": {
+        "name": "wrapper_sell_pt",
+        "discriminator": [127, 65, 108, 12, 72, 21, 50, 200]
+      },
+      "source_accounts": [
+        {
+          "name": "seller",
+          "writable": true,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "market",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_sy_trader",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_pt_trader",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_sy_escrow",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_pt_escrow",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "address_lookup_table",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_program",
+          "writable": false,
+          "signer": false,
+          "expect": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "sy_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_fee_treasury_sy",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "event_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "program",
+          "writable": false,
+          "signer": false,
+          "expect": "ExponentnaRg3CQbW6dqQNZKXp7gtZ9DGMp1cwC4HAS7"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "ExponentnaRg3CQbW6dqQNZKXp7gtZ9DGMp1cwC4HAS7",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 2,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 3,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 6,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "static",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 8,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 9,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 10,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "wrapper_sell_yt",
+      "discriminator": [32],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "wrapper_strip",
+      "discriminator": [38],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "wrapper_withdraw_liquidity",
+      "discriminator": [34],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "wrapper_withdraw_liquidity_classic",
+      "discriminator": [35],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    }
+  ]
+}

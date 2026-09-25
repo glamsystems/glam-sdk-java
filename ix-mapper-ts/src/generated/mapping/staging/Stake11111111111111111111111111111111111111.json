@@ -1,0 +1,489 @@
+{
+  "schema_version": 1,
+  "environment": "staging",
+  "program_id": "Stake11111111111111111111111111111111111111",
+  "proxy_program_id": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+  "provenance": {
+    "generator": "idl-src-gen@51f2f4d10f5b053033ef81672c0ec924173b2a86",
+    "source_idl": "glam managed anchor_v1/idls/external/stake (revision 63da07e49f05, idl de27febd3fdb)",
+    "proxy_idl": "glam managed anchor_v1/idls/glam/glam_protocol_staging (revision ab88e0796ef2, idl 4b154b17ee04)",
+    "config_revision": 1
+  },
+  "instructions": [
+    {
+      "name": "authorize",
+      "discriminator": [1, 0, 0, 0],
+      "disposition": "map",
+      "handler": {
+        "name": "stake_authorize",
+        "discriminator": [127, 247, 88, 164, 201, 0, 79, 7]
+      },
+      "source_accounts": [
+        {
+          "name": "stake",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "lockup_authority",
+          "writable": false,
+          "signer": true,
+          "optional": "omitted",
+          "expect": "glam_vault"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "static",
+          "address": "Stake11111111111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "source",
+          "source": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "SysvarC1ock11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "authorize_checked",
+      "discriminator": [10, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "authorize_checked_with_seed",
+      "discriminator": [11, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "authorize_with_seed",
+      "discriminator": [8, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "deactivate",
+      "discriminator": [5, 0, 0, 0],
+      "disposition": "map",
+      "handler": {
+        "name": "stake_deactivate",
+        "discriminator": [224, 10, 93, 175, 175, 145, 237, 169]
+      },
+      "source_accounts": [
+        {
+          "name": "stake",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "stake_authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "static",
+          "address": "Stake11111111111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "source",
+          "source": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "SysvarC1ock11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "none"
+      }
+    },
+    {
+      "name": "deactivate_delinquent",
+      "discriminator": [14, 0, 0, 0],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "delegate_stake",
+      "discriminator": [2, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "not derived: extension account 'stake_config' has no source counterpart"
+    },
+    {
+      "name": "get_minimum_delegation",
+      "discriminator": [13, 0, 0, 0],
+      "disposition": "passthrough",
+      "reason": "a read: it declares no account and takes none"
+    },
+    {
+      "name": "initialize",
+      "discriminator": [0, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "not derived: argument layout differs: source [u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,i64,u64,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8,u8], handler []; the mapper relays the payload verbatim"
+    },
+    {
+      "name": "initialize_checked",
+      "discriminator": [9, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "merge",
+      "discriminator": [7, 0, 0, 0],
+      "disposition": "map",
+      "handler": {
+        "name": "stake_merge",
+        "discriminator": [46, 181, 125, 12, 51, 179, 134, 176]
+      },
+      "source_accounts": [
+        {
+          "name": "destination_stake",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "source_stake",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "stake_authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "static",
+          "address": "Stake11111111111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "source",
+          "source": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "source",
+          "source": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "SysvarC1ock11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "static",
+          "address": "SysvarStakeHistory1111111111111111111111111",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "move_lamports",
+      "discriminator": [17, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "move_stake",
+      "discriminator": [16, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_lockup",
+      "discriminator": [6, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_lockup_checked",
+      "discriminator": [12, 0, 0, 0],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "split",
+      "discriminator": [3, 0, 0, 0],
+      "disposition": "map",
+      "handler": {
+        "name": "stake_split",
+        "discriminator": [63, 128, 169, 206, 158, 60, 135, 48]
+      },
+      "source_accounts": [
+        {
+          "name": "stake",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "split_stake",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "stake_authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "static",
+          "address": "Stake11111111111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "source",
+          "source": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "source",
+          "source": 1,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "withdraw",
+      "discriminator": [4, 0, 0, 0],
+      "disposition": "map",
+      "handler": {
+        "name": "stake_withdraw",
+        "discriminator": [199, 13, 168, 20, 92, 151, 29, 56]
+      },
+      "source_accounts": [
+        {
+          "name": "stake",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "recipient",
+          "writable": true,
+          "signer": false,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "withdraw_authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "lockup_authority",
+          "writable": false,
+          "signer": true,
+          "optional": "omitted",
+          "expect": "glam_vault"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "static",
+          "address": "Stake11111111111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "source",
+          "source": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "SysvarC1ock11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "SysvarStakeHistory1111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "none"
+      }
+    }
+  ]
+}

@@ -1,0 +1,1821 @@
+{
+  "schema_version": 1,
+  "environment": "staging",
+  "program_id": "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA",
+  "proxy_program_id": "gstgMghFitRBz2GXKwgpMd7L1JXd1sg59q2v5Y83vSY",
+  "provenance": {
+    "generator": "idl-src-gen@51f2f4d10f5b053033ef81672c0ec924173b2a86",
+    "source_idl": "glam managed anchor_v1/idls/external/marginfi (revision ad35a97f6a80, idl 494f94a4b865)",
+    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_marginfi_staging (revision aced07cb2784, idl 926684f449b0)",
+    "config_revision": 1
+  },
+  "instructions": [
+    {
+      "name": "config_group_fee",
+      "discriminator": [231, 205, 66, 242, 220, 87, 145, 38],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "configure_bank_rate_limits",
+      "discriminator": [175, 84, 85, 221, 206, 220, 110, 174],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "configure_deleverage_withdrawal_limit",
+      "discriminator": [28, 132, 205, 158, 67, 77, 177, 63],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "configure_group_rate_limits",
+      "discriminator": [111, 47, 213, 142, 158, 51, 226, 102],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "drift_deposit",
+      "discriminator": [252, 63, 250, 201, 98, 55, 130, 12],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "drift_harvest_reward",
+      "discriminator": [167, 161, 240, 194, 138, 54, 87, 189],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "drift_init_user",
+      "discriminator": [29, 18, 236, 190, 29, 254, 114, 169],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "drift_withdraw",
+      "discriminator": [86, 59, 186, 123, 183, 181, 234, 137],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "edit_global_fee_state",
+      "discriminator": [52, 62, 35, 129, 93, 69, 165, 202],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "edit_staked_settings",
+      "discriminator": [11, 108, 215, 87, 240, 9, 66, 241],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "end_deleverage",
+      "discriminator": [114, 14, 250, 143, 252, 104, 214, 209],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "end_liquidation",
+      "discriminator": [110, 11, 244, 54, 229, 181, 22, 184],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "init_bank_metadata",
+      "discriminator": [94, 239, 50, 136, 137, 204, 254, 213],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "init_global_fee_state",
+      "discriminator": [82, 48, 247, 59, 220, 109, 231, 44],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "init_staked_settings",
+      "discriminator": [52, 35, 149, 44, 69, 86, 69, 80],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "juplend_deposit",
+      "discriminator": [114, 11, 218, 81, 183, 165, 143, 255],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "juplend_init_position",
+      "discriminator": [176, 255, 151, 106, 5, 207, 74, 215],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "juplend_withdraw",
+      "discriminator": [245, 164, 253, 202, 53, 77, 251, 221],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "kamino_deposit",
+      "discriminator": [237, 8, 188, 187, 115, 99, 49, 85],
+      "disposition": "map",
+      "handler": {
+        "name": "kamino_deposit",
+        "discriminator": [237, 8, 188, 187, 115, 99, 49, 85]
+      },
+      "source_accounts": [
+        {
+          "name": "group",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "marginfi_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "bank",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "signer_token_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "liquidity_vault_authority",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "liquidity_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "integration_acc2",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "lending_market",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "lending_market_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "integration_acc1",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "mint",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "reserve_liquidity_supply",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "reserve_collateral_mint",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "reserve_destination_deposit_collateral",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "obligation_farm_user_state",
+          "writable": true,
+          "signer": false,
+          "optional": "program_id"
+        },
+        {
+          "name": "reserve_farm_state",
+          "writable": true,
+          "signer": false,
+          "optional": "program_id"
+        },
+        {
+          "name": "kamino_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "farms_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "collateral_token_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "liquidity_token_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "instruction_sysvar_account",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 3,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 7,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 8,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 9,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 10,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 17,
+          "kind": "source",
+          "source": 11,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 18,
+          "kind": "source",
+          "source": 12,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 19,
+          "kind": "source",
+          "source": 13,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 20,
+          "kind": "source",
+          "source": 14,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 21,
+          "kind": "source",
+          "source": 15,
+          "writable": true,
+          "signer": false,
+          "sentinel": true
+        },
+        {
+          "index": 22,
+          "kind": "source",
+          "source": 16,
+          "writable": true,
+          "signer": false,
+          "sentinel": true
+        },
+        {
+          "index": 23,
+          "kind": "source",
+          "source": 17,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 24,
+          "kind": "source",
+          "source": 18,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 25,
+          "kind": "source",
+          "source": 19,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 26,
+          "kind": "source",
+          "source": 20,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 27,
+          "kind": "source",
+          "source": 21,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "kamino_harvest_reward",
+      "discriminator": [163, 202, 248, 141, 106, 20, 116, 5],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "kamino_init_obligation",
+      "discriminator": [253, 177, 160, 225, 70, 156, 217, 109],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "kamino_withdraw",
+      "discriminator": [199, 101, 41, 45, 213, 98, 224, 200],
+      "disposition": "map",
+      "handler": {
+        "name": "kamino_withdraw",
+        "discriminator": [199, 101, 41, 45, 213, 98, 224, 200]
+      },
+      "source_accounts": [
+        {
+          "name": "group",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "marginfi_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "bank",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "destination_token_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "liquidity_vault_authority",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "liquidity_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "integration_acc2",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "lending_market",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "lending_market_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "integration_acc1",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "mint",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "reserve_liquidity_supply",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "reserve_collateral_mint",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "reserve_source_collateral",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "obligation_farm_user_state",
+          "writable": true,
+          "signer": false,
+          "optional": "program_id"
+        },
+        {
+          "name": "reserve_farm_state",
+          "writable": true,
+          "signer": false,
+          "optional": "program_id"
+        },
+        {
+          "name": "kamino_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "farms_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "collateral_token_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "liquidity_token_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "instruction_sysvar_account",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 3,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 7,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 8,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 9,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 10,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 17,
+          "kind": "source",
+          "source": 11,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 18,
+          "kind": "source",
+          "source": 12,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 19,
+          "kind": "source",
+          "source": 13,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 20,
+          "kind": "source",
+          "source": 14,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 21,
+          "kind": "source",
+          "source": 15,
+          "writable": true,
+          "signer": false,
+          "sentinel": true
+        },
+        {
+          "index": 22,
+          "kind": "source",
+          "source": 16,
+          "writable": true,
+          "signer": false,
+          "sentinel": true
+        },
+        {
+          "index": 23,
+          "kind": "source",
+          "source": 17,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 24,
+          "kind": "source",
+          "source": 18,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 25,
+          "kind": "source",
+          "source": 19,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 26,
+          "kind": "source",
+          "source": 20,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 27,
+          "kind": "source",
+          "source": 21,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "lending_account_borrow",
+      "discriminator": [4, 126, 116, 53, 48, 5, 212, 31],
+      "disposition": "map",
+      "handler": {
+        "name": "lending_account_borrow",
+        "discriminator": [4, 126, 116, 53, 48, 5, 212, 31]
+      },
+      "source_accounts": [
+        {
+          "name": "group",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "marginfi_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "bank",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "destination_token_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "bank_liquidity_vault_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "liquidity_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_program",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 3,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 5,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 7,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "lending_account_clear_emissions",
+      "discriminator": [239, 4, 221, 98, 45, 167, 201, 244],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "lending_account_close_balance",
+      "discriminator": [245, 54, 41, 4, 243, 202, 31, 17],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_account_deposit",
+      "discriminator": [171, 94, 235, 103, 82, 64, 212, 140],
+      "disposition": "map",
+      "handler": {
+        "name": "lending_account_deposit",
+        "discriminator": [171, 94, 235, 103, 82, 64, 212, 140]
+      },
+      "source_accounts": [
+        {
+          "name": "group",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "marginfi_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "bank",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "signer_token_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "liquidity_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_program",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 3,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 6,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "lending_account_end_flashloan",
+      "discriminator": [105, 124, 201, 106, 153, 2, 8, 156],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_account_liquidate",
+      "discriminator": [214, 169, 151, 213, 251, 167, 86, 219],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_account_pulse_health",
+      "discriminator": [186, 52, 117, 97, 34, 74, 39, 253],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "lending_account_repay",
+      "discriminator": [79, 209, 172, 177, 222, 51, 173, 151],
+      "disposition": "map",
+      "handler": {
+        "name": "lending_account_repay",
+        "discriminator": [79, 209, 172, 177, 222, 51, 173, 151]
+      },
+      "source_accounts": [
+        {
+          "name": "group",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "marginfi_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "bank",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "signer_token_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "liquidity_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_program",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 3,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 6,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "lending_account_start_flashloan",
+      "discriminator": [14, 131, 33, 220, 81, 186, 180, 107],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_account_withdraw",
+      "discriminator": [36, 72, 74, 19, 210, 210, 192, 192],
+      "disposition": "unsupported",
+      "reason": "the handler builds its CPI from fixed accounts and forwards none of the native instruction's remaining accounts, which carry the bank and oracle accounts Marginfi's health check reads; refused until the handler forwards them"
+    },
+    {
+      "name": "lending_pool_accrue_bank_interest",
+      "discriminator": [108, 201, 30, 87, 47, 65, 97, 188],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "lending_pool_add_bank",
+      "discriminator": [215, 68, 72, 78, 208, 218, 103, 182],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_add_bank_drift",
+      "discriminator": [62, 63, 49, 48, 76, 55, 108, 155],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_add_bank_juplend",
+      "discriminator": [18, 208, 117, 90, 53, 111, 195, 41],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_add_bank_kamino",
+      "discriminator": [118, 53, 16, 243, 255, 245, 149, 241],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_add_bank_permissionless",
+      "discriminator": [127, 187, 121, 34, 187, 167, 238, 102],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_add_bank_solend",
+      "discriminator": [81, 233, 203, 199, 47, 226, 0, 68],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_add_bank_with_seed",
+      "discriminator": [76, 211, 213, 171, 117, 78, 158, 76],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_clone_bank",
+      "discriminator": [214, 93, 17, 236, 177, 228, 78, 17],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_clone_emode",
+      "discriminator": [146, 167, 94, 106, 184, 202, 15, 10],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_close_bank",
+      "discriminator": [22, 115, 7, 130, 227, 85, 0, 47],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_collect_bank_fees",
+      "discriminator": [201, 5, 215, 116, 230, 92, 75, 150],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "lending_pool_configure_bank",
+      "discriminator": [121, 173, 156, 40, 93, 148, 56, 237],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_configure_bank_emode",
+      "discriminator": [17, 175, 91, 57, 239, 86, 49, 71],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_configure_bank_interest_only",
+      "discriminator": [245, 107, 83, 38, 103, 219, 163, 241],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_configure_bank_limits_only",
+      "discriminator": [157, 196, 221, 200, 202, 62, 84, 21],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_configure_bank_oracle",
+      "discriminator": [209, 82, 255, 171, 124, 21, 71, 81],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_force_tokenless_repay_complete",
+      "discriminator": [15, 203, 147, 232, 199, 14, 231, 37],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_handle_bankruptcy",
+      "discriminator": [162, 11, 56, 139, 90, 128, 70, 173],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_pulse_bank_price_cache",
+      "discriminator": [192, 19, 201, 135, 105, 203, 32, 222],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "lending_pool_reclaim_emissions_vault",
+      "discriminator": [206, 67, 186, 225, 41, 30, 95, 216],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "lending_pool_set_fixed_oracle_price",
+      "discriminator": [28, 126, 127, 127, 60, 37, 211, 125],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_update_fees_destination_account",
+      "discriminator": [102, 4, 121, 243, 237, 110, 95, 13],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_withdraw_fees",
+      "discriminator": [92, 140, 215, 254, 170, 0, 83, 174],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "lending_pool_withdraw_fees_permissionless",
+      "discriminator": [57, 245, 1, 208, 130, 18, 145, 113],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "lending_pool_withdraw_insurance",
+      "discriminator": [108, 60, 60, 246, 104, 79, 159, 243],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "marginfi_account_close",
+      "discriminator": [186, 221, 93, 34, 50, 97, 194, 241],
+      "disposition": "map",
+      "handler": {
+        "name": "marginfi_account_close",
+        "discriminator": [186, 221, 93, 34, 50, 97, 194, 241]
+      },
+      "source_accounts": [
+        {
+          "name": "marginfi_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "fee_payer",
+          "writable": true,
+          "signer": true,
+          "expect": "glam_signer"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "marginfi_account_close_order",
+      "discriminator": [212, 223, 79, 182, 172, 183, 205, 237],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "marginfi_account_end_execute_order",
+      "discriminator": [115, 42, 20, 93, 121, 84, 178, 83],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "marginfi_account_init_liq_record",
+      "discriminator": [236, 213, 238, 126, 147, 251, 164, 8],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "marginfi_account_initialize",
+      "discriminator": [43, 78, 61, 255, 148, 52, 249, 154],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "marginfi_account_initialize_pda",
+      "discriminator": [87, 177, 91, 80, 218, 119, 245, 31],
+      "disposition": "map",
+      "handler": {
+        "name": "marginfi_account_initialize_pda",
+        "discriminator": [87, 177, 91, 80, 218, 119, 245, 31]
+      },
+      "source_accounts": [
+        {
+          "name": "marginfi_group",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "marginfi_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "fee_payer",
+          "writable": true,
+          "signer": true,
+          "expect": "glam_signer"
+        },
+        {
+          "name": "instructions_sysvar",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "system_program",
+          "writable": false,
+          "signer": false,
+          "expect": "11111111111111111111111111111111"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 4,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "marginfi_account_keeper_close_order",
+      "discriminator": [128, 114, 71, 46, 194, 71, 186, 106],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "marginfi_account_place_order",
+      "discriminator": [244, 112, 75, 138, 143, 108, 7, 186],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "marginfi_account_set_freeze",
+      "discriminator": [199, 179, 231, 30, 138, 247, 110, 227],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "marginfi_account_set_keeper_close_flags",
+      "discriminator": [82, 163, 165, 222, 212, 255, 33, 210],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "marginfi_account_start_execute_order",
+      "discriminator": [1, 70, 140, 134, 183, 29, 208, 224],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "marginfi_account_update_emissions_destination_account",
+      "discriminator": [73, 185, 162, 201, 111, 24, 116, 185],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "marginfi_group_configure",
+      "discriminator": [62, 199, 81, 78, 33, 13, 236, 61],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "marginfi_group_initialize",
+      "discriminator": [255, 67, 67, 26, 94, 31, 34, 20],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "migrate_curve",
+      "discriminator": [151, 254, 50, 13, 112, 235, 152, 72],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "panic_pause",
+      "discriminator": [76, 164, 123, 25, 4, 43, 79, 165],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "panic_unpause",
+      "discriminator": [236, 107, 194, 242, 99, 51, 121, 128],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "panic_unpause_permissionless",
+      "discriminator": [245, 139, 50, 159, 213, 62, 91, 248],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "propagate_fee_state",
+      "discriminator": [64, 3, 166, 194, 129, 21, 101, 155],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "propagate_staked_settings",
+      "discriminator": [210, 30, 152, 69, 130, 99, 222, 170],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "purge_deleverage_balance",
+      "discriminator": [132, 187, 25, 149, 181, 59, 253, 136],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "solend_deposit",
+      "discriminator": [56, 127, 176, 148, 12, 25, 3, 24],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "solend_init_obligation",
+      "discriminator": [81, 96, 123, 149, 218, 116, 235, 196],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "solend_withdraw",
+      "discriminator": [238, 144, 170, 199, 21, 72, 155, 36],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "start_deleverage",
+      "discriminator": [10, 138, 10, 57, 40, 232, 182, 193],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "start_liquidation",
+      "discriminator": [244, 93, 90, 214, 192, 166, 191, 21],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "super_admin_deposit",
+      "discriminator": [241, 189, 199, 17, 207, 225, 64, 75],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "super_admin_withdraw",
+      "discriminator": [202, 67, 85, 126, 104, 138, 79, 197],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "transfer_to_new_account",
+      "discriminator": [28, 79, 129, 231, 169, 69, 69, 65],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "transfer_to_new_account_pda",
+      "discriminator": [172, 210, 224, 220, 146, 212, 253, 49],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_deleverage_withdrawals",
+      "discriminator": [56, 3, 181, 118, 27, 247, 207, 227],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_group_rate_limiter",
+      "discriminator": [23, 78, 60, 139, 187, 44, 129, 37],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "write_bank_metadata",
+      "discriminator": [147, 78, 81, 133, 129, 138, 233, 59],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    }
+  ]
+}

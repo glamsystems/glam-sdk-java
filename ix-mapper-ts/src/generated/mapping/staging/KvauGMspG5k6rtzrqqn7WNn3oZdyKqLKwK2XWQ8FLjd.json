@@ -1,0 +1,732 @@
+{
+  "schema_version": 1,
+  "environment": "staging",
+  "program_id": "KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd",
+  "proxy_program_id": "gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq",
+  "provenance": {
+    "generator": "idl-src-gen@51f2f4d10f5b053033ef81672c0ec924173b2a86",
+    "source_idl": "glam managed anchor_v1/idls/external/kamino_vaults (revision d7d5f670e01c, idl 8f74ad72f6c1)",
+    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_kamino_staging (revision 1ddb1b5644e6, idl 83125650142b)",
+    "config_revision": 1
+  },
+  "instructions": [
+    {
+      "name": "add_update_whitelisted_reserve",
+      "discriminator": [219, 139, 95, 204, 7, 183, 118, 45],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "buy",
+      "discriminator": [102, 6, 61, 18, 1, 218, 235, 234],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "buy_with_min_shares_out",
+      "discriminator": [61, 135, 102, 151, 124, 46, 144, 209],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "deposit",
+      "discriminator": [242, 35, 198, 137, 82, 225, 242, 182],
+      "disposition": "map",
+      "handler": {
+        "name": "vaults_deposit",
+        "discriminator": [124, 173, 191, 223, 48, 26, 84, 84]
+      },
+      "source_accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_mint",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "base_vault_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "shares_mint",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "user_token_ata",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "user_shares_ata",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "klend_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "shares_token_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "event_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "program",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 2,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 3,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 7,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 8,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 9,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 10,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 17,
+          "kind": "source",
+          "source": 11,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 18,
+          "kind": "source",
+          "source": 12,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "deposit_with_min_shares_out",
+      "discriminator": [74, 127, 128, 80, 4, 221, 193, 91],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "give_up_pending_fees",
+      "discriminator": [177, 200, 120, 134, 110, 217, 147, 81],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "init_global_config",
+      "discriminator": [140, 136, 214, 48, 87, 0, 120, 255],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "init_vault",
+      "discriminator": [77, 79, 85, 150, 33, 217, 52, 106],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "initialize_shares_metadata",
+      "discriminator": [3, 15, 172, 114, 200, 0, 131, 32],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "invest",
+      "discriminator": [13, 245, 180, 103, 254, 182, 121, 4],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "invest_with_max_amount",
+      "discriminator": [135, 92, 184, 137, 69, 72, 118, 7],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "redeem_in_kind",
+      "discriminator": [102, 58, 189, 252, 192, 219, 140, 89],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "remove_allocation",
+      "discriminator": [32, 220, 211, 141, 209, 231, 73, 76],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "sell",
+      "discriminator": [51, 230, 133, 164, 1, 127, 131, 173],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "topup_rewards",
+      "discriminator": [127, 147, 49, 137, 58, 137, 103, 56],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_admin",
+      "discriminator": [161, 176, 40, 213, 60, 184, 179, 228],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_global_config",
+      "discriminator": [164, 84, 130, 189, 111, 58, 250, 200],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_global_config_admin",
+      "discriminator": [184, 87, 23, 193, 156, 238, 175, 119],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_reserve_allocation",
+      "discriminator": [5, 54, 213, 112, 75, 232, 117, 37],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_reserve_allocation_v2",
+      "discriminator": [195, 136, 1, 79, 10, 123, 121, 100],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_shares_metadata",
+      "discriminator": [155, 34, 122, 165, 245, 137, 147, 107],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_vault_config",
+      "discriminator": [122, 3, 21, 222, 158, 255, 238, 157],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "withdraw",
+      "discriminator": [183, 18, 70, 156, 148, 109, 161, 34],
+      "disposition": "map",
+      "handler": {
+        "name": "vaults_withdraw",
+        "discriminator": [12, 8, 236, 92, 134, 144, 196, 87]
+      },
+      "source_accounts": [
+        {
+          "name": "user",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "global_config",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "base_vault_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "user_token_ata",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_mint",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "user_shares_ata",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "shares_mint",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "shares_token_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "klend_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "event_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "reserve",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "ctoken_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "lending_market",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "lending_market_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "reserve_liquidity_supply",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "reserve_collateral_mint",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "reserve_collateral_token_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "instruction_sysvar_account",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "event_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "program",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 2,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 3,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 7,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 8,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 9,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 10,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 17,
+          "kind": "source",
+          "source": 11,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 18,
+          "kind": "source",
+          "source": 12,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 19,
+          "kind": "source",
+          "source": 13,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 20,
+          "kind": "source",
+          "source": 14,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 21,
+          "kind": "source",
+          "source": 15,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 22,
+          "kind": "source",
+          "source": 16,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 23,
+          "kind": "source",
+          "source": 17,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 24,
+          "kind": "source",
+          "source": 18,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 25,
+          "kind": "source",
+          "source": 19,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 26,
+          "kind": "source",
+          "source": 20,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 27,
+          "kind": "source",
+          "source": 21,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 28,
+          "kind": "source",
+          "source": 22,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 29,
+          "kind": "source",
+          "source": 23,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 30,
+          "kind": "source",
+          "source": 24,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "withdraw_from_available",
+      "discriminator": [19, 131, 112, 155, 170, 220, 34, 57],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "withdraw_pending_fees",
+      "discriminator": [131, 194, 200, 140, 175, 244, 217, 183],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "withdraw_rewards",
+      "discriminator": [10, 214, 219, 139, 205, 22, 251, 21],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    }
+  ]
+}

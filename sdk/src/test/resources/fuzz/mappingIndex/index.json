@@ -1,0 +1,5 @@
+{
+  "source": "glamsystems/ix-mapper-ts@69d029cc0e2288c4b97827e89ed00e8bb190f5ff",
+  "production": ["11111111111111111111111111111111.json", "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD.json"],
+  "staging": ["11111111111111111111111111111111.json", "Stake11111111111111111111111111111111111111.json"]
+}

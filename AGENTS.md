@@ -28,27 +28,33 @@ plus service components for operating against it.
   - **Hand-written layer**: `GlamAccountClient` (extends sava's
     `SPLAccountClient`; `createClient` picks the staging vs prod impl by
     protocol program), `GlamAccounts` / `GlamVaultAccounts` (program IDs and
-    PDA derivation, and the ix-mapper seam: `GlamAccounts.createMapper`
-    builds an ix-proxy `InstructionMapper` from one environment's mapping
-    documents and refuses another environment's, and
+    PDA derivation, and the ix-mapper seam: `GlamAccounts.createMapper()`
+    builds an ix-proxy `InstructionMapper` over the documents the jar embeds
+    for the deployment, the `Path` and `Collection` overloads over a local
+    set, every one refusing another environment's documents, and
     `GlamVaultAccounts.mappingContext()` is what a mapping needs from a
-    vault — state, vault, fee payer as signer, integration authorities), and
-    the hand-written Jupiter swap wrapper in `idl/programs/glam/jupiter/`.
+    vault — state, vault, fee payer as signer, integration authorities),
+    `EmbeddedMappings` (the documents the jar carries, indexed and held to
+    their environment and proxy programs), and the hand-written Jupiter swap
+    wrapper in `idl/programs/glam/jupiter/`.
 - `services/` (`systems.glam.services`) — delegate-service runtime layered on
   the sdk: account fetching (`rpc/AccountFetcher`), caches (`mints/`,
   `state/GlobalConfigCache`), the integration service context
   (`integrations/`), the fulfillment service (`fulfillment/`), batched SQL
   (`db/sql/`), and instruction execution (`execution/`).
 - `examples/` — scratch/example module; not part of the hardening surface.
-- `glam/` (untracked) — the mapping documents from `glamsystems/ix-mapper-ts`
-  at the commit `./downloadMappings.sh` pins (`MAPPINGS_REF`), one directory
-  per environment under `glam/src/generated/mapping/{production,staging}`;
-  the sdk `jar` task runs the script itself and embeds them as
-  `glam/ix-mappings/<environment>/*.json`, refusing to build or to write an
-  archive without both environments. `./syncMappings.sh [sha]` moves the pin;
-  commit the pin change with the jar it produces, and refresh the
-  system-program fixtures under `sdk/src/test/resources/mapping/` if the
-  pinned document changed (their README says how).
+- `ix-mapper-ts/` — the generated ix-mapper mapping documents
+  (`src/generated/mapping/{production,staging}` of the TypeScript mapper
+  package, in its layout), written by the GLAM monorepo's public-sync
+  workflow and never by hand (`ix-mapper-ts/README.md`; until the first sync
+  the directory holds a copy made by hand from ix-mapper-ts 16320bf, and an
+  upstream change reaches the jar once its sync lands). The sdk's
+  `processResources` embeds both sets as `glam/ix-mappings/{production,staging}`
+  beside a build-time `index.json`, `jar` refuses an archive without them,
+  and `EmbeddedMappings` / `GlamAccounts.createMapper()` read them back, so a
+  consumer supplies no directory; the sdk tests read the same tracked set.
+  `-PglamMappingsDir=<path>` points the build at a local checkout of the
+  package instead, for documents that are not synced yet.
 - `Integ.*` files are git-ignored scratch — present on a dev machine, absent
   in CI. Never make anything depend on them.
 
@@ -144,10 +150,12 @@ mainnet snapshots, corpora replayed inside `check`: `services:fuzzAccountData`
 (the compressed persistence format — decode + write/read differential; found
 and fixed an unbounded-decompression hang) and `services:fuzzMinGlamStateAccount`
 (the state-account walk over nested length-prefixed ACL sections, plus the
-change-detection re-walk; found a base-asset index landmine). The sdk parses
-no external input of its own any more: the mapping documents are read by
-ix-proxy, whose own `fuzzMappingConfig` and `fuzzIxMapper` targets cover the
-parser and the mapper. Register new harnesses in the owning module's
+change-detection re-walk; found a base-asset index landmine), plus
+`sdk:fuzzMappingIndex` (the embedded-mappings `index.json` parser, the one
+JSON reader the sdk owns on the mapper's startup path, seeded from the index
+the build writes). The mapping documents themselves are parsed by ix-proxy,
+whose own `fuzzMappingConfig` and `fuzzIxMapper` targets cover the parser and
+the mapper. Register new harnesses in the owning module's
 `hardening` block with both `targetClass` AND `seedCorpus` — GLAM registers no
 fuzz target without a checked-in corpus to replay.
 
@@ -567,13 +575,15 @@ skips it, so the two answer different halves.
   separate generated trees, and instruction layouts can differ between them.
 - The generated `gen` trees are large (hundreds of files); searches are much
   faster when scoped to the hand-written packages (`-not -path '*/gen/*'`).
-- The sdk jar embeds the untracked `glam/src/generated/mapping` documents and
-  materializes them itself at the pinned ix-mapper-ts commit; a jar without
-  `glam/ix-mappings/<environment>/*.json` entries for both environments fails
-  the `jar` task rather than publishing empty, which is what every release
-  before the pin did. A mapper built from one environment's documents is
-  refused by the other environment's `GlamAccounts`: the proxy program ids
-  differ, and a wrong mapper would fail on chain, not here.
+- The sdk jar embeds the tracked `ix-mapper-ts/src/generated/mapping` sets as
+  `glam/ix-mappings/{production,staging}` with an index; a jar without them
+  fails the `jar` task rather than publishing empty, which is what every
+  release before the embedding did. A set is held to its environment twice:
+  `EmbeddedMappings` refuses a document that declares another environment or
+  proxies through a program the deployment's `GlamAccounts` do not hold, and
+  `GlamAccounts.createMapper(Path|Collection)` refuses the other
+  environment's documents by name. The proxy program ids differ, and a wrong
+  mapper would fail on chain, not here.
 - Every long-running `services` loop (`BatchSqlExecutor`, `AccountFetcher`,
   `GlobalConfigCache`, `StakePoolCache`) takes a trailing
   `systems.glam.services.LoopHeartbeat` through a factory overload and ticks

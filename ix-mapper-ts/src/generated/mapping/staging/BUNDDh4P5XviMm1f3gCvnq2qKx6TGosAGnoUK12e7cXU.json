@@ -1,0 +1,605 @@
+{
+  "schema_version": 1,
+  "environment": "staging",
+  "program_id": "BUNDDh4P5XviMm1f3gCvnq2qKx6TGosAGnoUK12e7cXU",
+  "proxy_program_id": "gstgNyHgtURH7iuMn19GQczzv6Wc9fhPV2WDySZVyKx",
+  "provenance": {
+    "generator": "idl-src-gen@51f2f4d10f5b053033ef81672c0ec924173b2a86",
+    "source_idl": "glam managed anchor_v1/idls/external/ntbundle (revision fa1bf207f95e, idl 175030974bb8)",
+    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_neutral_staging (revision d51a425cad5a, idl 29118d73ec15)",
+    "config_revision": 1
+  },
+  "instructions": [
+    {
+      "name": "add_strategy",
+      "discriminator": [64, 123, 127, 227, 192, 234, 198, 20],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "apply_fees_to_user",
+      "discriminator": [26, 41, 103, 167, 61, 147, 141, 30],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "change_bundle_master_admin",
+      "discriminator": [255, 41, 246, 82, 7, 81, 174, 112],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "change_manager",
+      "discriminator": [97, 44, 74, 213, 119, 243, 203, 8],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "close_user_bundle_account",
+      "discriminator": [201, 195, 126, 228, 9, 173, 79, 215],
+      "disposition": "map",
+      "handler": {
+        "name": "close_user_bundle_account",
+        "discriminator": [201, 195, 126, 228, 9, 173, 79, 215]
+      },
+      "source_accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "user_bundle_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "bundle_account",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "BUNDDh4P5XviMm1f3gCvnq2qKx6TGosAGnoUK12e7cXU",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 2,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "distribute_to_receivers",
+      "discriminator": [123, 169, 151, 143, 0, 82, 209, 145],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "enable_strategy",
+      "discriminator": [245, 37, 61, 122, 99, 92, 182, 30],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "end_distribution",
+      "discriminator": [201, 74, 167, 103, 102, 125, 0, 236],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "initialize_bundle",
+      "discriminator": [93, 76, 148, 51, 99, 41, 179, 234],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "initialize_bundle_depositor",
+      "discriminator": [126, 6, 242, 36, 22, 209, 35, 2],
+      "disposition": "map",
+      "handler": {
+        "name": "initialize_bundle_depositor",
+        "discriminator": [126, 6, 242, 36, 22, 209, 35, 2]
+      },
+      "source_accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true,
+          "expect": "glam_signer"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "system_program",
+          "writable": false,
+          "signer": false,
+          "expect": "11111111111111111111111111111111"
+        },
+        {
+          "name": "bundle_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "user_bundle_account",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "BUNDDh4P5XviMm1f3gCvnq2qKx6TGosAGnoUK12e7cXU",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 3,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "initialize_bundle_master_account",
+      "discriminator": [125, 166, 190, 35, 73, 169, 140, 206],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "initialize_permissioned_bundle_depositor",
+      "discriminator": [157, 162, 213, 42, 205, 201, 37, 255],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "manager_withdraw",
+      "discriminator": [201, 248, 190, 143, 86, 43, 183, 254],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "net_pending_transactions",
+      "discriminator": [44, 219, 50, 19, 246, 252, 37, 163],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "pause_deposits_withdrawals",
+      "discriminator": [106, 171, 198, 31, 183, 219, 159, 80],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "perform_refill",
+      "discriminator": [241, 64, 6, 52, 58, 169, 15, 12],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "process_deposit",
+      "discriminator": [136, 162, 64, 35, 84, 200, 254, 136],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "process_withdrawal",
+      "discriminator": [51, 97, 236, 17, 37, 33, 196, 64],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "refund_deposit",
+      "discriminator": [19, 19, 78, 50, 187, 10, 162, 229],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "remove_strategy",
+      "discriminator": [185, 238, 33, 91, 134, 210, 97, 26],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "request_deposit",
+      "discriminator": [243, 202, 197, 215, 135, 97, 213, 109],
+      "disposition": "map",
+      "handler": {
+        "name": "request_deposit",
+        "discriminator": [243, 202, 197, 215, 135, 97, 213, 109]
+      },
+      "source_accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "user_token_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "pending_deposit_token_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "treasury_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "user_bundle_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "asset_address",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "oracle_data",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "bundle_temp_data",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "bundle_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "pending_bundle_asset_authority",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "system_program",
+          "writable": false,
+          "signer": false,
+          "expect": "11111111111111111111111111111111"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "BUNDDh4P5XviMm1f3gCvnq2qKx6TGosAGnoUK12e7cXU",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 1,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 2,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 3,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 7,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 8,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 9,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 10,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      }
+    },
+    {
+      "name": "request_withdrawal",
+      "discriminator": [251, 85, 121, 205, 56, 201, 12, 177],
+      "disposition": "unsupported",
+      "reason": "not derived: argument layout differs: source [u128], handler [u128,u64]; the mapper relays the payload verbatim"
+    },
+    {
+      "name": "set_bundle_creator",
+      "discriminator": [190, 144, 93, 89, 14, 138, 195, 166],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_delays",
+      "discriminator": [18, 56, 143, 125, 147, 15, 199, 108],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_fees",
+      "discriminator": [137, 178, 49, 58, 0, 245, 242, 190],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_keeper",
+      "discriminator": [102, 94, 23, 78, 157, 222, 243, 214],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_max_deposit_amount",
+      "discriminator": [29, 66, 217, 12, 80, 248, 214, 9],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_min_deposit_amount",
+      "discriminator": [224, 153, 215, 211, 233, 14, 124, 128],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_oracle_buffer",
+      "discriminator": [7, 196, 14, 82, 110, 244, 46, 33],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_oracle_max_age",
+      "discriminator": [75, 127, 254, 84, 122, 23, 122, 82],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_oracle_update_time_limit",
+      "discriminator": [114, 2, 35, 146, 19, 99, 67, 202],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_withdrawal_redemption_schedule",
+      "discriminator": [134, 108, 237, 103, 185, 13, 177, 105],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "start_distribution",
+      "discriminator": [118, 230, 215, 75, 83, 2, 163, 35],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_allocations",
+      "discriminator": [229, 242, 146, 124, 44, 15, 130, 95],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_oracle",
+      "discriminator": [112, 41, 209, 18, 248, 226, 252, 188],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    }
+  ]
+}

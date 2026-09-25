@@ -35,48 +35,90 @@ hardening {
           "this repo's hand-written code, and would bury the hand-written signal."
     )
   }
+  fuzz.register("mappingIndex") {
+    targetClass = "systems.glam.sdk.MappingIndexFuzz"
+    seedCorpus = layout.projectDirectory.dir("src/test/resources/fuzz/mappingIndex")
+    // the index is a few hundred bytes of JSON; headroom lets the mutator probe long
+    // names and deep nesting without clipping the real seed
+    maxLen = 4096
+  }
 }
 
-// The jar embeds the ix-mapper mapping documents under glam/ix-mappings/<environment>. The
-// source directory is an untracked sparse checkout that only ./downloadMappings.sh creates,
-// and `from()` on a directory that does not exist copies nothing without a word — every
-// published sdk jar before this task shipped empty for exactly that reason. The download is
-// therefore part of the jar's own graph, and the archive is checked after it is written.
-val downloadMappings = tasks.register<Exec>("downloadMappings") {
-  description = "Materializes the pinned ix-mapper-ts mapping documents under the untracked glam/ directory."
-  workingDir = rootDir
-  commandLine("./downloadMappings.sh")
+// The jar embeds the ix-mapper mapping documents under glam/ix-mappings/{production,staging}:
+// the generated documents of the TypeScript mapper package (packages/glam/ix-mapper-ts in
+// glamsystems/glam, published through glamsystems/ix-mapper-ts), tracked under ix-mapper-ts/
+// in the package's layout, where the monorepo's sync workflow writes them. They are copied
+// at processResources time, so tests read the bytes the jar ships, beside an index the
+// loader reads, since a jar cannot be listed. -PglamMappingsDir=<absolute path> points the
+// build at another root with the package layout (a checkout of the package itself): the
+// seam that lets regenerated documents face this validation before they are synced.
+// `from()` on a directory that does not exist copies nothing without a word, and every
+// published sdk jar before the embedding shipped empty for exactly that reason, so the
+// index task refuses an empty set and the archive is checked after it is written.
+val mappingsOverride = providers.gradleProperty("glamMappingsDir")
+val mappingsRoot: File = mappingsOverride.map { File(it) }.getOrElse(rootDir.resolve("ix-mapper-ts"))
+// one directory of documents per ix-mapper environment, named as GlamEnv.mappingEnvironment names them
+val mappingEnvironments = listOf("production", "staging")
+fun mappingSet(environment: String): File = mappingsRoot.resolve("src/generated/mapping/$environment")
+
+// What the index records as the documents' source: the tracked directory, or the local root
+// the build was pointed at.
+val mappingsSource: Provider<String> = mappingsOverride.map { "local:$it" }.orElse("ix-mapper-ts")
+
+val ixMappingsIndex = tasks.register("ixMappingsIndex") {
+  description = "Writes glam/ix-mappings/index.json: each environment's embedded document file names and where they came from."
+  val environments = mappingEnvironments
+  val sets = environments.associateWith { mappingSet(it) }
+  sets.forEach { (environment, dir) -> inputs.dir(dir).withPropertyName("${environment}Set") }
+  val source = mappingsSource
+  inputs.property("source", source)
+  val indexFile = layout.buildDirectory.file("ix-mappings/index.json")
+  outputs.file(indexFile)
+  doLast {
+    // written by a JSON serializer: the source may be a local path, which can carry any
+    // character, and a hand-built string would break the index on a quote
+    val index = linkedMapOf<String, Any>("source" to source.get())
+    environments.forEach { environment ->
+      val dir = sets.getValue(environment)
+      val files = dir.listFiles { file -> file.isFile && file.name.endsWith(".json") }.orEmpty().sortedBy { it.name }
+      check(files.isNotEmpty()) { "No mapping documents under $dir; the sdk jar must not ship without the $environment set." }
+      index[environment] = files.map { it.name }
+    }
+    val file = indexFile.get().asFile
+    file.parentFile.mkdirs()
+    file.writeText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(index)) + "\n")
+  }
+}
+
+tasks.named<ProcessResources>("processResources") {
+  mappingEnvironments.forEach { environment ->
+    from(mappingSet(environment)) {
+      include("*.json")
+      into("glam/ix-mappings/$environment")
+    }
+  }
+  from(ixMappingsIndex) {
+    into("glam/ix-mappings")
+  }
 }
 
 tasks.named<Jar>("jar") {
-  dependsOn(downloadMappings)
-  val mappings = rootDir.resolve("glam/src/generated/mapping")
-  // one directory of documents per ix-mapper environment, named as GlamEnv.mappingEnvironment
-  // names them; local to the task so the configuration cache can serialize its actions
-  val mappingEnvironments = listOf("production", "staging")
-  from(mappings) {
-    include("*/*.json")
-    into("glam/ix-mappings")
-  }
-  doFirst {
-    for (environment in mappingEnvironments) {
-      val documents = mappings.resolve(environment).listFiles { file -> file.isFile && file.name.endsWith(".json") }.orEmpty()
-      check(documents.isNotEmpty()) {
-        "No mapping documents under ${mappings.resolve(environment)}; the sdk jar must not ship without them (./downloadMappings.sh)."
-      }
-    }
-  }
+  val environments = mappingEnvironments
   doLast {
     ZipFile(archiveFile.get().asFile).use { archive ->
-      val entries = archive.entries().asSequence().map { entry -> entry.name }.toList()
-      for (environment in mappingEnvironments) {
-        val prefix = "glam/ix-mappings/$environment/"
-        val embedded = entries.count { name -> name.startsWith(prefix) && name.endsWith(".json") }
-        check(embedded > 0) { "${archiveFile.get().asFile.name} was written without any $prefix*.json entry." }
-        logger.lifecycle("${archiveFile.get().asFile.name} embeds $embedded mapping document(s) under $prefix.")
+      val entries = archive.entries().asSequence().map { it.name }.toList()
+      for (environment in environments) {
+        val embedded = entries.count { it.startsWith("glam/ix-mappings/$environment/") && it.endsWith(".json") }
+        check(embedded > 0) { "${archiveFile.get().asFile.name} was written without any glam/ix-mappings/$environment/*.json entry." }
+        logger.lifecycle("${archiveFile.get().asFile.name} embeds $embedded $environment mapping document(s).")
       }
+      check("glam/ix-mappings/index.json" in entries) { "${archiveFile.get().asFile.name} was written without glam/ix-mappings/index.json." }
     }
   }
+}
+
+tasks.withType<Test>().configureEach {
+  providers.gradleProperty("glamMappingsDir").orNull?.let { systemProperty("glam.mappings.dir", it) }
 }
 
 dependencyAnalysis {

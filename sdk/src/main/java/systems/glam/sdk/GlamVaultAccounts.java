@@ -3,6 +3,7 @@ package systems.glam.sdk;
 import software.sava.core.accounts.ProgramDerivedAddress;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
+import systems.glam.ix.proxy.InstructionMapper;
 import systems.glam.ix.proxy.MappingContext;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolPDAs;
 
@@ -48,6 +49,12 @@ public interface GlamVaultAccounts {
   AccountMeta writeVault();
 
   AccountMeta readVault();
+
+  /// The mapper over the documents the sdk jar embeds for this vault's deployment, see
+  /// [GlamAccounts#createMapper()].
+  default InstructionMapper createMapper() {
+    return glamAccounts().createMapper();
+  }
 
   /// What the ix-mapper needs from this vault to rewrite an instruction into its GLAM proxy equivalent: the
   /// state and vault keys, the fee payer as the signer, and the integration authority of each proxy program

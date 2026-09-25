@@ -217,8 +217,9 @@ mapper. The passages above that argued `loadMappingConfigs` and the proxy
 factory stand as dated history.
 
 The new seams are covered by `GlamAccountsMapperTests` (mapper built from the
-checked-in system-program documents under `src/test/resources/mapping/`,
-environment guard both ways, ix-proxy's own refusal of an empty document set,
+system-program documents, then checked-in copies under
+`src/test/resources/mapping/`, since the tracked `ix-mapper-ts/` set (see
+"Embedded mapping documents" below); environment guard both ways, ix-proxy's own refusal of an empty document set,
 and a vault SOL transfer mapped against the generated
 `GlamProtocolProgram.systemTransfer` layout plus the document's trailing
 Token-program seat) and `GlamVaultAccountsTests.mappingContextCarriesTheVaultAndItsAuthorities`
@@ -233,6 +234,45 @@ matching previews (baseline 24 -> 22): `GlamAccounts,createMapper`
 carried that family, so it leaves the label list above and is named here as
 history. The same write refreshed `GlamAccounts,main`'s `# line` tag
 (170 -> 206) for the methods added above it; the row itself is unchanged.
+
+## Embedded mapping documents (2026-09-25, later)
+
+The `feat/mapping-document` branch's push model was ported onto the mapper
+seam above: the ix-mapper-ts documents are tracked under `ix-mapper-ts/` (the
+GLAM monorepo's sync workflow writes that directory; until the first sync it
+holds a copy made by hand from ix-mapper-ts 16320bf, byte-identical to the
+copy ix-mapper-java tests against), `processResources` embeds both
+environments as `glam/ix-mappings/{production,staging}` beside a build-time
+`index.json`, and `EmbeddedMappings` reads the index and each document back
+out of the jar, refusing a document that declares another environment or
+proxies through a program the deployment's `GlamAccounts` do not hold.
+`GlamAccounts.createMapper()` and `GlamVaultAccounts.createMapper()` serve
+that set with no directory; the `Path` and `Collection` overloads stay for a
+local set, and `GlamEnv.ofProtocolProgram` refuses a protocol program the sdk
+does not know rather than reading it as staging. The pull model went with it:
+`downloadMappings.sh`, `syncMappings.sh`, the `downloadMappings` task and the
+fixture copies under `src/test/resources/mapping/`; `GlamAccountsMapperTests`
+now copies the tracked system-program document into its temporary set.
+
+Coverage: `EmbeddedMappingsTests` (the index names every embedded file and
+each parses; the embedded set equals the tracked set byte for byte and file
+for file; each environment holds to its own GLAM programs and the other's
+refuse it by name; a foreign proxy, a document of another environment, an
+empty set, a document that does not admit, a missing resource and every
+index-parser refusal, each by message; `createMapper()` serves the
+deployment's set; an unknown protocol program is refused),
+`EmbeddedMapperTests` (a vault SOL transfer mapped onto the protocol proxy
+in both environments with the foreign-source refusal, the Kamino and CCTP
+documents keyed and proxied as each deployment carries them, and a Phoenix
+deposit seating the vault as the trader without a signer bit — the
+`glamsystems/glam#1393` review finding, also a conformance case in
+ix-mapper-java), and the `mappingIndex` fuzz target over the index parser,
+the one JSON reader this module owns on the mapper's startup path, with its
+seeds replayed inside `check`. The fresh history-free `pitestSdk` observation
+(526 mutants, 504 detected) killed every mutant of `EmbeddedMappings` and of
+the new `GlamAccounts`, `GlamVaultAccounts` and `GlamEnv` members and added
+no rows; `pitestSdkBaselineRetag` refreshed `GlamAccounts,main`'s `# line`
+tag for the methods added above it.
 
 ## Timed-out mutants (audited set, 2026-07-26)
 

@@ -22,10 +22,11 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static software.sava.core.accounts.PublicKey.fromBase58Encoded;
 
-/// The sdk's side of the ix-mapper: a mapper is built from one environment's documents and refused
-/// another's, and a vault's context maps a native instruction to the GLAM proxy instruction the
-/// generated protocol client lays out. The documents are the checked-in system-program fixtures
-/// under src/test/resources/mapping (see its README for their provenance).
+/// The sdk's side of the ix-mapper over a local set: a mapper is built from one environment's
+/// documents and refused another's, and a vault's context maps a native instruction to the GLAM
+/// proxy instruction the generated protocol client lays out. The documents are the tracked
+/// system-program documents under ix-mapper-ts/ (or the root -PglamMappingsDir points the build
+/// at), copied into a temporary directory the way a local set is laid out.
 final class GlamAccountsMapperTests {
 
   private static final PublicKey FEE_PAYER = fromBase58Encoded("F1oQY1jbdiJyxxeeuMBF2NsUckboyWo6TSXNqzJbrhxs");
@@ -34,14 +35,15 @@ final class GlamAccountsMapperTests {
   private static final SolanaAccounts SOLANA = SolanaAccounts.MAIN_NET;
   private static final String SYSTEM_DOCUMENT = "11111111111111111111111111111111.json";
 
-  /// Copies the environment's system-program document into `directory`, the way the untracked
-  /// download lays one environment out, and returns the copy.
+  /// Copies the environment's tracked system-program document into `directory`, the way a
+  /// local set lays one environment out, and returns the copy (the test runs with the module
+  /// directory as its working directory).
   private static Path systemDocument(final String environment, final Path directory) {
-    final var resource = "mapping/" + environment + '/' + SYSTEM_DOCUMENT;
-    try (final var in = GlamAccountsMapperTests.class.getClassLoader().getResourceAsStream(resource)) {
-      assertNotNull(in, resource + " not found on classpath");
+    final var root = Path.of(System.getProperty("glam.mappings.dir", "../ix-mapper-ts"));
+    final var source = root.resolve("src").resolve("generated").resolve("mapping").resolve(environment).resolve(SYSTEM_DOCUMENT);
+    try {
       final var file = directory.resolve(SYSTEM_DOCUMENT);
-      Files.write(file, in.readAllBytes());
+      Files.copy(source, file);
       return file;
     } catch (final IOException e) {
       throw new UncheckedIOException(e);

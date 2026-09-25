@@ -1,8 +1,8 @@
 # Deny by default.
 # Nothing is tracked unless explicitly unblocked below. Build output (build/,
 # out/, bin/), tool state (.gradle/, .idea/, .kotlin/, .pitest-history/),
-# local config (.config/, .configs/, .local/), scratch checkouts (glam/,
-# idl-clients/, symlinks/), Jazzer crash reproducers and JVM dumps all fall
+# local config (.config/, .configs/, .local/), scratch checkouts
+# (idl-clients/, symlinks/), Jazzer crash reproducers and JVM dumps all fall
 # through this rule with no further mention.
 #
 # To track a new directory you must unblock the directory itself *and* its
@@ -17,14 +17,12 @@
 !/CHANGELOG.md
 !/LICENSE
 !/README.md
-!/downloadMappings.sh
 !/gradle.properties
 !/gradlew
 !/gradlew.bat
 !/main_net_programs.json
 !/release-please-config.json
 !/settings.gradle.kts
-!/syncMappings.sh
 
 # Both reports idl-src-gen emits from one run: the movement events this run saw, and the
 # standing gap dashboard beside it. The gap file needs its own rule -- it is named by the
@@ -34,6 +32,10 @@
 # generator writing a report by default and had none to lose).
 !/idl-change-report.txt
 !/idl-change-report-gap.txt
+
+### Synced mapping documents (written by the GLAM monorepo's sync workflow) ###
+!/ix-mapper-ts/
+!/ix-mapper-ts/**
 
 ### CI ###
 !/.github/

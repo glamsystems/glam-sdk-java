@@ -11,6 +11,7 @@ import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintPDAs;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 public interface GlamAccounts {
@@ -94,10 +95,28 @@ public interface GlamAccounts {
     return mapper;
   }
 
-  /// [#createMapper(Collection)] over every `.json` document directly under `mappingsDirectory`, such as the
-  /// environment's directory the sdk jar embeds under `glam/ix-mappings/`.
+  /// [#createMapper(Collection)] over every `.json` document directly under `mappingsDirectory`: a local set,
+  /// such as a checkout of the ix-mapper-ts package's `src/generated/mapping/<environment>`, for documents the
+  /// jar does not carry yet.
   default InstructionMapper createMapper(final Path mappingsDirectory) {
     return createMapper(MappingDocuments.readDirectory(mappingsDirectory));
+  }
+
+  /// The mapper over the documents the sdk jar embeds for this deployment, production for [#MAIN_NET] and
+  /// staging for [#MAIN_NET_STAGING], with no directory to supply; see [EmbeddedMappings]. A vault's
+  /// [GlamVaultAccounts#mappingContext()] supplies what a mapping needs from the caller.
+  ///
+  /// @throws IllegalArgumentException if the protocol program is neither deployment's: the jar carries no set
+  ///                                  for it, and serving staging's, as [#mappingEnvironment()] would name it,
+  ///                                  would send instructions to programs the caller never named
+  default InstructionMapper createMapper() {
+    return InstructionMapper.createMapper(embeddedMappingDocuments());
+  }
+
+  /// The documents the sdk jar embeds for this deployment, each proxying through one of these accounts' GLAM
+  /// programs.
+  default List<MappingDocument> embeddedMappingDocuments() {
+    return EmbeddedMappings.load(EmbeddedMappings.environmentOf(protocolProgram()), EmbeddedMappings.glamPrograms(this));
   }
 
   Map<PublicKey, AccountMeta> integrationAuthorities();
