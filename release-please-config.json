@@ -6,7 +6,10 @@
   "versioning": "always-bump-patch",
   "packages": {
     ".": {
-      "package-name": "glam-sdk-java"
+      "package-name": "glam-sdk-java",
+      "exclude-paths": [
+        "ix-mapper-ts"
+      ]
     }
   }
 }
