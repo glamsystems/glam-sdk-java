@@ -27,6 +27,11 @@ hardening {
       "systems.glam.sdk.*Fuzz*"
     )
     targetTests = "systems.glam.sdk.*Test*"
+    // the mapping-directory override reaches PIT's minions as one JVM argument, as the Test
+    // tasks get it as a system property: the embedded set was built from that root, and the
+    // tests compare the jar's bytes against it, so a minion without it reads the tracked set
+    // and fails the comparison before any mutation runs
+    providers.gradleProperty("glamMappingsDir").orNull?.let { minionJvmArgs.add("-Dglam.mappings.dir=" + File(it).absolutePath) }
     declineExclusionAudit(
       "systems.glam.sdk.idl.*.gen.*",
       "Generated per-program IDL bindings. Their correctness is owned by " +
@@ -118,7 +123,7 @@ tasks.named<Jar>("jar") {
 }
 
 tasks.withType<Test>().configureEach {
-  providers.gradleProperty("glamMappingsDir").orNull?.let { systemProperty("glam.mappings.dir", it) }
+  providers.gradleProperty("glamMappingsDir").orNull?.let { systemProperty("glam.mappings.dir", File(it).absolutePath) }
 }
 
 dependencyAnalysis {
