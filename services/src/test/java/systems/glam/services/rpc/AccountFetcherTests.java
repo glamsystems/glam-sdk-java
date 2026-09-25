@@ -604,38 +604,41 @@ final class AccountFetcherTests {
   /// A cycle that fails must fail its in-flight futures over to their owners and keep
   /// polling: the catch used to sit outside the loop, so the first unexpected throw
   /// ended fetching for every service sharing this fetcher — and every future queued
-  /// afterward parked its caller silently and forever.
+  /// afterward parked its caller silently and forever. Driven on the calling thread like
+  /// its siblings: the recovery future is queued from the first heartbeat tick, which the
+  /// loop reaches after the failed cycle has been failed over and reset and right before
+  /// it checks its queue, and the fake's interrupt on the second call ends the loop, so
+  /// nothing here waits on time.
   @Test
-  @Timeout(value = 1, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
   void aFailedCycleFailsItsFuturesOverAndKeepsPolling() throws Exception {
     final var rpc = new RecordingRpc();
     rpc.returnNullForFirstCalls = 1; // cycle one: a null RPC body poisons the dispatch
-    rpc.interruptOnCall = Integer.MAX_VALUE;
+    rpc.interruptOnCall = 2;
     final var present = key(1);
     rpc.universe.put(present, account(present, 1L, new byte[]{1}));
-    final var fetcher = createFetcher(rpc, Set.of());
+    final var fetcherRef = new java.util.concurrent.atomic.AtomicReference<AccountFetcher>();
+    final var recovered = new java.util.concurrent.atomic.AtomicReference<java.util.concurrent.CompletableFuture<AccountResult>>();
+    final var fetcher = createFetcher(rpc, Set.of(), () -> {
+      if (recovered.get() == null) {
+        recovered.set(fetcherRef.get().priorityQueue(List.of(present)));
+      }
+    });
+    fetcherRef.set(fetcher);
 
     final var poisoned = fetcher.priorityQueue(List.of(present));
-    // attach before the thread starts: the first cycle's error may land immediately
     try (final var log = LogCapture.attach(AccountFetcher.class.getName())) {
-      final var pollThread = Thread.ofPlatform().start(fetcher::run);
-      try {
-        final var failure = assertThrows(ExecutionException.class,
-            () -> poisoned.get(250, TimeUnit.MILLISECONDS),
-            "the failed cycle must fail its future over, not leave the caller parked");
-        assertInstanceOf(NullPointerException.class, failure.getCause());
-        log.assertLogged("Unexpected error fetching accounts; continuing to poll.");
-
-        // the loop survived: a fresh future completes normally
-        final var recovered = fetcher.priorityQueue(List.of(present));
-        final var result = recovered.get(250, TimeUnit.MILLISECONDS);
-        assertArrayEquals(new byte[]{1}, result.accountMap().get(present).data());
-      } finally {
-        pollThread.interrupt();
-        pollThread.join(250);
-      }
-      assertFalse(pollThread.isAlive(), "run() must exit on interrupt");
+      fetcher.run();
+      log.assertLogged("Unexpected error fetching accounts; continuing to poll.");
     }
+
+    assertEquals(2, rpc.calls.size());
+    assertTrue(poisoned.isCompletedExceptionally(), "the failed cycle must fail its future over, not leave the caller parked");
+    final var failure = assertThrows(ExecutionException.class, poisoned::get);
+    assertInstanceOf(NullPointerException.class, failure.getCause());
+    // the loop survived: the future queued after the failure completed normally
+    assertNotNull(recovered.get(), "the recovery future was never queued");
+    assertTrue(recovered.get().isDone());
+    assertArrayEquals(new byte[]{1}, recovered.get().get().accountMap().get(present).data());
     assertFalse(((AccountFetcherImpl) fetcher).lock.isLocked());
   }
 

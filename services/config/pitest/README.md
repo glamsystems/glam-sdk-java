@@ -1095,14 +1095,15 @@ does not touch it. The
 (formerly `$12`, also `# untriaged`), and the `$12` row is the prune candidate
 above.
 
-The prune is pending. Two history-free previews matched on the 15 rows, but
-the writer's own write-boundary run refused: it read two `# accepted
-equivalent` rows, `AccountFetcherImpl,createBatch,IncrementsMutator` and
-`AccountFetcherImpl,run,RemoveConditionalMutator_EQUAL_IF`, as `KILLED` by
-`AccountFetcherTests.aFailedCycleFailsItsFuturesOverAndKeepsPolling`, which
-waits on real-time deadlines. The `createBatch` increment is read only as
-zero/non-zero, so that kill cannot be behavioural: this is a wandering count
-in that harness, to be made deterministic before the prune is retried.
+The prune was first attempted here and refused: two history-free previews
+matched on the 15 rows, but the writer's own write-boundary run read two
+`# accepted equivalent` rows, `AccountFetcherImpl,createBatch,IncrementsMutator`
+and `AccountFetcherImpl,run,RemoveConditionalMutator_EQUAL_IF`, as `KILLED`
+by `AccountFetcherTests.aFailedCycleFailsItsFuturesOverAndKeepsPolling`,
+which then waited on real-time deadlines. The `createBatch` increment is
+read only as zero/non-zero, so that kill could not be behavioural: a
+wandering count in that harness. It was made deterministic and the prune
+(by then 18 rows) ran on 2026-09-25; see that section below.
 
 ### 2026-09-25 — ravina's v1-only send path and ix-proxy's mapping documents
 
@@ -1163,10 +1164,11 @@ plugin reset its matching when the execution inputs changed):
   whichever `# line` tag allocation leaves over — identity is the line-less
   multiset).
 
-The prune stays blocked on the `AccountFetcherTests` wander below. The
-line-drift advisories the edits caused (34 keys, every touched class and its
-neighbours) were refreshed with `pitestServicesBaselineRetag` (54 matched
-row line tags rewritten, all 179 rows preserved), which changes no row.
+The line-drift advisories the edits caused (34 keys, every touched class and
+its neighbours) were refreshed with `pitestServicesBaselineRetag` (54 matched
+row line tags rewritten, all 179 rows preserved), which changes no row. The
+prune itself ran later that day, once the `AccountFetcherTests` wander was
+fixed (next section).
 
 The local review then caught a regression of the same change: the formatter
 read the batch count from the result's instruction list, which ravina keeps
@@ -1178,8 +1180,8 @@ history-free observation after the fix (1627 mutants, 1466 detected) added
 no rows. A retag run for the one drifted `InstructionProcessorImpl` tag was
 refused because its own observation read `AccountFetcherImpl,delay`
 `RemoveConditionalMutator_EQUAL_ELSE` as SURVIVED once — killed in every
-other run that day — the `AccountFetcherTests` wander below in its other
-direction; the tag stays drifted until that harness is deterministic.
+other run that day — the `AccountFetcherTests` wander in its other
+direction. The prune's write refreshed that tag with the rest.
 
 Timeout-quiet context: while the review workflow ran beside an earlier
 observation (load average above 100), `SingleAssetFulfillmentService.compareAndSet`
@@ -1187,6 +1189,43 @@ observation (load average above 100), `SingleAssetFulfillmentService.compareAndS
 `KeyedFlatFileImpl.overwriteFile` (`VoidMethodCallMutator`) each read one
 KILLED -> TIMED_OUT flip; the solo-load observation above read them KILLED
 again ("0 newly timed out, 2 no longer"). Load flips, no record change.
+
+### 2026-09-25 — the AccountFetcherTests wander, and the prune
+
+`aFailedCycleFailsItsFuturesOverAndKeepsPolling` was the one test in
+`AccountFetcherTests` that ran `run()` on its own platform thread and waited
+on real time: 250ms `get`s on the poisoned and the recovery futures, a 250ms
+join, a 1s `@Timeout`, over a fetcher sleeping 1ms per cycle. Under load the
+loop thread could lose the race, which failed the assertions (an accepted
+equivalent read as KILLED) or let a liveness member's covering test finish
+inside its budget (`AccountFetcherImpl,delay` `RemoveConditionalMutator_EQUAL_ELSE`
+read SURVIVED once). It now drives `run()` on the calling thread like its
+siblings: the recovery future is queued from the first heartbeat tick, which
+the loop reaches after `failCurrentBatches` has failed the poisoned future
+over and reset the in-flight keys (a queue from inside the poisoned call
+itself lands in the current batch through the `containsAll` fast path and is
+failed over with it, as a first attempt showed by hanging), and the fake RPC's
+interrupt on the second call ends the loop. The class runs in under half a
+second and nothing in it waits on time.
+
+The prune then ran as the process requires: two fresh full history-free
+previews with the same 18-row candidate multiset (1627 mutants, 1466 detected,
+load average 31-37), and `pitestServicesBaselinePrune`'s own write-boundary
+run, a third match. It dropped the 18 rows listed in the two sections above
+(baseline 179 -> 161) and refreshed the two `InstructionProcessorImpl`
+`RemoveConditionalMutator_EQUAL_IF` line tags the format-before-clear edit
+had moved. One preview between those was discarded as invalid evidence: a
+single `RUN_ERROR` on `GlobalConfigCacheImpl,createMapChecked`
+`RemoveConditionalMutator_EQUAL_ELSE` (load average 31 at the time); the
+clean re-run that followed is its closure, per the process. Every
+`AccountFetcherImpl` row read as recorded in all three observations.
+
+Timeout-quiet context from those runs: `SingleAssetFulfillmentService.compareAndSet`
+(`RemoveConditionalMutator_EQUAL_ELSE`), `GlobalConfigCacheImpl.topPriorityForMintChecked`
+and `MinGlamStateAccount.externalPositionsOffset` (one mutant each) and
+`BatchSqlExecutorImpl.run` (`ConditionalsBoundaryMutator`) each read one
+KILLED -> TIMED_OUT flip in one of the three runs and KILLED in the others.
+Load flips; no record change.
 
 ### Family labels
 
