@@ -188,7 +188,6 @@ final class BaseDelegateServiceConfigTests {
           "defensivePolling": {
             "globalConfig": "PT1M30S",
             "glamStateAccounts": "PT2M",
-            "integTables": "PT3M",
             "stakePools": "PT4M",
             "kaminoScope": "PT5M"
           }
@@ -198,7 +197,6 @@ final class BaseDelegateServiceConfigTests {
     final var polling = config.defensivePollingConfig();
     assertEquals(Duration.ofSeconds(90), polling.globalConfig());
     assertEquals(Duration.ofMinutes(2), polling.glamStateAccounts());
-    assertEquals(Duration.ofMinutes(3), polling.integTables());
     assertEquals(Duration.ofMinutes(4), polling.stakePools());
     assertEquals(Duration.ofMinutes(5), polling.kaminoScope());
   }
@@ -240,7 +238,6 @@ final class BaseDelegateServiceConfigTests {
     properties.setProperty("serviceBackoff.initialRetryDelay", "PT2S");
     properties.setProperty("formatter.sig", "sig=%s");
     properties.setProperty("formatter.address", "addr=%s");
-    properties.setProperty("tableCache.initialCapacity", "64");
     properties.setProperty("rpcCallWeights.getProgramAccounts", "7");
     properties.setProperty("rpcCallWeights.getTransaction", "3");
     properties.setProperty("rpcCallWeights.sendTransaction", "5");
@@ -261,7 +258,6 @@ final class BaseDelegateServiceConfigTests {
 
     assertEquals("sig=%s", config.formatter().sigFormat());
     assertEquals("addr=%s", config.formatter().addressFormat());
-    assertEquals(64, config.tableCacheConfig().initialCapacity());
     assertEquals(7, config.rpcCaller().callWeights().getProgramAccounts());
     assertEquals(3, config.rpcCaller().callWeights().getTransaction());
     assertEquals(5, config.rpcCaller().callWeights().sendTransaction());
@@ -276,6 +272,54 @@ final class BaseDelegateServiceConfigTests {
   }
 
   @Test
+  void testJsonOptionalSections() {
+    final var json = """
+        {
+          %s,
+          "rpcCallWeights": {
+            "getProgramAccounts": 7,
+            "getTransaction": 3,
+            "sendTransaction": 5
+          },
+          "sendRPC": {
+            "endpoints": [
+              {"url": "%s"}
+            ]
+          },
+          "helius": {
+            "url": "https://mainnet.helius-rpc.com/?api-key=test"
+          }
+        }
+        """.formatted(minimalRpcJson(), RPC_ENDPOINT);
+    final var config = parseJson(json);
+
+    // each section must reach its own parser
+    assertEquals(7, config.rpcCaller().callWeights().getProgramAccounts());
+    assertEquals(3, config.rpcCaller().callWeights().getTransaction());
+    assertEquals(5, config.rpcCaller().callWeights().sendTransaction());
+    // a configured sendRPC is its own balancer, not the rpc fallback
+    assertNotNull(config.sendClients());
+    assertNotSame(config.rpcCaller().rpcClients(), config.sendClients());
+    assertNotNull(config.feeProviders());
+  }
+
+  @Test
+  void aTableCacheSectionIsAnError() {
+    // lookup tables are no longer supported: a config that still carries the
+    // section must fail loudly at startup, not be silently ignored
+    final var json = """
+        {
+          %s,
+          "tableCache": {
+            "initialCapacity": 64
+          }
+        }
+        """.formatted(minimalRpcJson());
+    final var error = assertThrows(IllegalStateException.class, () -> parseJson(json));
+    assertTrue(error.getMessage().contains("tableCache"), error.getMessage());
+  }
+
+  @Test
   void testPropertiesOptionalSectionsAbsent() {
     final var config = parseProperties(minimalRpcProperties(""));
     // absent sections must be left null/default, not parsed from nothing;
@@ -284,10 +328,6 @@ final class BaseDelegateServiceConfigTests {
     // diverges at the third step (3s vs 4s)
     assertNotNull(config.serviceBackoff());
     assertEquals(3L, config.serviceBackoff().delay(3, java.util.concurrent.TimeUnit.SECONDS));
-    // table cache falls back to its documented defaults
-    assertEquals(1024, config.tableCacheConfig().initialCapacity());
-    assertEquals(Duration.ofHours(4), config.tableCacheConfig().refreshStaleItemsDelay());
-    assertEquals(Duration.ofHours(8), config.tableCacheConfig().consideredStale());
     assertNull(config.rpcCaller().callWeights());
     // sendRPC falls back to the primary rpc balancer
     assertSame(config.rpcCaller().rpcClients(), config.sendClients());
@@ -500,7 +540,6 @@ final class BaseDelegateServiceConfigTests {
           "defensivePolling": {
             "globalConfig": "PT2M",
             "glamStateAccounts": "PT4H",
-            "integTables": "PT2H",
             "stakePools": "PT6H",
             "kaminoScope": "PT3H"
           }
@@ -511,7 +550,6 @@ final class BaseDelegateServiceConfigTests {
 
     assertEquals(Duration.ofMinutes(2), polling.globalConfig());
     assertEquals(Duration.ofHours(4), polling.glamStateAccounts());
-    assertEquals(Duration.ofHours(2), polling.integTables());
     assertEquals(Duration.ofHours(6), polling.stakePools());
     assertEquals(Duration.ofHours(3), polling.kaminoScope());
   }
@@ -521,7 +559,6 @@ final class BaseDelegateServiceConfigTests {
     final var properties = minimalRpcProperties("");
     properties.setProperty("defensivePolling.globalConfig", "PT2M");
     properties.setProperty("defensivePolling.glamStateAccounts", "PT4H");
-    properties.setProperty("defensivePolling.integTables", "PT2H");
     properties.setProperty("defensivePolling.stakePools", "PT6H");
     properties.setProperty("defensivePolling.kaminoScope", "PT3H");
 
@@ -530,7 +567,6 @@ final class BaseDelegateServiceConfigTests {
 
     assertEquals(Duration.ofMinutes(2), polling.globalConfig());
     assertEquals(Duration.ofHours(4), polling.glamStateAccounts());
-    assertEquals(Duration.ofHours(2), polling.integTables());
     assertEquals(Duration.ofHours(6), polling.stakePools());
     assertEquals(Duration.ofHours(3), polling.kaminoScope());
   }

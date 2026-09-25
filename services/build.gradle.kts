@@ -49,7 +49,7 @@ hardening {
       // 'Integ.*' scratch files are git-ignored: present on a dev machine and
       // absent in CI, so mutating them would make the baseline
       // machine-dependent. Exact names — Integ* would also match
-      // IntegLookupTableCache / IntegrationServiceContext.
+      // IntegrationServiceContext.
       "systems.glam.services.Integ",
       "systems.glam.services.Integ\$*",
       "systems.glam.services.oracles.scope.Integ",

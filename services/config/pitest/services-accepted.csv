@@ -177,3 +177,4 @@ systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # 
 systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # hashcode mixing # line 391
 systems.glam.services.state.MinGlamStateAccount,readIntegrationAcls,VoidMethodCallMutator,SURVIVED # untriaged # line 84
 systems.glam.services.state.ProtocolIntegration,compareTo,PrimitiveReturnsMutator,SURVIVED # untriaged # line 10
+systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,lambda$parseProperties$10,BooleanTrueReturnValsMutator,SURVIVED # untriaged # line 352

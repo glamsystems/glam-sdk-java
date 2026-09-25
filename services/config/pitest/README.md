@@ -90,13 +90,13 @@ the send belong to the `InstructionService`, and a failed result means the
 caller re-fetches and rebuilds; that intent is now stated in the code and
 pinned by the tests, including the odd-rounds-up halving of the batch bound
 governing the *remainder* — the account-64 splitter (duplicates counted
-once, lookup-table keys counted against the limit, exactly-64 fits), the
-fatal single-instruction-over-limit page with its `numTables` accounting,
-the quiet stale-mint-price retry against its three near-misses (wrong code,
+once, the compute-budget program counted against the limit, exactly-64
+fits), the fatal single-instruction-over-limit page, the quiet
+stale-mint-price retry against its three near-misses (wrong code,
 wrong program, non-custom error — each must page), and service failures
 logged, paged and rethrown.
 
-**Accepted (6):** record-pattern destructure sibling legs on the error
+**Accepted (5):** record-pattern destructure sibling legs on the error
 ladder, the `subList`-vs-whole-list boundary (same view, same drain), and
 defensive forced-true directions with killed twins named by the verify.
 
@@ -149,11 +149,11 @@ retries (the re-loop only executes when another writer interleaves between
 sibling leg is detected).
 
 The init-paths pass closed the last broadly coverable surfaces:
-`IntegLookupTableCache.initCache` (warm load from `.dat` files with foreign
-files ignored, only the missing keys fetched — null and null-data entries
-skipped — the fetched table persisted, and the does-not-exist warning
-raised for exactly the still-missing key), `ReserveContext` (both null-key
-spellings, the shared read/write meta caches served by identity through
+`IntegLookupTableCache.initCache` (since removed, 2026-09-24; warm load from
+`.dat` files with foreign files ignored, only the missing keys fetched, the
+fetched table persisted, and the does-not-exist warning raised for exactly
+the still-missing key), `ReserveContext` (both null-key spellings, the shared
+read/write meta caches served by identity through
 the refresh sequence, and all four oracle layouts of
 `refreshReserveAccounts`: scope-feed last slot, pyth first slot,
 switchboard middle slots, and the no-oracle fatal),
@@ -161,8 +161,7 @@ switchboard middle slots, and the no-oracle fatal),
 parsed properties config (no hikari files → null datasource; `mints.bin`
 created under the cache directory), the default single-key
 `AccountFetcher` queues and the default `InstructionProcessor` overload
-(null lookup tables pinned through real implementing classes, since
-proxies bypass `default` bodies), `persistGlobalConfig` and `FileUtils`
+(since removed, 2026-09-24), `persistGlobalConfig` and `FileUtils`
 failure branches (occupied-directory targets fail the write *and* the
 cleanup delete, both logged), `ScopeAggregateIndexes` statics,
 `globalConfigCacheFile`, `MinGlamStateAccount` and serde-length tails.
@@ -171,12 +170,10 @@ attached its capturing handler to a `java.util.logging` Logger held only
 by a local — JUL references loggers weakly, so GC could silently detach
 the handler mid-run; the logger is now pinned by a static field.
 
-**Accepted (7):** the `createServiceContext` hikari null/empty legs (both
+**Accepted (6):** the `createServiceContext` hikari null/empty legs (both
 mean "no datasource"; the non-empty direction needs real JDBC properties
-to construct a `HikariDataSource`), the table-file filter NakedReceiver
-(`path.toString()` ends with the same `.dat` suffix as
-`getFileName().toString()` — indistinguishable by any filter input), the
-two `ReserveContext` meta-cache hit legs (the static caches persist
+to construct a `HikariDataSource`), the two `ReserveContext` meta-cache
+hit legs (the static caches persist
 across mutants in a shared PIT minion, so the hit path cannot be forced
 to miss deterministically; both miss directions are killed), and the
 `setScale` NakedReceiver (`setScale(decimals, DOWN).longValue()` is
@@ -239,17 +236,10 @@ and filters asserted inline) and `getAccounts` for the missing mappings.
 configuration fetched, parsed and persisted, the missing mappings resolved
 and persisted, and the resulting cache serving the full feed-indexed path —
 with everything on disk for the next (warm) start, which the earlier pass
-pins. `IntegLookupTableCacheImpl` is covered end-to-end: tables only grow
-deeper (equal depth kept by identity), deactivated and vanished tables are
-forgotten with their files deleted, grown tables re-persisted byte-exact,
-the polling loop drives `queueBatchable` per pass, and persistence failures
-log without dropping the in-memory update.
+pins.
 
-**Accepted (residual legs):** the merge-function and persist-gate directions
-only a concurrent merge can distinguish (`integrationTables.merge` legs, the
-`result == addressLookupTable` gate), the equal-depth boundary's sibling
-directions, capacity-hint arithmetic in the init lambda, and the
-partial-persistence fork halves (persisted configs that cover only some
+**Accepted (residual legs):** capacity-hint arithmetic in the init lambda,
+and the partial-persistence fork halves (persisted configs that cover only some
 needed feeds) — the one remaining init scenario, named as the next escape if
 it ever earns a harness.
 
@@ -315,11 +305,12 @@ appears.
 The 2026-07-22 (2nd) pass killed 21 `BaseDelegateServiceConfig.parseProperties`
 survivors by pinning both directions of every optional-section presence guard:
 each section parsed with real values when present (serviceBackoff single
-strategy, formatter formats, tableCache capacity, rpcCallWeights, a separate
-sendRPC balancer, the websocket endpoint value), and the absent-case defaults
-characterized exactly — serviceBackoff falls back to fibonacci, tableCache to
-its documented defaults, sendRPC to the primary rpc balancer, and
-notificationHooks to a no-op client, while callWeights stays null.
+strategy, formatter formats, tableCache capacity (section since removed,
+2026-09-24), rpcCallWeights, a separate sendRPC balancer, the websocket
+endpoint value), and the absent-case defaults characterized exactly —
+serviceBackoff falls back to fibonacci, tableCache to its documented defaults,
+sendRPC to the primary rpc balancer, and notificationHooks to a no-op client,
+while callWeights stays null.
 
 The 2026-07-22 pass added the `RequestQueue` serde round trip through
 `RedemptionSummary.createSummary(accountInfo, …)` (the mutation suites exclude
@@ -649,7 +640,7 @@ building `feeProviders`, and the no-rpc parse pinning `rpcClients == null`
 (the always-parse mutant builds a balancer from an empty prefix instead).
 `FulfillmentServiceConfig` now parses fields *after* a leading `softRedeem`
 (the stop-early mutant), and its properties path pins the base sections.
-`DefensivePollingConfig`'s JSON path parses all five fields distinctly and
+`DefensivePollingConfig`'s JSON path parses all its fields distinctly and
 throws on an unknown field (the forced-match mutant silently lands unknowns in
 the last slot). `MintCacheImpl.close` is pinned by "a closed cache refuses new
 entries", and `delete` by a two-instance case: it must not report an entry
@@ -657,16 +648,16 @@ whose persistent record was already removed by another cache over the same
 file.
 
 **Absent-vs-empty-parse equivalents (the `parseProperties` section-presence
-pairs)** — the always-parse direction on `notificationHooks`, `tableCache`,
+pairs)** — the always-parse direction on `notificationHooks`,
 `accountFetcher` and `defensivePolling`: parsing an empty section produces the
 same value the absent path synthesizes (`NotifyClient.createClient([])`
-returns the same noop shape as `setDefaults`; the other three parsers default
+returns the same noop shape as `setDefaults`; the other two parsers default
 every field to exactly their `createDefault` values). No observable output
 distinguishes them.
 
 **Null-over-null assigns (`parseProperties`'
 `minCheckStateDelay`/`maxCheckStateDelay` guards; `DefensivePollingConfig`'s
-five `Parser.parseProperties` duration guards)** — `parseDuration(null)`
+four `Parser.parseProperties` duration guards)** — `parseDuration(null)`
 returns null, so forcing the `!= null` guard merely re-assigns null over null;
 `get()`/`setDefaults` re-default nulls either way.
 
@@ -1045,6 +1036,73 @@ record. Families whose every member moved (`in-lock race guard`,
 guard`, `residual sibling legs`, `capacity-hint`) stay named in the label
 registry so those sections still parse.
 
+### 2026-09-24 — address lookup tables removed
+
+Sava now supports v1 transactions, so GLAM no longer builds v0 transactions or
+keeps address lookup tables. Removed here: `integrations.IntegLookupTableCache`
+/ `IntegLookupTableCacheImpl` and their tests, the lookup-table parameters of
+`InstructionProcessor` / `InstructionProcessorImpl` (and the over-limit page's
+`numTables` field) and of `FormatUtil.formatInstructionException` (its
+three-argument overload and `"t"` field), `BaseDelegateServiceConfig`'s
+`tableCache` section and `createLookupTableCache`, and
+`DefensivePollingConfig.integTables`. Passages above that described that code
+as current, or argued its acceptances, were trimmed; dated coverage history
+stands, marked "since removed".
+
+A fresh history-free `pitestServices` observation on plugin 21.5.30 (1612
+mutants; load average 120-165 from unrelated processes) makes 15 rows prune
+candidates for the upcoming `pitestServicesBaselinePrune`. Every one is
+`# untriaged`, so no acceptance argument or family label goes with them:
+
+- `IntegLookupTableCacheImpl` — 7: `accept` `ConditionalsBoundaryMutator`,
+  `RemoveConditionalMutator_ORDER_IF` and `RemoveConditionalMutator_EQUAL_IF`;
+  `lambda$accept$0` `ConditionalsBoundaryMutator` and
+  `RemoveConditionalMutator_ORDER_ELSE`; `deleteTableFile` and `run`
+  `VoidMethodCallMutator` (`NO_COVERAGE`).
+- `IntegLookupTableCache` — 1: `lambda$initCache$0` `NakedReceiverMutator`.
+- `BaseDelegateServiceConfig$ConfigParser` — 3: `lambda$parseProperties$4`
+  `BooleanTrueReturnValsMutator` (the deleted `tableCache` prefix predicate),
+  `lambda$parseProperties$12` `BooleanTrueReturnValsMutator` (unmatched after
+  the renumbering below), and one of the six `parseProperties`
+  `RemoveConditionalMutator_EQUAL_IF` copies (the deleted `tableCache` guard).
+- `BaseDelegateServiceConfig` — 1: `createLookupTableCache`
+  `NullReturnValsMutator` (`NO_COVERAGE`).
+- `DefensivePollingConfig$Parser` — 1: one of the five `parseProperties`
+  `RemoveConditionalMutator_EQUAL_IF` copies (the deleted `integTables` guard).
+- `FormatUtil` — 1: `formatInstructionException`
+  `RemoveConditionalMutator_EQUAL_ELSE` (the lookup-table list ternary).
+- `InstructionProcessorImpl` — 1: `processInstructions`
+  `RemoveConditionalMutator_EQUAL_ELSE` (the `numTables` ternary).
+
+For the two multi-copy keys, the copy pruned carries whichever `# line` tag
+allocation leaves over, not the deleted guard's; identity is the line-less key
+multiset.
+
+The audited timeout member `IntegLookupTableCacheImpl,run,VoidMethodCallMutator`
+(`cause:liveness`) was retired from `services-timeouts.csv` with its class; its
+argument in the historical snapshot below is marked as such.
+
+Deleting the `tableCache` prefix predicate renumbered every later
+`BaseDelegateServiceConfig$ConfigParser` `lambda$parseProperties$N` down by
+one. The `accountFetcher` predicate's `BooleanTrueReturnValsMutator` survivor,
+recorded as `lambda$parseProperties$11`, is now `lambda$parseProperties$10`;
+`pitestServicesBaselineUnion` carries it over as `# untriaged`, since its old
+row carried no family label; the absent-vs-empty-parse argument above names
+the `accountFetcher` section rather than a lambda index, so the renumbering
+does not touch it. The
+`lambda$parseProperties$11` row now matches the `defensivePolling` predicate
+(formerly `$12`, also `# untriaged`), and the `$12` row is the prune candidate
+above.
+
+The prune is pending. Two history-free previews matched on the 15 rows, but
+the writer's own write-boundary run refused: it read two `# accepted
+equivalent` rows, `AccountFetcherImpl,createBatch,IncrementsMutator` and
+`AccountFetcherImpl,run,RemoveConditionalMutator_EQUAL_IF`, as `KILLED` by
+`AccountFetcherTests.aFailedCycleFailsItsFuturesOverAndKeepsPolling`, which
+waits on real-time deadlines. The `createBatch` increment is read only as
+zero/non-zero, so that kill cannot be behavioural: this is a wandering count
+in that harness, to be made deterministic before the prune is retried.
+
 ### Family labels
 
 Each accepted row carries a `# <family>` label whose argument is the pass
@@ -1144,7 +1202,7 @@ never support a baseline decision.
 
 The discussion below is retained as historical evidence; it is not the current
 audited set. The authoritative current inventory is `services-timeouts.csv`
-(52 rows, all `cause:liveness`). The Kamino subsection likewise records
+(51 rows, all `cause:liveness`). The Kamino subsection likewise records
 pre-move evidence; its six audited timeout keys moved to `vault-stat-service`
 on 2026-08-21.
 
@@ -1349,7 +1407,8 @@ externalPositionsOffset ORDER_ELSE
   spin.
 - `integrations.IntegLookupTableCacheImpl.run` (`VoidMethodCall`) —
   removed `queueBatchable` starves the fetch loop; removed sleep spins it;
-  either way the driver never reaches its terminal interrupt.
+  either way the driver never reaches its terminal interrupt. (Class since
+  removed; member retired 2026-09-24.)
 - `io.KeyedFlatFileImpl.overwriteFile` (`VoidMethodCall`) — the removed
   call is `lock.unlock()` in the finally: the leaked lock blocks every
   subsequent operation on the file (the "leaked unlock" shape verbatim).

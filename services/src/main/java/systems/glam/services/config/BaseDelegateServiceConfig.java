@@ -22,8 +22,6 @@ import software.sava.services.core.remote.load_balance.LoadBalancer;
 import software.sava.services.core.remote.load_balance.LoadBalancerConfig;
 import software.sava.services.core.request_capacity.CapacityConfig;
 import software.sava.services.core.request_capacity.context.CallContext;
-import software.sava.services.solana.alt.LookupTableCache;
-import software.sava.services.solana.alt.TableCacheConfig;
 import software.sava.services.solana.config.ChainItemFormatter;
 import software.sava.services.solana.config.HeliusConfig;
 import software.sava.services.solana.epoch.EpochInfoService;
@@ -67,7 +65,6 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
                                         ChainItemFormatter formatter,
                                         NotifyClient notifyClient,
                                         Path cacheDirectory,
-                                        TableCacheConfig tableCacheConfig,
                                         RpcCaller rpcCaller,
                                         LoadBalancer<SolanaRpcClient> sendClients,
                                         LoadBalancer<HeliusFeeProvider> feeProviders,
@@ -103,24 +100,15 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
   }
 
   @Override
-  public LookupTableCache createLookupTableCache(final ExecutorService taskExecutor) {
-    return LookupTableCache.createCache(
-        taskExecutor,
-        tableCacheConfig.initialCapacity(),
-        rpcCaller.rpcClients()
-    );
-  }
-
-  @Override
   public TransactionProcessor createTransactionProcessor(final ExecutorService taskExecutor,
                                                          final SigningService signingService,
-                                                         final LookupTableCache tableCache,
                                                          final PublicKey serviceKey,
                                                          final WebSocketManager webSocketManager) {
     return TransactionProcessor.createProcessor(
         taskExecutor,
         signingService,
-        tableCache,
+        // no lookup table cache: ravina reads it only to build v0 transactions, which nothing here does
+        null,
         serviceKey,
         solanaAccounts,
         formatter,
@@ -237,7 +225,6 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
     private ChainItemFormatter formatter;
     private NotifyClient notifyClient;
     private Path cacheDirectory;
-    private TableCacheConfig tableCacheConfig;
     private CallWeights callWeights;
     private Backoff defaultRPCBackoff = DEFAULT_NETWORK_BACKOFF;
     private LoadBalancer<SolanaRpcClient> rpcClients;
@@ -308,11 +295,6 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
       final var cacheDirectoryStr = getProperty(properties, p, "cacheDirectory");
       if (cacheDirectoryStr != null) {
         this.cacheDirectory = Path.of(cacheDirectoryStr);
-      }
-
-      final var tableCachePrefix = p + "tableCache.";
-      if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(tableCachePrefix))) {
-        this.tableCacheConfig = TableCacheConfig.parseConfig(tableCachePrefix, properties);
       }
 
       final var rpcCallWeightsPrefix = p + "rpcCallWeights.";
@@ -448,9 +430,6 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
       if (sendClients == null) {
         sendClients = rpcClients;
       }
-      if (tableCacheConfig == null) {
-        tableCacheConfig = TableCacheConfig.createDefault();
-      }
       if (maxSOLPriorityFee == null) {
         maxSOLPriorityFee = new BigDecimal("0.00042");
       }
@@ -486,7 +465,6 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
           formatter,
           notifyClient,
           cacheDirectory,
-          tableCacheConfig,
           new RpcCaller(taskExecutor, rpcClients, callWeights),
           sendClients,
           feeProviders,
@@ -516,7 +494,6 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
         "formatter",
         "notificationHooks",
         "cacheDirectory",
-        "tableCache",
         "rpcCallWeights",
         "rpc",
         "sendRPC",
@@ -557,9 +534,8 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
           this.notifyClient = createNotifyClient(webHookConfigs);
         }
         case 5 -> cacheDirectory = Path.of(ji.readString());
-        case 6 -> tableCacheConfig = TableCacheConfig.parse(ji);
-        case 7 -> callWeights = CallWeights.parse(ji);
-        case 8 -> {
+        case 6 -> callWeights = CallWeights.parse(ji);
+        case 7 -> {
           final var loadBalancerConfig = LoadBalancerConfig.parse(
               ji,
               CapacityConfig.createSimpleConfig(
@@ -572,7 +548,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
           defaultRPCBackoff = loadBalancerConfig.defaultBackoff();
           rpcClients = createRPCLoadBalancer(loadBalancerConfig, httpClient);
         }
-        case 9 -> {
+        case 8 -> {
           final var loadBalancerConfig = LoadBalancerConfig.parse(
               ji,
               CapacityConfig.createSimpleConfig(
@@ -584,8 +560,8 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
           );
           sendClients = createRPCLoadBalancer(loadBalancerConfig, httpClient);
         }
-        case 10 -> websocketConfig = RemoteResourceConfig.parseConfig(ji, null, DEFAULT_NETWORK_BACKOFF);
-        case 11 -> {
+        case 9 -> websocketConfig = RemoteResourceConfig.parseConfig(ji, null, DEFAULT_NETWORK_BACKOFF);
+        case 10 -> {
           final var heliusConfig = HeliusConfig.parseConfig(
               ji,
               CapacityConfig.createSimpleConfig(
@@ -603,18 +579,18 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
           );
           this.feeProviders = LoadBalancer.createBalancer(balancedItem);
         }
-        case 12 -> epochServiceConfig = EpochServiceConfig.parseConfig(ji);
-        case 13 -> txMonitorConfig = TxMonitorConfig.parseConfig(ji);
-        case 14 -> accountFetcherConfig = AccountFetcherConfig.parseConfig(ji);
-        case 15 -> defensivePollingConfig = DefensivePollingConfig.parseConfig(ji);
-        case 16 -> maxSOLPriorityFee = ji.readBigDecimalDropZeroes();
-        case 17 -> warnFeePayerBalance = ji.readBigDecimalDropZeroes();
-        case 18 -> minFeePayerBalance = ji.readBigDecimalDropZeroes();
-        case 19 -> minCheckStateDelay = ServiceConfigUtil.parseDuration(ji);
-        case 20 -> maxCheckStateDelay = ServiceConfigUtil.parseDuration(ji);
-        case 21 -> defaultCuBudgetMultiplier = ji.readDouble();
-        case 22 -> maxTransactionRetries = ji.readInt();
-        case 23 -> hikariPropertiesFiles = List.copyOf(ji.readList(JsonIterator::readString));
+        case 11 -> epochServiceConfig = EpochServiceConfig.parseConfig(ji);
+        case 12 -> txMonitorConfig = TxMonitorConfig.parseConfig(ji);
+        case 13 -> accountFetcherConfig = AccountFetcherConfig.parseConfig(ji);
+        case 14 -> defensivePollingConfig = DefensivePollingConfig.parseConfig(ji);
+        case 15 -> maxSOLPriorityFee = ji.readBigDecimalDropZeroes();
+        case 16 -> warnFeePayerBalance = ji.readBigDecimalDropZeroes();
+        case 17 -> minFeePayerBalance = ji.readBigDecimalDropZeroes();
+        case 18 -> minCheckStateDelay = ServiceConfigUtil.parseDuration(ji);
+        case 19 -> maxCheckStateDelay = ServiceConfigUtil.parseDuration(ji);
+        case 20 -> defaultCuBudgetMultiplier = ji.readDouble();
+        case 21 -> maxTransactionRetries = ji.readInt();
+        case 22 -> hikariPropertiesFiles = List.copyOf(ji.readList(JsonIterator::readString));
         default -> throw new IllegalStateException("Unknown service config field " + new String(buf, offset, len));
       }
       return true;

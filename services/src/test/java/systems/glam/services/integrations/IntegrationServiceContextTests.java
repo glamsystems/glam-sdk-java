@@ -100,10 +100,6 @@ final class IntegrationServiceContextTests {
       default -> throw new UnsupportedOperationException(method.getName());
     });
 
-    final var integTableCache = stub(IntegLookupTableCache.class, (proxy, method, args) -> {
-      throw new UnsupportedOperationException(method.getName());
-    });
-
     final var queued = new java.util.ArrayList<Object>();
     final var accountFetcher = stub(AccountFetcher.class, (proxy, method, args) -> {
       if (method.getName().equals("queueUnique")) {
@@ -116,7 +112,7 @@ final class IntegrationServiceContextTests {
 
     final var context = new IntegrationServiceContextImpl(
         serviceContext,
-        mintCache, stakePoolCache, globalConfigCache, integTableCache, accountFetcher,
+        mintCache, stakePoolCache, globalConfigCache, accountFetcher,
         KaminoAccounts.MAIN_NET,
         LoopscaleAccounts.MAIN_NET, OrcaAccounts.MAIN_NET, PhoenixAccounts.MAIN_NET,
         MarginfiAccounts.MAIN_NET, JupiterAccounts.MAIN_NET, MeteoraAccounts.MAIN_NET
@@ -125,7 +121,6 @@ final class IntegrationServiceContextTests {
     assertSame(serviceContext, context.serviceContext());
     assertSame(accountFetcher, context.accountFetcher());
     assertSame(globalConfigCache, context.globalConfigCache());
-    assertSame(integTableCache, context.integTableCache());
 
     assertSame(stakePoolContext, context.stakePoolContextForMint(mintKey));
     assertSame(cachedMint, context.mintContext(mintKey));

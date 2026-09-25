@@ -50,20 +50,20 @@ final class FormatUtilTests {
   }
 
   @Test
-  void formatInstructionExceptionIncludesTables() {
-    final var withTables = FormatUtil.formatInstructionException(
-        "simFailure", List.of(ix()), List.of(key(9))
-    );
-    assertTrue(withTables.contains("\"e\": \"simFailure\""), withTables);
-    assertTrue(withTables.contains(key(9).toBase58()), withTables);
+  void formatInstructionExceptionWrapsTheEventAndInstructions() {
+    final var formatted = FormatUtil.formatInstructionException("simFailure", List.of(ix()));
+    assertTrue(formatted.contains("\"e\": \"simFailure\""), formatted);
     // the instructions must actually be rendered, not just the envelope
-    assertTrue(withTables.contains("\"p\": \"" + key(1).toBase58() + '"'), withTables);
-
-    final var withoutTables = FormatUtil.formatInstructionException("simFailure", List.of(ix()));
-    assertTrue(withoutTables.contains("\"t\": [\"\"]"), withoutTables);
-    // an empty collection renders like a null one
-    final var emptyTables = FormatUtil.formatInstructionException("simFailure", List.of(ix()), List.of());
-    assertTrue(emptyTables.contains("\"t\": [\"\"]"), emptyTables);
+    assertTrue(formatted.contains("\"p\": \"" + key(1).toBase58() + '"'), formatted);
+    assertEquals(
+        "{\n"
+            + "  \"e\": \"simFailure\",\n"
+            + "  \"ix\": [\n"
+            + "   " + FormatUtil.formatInstruction(ix()) + "\n"
+            + "  ]\n"
+            + "}\n",
+        formatted
+    );
   }
 
   @Test

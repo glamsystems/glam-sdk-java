@@ -23,7 +23,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   private final MintCache mintCache;
   private final StakePoolCache stakePoolCache;
   private final GlobalConfigCache globalConfigCache;
-  private final IntegLookupTableCache integLookupTableCache;
   private final AccountFetcher accountFetcher;
   private final KaminoAccounts kaminoAccounts;
   private final LoopscaleAccounts loopscaleAccounts;
@@ -37,7 +36,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
                                 final MintCache mintCache,
                                 final StakePoolCache stakePoolCache,
                                 final GlobalConfigCache globalConfigCache,
-                                final IntegLookupTableCache integLookupTableCache,
                                 final AccountFetcher accountFetcher,
                                 final KaminoAccounts kaminoAccounts,
                                 final LoopscaleAccounts loopscaleAccounts,
@@ -50,7 +48,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
     this.mintCache = mintCache;
     this.stakePoolCache = stakePoolCache;
     this.globalConfigCache = globalConfigCache;
-    this.integLookupTableCache = integLookupTableCache;
     this.accountFetcher = accountFetcher;
     this.kaminoAccounts = kaminoAccounts;
     this.loopscaleAccounts = loopscaleAccounts;
@@ -169,11 +166,6 @@ final class IntegrationServiceContextImpl extends BaseServiceContext implements 
   @Override
   public JupiterAccounts jupiterAccounts() {
     return jupiterAccounts;
-  }
-
-  @Override
-  public IntegLookupTableCache integTableCache() {
-    return integLookupTableCache;
   }
 
   @Override

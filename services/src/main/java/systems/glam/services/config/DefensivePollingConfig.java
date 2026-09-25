@@ -13,7 +13,6 @@ import static systems.comodal.jsoniter.JsonIterator.fieldEquals;
 
 public record DefensivePollingConfig(Duration globalConfig,
                                      Duration glamStateAccounts,
-                                     Duration integTables,
                                      Duration stakePools,
                                      Duration kaminoScope) {
 
@@ -37,7 +36,6 @@ public record DefensivePollingConfig(Duration globalConfig,
     return new DefensivePollingConfig(
         Duration.ofMinutes(1),
         EIGHT_HOURS,
-        Duration.ofHours(4),
         Duration.ofHours(12),
         EIGHT_HOURS
     );
@@ -47,7 +45,6 @@ public record DefensivePollingConfig(Duration globalConfig,
 
     private Duration globalConfig;
     private Duration glamStateAccounts;
-    private Duration integTables;
     private Duration stakePools;
     private Duration kaminoScope;
 
@@ -63,10 +60,6 @@ public record DefensivePollingConfig(Duration globalConfig,
       final var glamStateAccounts = PropertiesParser.parseDuration(properties, p, "glamStateAccounts");
       if (glamStateAccounts != null) {
         this.glamStateAccounts = glamStateAccounts;
-      }
-      final var integTables = PropertiesParser.parseDuration(properties, p, "integTables");
-      if (integTables != null) {
-        this.integTables = integTables;
       }
       final var stakePools = PropertiesParser.parseDuration(properties, p, "stakePools");
       if (stakePools != null) {
@@ -86,16 +79,13 @@ public record DefensivePollingConfig(Duration globalConfig,
       if (glamStateAccounts == null) {
         glamStateAccounts = EIGHT_HOURS;
       }
-      if (integTables == null) {
-        integTables = Duration.ofHours(4);
-      }
       if (stakePools == null) {
         stakePools = Duration.ofHours(12);
       }
       if (kaminoScope == null) {
         kaminoScope = EIGHT_HOURS;
       }
-      return new DefensivePollingConfig(globalConfig, glamStateAccounts, integTables, stakePools, kaminoScope);
+      return new DefensivePollingConfig(globalConfig, glamStateAccounts, stakePools, kaminoScope);
     }
 
     @Override
@@ -104,8 +94,6 @@ public record DefensivePollingConfig(Duration globalConfig,
         globalConfig = ServiceConfigUtil.parseDuration(ji);
       } else if (fieldEquals("glamStateAccounts", buf, offset, len)) {
         glamStateAccounts = ServiceConfigUtil.parseDuration(ji);
-      } else if (fieldEquals("integTables", buf, offset, len)) {
-        integTables = ServiceConfigUtil.parseDuration(ji);
       } else if (fieldEquals("stakePools", buf, offset, len)) {
         stakePools = ServiceConfigUtil.parseDuration(ji);
       } else if (fieldEquals("kaminoScope", buf, offset, len)) {

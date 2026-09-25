@@ -1,6 +1,5 @@
 package systems.glam.services.execution;
 
-import software.sava.core.accounts.PublicKey;
 import software.sava.core.tx.Instruction;
 import software.sava.core.tx.Transaction;
 import software.sava.core.util.LamportDecimal;
@@ -47,28 +46,18 @@ public final class FormatUtil {
     return instructions.stream().map(FormatUtil::formatInstruction).collect(Collectors.joining(",\n"));
   }
 
-  public static String formatInstructionException(final String event,
-                                                  final List<Instruction> instructions,
-                                                  final Collection<PublicKey> lookupTableKeys) {
+  public static String formatInstructionException(final String event, final List<Instruction> instructions) {
     return String.format("""
             {
               "e": "%s",
               "ix": [
                %s
-              ],
-              "t": ["%s"]
+              ]
             }
             """,
         event,
-        formatInstructions(instructions),
-        lookupTableKeys == null || lookupTableKeys.isEmpty()
-            ? ""
-            : lookupTableKeys.stream().map(PublicKey::toBase58).collect(Collectors.joining("\",\""))
+        formatInstructions(instructions)
     );
-  }
-
-  public static String formatInstructionException(final String event, final List<Instruction> instructions) {
-    return formatInstructionException(event, instructions, null);
   }
 
   public static String formatLogs(final Collection<String> logs) {

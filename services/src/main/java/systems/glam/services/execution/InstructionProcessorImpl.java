@@ -16,7 +16,6 @@ import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolError;
 
 import java.math.BigDecimal;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.function.Function;
@@ -38,7 +37,6 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
   @Override
   public boolean processInstructions(final String logContext,
                                      final List<Instruction> instructions,
-                                     final Collection<PublicKey> lookupTableKeys,
                                      final Function<List<Instruction>, Transaction> transactionFactory) throws InterruptedException {
     return processInstructions(
         logContext,
@@ -46,7 +44,6 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
         cuBudgetMultiplier,
         maxLamportPriorityFee,
         maxRetries,
-        lookupTableKeys,
         transactionFactory
     );
   }
@@ -57,7 +54,6 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
                                      final double cuBudgetMultiplier,
                                      final BigDecimal maxLamportPriorityFee,
                                      final int maxRetries,
-                                     final Collection<PublicKey> lookupTableKeys,
                                      final Function<List<Instruction>, Transaction> transactionFactory) throws InterruptedException {
     final var distinctAccounts = HashSet.<PublicKey>newHashSet(64);
 
@@ -68,9 +64,6 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
 
       distinctAccounts.clear();
       distinctAccounts.add(SolanaAccounts.MAIN_NET.computeBudgetProgram());
-      if (lookupTableKeys != null) {
-        distinctAccounts.addAll(lookupTableKeys);
-      }
       int numDistinctAccounts = distinctAccounts.size();
       int numInstructions = 0;
       BATCHED:
@@ -85,13 +78,11 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
                          "event": "Instruction Exceeds Account Limit",
                          "program": "%s",
                          "data": "%s",
-                         "numTables": %d,
                          "numAccounts": %d,
                          "accounts": ["%s"],
                         }""",
                     ix.programId(),
                     Base64.getEncoder().encodeToString(ix.copyData()),
-                    lookupTableKeys == null ? 0 : lookupTableKeys.size(),
                     accounts.size(),
                     accounts.stream()
                         .map(AccountMeta::publicKey)
@@ -125,8 +116,7 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
       } catch (final RuntimeException ex) {
         final var msg = FormatUtil.formatInstructionException(
             String.format("Failed to process %s instructions.", logContext),
-            ixBatch,
-            lookupTableKeys
+            ixBatch
         );
         logger.log(ERROR, msg, ex);
         notifyClient.postMsg(msg);

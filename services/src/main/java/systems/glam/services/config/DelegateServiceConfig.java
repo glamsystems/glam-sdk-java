@@ -10,8 +10,6 @@ import software.sava.services.core.config.RemoteResourceConfig;
 import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.core.remote.call.Backoff;
 import software.sava.services.core.remote.load_balance.LoadBalancer;
-import software.sava.services.solana.alt.LookupTableCache;
-import software.sava.services.solana.alt.TableCacheConfig;
 import software.sava.services.solana.config.ChainItemFormatter;
 import software.sava.services.solana.epoch.EpochInfoService;
 import software.sava.services.solana.epoch.EpochServiceConfig;
@@ -51,8 +49,6 @@ public interface DelegateServiceConfig {
 
   Path cacheDirectory();
 
-  TableCacheConfig tableCacheConfig();
-
   RpcCaller rpcCaller();
 
   LoadBalancer<SolanaRpcClient> sendClients();
@@ -90,11 +86,11 @@ public interface DelegateServiceConfig {
   WebSocketManager createWebSocketManager(final HttpClient wsHttpClient,
                                           final Collection<Consumer<SolanaRpcWebsocket>> webSocketConsumers);
 
-  LookupTableCache createLookupTableCache(final ExecutorService taskExecutor);
-
+  /// The processor carries no address lookup table cache, so it cannot build v0 transactions:
+  /// `lookupTableCache()` is `null` and `transactionFactory` with any lookup table key throws.
+  /// Use `legacyTransactionFactory()`.
   TransactionProcessor createTransactionProcessor(final ExecutorService taskExecutor,
                                                   final SigningService signingService,
-                                                  final LookupTableCache tableCache,
                                                   final PublicKey serviceKey,
                                                   final WebSocketManager webSocketManager);
 

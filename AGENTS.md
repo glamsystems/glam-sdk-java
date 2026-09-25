@@ -34,10 +34,9 @@ plus service components for operating against it.
     `idl/programs/glam/jupiter/`.
 - `services/` (`systems.glam.services`) — delegate-service runtime layered on
   the sdk: account fetching (`rpc/AccountFetcher`), caches (`mints/`,
-  `state/GlobalConfigCache`), integration lookup-table caching
-  (`integrations/IntegLookupTableCache`), the fulfillment service
-  (`fulfillment/`), batched SQL (`db/sql/`), and instruction execution
-  (`execution/`).
+  `state/GlobalConfigCache`), the integration service context
+  (`integrations/`), the fulfillment service (`fulfillment/`), batched SQL
+  (`db/sql/`), and instruction execution (`execution/`).
 - `examples/` — scratch/example module; not part of the hardening surface.
 - `glam/` (untracked) — mapping configs from `glamsystems/ix-mapper-ts` at
   the commit `./downloadMappings.sh` pins (`MAPPINGS_REF`); the sdk `jar` task

@@ -97,8 +97,7 @@ final class InstructionProcessorTests {
     final var instructions = new ArrayList<>(List.of(instruction(1, 2), instruction(2, 2)));
 
     try (final var log = systems.glam.services.tests.LogCapture.attach(InstructionProcessorImpl.class.getName())) {
-      // null lookup tables are allowed and must not be dereferenced
-      assertTrue(processor(service, notify).processInstructions("test", instructions, null, FACTORY));
+      assertTrue(processor(service, notify).processInstructions("test", instructions, FACTORY));
       log.assertLogged("test Success");
     }
     assertEquals(List.of(2), service.batchSizes);
@@ -122,7 +121,7 @@ final class InstructionProcessorTests {
         instruction(1, 30), instruction(2, 30), instruction(3, 30)));
 
     try (final var log = systems.glam.services.tests.LogCapture.attach(InstructionProcessorImpl.class.getName())) {
-      assertTrue(processor(service, notify).processInstructions("test", instructions, List.of(), FACTORY));
+      assertTrue(processor(service, notify).processInstructions("test", instructions, FACTORY));
       // each size-limit drop is warned, never silent
       log.assertLogged("test Failed");
     }
@@ -146,31 +145,28 @@ final class InstructionProcessorTests {
       instructions.add(instruction(i, 1));
     }
 
-    assertTrue(processor(service, notify).processInstructions("test", instructions, List.of(), FACTORY));
+    assertTrue(processor(service, notify).processInstructions("test", instructions, FACTORY));
     assertEquals(List.of(1, 5, 3), service.batchSizes);
     assertTrue(instructions.isEmpty());
   }
 
   @Test
-  void lookupTableKeysCountAgainstTheAccountLimit() throws InterruptedException {
+  void theComputeBudgetProgramCountsAgainstTheAccountLimit() throws InterruptedException {
     final var service = new ScriptedService();
     final var notify = new RecordingNotify();
-    // 61 table keys + the compute budget program + 4 accounts = 66 > 64:
-    // even a single small instruction cannot fit next to that many tables
-    final var tables = new ArrayList<PublicKey>(61);
-    for (int i = 0; i < 61; ++i) {
-      tables.add(key(5_000 + i));
-    }
-    final var instructions = new ArrayList<>(List.of(instruction(1, 4)));
+    // the compute budget program + 64 accounts = 65 > 64: a single instruction
+    // at the raw limit still cannot be sent
+    final var instructions = new ArrayList<>(List.of(instruction(1, 64)));
 
     final var thrown = assertThrows(IllegalStateException.class, () ->
-        processor(service, notify).processInstructions("test", instructions, tables, FACTORY));
-    assertTrue(thrown.getMessage().contains("\"numTables\": 61"), thrown.getMessage());
+        processor(service, notify).processInstructions("test", instructions, FACTORY));
+    assertTrue(thrown.getMessage().contains("\"numAccounts\": 64"), thrown.getMessage());
+    assertTrue(service.batchSizes.isEmpty(), "nothing may be sent");
 
     // exactly at the limit: compute budget + 63 accounts = 64 fits
     final var fits = new ArrayList<>(List.of(instruction(2, 63)));
     service.script.add(batch -> result(batch, null));
-    assertTrue(processor(service, notify).processInstructions("test", fits, List.of(), FACTORY));
+    assertTrue(processor(service, notify).processInstructions("test", fits, FACTORY));
     assertEquals(List.of(1), service.batchSizes);
   }
 
@@ -181,7 +177,7 @@ final class InstructionProcessorTests {
     service.script.add(batch -> result(batch, TransactionResult.EXPIRED));
     final var instructions = new ArrayList<>(List.of(instruction(1, 2), instruction(2, 2)));
 
-    assertFalse(processor(service, notify).processInstructions("test", instructions, List.of(), FACTORY));
+    assertFalse(processor(service, notify).processInstructions("test", instructions, FACTORY));
     assertEquals(1, notify.messages.size());
     assertTrue(notify.messages.getFirst().contains("test Failed"), notify.messages.getFirst());
   }
@@ -194,7 +190,7 @@ final class InstructionProcessorTests {
     final var instructions = new ArrayList<>(List.of(instruction(1, 2)));
 
     // one instruction cannot be split further: report and stop
-    assertFalse(processor(service, notify).processInstructions("test", instructions, List.of(), FACTORY));
+    assertFalse(processor(service, notify).processInstructions("test", instructions, FACTORY));
     assertEquals(List.of(1), service.batchSizes);
     assertEquals(1, notify.messages.size());
   }
@@ -228,7 +224,7 @@ final class InstructionProcessorTests {
       });
       final var instructions = new ArrayList<>(List.of(instruction(1, 2), instruction(2, 2)));
 
-      assertFalse(processor(service, notify).processInstructions("test", instructions, List.of(), FACTORY));
+      assertFalse(processor(service, notify).processInstructions("test", instructions, FACTORY));
       assertEquals(1, notify.messages.size(), testCase::toString);
     }
   }
@@ -245,7 +241,7 @@ final class InstructionProcessorTests {
     final var b = Instruction.createInstruction(AccountMeta.createInvoked(key(2)), shared, new byte[]{2});
     final var instructions = new ArrayList<>(List.of(a, b));
 
-    assertTrue(processor(service, notify).processInstructions("test", instructions, List.of(), FACTORY));
+    assertTrue(processor(service, notify).processInstructions("test", instructions, FACTORY));
     assertEquals(List.of(2), service.batchSizes);
   }
 
@@ -269,7 +265,7 @@ final class InstructionProcessorTests {
 
     // false = re-fetch and retry, and nobody is paged for a stale oracle
     try (final var log = systems.glam.services.tests.LogCapture.attach(InstructionProcessorImpl.class.getName())) {
-      assertFalse(processor(service, notify).processInstructions("test", instructions, List.of(), FACTORY));
+      assertFalse(processor(service, notify).processInstructions("test", instructions, FACTORY));
       log.assertLogged("test Failed");
     }
     assertTrue(notify.messages.isEmpty(), () -> notify.messages.toString());
@@ -282,9 +278,9 @@ final class InstructionProcessorTests {
     final var instructions = new ArrayList<>(List.of(instruction(1, 70)));
 
     final var thrown = assertThrows(IllegalStateException.class, () ->
-        processor(service, notify).processInstructions("test", instructions, List.of(), FACTORY));
+        processor(service, notify).processInstructions("test", instructions, FACTORY));
     assertTrue(thrown.getMessage().contains("Instruction Exceeds Account Limit"), thrown.getMessage());
-    assertTrue(thrown.getMessage().contains("\"numTables\": 0"), thrown.getMessage());
+    assertTrue(thrown.getMessage().contains("\"numAccounts\": 70"), thrown.getMessage());
     assertEquals(1, notify.messages.size());
     assertTrue(service.batchSizes.isEmpty(), "nothing may be sent");
   }
@@ -298,7 +294,7 @@ final class InstructionProcessorTests {
     // 40 + 40 distinct accounts: the second instruction cannot join the first
     final var instructions = new ArrayList<>(List.of(instruction(1, 40), instruction(2, 40)));
 
-    assertTrue(processor(service, notify).processInstructions("test", instructions, List.of(), FACTORY));
+    assertTrue(processor(service, notify).processInstructions("test", instructions, FACTORY));
     assertEquals(List.of(1, 1), service.batchSizes);
     assertTrue(instructions.isEmpty());
   }
@@ -314,7 +310,7 @@ final class InstructionProcessorTests {
 
     try (final var log = systems.glam.services.tests.LogCapture.attach(InstructionProcessorImpl.class.getName())) {
       final var thrown = assertThrows(IllegalStateException.class, () ->
-          processor(service, notify).processInstructions("test", instructions, List.of(), FACTORY));
+          processor(service, notify).processInstructions("test", instructions, FACTORY));
       assertEquals("rpc down", thrown.getMessage());
       log.assertLogged("Failed to process test instructions.");
     }

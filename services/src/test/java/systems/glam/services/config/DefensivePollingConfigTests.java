@@ -6,7 +6,7 @@ import systems.comodal.jsoniter.JsonIterator;
 import java.time.Duration;
 import java.util.Properties;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 final class DefensivePollingConfigTests {
 
@@ -15,7 +15,6 @@ final class DefensivePollingConfigTests {
     final var config = DefensivePollingConfig.createDefaultConfig();
     assertEquals(Duration.ofMinutes(1), config.globalConfig());
     assertEquals(Duration.ofHours(8), config.glamStateAccounts());
-    assertEquals(Duration.ofHours(4), config.integTables());
     assertEquals(Duration.ofHours(12), config.stakePools());
     assertEquals(Duration.ofHours(8), config.kaminoScope());
   }
@@ -26,7 +25,6 @@ final class DefensivePollingConfigTests {
         {
           "globalConfig": "PT1H",
           "glamStateAccounts": "PT2H",
-          "integTables": "PT3H",
           "stakePools": "PT4H",
           "kaminoScope": "PT5M"
         }
@@ -34,7 +32,6 @@ final class DefensivePollingConfigTests {
     final var config = DefensivePollingConfig.parseConfig(JsonIterator.parse(json));
     assertEquals(Duration.ofHours(1), config.globalConfig());
     assertEquals(Duration.ofHours(2), config.glamStateAccounts());
-    assertEquals(Duration.ofHours(3), config.integTables());
     assertEquals(Duration.ofHours(4), config.stakePools());
     assertEquals(Duration.ofMinutes(5), config.kaminoScope());
   }
@@ -49,7 +46,6 @@ final class DefensivePollingConfigTests {
     final var config = DefensivePollingConfig.parseConfig(JsonIterator.parse(json));
     assertEquals(Duration.ofMinutes(1), config.globalConfig());
     assertEquals(Duration.ofHours(8), config.glamStateAccounts());
-    assertEquals(Duration.ofHours(4), config.integTables());
     assertEquals(Duration.ofHours(5), config.stakePools());
     assertEquals(Duration.ofHours(8), config.kaminoScope());
   }
@@ -60,7 +56,6 @@ final class DefensivePollingConfigTests {
         {
           "globalConfig": "PT1H",
           "glamStateAccounts": "PT2H",
-          "integTables": "PT3H",
           "stakePools": "PT4H",
           "kaminoScope": "PT5M"
         }
@@ -68,7 +63,6 @@ final class DefensivePollingConfigTests {
     final var config = DefensivePollingConfig.parseConfig(JsonIterator.parse(json));
     assertEquals(Duration.ofHours(1), config.globalConfig());
     assertEquals(Duration.ofHours(2), config.glamStateAccounts());
-    assertEquals(Duration.ofHours(3), config.integTables());
     assertEquals(Duration.ofHours(4), config.stakePools());
     assertEquals(Duration.ofMinutes(5), config.kaminoScope());
   }
@@ -79,7 +73,6 @@ final class DefensivePollingConfigTests {
     final var config = DefensivePollingConfig.parseConfig(JsonIterator.parse(json));
     assertEquals(Duration.ofMinutes(1), config.globalConfig());
     assertEquals(Duration.ofHours(8), config.glamStateAccounts());
-    assertEquals(Duration.ofHours(4), config.integTables());
     assertEquals(Duration.ofHours(12), config.stakePools());
     assertEquals(Duration.ofHours(8), config.kaminoScope());
   }
@@ -94,7 +87,6 @@ final class DefensivePollingConfigTests {
     final var config = DefensivePollingConfig.parseConfig(JsonIterator.parse(json));
     assertEquals(Duration.ofMinutes(1), config.globalConfig());
     assertEquals(Duration.ofHours(8), config.glamStateAccounts());
-    assertEquals(Duration.ofHours(4), config.integTables());
     assertEquals(Duration.ofHours(5), config.stakePools());
     assertEquals(Duration.ofHours(8), config.kaminoScope());
   }
@@ -104,9 +96,21 @@ final class DefensivePollingConfigTests {
     final var config = DefensivePollingConfig.createDefaultConfig();
     assertEquals(Duration.ofMinutes(1), config.globalConfig());
     assertEquals(Duration.ofHours(8), config.glamStateAccounts());
-    assertEquals(Duration.ofHours(4), config.integTables());
     assertEquals(Duration.ofHours(12), config.stakePools());
     assertEquals(Duration.ofHours(8), config.kaminoScope());
+  }
+
+  @Test
+  void anIntegTablesFieldIsAnError() {
+    // integration lookup tables are no longer polled: a config that still
+    // carries the cadence must fail loudly, not be silently ignored
+    final var json = """
+        {
+          "integTables": "PT3H"
+        }
+        """;
+    final var error = assertThrows(IllegalStateException.class, () -> DefensivePollingConfig.parseConfig(JsonIterator.parse(json)));
+    assertTrue(error.getMessage().contains("integTables"), error.getMessage());
   }
 
   // Properties Tests
@@ -116,14 +120,12 @@ final class DefensivePollingConfigTests {
     final var properties = new Properties();
     properties.setProperty("globalConfig", "PT30M");
     properties.setProperty("glamStateAccounts", "PT6H");
-    properties.setProperty("integTables", "PT2H");
     properties.setProperty("stakePools", "PT10H");
     properties.setProperty("kaminoScope", "PT4H");
 
     final var config = DefensivePollingConfig.parseConfig(properties);
     assertEquals(Duration.ofMinutes(30), config.globalConfig());
     assertEquals(Duration.ofHours(6), config.glamStateAccounts());
-    assertEquals(Duration.ofHours(2), config.integTables());
     assertEquals(Duration.ofHours(10), config.stakePools());
     assertEquals(Duration.ofHours(4), config.kaminoScope());
   }
@@ -133,7 +135,6 @@ final class DefensivePollingConfigTests {
     final var config = DefensivePollingConfig.parseConfig(new Properties());
     assertEquals(Duration.ofMinutes(1), config.globalConfig());
     assertEquals(Duration.ofHours(8), config.glamStateAccounts());
-    assertEquals(Duration.ofHours(4), config.integTables());
     assertEquals(Duration.ofHours(12), config.stakePools());
     assertEquals(Duration.ofHours(8), config.kaminoScope());
   }
@@ -143,14 +144,12 @@ final class DefensivePollingConfigTests {
     final var properties = new Properties();
     properties.setProperty("polling.globalConfig", "PT5M");
     properties.setProperty("polling.glamStateAccounts", "PT3H");
-    properties.setProperty("polling.integTables", "PT1H");
     properties.setProperty("polling.stakePools", "PT6H");
     properties.setProperty("polling.kaminoScope", "PT2H");
 
     final var config = DefensivePollingConfig.parseConfig("polling", properties);
     assertEquals(Duration.ofMinutes(5), config.globalConfig());
     assertEquals(Duration.ofHours(3), config.glamStateAccounts());
-    assertEquals(Duration.ofHours(1), config.integTables());
     assertEquals(Duration.ofHours(6), config.stakePools());
     assertEquals(Duration.ofHours(2), config.kaminoScope());
   }
@@ -160,14 +159,12 @@ final class DefensivePollingConfigTests {
     final var properties = new Properties();
     properties.setProperty("defensive.polling.globalConfig", "PT2M");
     properties.setProperty("defensive.polling.glamStateAccounts", "PT1H");
-    properties.setProperty("defensive.polling.integTables", "PT30M");
     properties.setProperty("defensive.polling.stakePools", "PT3H");
     properties.setProperty("defensive.polling.kaminoScope", "PT45M");
 
     final var config = DefensivePollingConfig.parseConfig("defensive.polling.", properties);
     assertEquals(Duration.ofMinutes(2), config.globalConfig());
     assertEquals(Duration.ofHours(1), config.glamStateAccounts());
-    assertEquals(Duration.ofMinutes(30), config.integTables());
     assertEquals(Duration.ofHours(3), config.stakePools());
     assertEquals(Duration.ofMinutes(45), config.kaminoScope());
   }
@@ -180,7 +177,6 @@ final class DefensivePollingConfigTests {
     final var config = DefensivePollingConfig.parseConfig(properties);
     assertEquals(Duration.ofMinutes(1), config.globalConfig());
     assertEquals(Duration.ofHours(8), config.glamStateAccounts());
-    assertEquals(Duration.ofHours(4), config.integTables());
     assertEquals(Duration.ofHours(5), config.stakePools());
     assertEquals(Duration.ofHours(8), config.kaminoScope());
   }

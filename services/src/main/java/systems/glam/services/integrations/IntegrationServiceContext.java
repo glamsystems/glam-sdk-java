@@ -28,7 +28,6 @@ public interface IntegrationServiceContext {
                                                  final MintCache mintCache,
                                                  final StakePoolCache stakePoolCache,
                                                  final GlobalConfigCache globalConfigCache,
-                                                 final IntegLookupTableCache integLookupTableCache,
                                                  final AccountFetcher accountFetcher,
                                                  final KaminoAccounts kaminoAccounts,
                                                  final LoopscaleAccounts loopscaleAccounts,
@@ -42,7 +41,6 @@ public interface IntegrationServiceContext {
         mintCache,
         stakePoolCache,
         globalConfigCache,
-        integLookupTableCache,
         accountFetcher,
         kaminoAccounts,
         loopscaleAccounts,
@@ -103,8 +101,6 @@ public interface IntegrationServiceContext {
   MarginfiAccounts marginfiAccounts();
 
   JupiterAccounts jupiterAccounts();
-
-  IntegLookupTableCache integTableCache();
 
   KaminoAccounts kaminoAccounts();
 
