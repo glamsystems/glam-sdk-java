@@ -155,16 +155,33 @@ final class SingleAssetFulfillmentServiceEntrypointTests {
       }
     };
 
+    // the monitor is started through its own run(Executor), which must receive a live executor
+    // of the entrypoint's: the stub proves it by running a task on what it was given
+    final var monitorRan = new CountDownLatch(1);
+    final var txMonitorService = (software.sava.services.solana.transactions.TxMonitorService) Proxy.newProxyInstance(
+        software.sava.services.solana.transactions.TxMonitorService.class.getClassLoader(),
+        new Class<?>[]{software.sava.services.solana.transactions.TxMonitorService.class},
+        (proxy, method, args) -> {
+          if (method.getName().equals("run") && args != null && args.length == 1) {
+            ((java.util.concurrent.Executor) args[0]).execute(monitorRan::countDown);
+            return null;
+          }
+          throw new UnsupportedOperationException(method.getName());
+        }
+    );
+
     final var entrypoint = new SingleAssetFulfillmentServiceEntrypoint(
-        webSocketManager, epochInfoService, fulfillmentService
+        webSocketManager, epochInfoService, txMonitorService, fulfillmentService
     );
     assertSame(webSocketManager, entrypoint.webSocketManager());
     assertSame(epochInfoService, entrypoint.epochInfoService());
+    assertSame(txMonitorService, entrypoint.txMonitorService());
     assertSame(fulfillmentService, entrypoint.fulfillmentService());
 
     final var runner = new Thread(entrypoint::run);
     runner.start();
     assertTrue(epochServiceRan.await(5, SECONDS), "the epoch service was never executed");
+    assertTrue(monitorRan.await(1, SECONDS), "the transaction monitor was never started on the entrypoint's executor");
     assertTrue(fulfillmentServiceRan.await(5, SECONDS), "the fulfillment service was never executed");
 
     Thread.sleep(250L);

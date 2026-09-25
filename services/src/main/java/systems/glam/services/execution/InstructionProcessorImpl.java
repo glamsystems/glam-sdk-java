@@ -1,7 +1,6 @@
 package systems.glam.services.execution;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.tx.Instruction;
 import software.sava.core.tx.Transaction;
@@ -18,7 +17,7 @@ import java.math.BigDecimal;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
-import java.util.function.Function;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
@@ -34,17 +33,29 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
 
   private static final System.Logger logger = System.getLogger(InstructionProcessorImpl.class.getName());
 
+  /// Adds `key` to the accounts a transaction carries unless it is already among them or they are at
+  /// the limit: false exactly when the transaction cannot take `key`. A key already carried always
+  /// fits, even in a full transaction.
+  static boolean fits(final Set<PublicKey> accounts, final PublicKey key) {
+    if (accounts.contains(key)) {
+      return true;
+    }
+    if (accounts.size() == Transaction.MAX_ACCOUNTS) {
+      return false;
+    }
+    accounts.add(key);
+    return true;
+  }
+
   @Override
   public boolean processInstructions(final String logContext,
-                                     final List<Instruction> instructions,
-                                     final Function<List<Instruction>, Transaction> transactionFactory) throws InterruptedException {
+                                     final List<Instruction> instructions) throws InterruptedException {
     return processInstructions(
         logContext,
         instructions,
         cuBudgetMultiplier,
         maxLamportPriorityFee,
-        maxRetries,
-        transactionFactory
+        maxRetries
     );
   }
 
@@ -53,48 +64,50 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
                                      final List<Instruction> instructions,
                                      final double cuBudgetMultiplier,
                                      final BigDecimal maxLamportPriorityFee,
-                                     final int maxRetries,
-                                     final Function<List<Instruction>, Transaction> transactionFactory) throws InterruptedException {
-    final var distinctAccounts = HashSet.<PublicKey>newHashSet(64);
+                                     final int maxRetries) throws InterruptedException {
+    final var feePayer = transactionProcessor.feePayer();
+    final var distinctAccounts = HashSet.<PublicKey>newHashSet(Transaction.MAX_ACCOUNTS);
 
     for (int batchSize = instructions.size(); ; ) {
       var ixBatch = batchSize < instructions.size()
           ? instructions.subList(0, batchSize)
           : instructions;
 
+      // what the v1 transaction carries against its account limit: the fee payer, every program
+      // invoked and every instruction account, each once. Compute budget rides as ConfigValues,
+      // so no ComputeBudget program (and no instruction of it) takes a slot.
       distinctAccounts.clear();
-      distinctAccounts.add(SolanaAccounts.MAIN_NET.computeBudgetProgram());
-      int numDistinctAccounts = distinctAccounts.size();
+      distinctAccounts.add(feePayer);
       int numInstructions = 0;
       BATCHED:
       for (final var ix : ixBatch) {
-        for (final var account : ix.accounts()) {
-          if (distinctAccounts.add(account.publicKey())) {
-            if (++numDistinctAccounts > 64) {
-              if (numInstructions == 0) {
-                final var accounts = ix.accounts();
-                final var msg = String.format("""
-                        {
-                         "event": "Instruction Exceeds Account Limit",
-                         "program": "%s",
-                         "data": "%s",
-                         "numAccounts": %d,
-                         "accounts": ["%s"],
-                        }""",
-                    ix.programId(),
-                    Base64.getEncoder().encodeToString(ix.copyData()),
-                    accounts.size(),
-                    accounts.stream()
-                        .map(AccountMeta::publicKey)
-                        .map(PublicKey::toBase58)
-                        .collect(Collectors.joining("\",\""))
-                );
-                notifyClient.postMsg(msg);
-                throw new IllegalStateException(msg);
-              }
-              ixBatch = ixBatch.subList(0, numInstructions);
-              break BATCHED;
+        final var accounts = ix.accounts();
+        // the invoked program first, then the instruction's accounts
+        for (int i = -1, numAccounts = accounts.size(); i < numAccounts; ++i) {
+          final var key = i < 0 ? ix.programId().publicKey() : accounts.get(i).publicKey();
+          if (!fits(distinctAccounts, key)) {
+            if (numInstructions == 0) {
+              final var msg = String.format("""
+                      {
+                       "event": "Instruction Exceeds Account Limit",
+                       "program": "%s",
+                       "data": "%s",
+                       "numAccounts": %d,
+                       "accounts": ["%s"],
+                      }""",
+                  ix.programId(),
+                  Base64.getEncoder().encodeToString(ix.copyData()),
+                  accounts.size(),
+                  accounts.stream()
+                      .map(AccountMeta::publicKey)
+                      .map(PublicKey::toBase58)
+                      .collect(Collectors.joining("\",\""))
+              );
+              notifyClient.postMsg(msg);
+              throw new IllegalStateException(msg);
             }
+            ixBatch = ixBatch.subList(0, numInstructions);
+            break BATCHED;
           }
         }
         ++numInstructions;
@@ -110,7 +123,6 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
             true,
             true,
             maxRetries,
-            transactionFactory,
             logContext
         );
       } catch (final RuntimeException ex) {
@@ -143,6 +155,12 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
           if (error == SIZE_LIMIT_EXCEEDED) {
             batchSize = (batchSize & 1) == 1 ? (batchSize >> 1) + 1 : batchSize >> 1;
             logger.log(WARNING, msg);
+            if (instructions.isEmpty()) {
+              // the refused batch was the whole remaining list: nothing is left to send at the
+              // halved size, and an empty transaction must never go out in its place
+              notifyClient.postMsg(msg);
+              return false;
+            }
             continue;
           } else if (error instanceof TransactionError.InstructionError(final int index, final IxError ixError)) {
             if (ixError instanceof IxError.Custom(final long errorId)) {

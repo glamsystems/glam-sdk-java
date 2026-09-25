@@ -6,6 +6,7 @@ import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.core.config.ServiceConfigUtil;
 import software.sava.services.solana.epoch.EpochInfoService;
 import software.sava.services.solana.transactions.InstructionService;
+import software.sava.services.solana.transactions.TxMonitorService;
 import software.sava.services.solana.websocket.WebSocketManager;
 import systems.glam.sdk.*;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintConstants;
@@ -22,6 +23,7 @@ import static java.lang.System.Logger.Level.*;
 
 public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocketManager,
                                                       EpochInfoService epochInfoService,
+                                                      TxMonitorService txMonitorService,
                                                       FulfillmentService fulfillmentService) implements Runnable {
 
   private static final System.Logger logger = System.getLogger(SingleAssetFulfillmentServiceEntrypoint.class.getName());
@@ -179,7 +181,7 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
     webSocketConsumers.add(fulfillmentService::subscribe);
     fulfillmentService.subscribe(webSocketManager.webSocket());
 
-    return new SingleAssetFulfillmentServiceEntrypoint(webSocketManager, epochInfoService, fulfillmentService);
+    return new SingleAssetFulfillmentServiceEntrypoint(webSocketManager, epochInfoService, txMonitorService, fulfillmentService);
   }
 
   // package-private so tests can drive the gate directly (same precedent as
@@ -200,8 +202,12 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
 
   @Override
   public void run() {
-    try (final var executorService = Executors.newFixedThreadPool(2)) {
+    // the epoch service, the transaction monitor's two loops (signature polling and expiry),
+    // and the fulfillment service; without the monitor's threads an await that misses the
+    // websocket confirmation falls through to a poll nobody serves
+    try (final var executorService = Executors.newFixedThreadPool(4)) {
       executorService.execute(epochInfoService);
+      txMonitorService.run(executorService);
       executorService.execute(fulfillmentService);
       for (; ; ) {
         webSocketManager.checkConnection();

@@ -8,6 +8,7 @@ import software.sava.core.tx.Transaction;
 import software.sava.rpc.json.http.response.IxError;
 import software.sava.rpc.json.http.response.TransactionError;
 import software.sava.services.solana.transactions.InstructionService;
+import software.sava.services.solana.transactions.TransactionProcessor;
 import software.sava.services.solana.transactions.TransactionResult;
 import systems.glam.sdk.GlamAccounts;
 
@@ -80,14 +81,27 @@ final class InstructionProcessorTests {
     }
   }
 
-  private static InstructionProcessorImpl processor(final ScriptedService service, final RecordingNotify notify) {
-    return new InstructionProcessorImpl(
-        null, service.service(), new BigDecimal("0.001"), notify.client(), 1.2, 3
+  private static final PublicKey FEE_PAYER = key(9_999);
+
+  /// The processor asks the transaction processor for one thing here: whose transaction it builds.
+  private static TransactionProcessor feePayer() {
+    return (TransactionProcessor) Proxy.newProxyInstance(
+        TransactionProcessor.class.getClassLoader(),
+        new Class<?>[]{TransactionProcessor.class},
+        (proxy, method, args) -> {
+          if (method.getName().equals("feePayer")) {
+            return FEE_PAYER;
+          }
+          throw new UnsupportedOperationException(method.getName());
+        }
     );
   }
 
-  private static final Function<List<Instruction>, Transaction> FACTORY =
-      batch -> Transaction.createTx(key(9_999), batch);
+  private static InstructionProcessorImpl processor(final ScriptedService service, final RecordingNotify notify) {
+    return new InstructionProcessorImpl(
+        feePayer(), service.service(), new BigDecimal("0.001"), notify.client(), 1.2, 3
+    );
+  }
 
   @Test
   void aSuccessfulBatchProcessesOnceAndDrainsTheList() throws InterruptedException {
@@ -97,7 +111,7 @@ final class InstructionProcessorTests {
     final var instructions = new ArrayList<>(List.of(instruction(1, 2), instruction(2, 2)));
 
     try (final var log = systems.glam.services.tests.LogCapture.attach(InstructionProcessorImpl.class.getName())) {
-      assertTrue(processor(service, notify).processInstructions("test", instructions, FACTORY));
+      assertTrue(processor(service, notify).processInstructions("test", instructions));
       log.assertLogged("test Success");
     }
     assertEquals(List.of(2), service.batchSizes);
@@ -121,13 +135,72 @@ final class InstructionProcessorTests {
         instruction(1, 30), instruction(2, 30), instruction(3, 30)));
 
     try (final var log = systems.glam.services.tests.LogCapture.attach(InstructionProcessorImpl.class.getName())) {
-      assertTrue(processor(service, notify).processInstructions("test", instructions, FACTORY));
+      assertTrue(processor(service, notify).processInstructions("test", instructions));
       // each size-limit drop is warned, never silent
       log.assertLogged("test Failed");
     }
     assertEquals(List.of(2, 1), service.batchSizes);
     assertTrue(instructions.isEmpty());
     assertTrue(notify.messages.isEmpty(), () -> notify.messages.toString());
+  }
+
+  /// A size refusal of the whole remaining list leaves nothing to halve: the call ends with
+  /// false and a page, and no empty transaction is sent in the dropped batch's place.
+  @Test
+  void aSizeRefusalOfTheWholeListEndsTheCall() throws InterruptedException {
+    final var service = new ScriptedService();
+    final var notify = new RecordingNotify();
+    service.script.add(batch -> result(batch, TransactionResult.SIZE_LIMIT_EXCEEDED));
+    final var instructions = new ArrayList<>(List.of(instruction(1, 2), instruction(2, 2)));
+
+    try (final var log = systems.glam.services.tests.LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      assertFalse(processor(service, notify).processInstructions("test", instructions));
+      log.assertLogged("test Failed");
+    }
+    // one send, of the whole list; the scripted service has nothing for a second call
+    assertEquals(List.of(2), service.batchSizes);
+    assertTrue(instructions.isEmpty(), "the refused batch is dropped");
+    assertEquals(1, notify.messages.size(), () -> notify.messages.toString());
+    assertTrue(notify.messages.getFirst().contains("test Failed"), notify.messages.getFirst());
+  }
+
+  /// Once the batch size is down to one, a size refusal cannot halve further: the call ends
+  /// with false and a page, and whatever the caller had left stays in its list for the rebuild.
+  @Test
+  void aSizeRefusalThatCannotHalveLeavesTheRemainderToTheCaller() throws InterruptedException {
+    final var service = new ScriptedService();
+    final var notify = new RecordingNotify();
+    // 60-account instructions ride alone whatever the batch size, so the ladder is 4 -> 2 -> 1
+    // while instructions remain: the third refusal is at batch size 1 with one still queued
+    service.script.add(batch -> result(batch, TransactionResult.SIZE_LIMIT_EXCEEDED));
+    service.script.add(batch -> result(batch, TransactionResult.SIZE_LIMIT_EXCEEDED));
+    service.script.add(batch -> result(batch, TransactionResult.SIZE_LIMIT_EXCEEDED));
+    service.script.add(batch -> result(batch, null));
+    final var instructions = new ArrayList<>(List.of(
+        instruction(1, 60), instruction(2, 60), instruction(3, 60), instruction(4, 60)));
+
+    assertFalse(processor(service, notify).processInstructions("test", instructions));
+    assertEquals(List.of(1, 1, 1), service.batchSizes, "nothing may be sent after the unhalvable refusal");
+    assertEquals(1, instructions.size(), "the remaining instruction is the caller's to rebuild");
+    assertEquals(1, notify.messages.size(), () -> notify.messages.toString());
+  }
+
+  /// An even batch size halves exactly: 4 -> 2, so the remainder goes out as a pair then a single.
+  @Test
+  void anEvenBatchSizeHalves() throws InterruptedException {
+    final var service = new ScriptedService();
+    final var notify = new RecordingNotify();
+    service.script.add(batch -> result(batch, TransactionResult.SIZE_LIMIT_EXCEEDED));
+    service.script.add(batch -> result(batch, null));
+    service.script.add(batch -> result(batch, null));
+    // fee payer + program + 61 accounts = 63: the next instruction's program fits but its
+    // account does not, so the first splits off alone and is refused, halving 4 to 2 for the rest
+    final var instructions = new ArrayList<>(List.of(
+        instruction(1, 61), instruction(2, 1), instruction(3, 1), instruction(4, 1)));
+
+    assertTrue(processor(service, notify).processInstructions("test", instructions));
+    assertEquals(List.of(1, 2, 1), service.batchSizes);
+    assertTrue(instructions.isEmpty());
   }
 
   @Test
@@ -145,29 +218,83 @@ final class InstructionProcessorTests {
       instructions.add(instruction(i, 1));
     }
 
-    assertTrue(processor(service, notify).processInstructions("test", instructions, FACTORY));
+    assertTrue(processor(service, notify).processInstructions("test", instructions));
     assertEquals(List.of(1, 5, 3), service.batchSizes);
     assertTrue(instructions.isEmpty());
   }
 
+  /// A v1 transaction's 64 accounts are the fee payer, each program invoked and each
+  /// instruction account, once each; nothing is reserved for a ComputeBudget program,
+  /// which rides as ConfigValues rather than an account.
   @Test
-  void theComputeBudgetProgramCountsAgainstTheAccountLimit() throws InterruptedException {
+  void theFeePayerAndTheProgramCountAgainstTheAccountLimit() throws InterruptedException {
     final var service = new ScriptedService();
     final var notify = new RecordingNotify();
-    // the compute budget program + 64 accounts = 65 > 64: a single instruction
-    // at the raw limit still cannot be sent
-    final var instructions = new ArrayList<>(List.of(instruction(1, 64)));
+    // fee payer + program + 63 accounts = 65 > 64: a single instruction just under
+    // the raw limit still cannot be sent
+    final var instructions = new ArrayList<>(List.of(instruction(1, 63)));
 
     final var thrown = assertThrows(IllegalStateException.class, () ->
-        processor(service, notify).processInstructions("test", instructions, FACTORY));
-    assertTrue(thrown.getMessage().contains("\"numAccounts\": 64"), thrown.getMessage());
+        processor(service, notify).processInstructions("test", instructions));
+    assertTrue(thrown.getMessage().contains("\"numAccounts\": 63"), thrown.getMessage());
     assertTrue(service.batchSizes.isEmpty(), "nothing may be sent");
 
-    // exactly at the limit: compute budget + 63 accounts = 64 fits
-    final var fits = new ArrayList<>(List.of(instruction(2, 63)));
+    // exactly at the limit: fee payer + program + 62 accounts = 64 fits
+    final var fits = new ArrayList<>(List.of(instruction(2, 62)));
     service.script.add(batch -> result(batch, null));
-    assertTrue(processor(service, notify).processInstructions("test", fits, FACTORY));
+    assertTrue(processor(service, notify).processInstructions("test", fits));
     assertEquals(List.of(1), service.batchSizes);
+  }
+
+  @Test
+  void theFeePayerAmongTheAccountsIsCountedOnce() throws InterruptedException {
+    final var service = new ScriptedService();
+    final var notify = new RecordingNotify();
+    // 62 other accounts + the fee payer as the 63rd + the program = 64: fits, because the
+    // fee payer's own slot is the one the instruction names
+    final var accounts = new ArrayList<>(instruction(1, 62).accounts());
+    accounts.add(AccountMeta.createWritableSigner(FEE_PAYER));
+    final var payerSigned = Instruction.createInstruction(AccountMeta.createInvoked(key(1)), accounts, new byte[]{1});
+    final var instructions = new ArrayList<>(List.of(payerSigned));
+    service.script.add(batch -> result(batch, null));
+
+    assertTrue(processor(service, notify).processInstructions("test", instructions));
+    assertEquals(List.of(1), service.batchSizes);
+
+    // two instructions of one program share its slot: program + 31 + 31 accounts + payer = 64
+    final var sameProgram = new ArrayList<>(List.of(
+        Instruction.createInstruction(AccountMeta.createInvoked(key(3)), instruction(4, 31).accounts(), new byte[]{4}),
+        Instruction.createInstruction(AccountMeta.createInvoked(key(3)), instruction(5, 31).accounts(), new byte[]{5})));
+    service.script.add(batch -> result(batch, null));
+    assertTrue(processor(service, notify).processInstructions("test", sameProgram));
+    assertEquals(List.of(1, 2), service.batchSizes);
+  }
+
+  /// A full transaction still takes an instruction that names only accounts it already
+  /// carries: the limit is on distinct accounts, not on instructions.
+  @Test
+  void anInstructionAddingNoNewAccountJoinsAFullTransaction() throws InterruptedException {
+    final var service = new ScriptedService();
+    final var notify = new RecordingNotify();
+    service.script.add(batch -> result(batch, null));
+    // fee payer + program + 62 accounts = 64: full after the first instruction; the second
+    // is the same program over the same accounts, so it adds no key and rides along
+    final var shared = instruction(1, 62).accounts();
+    final var first = Instruction.createInstruction(AccountMeta.createInvoked(key(1)), shared, new byte[]{1});
+    final var second = Instruction.createInstruction(AccountMeta.createInvoked(key(1)), shared, new byte[]{2});
+    final var instructions = new ArrayList<>(List.of(first, second));
+
+    assertTrue(processor(service, notify).processInstructions("test", instructions));
+    assertEquals(List.of(2), service.batchSizes);
+    assertTrue(instructions.isEmpty());
+
+    // one new key on top of a full transaction opens the next one
+    final var third = Instruction.createInstruction(AccountMeta.createInvoked(key(1)), instruction(3, 1).accounts(), new byte[]{3});
+    final var overflow = new ArrayList<>(List.of(first, third));
+    service.script.add(batch -> result(batch, null));
+    service.script.add(batch -> result(batch, null));
+    assertTrue(processor(service, notify).processInstructions("test", overflow));
+    assertEquals(List.of(2, 1, 1), service.batchSizes);
   }
 
   @Test
@@ -177,7 +304,7 @@ final class InstructionProcessorTests {
     service.script.add(batch -> result(batch, TransactionResult.EXPIRED));
     final var instructions = new ArrayList<>(List.of(instruction(1, 2), instruction(2, 2)));
 
-    assertFalse(processor(service, notify).processInstructions("test", instructions, FACTORY));
+    assertFalse(processor(service, notify).processInstructions("test", instructions));
     assertEquals(1, notify.messages.size());
     assertTrue(notify.messages.getFirst().contains("test Failed"), notify.messages.getFirst());
   }
@@ -190,7 +317,7 @@ final class InstructionProcessorTests {
     final var instructions = new ArrayList<>(List.of(instruction(1, 2)));
 
     // one instruction cannot be split further: report and stop
-    assertFalse(processor(service, notify).processInstructions("test", instructions, FACTORY));
+    assertFalse(processor(service, notify).processInstructions("test", instructions));
     assertEquals(List.of(1), service.batchSizes);
     assertEquals(1, notify.messages.size());
   }
@@ -224,7 +351,7 @@ final class InstructionProcessorTests {
       });
       final var instructions = new ArrayList<>(List.of(instruction(1, 2), instruction(2, 2)));
 
-      assertFalse(processor(service, notify).processInstructions("test", instructions, FACTORY));
+      assertFalse(processor(service, notify).processInstructions("test", instructions));
       assertEquals(1, notify.messages.size(), testCase::toString);
     }
   }
@@ -241,7 +368,7 @@ final class InstructionProcessorTests {
     final var b = Instruction.createInstruction(AccountMeta.createInvoked(key(2)), shared, new byte[]{2});
     final var instructions = new ArrayList<>(List.of(a, b));
 
-    assertTrue(processor(service, notify).processInstructions("test", instructions, FACTORY));
+    assertTrue(processor(service, notify).processInstructions("test", instructions));
     assertEquals(List.of(2), service.batchSizes);
   }
 
@@ -265,7 +392,7 @@ final class InstructionProcessorTests {
 
     // false = re-fetch and retry, and nobody is paged for a stale oracle
     try (final var log = systems.glam.services.tests.LogCapture.attach(InstructionProcessorImpl.class.getName())) {
-      assertFalse(processor(service, notify).processInstructions("test", instructions, FACTORY));
+      assertFalse(processor(service, notify).processInstructions("test", instructions));
       log.assertLogged("test Failed");
     }
     assertTrue(notify.messages.isEmpty(), () -> notify.messages.toString());
@@ -278,7 +405,7 @@ final class InstructionProcessorTests {
     final var instructions = new ArrayList<>(List.of(instruction(1, 70)));
 
     final var thrown = assertThrows(IllegalStateException.class, () ->
-        processor(service, notify).processInstructions("test", instructions, FACTORY));
+        processor(service, notify).processInstructions("test", instructions));
     assertTrue(thrown.getMessage().contains("Instruction Exceeds Account Limit"), thrown.getMessage());
     assertTrue(thrown.getMessage().contains("\"numAccounts\": 70"), thrown.getMessage());
     assertEquals(1, notify.messages.size());
@@ -294,7 +421,7 @@ final class InstructionProcessorTests {
     // 40 + 40 distinct accounts: the second instruction cannot join the first
     final var instructions = new ArrayList<>(List.of(instruction(1, 40), instruction(2, 40)));
 
-    assertTrue(processor(service, notify).processInstructions("test", instructions, FACTORY));
+    assertTrue(processor(service, notify).processInstructions("test", instructions));
     assertEquals(List.of(1, 1), service.batchSizes);
     assertTrue(instructions.isEmpty());
   }
@@ -310,7 +437,7 @@ final class InstructionProcessorTests {
 
     try (final var log = systems.glam.services.tests.LogCapture.attach(InstructionProcessorImpl.class.getName())) {
       final var thrown = assertThrows(IllegalStateException.class, () ->
-          processor(service, notify).processInstructions("test", instructions, FACTORY));
+          processor(service, notify).processInstructions("test", instructions));
       assertEquals("rpc down", thrown.getMessage());
       log.assertLogged("Failed to process test instructions.");
     }

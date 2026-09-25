@@ -4,7 +4,6 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
-import software.sava.core.tx.Transaction;
 import software.sava.core.util.LamportDecimal;
 import software.sava.kms.core.signing.SigningService;
 import software.sava.kms.core.signing.SigningServiceConfig;
@@ -107,8 +106,6 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
     return TransactionProcessor.createProcessor(
         taskExecutor,
         signingService,
-        // no lookup table cache: ravina reads it only to build v0 transactions, which nothing here does
-        null,
         serviceKey,
         solanaAccounts,
         formatter,
@@ -194,8 +191,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
     return ExecutionServiceContext.createContext(
         serviceContext,
         epochInfoService,
-        instructionProcessor,
-        instructions -> Transaction.createTx(serviceContext.serviceKey(), instructions)
+        instructionProcessor
     );
   }
 

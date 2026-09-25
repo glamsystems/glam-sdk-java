@@ -23,7 +23,6 @@ import systems.glam.services.mints.MintContext;
 import systems.glam.services.tests.LogCapture;
 
 import java.util.*;
-import java.util.function.Function;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -186,11 +185,6 @@ final class SingleAssetFulfillmentServiceTests {
 
     @Override
     public InstructionProcessor instructionProcessor() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Function<List<Instruction>, software.sava.core.tx.Transaction> transactionFactory() {
       throw new UnsupportedOperationException();
     }
 

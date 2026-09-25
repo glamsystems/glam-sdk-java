@@ -85,6 +85,21 @@ final class FormatUtilTests {
     return software.sava.core.tx.Transaction.createTx(key(8), List.of(ix()));
   }
 
+  /// ravina refuses instructions no v1 transaction can encode with a SIZE_LIMIT_EXCEEDED result
+  /// that carries no transaction; the report still renders, from the batch itself.
+  @Test
+  void formatTransactionResultRendersASizeRefusalWithoutATransaction() {
+    final var result = new software.sava.services.solana.transactions.TransactionResult(
+        List.of(ix(), ix()), true, 1_400_000, 0L, null, 0, null,
+        software.sava.services.solana.transactions.TransactionResult.SIZE_LIMIT_EXCEEDED, null, null
+    );
+    final var formatted = FormatUtil.formatTransactionResult(result);
+    assertTrue(formatted.contains("\"numInstructions\": 2"), formatted);
+    assertTrue(formatted.contains("\"size\": 0"), formatted);
+    assertTrue(formatted.contains("\"tx\": null"), formatted);
+    assertTrue(formatted.contains("SIZE_LIMIT_EXCEEDED"), formatted);
+  }
+
   @Test
   void formatInstructionsJoinsWithCommas() {
     final var single = FormatUtil.formatInstruction(ix());
@@ -118,6 +133,7 @@ final class FormatUtilTests {
     assertTrue(formatted.contains("\"cuPrice\": 42"), formatted);
     assertTrue(formatted.contains("\"sig\": \"https://solscan.io/tx/abc\""), formatted);
     assertTrue(formatted.contains("\"numInstructions\": 1"), formatted);
+    assertTrue(formatted.contains("\"size\": " + transaction().size()), formatted);
 
     // a blank signature renders as a JSON null, unquoted; so does an absent one
     final var unsigned = FormatUtil.formatTransactionResult(result(null, null, " "));
@@ -148,6 +164,9 @@ final class FormatUtilTests {
     final var unknownCode = new software.sava.rpc.json.http.response.TransactionError.InstructionError(
         0, new software.sava.rpc.json.http.response.IxError.Custom(1L));
     final var custom = FormatUtil.formatTransactionResult(result(unknownCode, null, null));
+    // the failed transaction is rendered whole, and sized
+    assertTrue(custom.contains("\"tx\": \"" + transaction().base64EncodeToString() + '"'), custom);
+    assertTrue(custom.contains("\"size\": " + transaction().size()), custom);
     assertTrue(custom.contains("\"failedIx\""), custom);
     assertTrue(custom.contains("Custom"), custom);
 

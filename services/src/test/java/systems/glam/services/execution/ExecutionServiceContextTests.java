@@ -8,7 +8,6 @@ import software.sava.core.accounts.token.Mint;
 import software.sava.core.accounts.token.TokenAccount;
 import software.sava.core.encoding.ByteUtil;
 import software.sava.core.tx.Instruction;
-import software.sava.core.tx.Transaction;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.Context;
 import software.sava.services.core.remote.call.Backoff;
@@ -27,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static software.sava.core.accounts.PublicKey.fromBase58Encoded;
@@ -75,7 +73,6 @@ final class ExecutionServiceContextTests {
     final var processedContexts = new java.util.ArrayList<String>();
     final var processedInstructions = new java.util.ArrayList<List<Instruction>>();
     final var results = new java.util.ArrayDeque<Boolean>(List.of(true, false));
-    final Function<List<Instruction>, Transaction> transactionFactory = ixs -> null;
     final var instructionProcessor = (InstructionProcessor) Proxy.newProxyInstance(
         InstructionProcessor.class.getClassLoader(),
         new Class<?>[]{InstructionProcessor.class},
@@ -84,20 +81,17 @@ final class ExecutionServiceContextTests {
             processedContexts.add((String) args[0]);
             @SuppressWarnings("unchecked") final var ixs = (List<Instruction>) args[1];
             processedInstructions.add(ixs);
-            assertSame(transactionFactory, args[args.length - 1]);
+            assertEquals(2, args.length, "the context passes exactly the log context and the instructions");
             return results.removeFirst();
           }
           throw new UnsupportedOperationException(method.getName());
         }
     );
 
-    final var context = new ExecutionServiceContextImpl(
-        serviceContext, epochInfoService, instructionProcessor, transactionFactory
-    );
+    final var context = new ExecutionServiceContextImpl(serviceContext, epochInfoService, instructionProcessor);
 
     assertSame(epochInfoService, context.epochInfoService());
     assertSame(instructionProcessor, context.instructionProcessor());
-    assertSame(transactionFactory, context.transactionFactory());
     assertFalse(context.feePayerBalanceLow());
     assertEquals(411L, context.medianMillisPerSlot());
 
@@ -120,14 +114,14 @@ final class ExecutionServiceContextTests {
           throw new UnsupportedOperationException(method.getName());
         }
     );
-    final var context = new ExecutionServiceContextImpl(lowBalanceContext, null, null, null);
+    final var context = new ExecutionServiceContextImpl(lowBalanceContext, null, null);
     assertTrue(context.feePayerBalanceLow());
   }
 
   @Test
   void theBaseContextDelegatesToTheServiceContext(@TempDir final Path tempDir) throws InterruptedException {
     final var serviceContext = serviceContext(tempDir, Duration.ofMillis(30));
-    final var context = new ExecutionServiceContextImpl(serviceContext, null, null, null);
+    final var context = new ExecutionServiceContextImpl(serviceContext, null, null);
 
     assertEquals(Duration.ofMillis(30).toNanos(), context.minCheckStateDelayNanos());
     assertEquals(Duration.ofMinutes(5).toNanos(), context.maxCheckStateDelayNanos());

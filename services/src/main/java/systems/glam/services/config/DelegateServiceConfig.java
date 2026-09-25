@@ -86,9 +86,9 @@ public interface DelegateServiceConfig {
   WebSocketManager createWebSocketManager(final HttpClient wsHttpClient,
                                           final Collection<Consumer<SolanaRpcWebsocket>> webSocketConsumers);
 
-  /// The processor carries no address lookup table cache, so it cannot build v0 transactions:
-  /// `lookupTableCache()` is `null` and `transactionFactory` with any lookup table key throws.
-  /// Use `legacyTransactionFactory()`.
+  /// The processor builds, signs and publishes SIMD-0385 v1 transactions paid by `serviceKey`: the
+  /// compute unit limit and priority fee ride as ConfigValues, so the instructions it is handed must
+  /// not invoke the ComputeBudget program.
   TransactionProcessor createTransactionProcessor(final ExecutorService taskExecutor,
                                                   final SigningService signingService,
                                                   final PublicKey serviceKey,

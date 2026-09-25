@@ -90,7 +90,8 @@ the send belong to the `InstructionService`, and a failed result means the
 caller re-fetches and rebuilds; that intent is now stated in the code and
 pinned by the tests, including the odd-rounds-up halving of the batch bound
 governing the *remainder* — the account-64 splitter (duplicates counted
-once, the compute-budget program counted against the limit, exactly-64
+once; since 2026-09-25 the fee payer and each invoked program counted against
+the limit, a key already carried joining a full transaction, exactly-64
 fits), the fatal single-instruction-over-limit page, the quiet
 stale-mint-price retry against its three near-misses (wrong code,
 wrong program, non-custom error — each must page), and service failures
@@ -1102,6 +1103,77 @@ equivalent` rows, `AccountFetcherImpl,createBatch,IncrementsMutator` and
 waits on real-time deadlines. The `createBatch` increment is read only as
 zero/non-zero, so that kill cannot be behavioural: this is a wandering count
 in that harness, to be made deterministic before the prune is retried.
+
+### 2026-09-25 — ravina's v1-only send path and ix-proxy's mapping documents
+
+Ravina now builds only SIMD-0385 v1 transactions and takes no transaction
+factory, and ix-proxy maps through mapping documents. Changed here:
+`InstructionProcessor` / `InstructionProcessorImpl.processInstructions` and
+`ExecutionServiceContext.createContext` / `ExecutionServiceContextImpl` lose
+their `Function<List<Instruction>, Transaction>` parameter and
+`transactionFactory()` accessor (and with them the `Transaction.createTx`
+lambda in `BaseDelegateServiceConfig.createExecutionServiceContext`);
+`createTransactionProcessor` no longer passes ravina a null lookup-table
+cache. The account-64 splitter counts what the v1 transaction carries — the
+fee payer, each invoked program and each instruction account, once each,
+through the new `fits` helper — and reserves nothing for a ComputeBudget
+program, which rides as ConfigValues. Two paths the v1 limits make reachable
+were closed: a size refusal of the whole remaining list now ends the call
+with false and a page instead of sending an empty batch next, and one that
+cannot halve further leaves the remainder in the caller's list. The
+fulfillment entrypoint now starts ravina's transaction monitor
+(`txMonitorService.run(executor)`, a four-thread pool) beside the epoch and
+fulfillment services, which it never had; and `FormatUtil.formatTransactionResult`
+renders a size refusal whose transaction could not be built at all
+(`transaction()` null, `"size": 0`, `"tx": null`, instruction count from the
+batch). Tests: `theFeePayerAndTheProgramCountAgainstTheAccountLimit` replaces
+the compute-budget rule, plus `theFeePayerAmongTheAccountsIsCountedOnce`,
+`anInstructionAddingNoNewAccountJoinsAFullTransaction`,
+`aSizeRefusalOfTheWholeListEndsTheCall`,
+`aSizeRefusalThatCannotHalveLeavesTheRemainderToTheCaller`,
+`anEvenBatchSizeHalves`,
+`formatTransactionResultRendersASizeRefusalWithoutATransaction`, and the
+entrypoint test now awaits the monitor's start on the entrypoint's own
+executor with a 1s deadline (inside the watchdog budget, so the removed
+start is a real kill, not a timeout).
+
+Evidence: an intermediate history-free observation surfaced one fresh
+survivor of the new code, `InstructionProcessorImpl,fits`
+`RemoveConditionalMutator_EQUAL_IF` — the `accounts.add(key)` return value
+was always true once `contains` had been checked, an equivalent by
+construction — which was refactored out (the add's result is no longer read)
+rather than accepted; the test on a full transaction taking an instruction
+that adds no key pins the direction the refactor left. The fresh history-free
+`pitestServices` observation after that (plugin 21.5.30, 1627 mutants, 1466
+detected, 116 survived, 45 no_coverage, 67 timed out, solo load) added no
+fresh rows.
+
+Three more rows join the pending prune, all `# untriaged`, so the candidate
+set is now 18 and the 15-row previews recorded above are superseded (the
+plugin reset its matching when the execution inputs changed):
+
+- `BaseDelegateServiceConfig` — now 2: `createLookupTableCache` (above) and
+  `lambda$createExecutionServiceContext$0` `NullReturnValsMutator`
+  (`NO_COVERAGE`, the deleted `Transaction.createTx` lambda).
+- `InstructionProcessorImpl` — now 3: the `numTables` ternary (above),
+  `processInstructions` `MathMutator` (`NO_COVERAGE`; the even-halving shift
+  is now covered and killed by `anEvenBatchSizeHalves`), and one of the three
+  `processInstructions` `RemoveConditionalMutator_EQUAL_IF` copies (the
+  odd-halving parity check, killed by the same test; the copy pruned carries
+  whichever `# line` tag allocation leaves over — identity is the line-less
+  multiset).
+
+The prune stays blocked on the `AccountFetcherTests` wander below. The
+line-drift advisories the edits caused (34 keys, every touched class and its
+neighbours) were refreshed with `pitestServicesBaselineRetag` (54 matched
+row line tags rewritten, all 179 rows preserved), which changes no row.
+
+Timeout-quiet context: while the review workflow ran beside an earlier
+observation (load average above 100), `SingleAssetFulfillmentService.compareAndSet`
+(`RemoveConditionalMutator_EQUAL_ELSE`, `_ORDER_ELSE`) and
+`KeyedFlatFileImpl.overwriteFile` (`VoidMethodCallMutator`) each read one
+KILLED -> TIMED_OUT flip; the solo-load observation above read them KILLED
+again ("0 newly timed out, 2 no longer"). Load flips, no record change.
 
 ### Family labels
 

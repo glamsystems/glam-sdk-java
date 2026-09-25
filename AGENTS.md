@@ -464,9 +464,10 @@ to the minions and a test-resources `META-INF/services` is invisible to the
 module-path `test` task. This repo declares no services of its own (audited
 2026-07-22), but the trap reached it through a dependency: a test that
 ServiceLoads ravina's `MemorySignerFactory` failed under PIT while that jar
-declared the service only in `module-info` (hit 2026-07-23). Ravina fixed it in
-`bde97ec` ("restore classpath service discovery"); `pitestServices` needs a
-ravina release carrying that fix.
+declared the service only in `module-info` (hit 2026-07-23). Ravina fixed it
+on its main branch in `78b1a3c` ("restore classpath service discovery": a
+`META-INF/services` entry beside each `module-info` provider), first released
+in 25.5.2; every ravina the BOM has pinned since carries it.
 
 **A wandering count, locally.** Causes already seen here: real waits,
 `TIMED_OUT` load flips, coverage attributed to field initializers, and

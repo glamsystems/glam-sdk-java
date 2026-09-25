@@ -92,8 +92,11 @@ public final class FormatUtil {
     final long cuPrice = transactionResult.cuPrice();
     final long lamportsFee = transactionResult.totalFeeLamports();
     final var solFee = LamportDecimal.toBigDecimal(lamportsFee).stripTrailingZeros();
+    // a size refusal for instructions no v1 transaction can encode carries no transaction at all
     final var transaction = transactionResult.transaction();
-    final var numInstructions = transaction.instructions().size();
+    final int size = transaction == null ? 0 : transaction.size();
+    final var encodedTransaction = transaction == null ? "null" : '"' + transaction.base64EncodeToString() + '"';
+    final var numInstructions = transactionResult.instructions().size();
     final var formattedSig = transactionResult.formattedSig();
     final var sig = formattedSig == null || formattedSig.isBlank()
         ? "null"
@@ -116,14 +119,15 @@ public final class FormatUtil {
                 "logs": [%s
                 ],
                 "sig": %s,
-                "tx": "%s",
+                "tx": %s,
               """,
           cuBudget, cuPrice, solFee.toPlainString(),
-          transaction.size(), numInstructions,
+          size, numInstructions,
           logs,
           sig,
-          transaction.base64EncodeToString()
+          encodedTransaction
       ));
+      // an instruction error comes from a simulation or a send, so its result always carries the transaction
       if (error instanceof TransactionError.InstructionError(final int index, final var ixError)) {
         final var failedInstruction = transaction.instructions().get(index);
         String errorMsg;
@@ -168,7 +172,7 @@ public final class FormatUtil {
                 "sig": %s
                }""",
           cuBudget, cuPrice, solFee.toPlainString(),
-          transaction.size(), numInstructions, sig
+          size, numInstructions, sig
       ).indent(1);
     }
   }
