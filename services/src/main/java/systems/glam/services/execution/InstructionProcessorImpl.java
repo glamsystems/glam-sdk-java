@@ -135,6 +135,10 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
         throw ex;
       }
 
+      // formatted before the batch is cleared below: the result keeps the batch list itself,
+      // not a copy, so a report taken after the clear would count zero instructions
+      final var formattedTxResult = FormatUtil.formatTransactionResult(txResult);
+
       // Deliberately cleared before the error check: failed batches are
       // DROPPED, never retried here — retries below the send belong to the
       // InstructionService (maxRetries), and a failed result means the caller
@@ -143,7 +147,6 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
       ixBatch.clear();
 
       final var error = txResult.error();
-      final var formattedTxResult = FormatUtil.formatTransactionResult(txResult);
       if (error != null) {
         final var msg = String.format("""
                 %s Failed

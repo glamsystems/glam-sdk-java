@@ -1168,6 +1168,19 @@ line-drift advisories the edits caused (34 keys, every touched class and its
 neighbours) were refreshed with `pitestServicesBaselineRetag` (54 matched
 row line tags rewritten, all 179 rows preserved), which changes no row.
 
+The local review then caught a regression of the same change: the formatter
+read the batch count from the result's instruction list, which ravina keeps
+by reference and the processor had already cleared, so every report said
+zero. `InstructionProcessorImpl` now formats before it clears, and
+`theReportCountsTheBatchBeforeItIsCleared` aliases the list the way ravina
+does (the other fixtures copy it, which is why they missed it); the fresh
+history-free observation after the fix (1627 mutants, 1466 detected) added
+no rows. A retag run for the one drifted `InstructionProcessorImpl` tag was
+refused because its own observation read `AccountFetcherImpl,delay`
+`RemoveConditionalMutator_EQUAL_ELSE` as SURVIVED once — killed in every
+other run that day — the `AccountFetcherTests` wander below in its other
+direction; the tag stays drifted until that harness is deterministic.
+
 Timeout-quiet context: while the review workflow ran beside an earlier
 observation (load average above 100), `SingleAssetFulfillmentService.compareAndSet`
 (`RemoveConditionalMutator_EQUAL_ELSE`, `_ORDER_ELSE`) and

@@ -297,6 +297,33 @@ final class InstructionProcessorTests {
     assertEquals(List.of(2, 1, 1), service.batchSizes);
   }
 
+  /// Ravina's result keeps the batch list it was handed, not a copy, and the processor clears
+  /// that list once the batch is done: the report must be taken first, so the log and the page
+  /// carry the batch's real instruction count. The fixture aliases the list the way ravina does.
+  @Test
+  void theReportCountsTheBatchBeforeItIsCleared() throws InterruptedException {
+    final var service = new ScriptedService();
+    final var notify = new RecordingNotify();
+    // the result over the batch reference itself, as ravina builds it; result(...) copies
+    service.script.add(batch -> new TransactionResult(
+        batch, false, 200_000, 1L, Transaction.createTx(FEE_PAYER, List.copyOf(batch)), 100, null, null, "sig", null));
+    service.script.add(batch -> new TransactionResult(
+        batch, false, 200_000, 1L, Transaction.createTx(FEE_PAYER, List.copyOf(batch)), 100, null,
+        TransactionResult.EXPIRED, "sig", null));
+    final var instructions = new ArrayList<>(List.of(instruction(1, 2), instruction(2, 2)));
+
+    try (final var log = systems.glam.services.tests.LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      assertTrue(processor(service, notify).processInstructions("test", instructions));
+      log.assertLogged("\"numInstructions\": 2");
+    }
+    assertTrue(instructions.isEmpty());
+
+    final var failing = new ArrayList<>(List.of(instruction(3, 2), instruction(4, 2), instruction(5, 2)));
+    assertFalse(processor(service, notify).processInstructions("test", failing));
+    assertEquals(1, notify.messages.size(), () -> notify.messages.toString());
+    assertTrue(notify.messages.getFirst().contains("\"numInstructions\": 3"), notify.messages.getFirst());
+  }
+
   @Test
   void anErrorNotifiesAndStops() throws InterruptedException {
     final var service = new ScriptedService();
