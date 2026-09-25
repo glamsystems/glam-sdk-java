@@ -3,8 +3,19 @@ package systems.glam.sdk.idl.programs.glam.jupiter;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.tx.Instruction;
 
+import java.util.List;
 import java.util.Objects;
 
+/// What one swap through GLAM needs from the caller. The mint keys and token programs of both sides are
+/// required; the oracles, program-state keys and Kamino reserves are the caller's knowledge of the global
+/// configuration and may be absent.
+///
+/// `kaminoReserves` are the reserves that price any of the three roles (the SOL/USD, input and output
+/// oracles registered as `KaminoReserve`), decoded by the caller from the reserve accounts: the program
+/// reads a reserve's last price write before it prices anything, so each one that prices a role is
+/// refreshed in front of the swap, whether or not a price-check skip is requested, since the program may
+/// still price the swap. A caller certain of an unconditional skip may leave them out. Reserves that
+/// price none of the three roles are ignored.
 public record JupiterSwapContext(PublicKey inputProgramStateKey,
                                  PublicKey inputMintKey,
                                  PublicKey inputTokenProgram,
@@ -18,7 +29,17 @@ public record JupiterSwapContext(PublicKey inputProgramStateKey,
                                  long amount,
                                  Instruction swapInstruction,
                                  boolean wrapSOL,
-                                 boolean createATA) {
+                                 boolean createATA,
+                                 List<KaminoReserveRefresh> kaminoReserves) {
+
+  public JupiterSwapContext {
+    Objects.requireNonNull(inputMintKey, "inputMintKey");
+    Objects.requireNonNull(inputTokenProgram, "inputTokenProgram");
+    Objects.requireNonNull(outputMintKey, "outputMintKey");
+    Objects.requireNonNull(outputTokenProgram, "outputTokenProgram");
+    Objects.requireNonNull(swapInstruction, "swapInstruction");
+    kaminoReserves = kaminoReserves == null ? List.of() : List.copyOf(kaminoReserves);
+  }
 
   public static Builder build() {
     return new Builder();
@@ -40,6 +61,7 @@ public record JupiterSwapContext(PublicKey inputProgramStateKey,
     private Instruction swapInstruction;
     private boolean wrapSOL;
     private boolean createATA;
+    private List<KaminoReserveRefresh> kaminoReserves = List.of();
 
     private Builder() {
     }
@@ -57,9 +79,10 @@ public record JupiterSwapContext(PublicKey inputProgramStateKey,
           solUsdOracleKey,
           skipQuotePriceCheck,
           amount,
-          Objects.requireNonNull(swapInstruction),
+          swapInstruction,
           wrapSOL,
-          createATA
+          createATA,
+          kaminoReserves
       );
     }
 
@@ -130,6 +153,11 @@ public record JupiterSwapContext(PublicKey inputProgramStateKey,
 
     public Builder createATA(final boolean createATA) {
       this.createATA = createATA;
+      return this;
+    }
+
+    public Builder kaminoReserves(final List<KaminoReserveRefresh> kaminoReserves) {
+      this.kaminoReserves = kaminoReserves;
       return this;
     }
   }

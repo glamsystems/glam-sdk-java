@@ -274,6 +274,61 @@ the new `GlamAccounts`, `GlamVaultAccounts` and `GlamEnv` members and added
 no rows; `pitestSdkBaselineRetag` refreshed `GlamAccounts,main`'s `# line`
 tag for the methods added above it.
 
+## Jupiter swap client (2026-09-25, GLAM-1537)
+
+Three defects in `GlamJupiterProgramClient(+Impl)`, each verified against the
+protocol handlers at production `ce797d3e` and main: every wrap-SOL prelude
+funded the vault's wSOL account through a `system_transfer` without the Token
+program remaining account the handler requires before it syncs (the standalone
+`wrapSOL` had been fixed in `a562eea`; the four swap paths had not), the
+requested-skip path passed null for `glam_config` and the three oracles although
+the handler reads the configuration to decide a limited skip and prices the
+swap when it declines one, and nothing refreshed a Kamino reserve that prices a
+role before the swap read it. The fix funds every prelude through one helper
+that appends the Token program, always names the configuration and the caller's
+oracles, and prepends one `refresh_reserves_batch` over the context's
+`KaminoReserveRefresh`es that price a role (six accounts per reserve as the
+lending program declares them, empty oracle positions carrying its address,
+price updates not skipped). Alongside: the vault's signer bit is stripped by key
+rather than by position, the context's four required keys are checked when it
+is built, and the two `createSwapTokenAccountsIdempotent` bodies are one.
+
+Coverage: `GlamJupiterProgramClientTests` pins the six transfer accounts of all
+four preludes (`accounts().get(5)` the Token program), the configuration and
+oracles under a requested skip, the refresh's program, flag and account order
+with a shared reserve listed once and an unrelated one left out, each
+configured oracle position and the batch's once-per-reserve rule directly, the
+mainnet SOL reserve snapshot (`accounts/kamino/d4A2prbA…`) decoded to its
+market, wSOL liquidity and Scope feed, a market-less reserve refused, the
+keyed signer rewrite beside the positional one on both CPIs, the refresh
+leading each of the four instruction shapes, a client built on injected Kamino
+accounts sending the refresh to that lending program, the staging deployment's
+program and configuration, and the context's refusals. Reverting only the wrap
+and skip behaviour fails four of the class's tests.
+
+A review of the change found the one thing the snapshot could not: Kamino
+spells an empty oracle position two ways, the all-zero key and its `nu111…`
+null key, which its manager writes into every unused position and roughly
+four in ten mainnet reserves carry; the lending program takes only its own
+address as none, so a refresh handing it the null key fails
+(`InvalidPythPriceAccount` and its siblings) exactly when the reserve's price
+is stale. `KaminoReserveRefresh.named` now reads both spellings as empty
+through idl-clients' `KaminoAccounts.isNullKey`, and the snapshot test writes
+the null key into the Pyth and Scope positions of the SOL reserve's bytes and
+expects the lending program's address there; that assertion fails against the
+all-zero check alone.
+
+Mutation evidence: the first history-free observation surfaced ten fresh
+survivors in the new code. Six were equivalents of the code's own making and
+were refactored out rather than accepted: a dead `slot == null` guard in
+`KaminoReserveRefresh.named` (a decoded reserve never yields null), the empty
+fast path of `kaminoReserveRefresh`, a client-side de-duplication masked by the
+batch builder's own, an idempotent signer rewrite guarded by `signer()`, and two
+capacity-hint additions. Four were missing assertions, now
+`aReserveForwardsEveryConfiguredOracleAndTheBatchListsItOnce`. The fresh
+history-free observation after that (567 mutants, 545 detected) added no rows,
+and `pitestSdkBaselineRetag` refreshed `swapChecked`'s drifted `# line` tag.
+
 ## Timed-out mutants (audited set, 2026-07-26)
 
 For a member of this set a weakened covering assertion would not show up as a

@@ -6,11 +6,18 @@ import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.jupiter.JupiterAccounts;
+import software.sava.idl.clients.kamino.KaminoAccounts;
+import software.sava.idl.clients.kamino.lend.gen.KaminoLendingProgram;
+import software.sava.idl.clients.kamino.lend.gen.types.Reserve;
 import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.GlamAccounts;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolProgram;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Objects;
+import java.util.zip.GZIPInputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static software.sava.core.accounts.PublicKey.fromBase58Encoded;
@@ -113,9 +120,14 @@ final class GlamJupiterProgramClientTests {
     assertEquals(createWrite(VAULT_KEY), accounts.get(1));
     assertEquals(createWritableSigner(FEE_PAYER), accounts.get(2));
     assertEquals(createRead(JupiterAccounts.MAIN_NET.swapProgram()), accounts.get(3));
-    // no program state, config or oracles: every optional slot degrades to the
-    // protocol program key
-    for (int i = 4; i <= 9; ++i) {
+    // no program state: both slots degrade to the protocol program key
+    assertEquals(createRead(protocolProgram), accounts.get(4));
+    assertEquals(createRead(protocolProgram), accounts.get(5));
+    // the global configuration rides along even when a skip is requested: the program reads
+    // it to decide a limited skip, and prices the swap when it declines one
+    assertEquals(createRead(GlamAccounts.MAIN_NET.globalConfigPDA().publicKey()), accounts.get(6));
+    // no oracles given: those slots degrade to the protocol program key
+    for (int i = 7; i <= 9; ++i) {
       assertEquals(createRead(protocolProgram), accounts.get(i), "slot " + i);
     }
     // the route's accounts follow, with the vault's signer bit stripped
@@ -148,6 +160,312 @@ final class GlamJupiterProgramClientTests {
     assertFalse(GlamProtocolProgram.JupiterSwapV2IxData.read(swapIx).skipQuotePriceCheck());
   }
 
+  /// A requested skip is the program's to grant: a delegate holding only the limited permission,
+  /// or one the program declines, is priced with the configuration and the oracles the caller
+  /// supplied, so they ride along with the flag rather than being dropped for it.
+  @Test
+  void aRequestedSkipStillCarriesTheConfigAndOracles() {
+    final var client = createClient();
+    final var solOracle = key(31);
+    final var inputOracle = key(32);
+    final var outputOracle = key(33);
+    final var context = contextBuilder(key(21))
+        .skipQuotePriceCheck(true)
+        .solUsdOracleKey(solOracle)
+        .inputTokenOracleKey(inputOracle)
+        .outputTokenOracleKey(outputOracle)
+        .create();
+
+    final var swapIx = client.swap(context).getFirst();
+    final var accounts = swapIx.accounts();
+    assertEquals(createRead(GlamAccounts.MAIN_NET.globalConfigPDA().publicKey()), accounts.get(6));
+    assertEquals(createRead(solOracle), accounts.get(7));
+    assertEquals(createRead(inputOracle), accounts.get(8));
+    assertEquals(createRead(outputOracle), accounts.get(9));
+    assertTrue(GlamProtocolProgram.JupiterSwapV2IxData.read(swapIx).skipQuotePriceCheck());
+  }
+
+  /// The GLAM system transfer that funds a wSOL token account must carry the Token program as its
+  /// one remaining account, else the program fails it with MissingAccount before syncing: every
+  /// wrap prelude, checked or unchecked, context-driven or program-state, appends it.
+  @Test
+  void everyWrapPreludeCarriesTheTokenProgram() {
+    final var client = createClient();
+    final var accountClient = GlamAccountClient.createClient(FEE_PAYER, STATE_KEY);
+    final var tokenProgram = SOLANA_ACCOUNTS.tokenProgram();
+    final var wSol = SOLANA_ACCOUNTS.wrappedSolTokenMint();
+    final var wSolAta = accountClient.findATA(tokenProgram, wSol).publicKey();
+    final var wrappedSolPDA = accountClient.wrappedSolPDA().publicKey();
+    final var route = routeIx();
+
+    final var uncheckedContext = client.swap(contextBuilder(wSol).skipQuotePriceCheck(true).wrapSOL(true).create());
+    final var checkedContext = client.swap(contextBuilder(wSol).skipQuotePriceCheck(true).wrapSOL(true).createATA(true).create());
+    final var programStateUnchecked = client.swapWithProgramStateUnchecked(
+        key(23), wSol, tokenProgram, key(24), key(22), tokenProgram, 1_234L, route, true);
+    final var programStateChecked = client.swapWithProgramStateChecked(
+        key(23), wSol, tokenProgram, key(24), key(22), tokenProgram, 1_234L, route, true);
+
+    assertFundsWrappedSol("unchecked", uncheckedContext.get(0), wrappedSolPDA, 1_000_000L);
+    assertFundsWrappedSol("checked", checkedContext.get(1), wSolAta, 1_000_000L);
+    assertFundsWrappedSol("program-state unchecked", programStateUnchecked.get(0), wrappedSolPDA, 1_234L);
+    assertFundsWrappedSol("program-state checked", programStateChecked.get(1), wSolAta, 1_234L);
+  }
+
+  private static void assertFundsWrappedSol(final String path,
+                                            final Instruction transfer,
+                                            final PublicKey wrappedSolTokenAccount,
+                                            final long lamports) {
+    assertEquals(GlamAccounts.MAIN_NET.protocolProgram(), transfer.programId().publicKey(), path);
+    assertEquals(
+        List.of(
+            createRead(STATE_KEY),
+            createWrite(VAULT_KEY),
+            createWritableSigner(FEE_PAYER),
+            createRead(SOLANA_ACCOUNTS.systemProgram()),
+            createWrite(wrappedSolTokenAccount),
+            createRead(SOLANA_ACCOUNTS.tokenProgram())
+        ),
+        transfer.accounts(),
+        path + ": the wSOL destination and the Token program as the one remaining account"
+    );
+    assertEquals(lamports, GlamProtocolProgram.SystemTransferIxData.read(transfer).lamports(), path);
+  }
+
+  /// The vault's signer bit is stripped by key, wherever the route seats it, and no other signer's is:
+  /// a route may seat another signer first.
+  @Test
+  void fixCPICallerRightsByKeyStripsOnlyTheVault() {
+    final var route = Instruction.createInstruction(
+        AccountMeta.createInvoked(JupiterAccounts.MAIN_NET.swapProgram()),
+        List.of(
+            createReadOnlySigner(key(13)),
+            createRead(key(11)),
+            createWritableSigner(VAULT_KEY),
+            createWrite(key(12))
+        ),
+        new byte[]{9, 8, 7, 6}
+    );
+    final var byKey = GlamJupiterProgramClient.fixCPICallerRights(route.accounts(), VAULT_KEY);
+    assertEquals(createReadOnlySigner(key(13)), byKey.get(0), "another signer keeps its rights");
+    assertEquals(createWrite(VAULT_KEY), byKey.get(2), "the vault keeps write access and loses its signer bit");
+    // the positional form would have stripped the first signer instead
+    assertEquals(createRead(key(13)), GlamJupiterProgramClient.fixCPICallerRights(route.accounts()).get(0));
+    // a read-only vault seat loses the bit the same way
+    assertEquals(createRead(VAULT_KEY),
+        GlamJupiterProgramClient.fixCPICallerRights(List.of(createReadOnlySigner(VAULT_KEY)), VAULT_KEY).getFirst());
+
+    // and both CPIs are built by key: the route's earlier signer reaches the program with its bit
+    final var client = createClient();
+    final var swapIx = client.swap(contextBuilder(key(21)).skipQuotePriceCheck(true).swapInstruction(route).create()).getFirst();
+    assertEquals(byKey, swapIx.accounts().subList(10, swapIx.accounts().size()));
+    final var programStateIx = client.swapWithProgramStateUncheckedAndNoWrap(
+        key(23), key(21), SOLANA_ACCOUNTS.tokenProgram(), key(24), key(22), SOLANA_ACCOUNTS.tokenProgram(), route);
+    assertEquals(byKey, programStateIx.accounts().subList(6, programStateIx.accounts().size()),
+        "the program-state CPI strips the vault by key too");
+  }
+
+  private static KaminoReserveRefresh reserve(final int id, final PublicKey scopePrices) {
+    return new KaminoReserveRefresh(key(id), key(id + 100), key(id + 200), null, null, null, scopePrices);
+  }
+
+  /// A reserve that prices a role is refreshed in front of the swap, once however many roles it
+  /// prices, in role order, with its six accounts as the batch declares them and an empty oracle
+  /// position carrying the lending program; a reserve pricing no role is left alone, and a
+  /// requested skip changes nothing, since the program may still price the swap.
+  @Test
+  void reservesThatPriceARoleAreRefreshedFirst() {
+    final var client = createClient();
+    final var lendingProgram = KaminoAccounts.MAIN_NET.kLendProgram();
+    final var inputReserve = reserve(41, key(51));
+    final var solReserve = reserve(42, null);
+    final var unrelated = reserve(43, key(53));
+    final var context = contextBuilder(key(21))
+        .skipQuotePriceCheck(true)
+        .solUsdOracleKey(solReserve.reserve())
+        .inputTokenOracleKey(inputReserve.reserve())
+        .outputTokenOracleKey(inputReserve.reserve())
+        .kaminoReserves(List.of(unrelated, solReserve, inputReserve))
+        .create();
+
+    final var instructions = client.swap(context);
+    assertEquals(2, instructions.size(), "one refresh, then the swap");
+    final var refresh = instructions.getFirst();
+    assertEquals(lendingProgram, refresh.programId().publicKey());
+    assertFalse(KaminoLendingProgram.RefreshReservesBatchIxData.read(refresh).skipPriceUpdates(),
+        "the pricing reads the prices the refresh writes, so nothing is skipped");
+    assertEquals(
+        List.of(
+            createWrite(inputReserve.reserve()), createRead(inputReserve.lendingMarket()),
+            createRead(lendingProgram), createRead(lendingProgram), createRead(lendingProgram), createRead(key(51)),
+            createWrite(solReserve.reserve()), createRead(solReserve.lendingMarket()),
+            createRead(lendingProgram), createRead(lendingProgram), createRead(lendingProgram), createRead(lendingProgram)
+        ),
+        refresh.accounts(),
+        "input then SOL/USD, the shared output reserve once, unrelated reserves left out"
+    );
+    assertEquals(GlamAccounts.MAIN_NET.protocolProgram(), instructions.get(1).programId().publicKey());
+
+    // the refresh leads every form of the swap: checked with and without the wrap prelude,
+    // unchecked with it (the unchecked form without it is the case above)
+    final var wSol = SOLANA_ACCOUNTS.wrappedSolTokenMint();
+    final var checkedWrapped = client.swap(contextBuilder(wSol)
+        .inputTokenOracleKey(inputReserve.reserve()).kaminoReserves(List.of(inputReserve))
+        .wrapSOL(true).createATA(true).create());
+    assertEquals(6, checkedWrapped.size(), "refresh, create input ata, fund, sync, create output ata, swap");
+    assertEquals(lendingProgram, checkedWrapped.getFirst().programId().publicKey());
+    final var checked = client.swap(contextBuilder(key(21))
+        .inputTokenOracleKey(inputReserve.reserve()).kaminoReserves(List.of(inputReserve))
+        .createATA(true).create());
+    assertEquals(3, checked.size(), "refresh, create output ata, swap");
+    assertEquals(lendingProgram, checked.getFirst().programId().publicKey());
+    assertEquals(SOLANA_ACCOUNTS.associatedTokenAccountProgram(), checked.get(1).programId().publicKey());
+    final var uncheckedWrapped = client.swap(contextBuilder(wSol)
+        .inputTokenOracleKey(inputReserve.reserve()).kaminoReserves(List.of(inputReserve))
+        .wrapSOL(true).create());
+    assertEquals(4, uncheckedWrapped.size(), "refresh, fund, sync, swap");
+    assertEquals(lendingProgram, uncheckedWrapped.getFirst().programId().publicKey());
+    assertEquals(GlamAccounts.MAIN_NET.protocolProgram(), uncheckedWrapped.get(1).programId().publicKey(), "the funding transfer follows the refresh");
+
+    // reserves pricing no role, or no reserves at all, add nothing
+    assertEquals(1, client.swap(contextBuilder(key(21))
+        .inputTokenOracleKey(key(32)).kaminoReserves(List.of(unrelated)).create()).size());
+    assertEquals(1, client.swap(contextBuilder(key(21)).inputTokenOracleKey(key(32)).create()).size());
+  }
+
+  /// Each oracle a reserve's configuration names rides in its own position, and only an empty
+  /// position takes the lending program's address; the batch refreshes a reserve once however
+  /// many times it is listed, in first-seen order.
+  @Test
+  void aReserveForwardsEveryConfiguredOracleAndTheBatchListsItOnce() {
+    final var lendingProgram = KaminoAccounts.MAIN_NET.kLendProgram();
+    final var full = new KaminoReserveRefresh(key(61), key(62), key(63), key(64), key(65), key(66), key(67));
+    assertEquals(
+        List.of(createWrite(key(61)), createRead(key(62)), createRead(key(64)), createRead(key(65)), createRead(key(66)), createRead(key(67))),
+        full.accounts(lendingProgram)
+    );
+    final var pythOnly = new KaminoReserveRefresh(key(71), key(72), key(73), key(74), null, null, null);
+    assertEquals(
+        List.of(createWrite(key(71)), createRead(key(72)), createRead(key(74)), createRead(lendingProgram), createRead(lendingProgram), createRead(lendingProgram)),
+        pythOnly.accounts(lendingProgram)
+    );
+
+    final var batch = KaminoReserveRefresh.refreshInstruction(
+        KaminoAccounts.MAIN_NET.invokedKLendProgram(), List.of(pythOnly, full, pythOnly, full));
+    assertEquals(lendingProgram, batch.programId().publicKey());
+    final var expected = new java.util.ArrayList<>(pythOnly.accounts(lendingProgram));
+    expected.addAll(full.accounts(lendingProgram));
+    assertEquals(expected, batch.accounts(), "each reserve once, in first-seen order");
+    assertFalse(KaminoLendingProgram.RefreshReservesBatchIxData.read(batch).skipPriceUpdates());
+    assertEquals(9, batch.data().length, "the discriminator and the one flag byte");
+
+    // a vault seat that does not sign is left as it is by the keyed rewrite
+    final var unsigned = List.of(createWrite(VAULT_KEY), createRead(VAULT_KEY), createRead(key(11)));
+    assertEquals(unsigned, GlamJupiterProgramClient.fixCPICallerRights(unsigned, VAULT_KEY));
+  }
+
+  private static byte[] readGzipResource(final String name) {
+    try (final var in = new GZIPInputStream(
+        Objects.requireNonNull(GlamJupiterProgramClientTests.class.getResourceAsStream("/" + name), name))) {
+      return in.readAllBytes();
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  /// A reserve's refresh accounts come from its own bytes: the mainnet SOL reserve names its market
+  /// and a Scope feed, and no Pyth or Switchboard oracle, which the accounts hand the lending
+  /// program's address in place of.
+  @Test
+  void aReserveRefreshIsReadFromTheReserve() {
+    final var reserveKey = fromBase58Encoded("d4A2prbA2whesmvHaL88BH6Ewn5N4bTSU2Ze8P6Bc4Q");
+    final var data = readGzipResource("accounts/kamino/" + reserveKey + ".dat.gz");
+    final var refresh = KaminoReserveRefresh.of(Reserve.read(reserveKey, data));
+
+    assertEquals(reserveKey, refresh.reserve());
+    assertEquals(fromBase58Encoded("7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF"), refresh.lendingMarket());
+    assertEquals(SOLANA_ACCOUNTS.wrappedSolTokenMint(), refresh.liquidityMint());
+    assertNull(refresh.pythOracle());
+    assertNull(refresh.switchboardPriceOracle());
+    assertNull(refresh.switchboardTwapOracle());
+    final var scope = fromBase58Encoded("3t4JZcueEzTbVP6kLxXrL3VpWx45jDer4eqysweBchNH");
+    assertEquals(scope, refresh.scopePrices());
+    final var lendingProgram = KaminoAccounts.MAIN_NET.kLendProgram();
+    assertEquals(
+        List.of(
+            createWrite(reserveKey), createRead(refresh.lendingMarket()),
+            createRead(lendingProgram), createRead(lendingProgram), createRead(lendingProgram), createRead(scope)
+        ),
+        refresh.accounts(lendingProgram)
+    );
+
+    // Kamino's other empty spelling, the nu111... null key its manager writes into unused
+    // positions, is empty too: the lending program takes only its own address as none, so a
+    // reserve carrying it in a position must hand the program's address there, not the null key
+    final var nulled = data.clone();
+    final int tokenInfo = Reserve.CONFIG_OFFSET + software.sava.idl.clients.kamino.lend.gen.types.ReserveConfig.TOKEN_INFO_OFFSET;
+    final var nullKey = KaminoAccounts.NULL_KEY.toByteArray();
+    System.arraycopy(nullKey, 0, nulled, tokenInfo + software.sava.idl.clients.kamino.lend.gen.types.TokenInfo.PYTH_CONFIGURATION_OFFSET, nullKey.length);
+    System.arraycopy(nullKey, 0, nulled, tokenInfo + software.sava.idl.clients.kamino.lend.gen.types.TokenInfo.SCOPE_CONFIGURATION_OFFSET, nullKey.length);
+    final var nulledRefresh = KaminoReserveRefresh.of(Reserve.read(reserveKey, nulled));
+    assertNull(nulledRefresh.pythOracle());
+    assertNull(nulledRefresh.scopePrices());
+    assertEquals(
+        List.of(createWrite(reserveKey), createRead(refresh.lendingMarket()),
+            createRead(lendingProgram), createRead(lendingProgram), createRead(lendingProgram), createRead(lendingProgram)),
+        nulledRefresh.accounts(lendingProgram)
+    );
+
+    // a reserve naming no market cannot be refreshed: the batch has a market in every second position
+    final var marketless = data.clone();
+    java.util.Arrays.fill(marketless, Reserve.LENDING_MARKET_OFFSET, Reserve.LENDING_MARKET_OFFSET + PublicKey.PUBLIC_KEY_LENGTH, (byte) 0);
+    final var refused = assertThrows(IllegalArgumentException.class, () -> KaminoReserveRefresh.of(Reserve.read(reserveKey, marketless)));
+    assertTrue(refused.getMessage().contains("names no lending market"), refused.getMessage());
+  }
+
+  /// The staging deployment's client sends the CPI to the staging protocol program with its own
+  /// configuration, and takes its Jupiter and Kamino programs from the accounts it was given: a
+  /// refresh goes to the injected lending program and fills empty positions with its address.
+  @Test
+  void aStagingClientTargetsTheStagingProgram() {
+    final var staging = GlamAccounts.MAIN_NET_STAGING;
+    final var accountClient = GlamAccountClient.createClient(SOLANA_ACCOUNTS, staging, FEE_PAYER, STATE_KEY);
+    final var kamino = KaminoAccounts.createAccounts(key(91), key(92), key(93), key(94), key(95), key(96));
+    final var client = GlamJupiterProgramClient.createClient(accountClient, JupiterAccounts.MAIN_NET, kamino);
+    assertSame(kamino, client.kaminoAccounts());
+    assertEquals(accountClient.vaultAccounts().vaultPublicKey(), client.glamVaultAccounts().vaultPublicKey());
+
+    final var swapIx = client.swap(contextBuilder(key(21)).create()).getFirst();
+    assertEquals(staging.protocolProgram(), swapIx.programId().publicKey());
+    final var accounts = swapIx.accounts();
+    assertEquals(createWrite(accountClient.vaultAccounts().vaultPublicKey()), accounts.get(1));
+    assertEquals(createRead(staging.globalConfigPDA().publicKey()), accounts.get(6));
+    assertEquals(createRead(staging.protocolProgram()), accounts.get(7), "absent oracle: the staging program's key");
+
+    final var priced = reserve(41, null);
+    final var refresh = client.swap(contextBuilder(key(21))
+        .inputTokenOracleKey(priced.reserve()).kaminoReserves(List.of(priced)).create()).getFirst();
+    assertEquals(key(91), refresh.programId().publicKey(), "the injected lending program");
+    assertEquals(createRead(key(91)), refresh.accounts().get(2), "its address in an empty position");
+  }
+
+  /// A context without the keys every swap path reads is refused when built, naming the key.
+  @Test
+  void aContextWithoutItsRequiredKeysIsRefused() {
+    for (final var missing : List.of("inputMintKey", "inputTokenProgram", "outputMintKey", "outputTokenProgram", "swapInstruction")) {
+      final var builder = JupiterSwapContext.build()
+          .inputMintKey("inputMintKey".equals(missing) ? null : key(21))
+          .inputTokenProgram("inputTokenProgram".equals(missing) ? null : SOLANA_ACCOUNTS.tokenProgram())
+          .outputMintKey("outputMintKey".equals(missing) ? null : key(22))
+          .outputTokenProgram("outputTokenProgram".equals(missing) ? null : SOLANA_ACCOUNTS.tokenProgram())
+          .swapInstruction("swapInstruction".equals(missing) ? null : routeIx());
+      final var refused = assertThrows(NullPointerException.class, builder::create, missing);
+      assertEquals(missing, refused.getMessage());
+    }
+    // reserves left unset are an empty list, never null
+    assertEquals(List.of(), contextBuilder(key(21)).create().kaminoReserves());
+    assertEquals(List.of(), contextBuilder(key(21)).kaminoReserves(null).create().kaminoReserves());
+  }
+
   @Test
   void wrappingSwapPrependsTransferAndSync() {
     final var client = createClient();
@@ -163,6 +481,9 @@ final class GlamJupiterProgramClientTests {
     final var wrappedSolPDA = GlamAccountClient.createClient(FEE_PAYER, STATE_KEY).wrappedSolPDA().publicKey();
     final var transferIx = instructions.getFirst();
     assertEquals(createWrite(wrappedSolPDA), transferIx.accounts().get(4));
+    assertEquals(createRead(SOLANA_ACCOUNTS.tokenProgram()), transferIx.accounts().get(5),
+        "the Token program is the transfer's one remaining account");
+    assertEquals(6, transferIx.accounts().size());
     assertEquals(1_000_000L, GlamProtocolProgram.SystemTransferIxData.read(transferIx).lamports());
     final var syncIx = instructions.get(1);
     assertEquals(SOLANA_ACCOUNTS.tokenProgram(), syncIx.programId().publicKey());
