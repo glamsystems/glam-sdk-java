@@ -30,8 +30,8 @@ plus service components for operating against it.
     protocol program), `GlamAccounts` / `GlamVaultAccounts` (program IDs and
     PDA derivation), `proxy/` (dynamic account remapping — resolves
     ix-mapper `DynamicAccountConfig`s against a vault's accounts, with a
-    caching factory), `lut/` (vault address-lookup-table building), and the
-    hand-written Jupiter swap wrapper in `idl/programs/glam/jupiter/`.
+    caching factory), and the hand-written Jupiter swap wrapper in
+    `idl/programs/glam/jupiter/`.
 - `services/` (`systems.glam.services`) — delegate-service runtime layered on
   the sdk: account fetching (`rpc/AccountFetcher`), caches (`mints/`,
   `state/GlobalConfigCache`), integration lookup-table caching

@@ -3,7 +3,6 @@ package systems.glam.sdk;
 import software.sava.core.accounts.ProgramDerivedAddress;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
-import software.sava.core.rpc.Filter;
 import systems.comodal.jsoniter.JsonIterator;
 import systems.glam.ix.proxy.IndexedAccountMeta;
 import systems.glam.ix.proxy.ProgramMapConfig;
@@ -17,9 +16,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
-
-import static software.sava.core.accounts.lookup.AddressLookupTable.LOOKUP_TABLE_META_SIZE;
-import static systems.glam.sdk.GlamVaultAccountsRecord.ACTIVE_TABLE_FILTER;
 
 public interface GlamVaultAccounts {
 
@@ -108,49 +104,5 @@ public interface GlamVaultAccounts {
 
   default ProgramDerivedAddress mintPDA() {
     return mintPDA(0);
-  }
-
-  static Filter vaultTableFilter(final PublicKey stateKey,
-                                 final PublicKey vaultKey,
-                                 final PublicKey glamConfigProgramKey) {
-    final byte[] keyData = new byte[PublicKey.PUBLIC_KEY_LENGTH * 3];
-    stateKey.write(keyData, 0);
-    vaultKey.write(keyData, PublicKey.PUBLIC_KEY_LENGTH);
-    glamConfigProgramKey.write(keyData, PublicKey.PUBLIC_KEY_LENGTH + PublicKey.PUBLIC_KEY_LENGTH);
-
-    return Filter.createMemCompFilter(LOOKUP_TABLE_META_SIZE, keyData);
-  }
-
-  static List<Filter> activeVaultTableFilters(final PublicKey stateKey,
-                                              final PublicKey vaultKey,
-                                              final PublicKey glamConfigProgramKey) {
-    return List.of(ACTIVE_TABLE_FILTER, vaultTableFilter(stateKey, vaultKey, glamConfigProgramKey));
-  }
-
-  static Filter deriveVaulKeyTableFilter(final PublicKey glamProgramKey,
-                                         final PublicKey glamConfigProgramKey,
-                                         final PublicKey stateKey) {
-    final var vaultKey = GlamProtocolPDAs.glamVaultPDA(glamProgramKey, stateKey).publicKey();
-    return vaultTableFilter(stateKey, vaultKey, glamConfigProgramKey);
-  }
-
-  static List<Filter> deriveVaultActiveTableFilters(final PublicKey glamProgramKey,
-                                                    final PublicKey glamConfigProgramKey,
-                                                    final PublicKey stateKey) {
-    return List.of(ACTIVE_TABLE_FILTER, deriveVaulKeyTableFilter(glamProgramKey, glamConfigProgramKey, stateKey));
-  }
-
-  default Filter vaultTableFilter() {
-    return vaultTableFilter(
-        glamStateKey(), vaultPublicKey(), glamAccounts().configProgram()
-    );
-  }
-
-  default List<Filter> activeVaultTableFilters() {
-    return List.of(ACTIVE_TABLE_FILTER, vaultTableFilter());
-  }
-
-  default List<PublicKey> vaultTablePrefixKeys() {
-    return List.of(glamStateKey(), vaultPublicKey(), glamAccounts().configProgram());
   }
 }

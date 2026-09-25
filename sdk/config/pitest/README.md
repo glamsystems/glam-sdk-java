@@ -52,76 +52,22 @@ recompiled root. `build.gradle.kts` is the authoritative definition.
 | 2026-07-23 (kamino lend + fetch) | 169 | 143 | 26 | 579/748 (77%) |
 | 2026-07-23 (interface defaults + proxy + pricing) | 62 | 36 | 26 | 688/750 (92%) |
 | 2026-07-23 (findings fixed, main() removed) | 38 | 13 | 25 | 690/728 (94%) |
+| 2026-09-24 (lut package removed) | 24 | 13 | 11 | 464/488 (95%) |
 
-The vault-table-builder pass closed the long-standing `VaultTableBuilderImpl`
-add\* block using the kamino mainnet snapshots shared from the services suite
-(see `src/test/resources/accounts/kamino/README.md`): the glam vault/mint
-account surface, ATA derivation gated to token-program-owned accounts (2022
-included, escrow ATA only for the base asset), the kamino vault collection
-phase (vault surface keys, allocation reserves and the vault lookup table
-queued for the second fetch), and the second phase end-to-end — reserve +
-market + the matching mainnet scope feed's prices *and* mappings accounts,
-with the vault's lookup table mapped past null and unrelated entries and
-registered under the vault key. A mintless state skips the whole mint
-surface.
-
-~~**Finding: the system program can never join the table.**~~ **Fixed
-2026-07-23:** `addGlamVaultAccounts` used to route the system program
-through `addAccount`, whose `PublicKey.NONE` sentinel filter is the same
-all-zero key — a silent no-op. It now adds the system program directly
-(always a real account), the test asserts it lands, and the
-`VoidMethodCallMutator` mirror acceptance on that system-program add is
-killed with it.
-
-**Accepted (residual sibling legs, 15):** forced-true directions of
-null-guards and short-circuit operands across the add\* branch chains —
-every row's verify hint names the killing test of its observable sibling;
-the surviving leg is the direction only a sentinel-colliding or
-already-guarded input could distinguish. Same family as the services-side
-compound-condition acceptances.
-
-The kamino-lend + fetch pass (2026-07-23) closed the remaining
-`VaultTableBuilderImpl` collection paths — 52 baseline rows dropped by the
-first shrink-only prune. The obligation fixture is synthesized
-(a zero-filled `Obligation` image with the real discriminator, market and
-deposit/borrow reserve keys written at the generated offsets; empty slots
-hold the all-zero key the collectors must filter as `NONE`), the deposit
-reserve is the shared mainnet SOL reserve snapshot, and the borrow reserve
-serves the same reserve image under its own key so both mapMulti loops are
-independently observable. Covered: `addKaminoLendAccounts` (obligation
-registration past wrong-owner/length/discriminator/null accounts, market +
-market-authority PDA, main-market table registration),
-`addKaminoAccountsSecondPhase` (reserve surface: liquidity mint, collateral
-supply vault and mint; unreferenced reserves skipped),
-both `removeKamino*TableAccounts` paths, `addJupiterSwapAccounts`,
-`fetchGlamVaultTables` (Proxy-backed `SolanaRpcClient`; the ALT program and
-the exact active + prefix-memcmp filter pair are pinned via `toJson`), the
-token-2022 position leg of `addKaminoVaultAccounts`, and three previously
-accepted survivors now killed: the second-table free-space derivation in
-`batchTableTasks` (a 40-account roll across two partially-filled tables),
-the absent-vault-table guard (a null entry must not register), and the
-unknown-scope-feed guard (no scope accounts for a re-pointed reserve). The
-newly-covered length-guard leg (`addKaminoLendAccounts`'s
-`data().length != Obligation.BYTES` dispatch arm, `EQUAL_IF`) was killed
-rather than accepted as subsumed: unlike the services dispatch guards, a
-truncated account with a *valid* discriminator routes into
-`Obligation.read` and an out-of-bounds read — the guard is load-bearing;
-the test carries that input.
-
-~~**Remaining `VaultTableBuilderImpl` debt is `main()`.**~~ Resolved
-2026-07-23 by refactor-out-of-existence: the untestable scratch `main()`
-(null-`Signer` NPE, live RPC) was removed from the class, taking its 23
-`NO_COVERAGE` rows and ~22 mutants with it.
+The 2026-07-23 vault-table-builder, kamino-lend + fetch and findings-fixed
+passes covered `lut.VaultTableBuilderImpl`, the vault address-lookup-table
+builder, against kamino mainnet snapshot fixtures, fixed two findings there
+(the system program could never join a table; the kamino-vault collection
+would have crashed on the state's mint accounts), and removed its untestable
+scratch `main()`. The whole `lut` package, its tests and those fixtures were
+deleted on 2026-09-24 (see "`lut` package removed (2026-09-24)" below); the
+pass notes, findings and acceptance argument are in this file's history.
 
 The interface-defaults + proxy + pricing pass (2026-07-23, later) closed most
 remaining `NO_COVERAGE` blocks — 108 baseline rows dropped:
 
-- **`VaultTableBuilder` interface defaults + `Builder`**: the full pipeline
-  (fetch → ACL-gated adds → second-phase fetch → external-table removals)
-  driven end to end through `Builder.create` on a fully-enabled state, with
-  a disabled-state twin asserting every gated phase stays silent. The
-  fetch defaults pin the exact requested key lists; the removal default
-  seeds keys covered by both registered tables plus one that must survive.
+- **`VaultTableBuilder` interface defaults + `Builder`** (the `lut` package,
+  deleted 2026-09-24).
 - **`GlamVaultAccounts`**: `loadMappingConfigs` against a temp directory
   holding a valid config, a wrong-extension file, an unreadable `.json`,
   and a *directory named* `nested.json` (the regular-file filter is what
@@ -150,15 +96,6 @@ remaining `NO_COVERAGE` blocks — 108 baseline rows dropped:
 `path.toString()` cannot change an `endsWith(".json")` test, because a
 path's string form always ends with its filename's string form. Equivalent
 by construction.
-
-~~**Finding: `addKaminoVaultAccounts` crashes on mint accounts.**~~ **Fixed
-2026-07-23:** it called `TokenAccount.read` on every token-program-owned
-response entry with no shape guard, but the first phase always fetches the
-state's *mints* (token-program-owned, 82 bytes — shorter than a
-`TokenAccount`), so any kamino-vaults-enabled run would have thrown
-`IndexOutOfBoundsException` on the first mint. A `TokenAccount.BYTES`
-length guard now skips non-token-account shapes; the pipeline and
-vault-collection tests serve real 82-byte mint entries through it.
 
 The multiset migration added no new mutants: the verify's baseline comparison
 became a multiset (one row per sibling mutant of a compound condition, not one
@@ -208,10 +145,27 @@ mutants were killed outright by existing tests.
 ## Row labels (2026-07-23)
 
 Baseline rows now carry the family label the acceptance belongs to
-(`# residual sibling legs`, `# unreachable type-check arm`,
-`# equivalent path-suffix`), with the full argument in the pass sections
-above; everything else is `# untriaged` — triage means replacing that label
-with the family the row's argument belongs to.
+(`# unreachable type-check arm`, `# equivalent path-suffix`), with the full
+argument in the pass sections above; everything else is `# untriaged` —
+triage means replacing that label with the family the row's argument belongs
+to.
+
+## `lut` package removed (2026-09-24)
+
+sava now supports v1 transactions, which need no address lookup tables, so
+the vault lookup-table builder for v0 transactions went: the whole
+`systems.glam.sdk.lut` package, `VaultTableBuilderTests`, the kamino snapshot
+fixtures under `src/test/resources/accounts/kamino/`, and the vault-table
+filters of `GlamVaultAccounts`. The fresh history-free `pitestSdk` observation
+that day (488 mutants, 464 detected, no fresh rows) left 14 accepted rows
+unmatched, and `pitestSdkBaselinePrune` removed exactly those the same day
+(baseline 38 -> 24): 13 `lut.VaultTableBuilderImpl` and 1
+`lut.VaultTableBuilder$Builder`, all `# residual sibling legs`. No other row
+carried that family, so it left the label list above; it is named here as
+history. The audited timeout set's five members, all
+`lut.VaultTableBuilderImpl,batchTableTasks` (`cause:liveness`), were retired
+from `sdk-timeouts.csv` as stale, leaving the set empty. The only other
+baseline movement was pure line drift on the `# equivalent path-suffix` row.
 
 ## Untriaged debt
 
@@ -244,38 +198,14 @@ same acceptance when its class is covered.
 
 ## Timed-out mutants (audited set, 2026-07-26)
 
-For exactly these mutants a weakened covering assertion would not show up as a
+For a member of this set a weakened covering assertion would not show up as a
 survivor — a timeout keeps "detecting" whatever the test asserts — so each
 member carries a written cause in `sdk-timeouts.csv` and its structural
 argument here. The strict reading GLAM holds them to: the mutated path must
 have no path-owned finite completion guarantee.
 
-All five members below qualify on the strict reading, and the reason is worth
-stating because it is what separates them from a timeout that is really a
-harness artifact: `batchTableTasks` is a synchronous pure computation. The test
-calls it directly, so there is **no fixture deadline that could have failed
-first**, no clock or budget the mutated path receives, and no synchronous state
-reader — the method simply never returns. The watchdog is the only possible
-detector. Contrast the `services` suite, where several timeouts came from
-fixtures whose own deadline outlived PIT's watchdog budget; those were bounded
-failures being relabelled, not liveness, and were fixed by shortening the
-fixture rather than by classifying the mutant.
-
-Classified 2026-08-06; observed on a history-free `pitestSdk` run against
-sava-build `0.0.0-test`.
-
-### `lut.VaultTableBuilderImpl.batchTableTasks` — 5
-
-All five are the same structural cause: the chunking loop's index `i`
-advances only through the per-chunk inner loops, so any mutant that stalls
-chunk formation makes `batchTableTasks` never return. They land on the
-outer `i < accounts.length` chunk-loop bound, on the `to = i + add` chunk
-arithmetic and its inner-loop bound (a non-positive `add` yields an empty
-chunk and `i` stops moving), and on the `tableSpace == 0` table rollover
-(skipping it drives `tableSpace` negative, so every later
-`Math.min(tableSpace, ...)` chunk is empty). Watchdog-detected infinite
-loops, not load-slowed kills — expected to be stable members.
-
-```
-batchTableTasks ConditionalsBoundary; EQUAL_ELSE; Math; ORDER_ELSE; ORDER_IF
-```
+The set is empty. Its five members, all `cause:liveness` on the synchronous
+`lut.VaultTableBuilderImpl.batchTableTasks` chunking loop (classified
+2026-08-06), were retired on 2026-09-24 with the class (see "`lut` package
+removed (2026-09-24)" above); their structural argument is in this file's
+history.

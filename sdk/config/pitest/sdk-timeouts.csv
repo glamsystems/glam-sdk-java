@@ -4,8 +4,4 @@
 # structural argument per member lives in README.md under "Timed-out mutants
 # (audited set)". Line numbers ride in comments only — drift must not churn
 # membership. Classified 2026-08-06 against the current rule.
-systems.glam.sdk.lut.VaultTableBuilderImpl,batchTableTasks,ConditionalsBoundaryMutator # cause:liveness outer chunk loop has no increment; a stalled bound never advances i line 119
-systems.glam.sdk.lut.VaultTableBuilderImpl,batchTableTasks,MathMutator # cause:liveness to = i + add reversed yields an empty chunk, so i never advances line 138
-systems.glam.sdk.lut.VaultTableBuilderImpl,batchTableTasks,RemoveConditionalMutator_EQUAL_ELSE # cause:liveness skipped tableSpace == 0 rollover drives tableSpace negative, so every later chunk is empty line 158
-systems.glam.sdk.lut.VaultTableBuilderImpl,batchTableTasks,RemoveConditionalMutator_ORDER_ELSE # cause:liveness inner chunk bound never true, so i never advances line 138
-systems.glam.sdk.lut.VaultTableBuilderImpl,batchTableTasks,RemoveConditionalMutator_ORDER_IF # cause:liveness outer i < accounts.length forced true with no increment line 119
+# Retired 2026-09-24: all five lut.VaultTableBuilderImpl,batchTableTasks members (class deleted).
