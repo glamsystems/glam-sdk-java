@@ -1,0 +1,1178 @@
+{
+  "schema_version": 1,
+  "environment": "staging",
+  "program_id": "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+  "proxy_program_id": "gstgo1EgmTp2PbLSaL6Qg57P7uADx3aiRZrMsewEdSy",
+  "provenance": {
+    "generator": "hand-written for the systems.glam.sdk.mapping tests (GLAM-1447 step 4): the entries as the generated staging document will list them once the monorepo flips them from unsupported, source positions from the managed IDL the generator reads",
+    "source_idl": "glam managed anchor_v1/idls/external/whirlpools (revision 0b0be0570f29, idl f3e95ddf321d)",
+    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_orca_staging (revision 6deaac41c956, idl ee8a25b9afb3)",
+    "config_revision": 1
+  },
+  "instructions": [
+    {
+      "name": "decrease_liquidity_v2",
+      "discriminator": [
+        58,
+        127,
+        188,
+        62,
+        79,
+        82,
+        196,
+        96
+      ],
+      "disposition": "map",
+      "handler": {
+        "name": "decrease_liquidity_v2",
+        "discriminator": [
+          58,
+          127,
+          188,
+          62,
+          79,
+          82,
+          196,
+          96
+        ]
+      },
+      "source_accounts": [
+        {
+          "name": "whirlpool",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_program_a",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_program_b",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "memo_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "position_authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "position",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "position_token_account",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_mint_a",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_mint_b",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_owner_account_a",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_owner_account_b",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_vault_a",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_vault_b",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "tick_array_lower",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "tick_array_upper",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 3,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 6,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 7,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 8,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 9,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 10,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 17,
+          "kind": "source",
+          "source": 11,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 18,
+          "kind": "source",
+          "source": 12,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 19,
+          "kind": "source",
+          "source": 13,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 20,
+          "kind": "source",
+          "source": 14,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 21,
+          "kind": "static",
+          "address": "6avract7PxKqoq6hdmpAgGKgJWoJWdiXPPzzFZ62Hck6",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      },
+      "supplied_accounts": [
+        {
+          "role": "asset_oracle",
+          "of": [
+            7
+          ]
+        },
+        {
+          "role": "asset_oracle",
+          "of": [
+            8
+          ]
+        },
+        {
+          "role": "sol_usd_oracle",
+          "optional": true
+        }
+      ]
+    },
+    {
+      "name": "increase_liquidity_by_token_amounts_v2",
+      "discriminator": [
+        239,
+        251,
+        9,
+        124,
+        210,
+        198,
+        53,
+        43
+      ],
+      "disposition": "map",
+      "handler": {
+        "name": "increase_liquidity_by_token_amounts_v2",
+        "discriminator": [
+          239,
+          251,
+          9,
+          124,
+          210,
+          198,
+          53,
+          43
+        ]
+      },
+      "source_accounts": [
+        {
+          "name": "whirlpool",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_program_a",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_program_b",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "memo_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "position_authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "position",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "position_token_account",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_mint_a",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_mint_b",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_owner_account_a",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_owner_account_b",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_vault_a",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_vault_b",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "tick_array_lower",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "tick_array_upper",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 3,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 6,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 7,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 8,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 9,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 10,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 17,
+          "kind": "source",
+          "source": 11,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 18,
+          "kind": "source",
+          "source": 12,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 19,
+          "kind": "source",
+          "source": 13,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 20,
+          "kind": "source",
+          "source": 14,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 21,
+          "kind": "static",
+          "address": "6avract7PxKqoq6hdmpAgGKgJWoJWdiXPPzzFZ62Hck6",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      },
+      "supplied_accounts": [
+        {
+          "role": "asset_oracle",
+          "of": [
+            7
+          ]
+        },
+        {
+          "role": "asset_oracle",
+          "of": [
+            8
+          ]
+        },
+        {
+          "role": "sol_usd_oracle",
+          "optional": true
+        }
+      ]
+    },
+    {
+      "name": "increase_liquidity_v2",
+      "discriminator": [
+        133,
+        29,
+        89,
+        223,
+        69,
+        238,
+        176,
+        10
+      ],
+      "disposition": "map",
+      "handler": {
+        "name": "increase_liquidity_v2",
+        "discriminator": [
+          133,
+          29,
+          89,
+          223,
+          69,
+          238,
+          176,
+          10
+        ]
+      },
+      "source_accounts": [
+        {
+          "name": "whirlpool",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_program_a",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_program_b",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "memo_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "position_authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "position",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "position_token_account",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_mint_a",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_mint_b",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_owner_account_a",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_owner_account_b",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_vault_a",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_vault_b",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "tick_array_lower",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "tick_array_upper",
+          "writable": true,
+          "signer": false
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 3,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 6,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 7,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 8,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 9,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 10,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 17,
+          "kind": "source",
+          "source": 11,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 18,
+          "kind": "source",
+          "source": 12,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 19,
+          "kind": "source",
+          "source": 13,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 20,
+          "kind": "source",
+          "source": 14,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 21,
+          "kind": "static",
+          "address": "6avract7PxKqoq6hdmpAgGKgJWoJWdiXPPzzFZ62Hck6",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      },
+      "supplied_accounts": [
+        {
+          "role": "asset_oracle",
+          "of": [
+            7
+          ]
+        },
+        {
+          "role": "asset_oracle",
+          "of": [
+            8
+          ]
+        },
+        {
+          "role": "sol_usd_oracle",
+          "optional": true
+        }
+      ]
+    },
+    {
+      "name": "reposition_liquidity_v2",
+      "discriminator": [
+        191,
+        169,
+        224,
+        11,
+        131,
+        19,
+        158,
+        253
+      ],
+      "disposition": "map",
+      "handler": {
+        "name": "reposition_liquidity_v2",
+        "discriminator": [
+          191,
+          169,
+          224,
+          11,
+          131,
+          19,
+          158,
+          253
+        ]
+      },
+      "source_accounts": [
+        {
+          "name": "whirlpool",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_program_a",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_program_b",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "memo_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "position_authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "funder",
+          "writable": true,
+          "signer": true,
+          "expect": "glam_signer"
+        },
+        {
+          "name": "position",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "position_token_account",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_mint_a",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_mint_b",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "token_owner_account_a",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_owner_account_b",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_vault_a",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token_vault_b",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "existing_tick_array_lower",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "existing_tick_array_upper",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "new_tick_array_lower",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "new_tick_array_upper",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "system_program",
+          "writable": false,
+          "signer": false,
+          "expect": "11111111111111111111111111111111"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 1,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 2,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 3,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "source",
+          "source": 6,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 7,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 8,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 9,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 15,
+          "kind": "source",
+          "source": 10,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 16,
+          "kind": "source",
+          "source": 11,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 17,
+          "kind": "source",
+          "source": 12,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 18,
+          "kind": "source",
+          "source": 13,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 19,
+          "kind": "source",
+          "source": 14,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 20,
+          "kind": "source",
+          "source": 15,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 21,
+          "kind": "source",
+          "source": 16,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 22,
+          "kind": "source",
+          "source": 17,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 23,
+          "kind": "static",
+          "address": "6avract7PxKqoq6hdmpAgGKgJWoJWdiXPPzzFZ62Hck6",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      },
+      "supplied_accounts": [
+        {
+          "role": "asset_oracle",
+          "of": [
+            8
+          ]
+        },
+        {
+          "role": "asset_oracle",
+          "of": [
+            9
+          ]
+        },
+        {
+          "role": "sol_usd_oracle",
+          "optional": true
+        }
+      ]
+    }
+  ]
+}

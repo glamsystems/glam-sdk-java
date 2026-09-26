@@ -22,9 +22,11 @@ hardening {
       // generated per-program code: correctness belongs to idl-src-gen, and
       // mutating the boilerplate would bury the hand-written signal
       "systems.glam.sdk.idl.*.gen.*",
-      // test sources share the recompiled root
+      // test sources share the recompiled root; 'tests' holds shared helpers
+      // (fixture readers) that no *Test* pattern matches
       "systems.glam.sdk.*Test*",
-      "systems.glam.sdk.*Fuzz*"
+      "systems.glam.sdk.*Fuzz*",
+      "systems.glam.sdk.tests.*"
     )
     targetTests = "systems.glam.sdk.*Test*"
     // the mapping-directory override reaches PIT's minions as one JVM argument, as the Test

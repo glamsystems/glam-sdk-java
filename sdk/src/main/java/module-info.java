@@ -47,6 +47,7 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.staging.spl.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.stake_pool.gen;
   exports systems.glam.sdk;
+  exports systems.glam.sdk.mapping;
   requires java.base;
   requires java.net.http;
   requires transitive software.sava.core;

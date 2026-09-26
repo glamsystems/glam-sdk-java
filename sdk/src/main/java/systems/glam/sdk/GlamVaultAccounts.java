@@ -5,7 +5,11 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
 import systems.glam.ix.proxy.InstructionMapper;
 import systems.glam.ix.proxy.MappingContext;
+import systems.glam.ix.proxy.SuppliedAccountsRequest;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolPDAs;
+
+import java.util.List;
+import java.util.function.Function;
 
 public interface GlamVaultAccounts {
 
@@ -61,6 +65,15 @@ public interface GlamVaultAccounts {
   /// the [#glamAccounts()] hold.
   default MappingContext mappingContext() {
     return new MappingContext(glamStateKey(), vaultPublicKey(), feePayer(), glamAccounts()::integrationAuthority);
+  }
+
+  /// [#mappingContext()] with `suppliedAccounts` answering for the entries whose handlers read accounts a
+  /// native instruction never carries, such as a [systems.glam.sdk.mapping.GlamSuppliedAccounts] built over
+  /// the global configuration; without one the mapper refuses those entries with reason `context`. A
+  /// supplier may carry state per transaction build (the Kamino reserves that one chose, which the
+  /// transaction refreshes), so build or reset one per transaction.
+  default MappingContext mappingContext(final Function<SuppliedAccountsRequest, List<PublicKey>> suppliedAccounts) {
+    return new MappingContext(glamStateKey(), vaultPublicKey(), feePayer(), glamAccounts()::integrationAuthority, suppliedAccounts);
   }
 
   ProgramDerivedAddress mintPDA(final int id);

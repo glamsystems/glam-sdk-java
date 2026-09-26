@@ -337,6 +337,56 @@ were added for properties the review found unpinned (the context's defensive cop
 input-output-SOL/USD role order with distinct reserves). The fresh observation after that
 (558 mutants, 536 detected) added no rows; `swapChecked`'s `# untriaged` row is unchanged.
 
+## Supplied-accounts resolvers (2026-09-26, GLAM-1447 step 4)
+
+`systems.glam.sdk.mapping` is new: `OracleDenomination` (the unit each oracle source
+prices in, transcribed from the protocol's `get_oracle_price` dispatch and the reader's
+refusal of the legacy Pyth push feeds), `RegisteredOracles` (which registration prices a
+mint, under the monorepo's one oracle-selection rule: deprecated never, lowest priority,
+then source preference with the Kamino reserve first, a same-source tie selects nothing,
+stored position decides nothing), `OrcaOracleResolver` (the oracle prefix the Orca
+liquidity handlers read: the selected registration per pool mint, the wrapped SOL oracle
+only when their denominations differ, refusal otherwise), `LoopscaleStrategyMarketResolver`
+(the market `update_strategy` checks, from the update's params or the strategy account at
+the program's offset) and `GlamSuppliedAccounts` (the ix-mapper supplier over both,
+carrying the Kamino reserves it chose, with the mint each prices, to the transaction
+builder). All five are mutated by the wildcard target. The tests' shared fixture reader
+lives in `systems.glam.sdk.tests`, which the suite excludes as a package, the services
+suite's pattern for helpers no `*Test*` name matches.
+
+Coverage: a table test over every `OracleSource` value; the selection rule's five
+outcomes (sole active, lowest priority wherever stored, source preference with the
+reserve first, a named tie, deprecated skipped and all-deprecated) each pinned by reason;
+both-USD, SOL-beside-USD and both-SOL pairs; every refusal by its message, the reason
+messages by full text and the shape and role refusals by full text or a distinguishing
+phrase; the required-but-unread SOL role, a second SOL role, an asset role after it;
+Kamino reserves reported with their mint; the stored market from the recorded strategy
+(`accounts/loopscale/13RqwWva…`), read past two collateral terms in the update, a named
+market with and without a lookup, no params and params naming none, a strategy not
+fetched, a fetched account that is not a strategy, the strategy's native position pinned
+against the generated binding; the five entries mapped through the mapper over
+hand-written staging documents (`supplied-accounts/staging`, source positions from the
+managed IDLs the generator reads), the bundled builders' extra whirlpool program account
+and the native extras after the prefix, the update's payer held to the GLAM signer, and
+the `context` refusals with their messages.
+
+No fuzz target is owed: `storedMarket` is a fixed-offset read behind a length and a
+discriminator check, whose three outcomes the tests pin, and the update decode is
+idl-clients' generated reader, which belongs to that repository and whose failures the
+mapper turns into `context` refusals.
+
+Mutation evidence: the first history-free observation surfaced four fresh survivors, all
+in the new code. Two in `OrcaOracleResolver.capitalize` (NakedReceiver,
+EmptyObjectReturnVals) were refactored out: every refusal now starts with a fixed phrase
+and no message is capitalized at runtime. One `OrcaOracleResolver.priced`
+`RemoveConditional_EQUAL_ELSE` was the ChainlinkX half of the handler-refusal check,
+killed by a ChainlinkX meta; one `GlamSuppliedAccounts.apply` `RemoveConditional_EQUAL_IF`
+was the Loopscale dispatch guard, killed by an `update_strategy` request asking for a
+role the supplier does not serve. The same run mutated the tests' fixture reader, which
+matched no exclusion; it moved to the excluded `tests` package. The observation after the
+review rewrite (697 mutants, 675 detected; the baseline's 10 survivors and 12 uncovered
+mutants unchanged) added no rows.
+
 ## Timed-out mutants (audited set, 2026-07-26)
 
 For a member of this set a weakened covering assertion would not show up as a

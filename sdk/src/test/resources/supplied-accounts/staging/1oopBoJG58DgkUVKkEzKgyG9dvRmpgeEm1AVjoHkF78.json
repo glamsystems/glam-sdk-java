@@ -1,0 +1,223 @@
+{
+  "schema_version": 1,
+  "environment": "staging",
+  "program_id": "1oopBoJG58DgkUVKkEzKgyG9dvRmpgeEm1AVjoHkF78",
+  "proxy_program_id": "gstgL6y4uWjsfM3Qjs5euoTDmEcXoUjqx8rkYJhYngG",
+  "provenance": {
+    "generator": "hand-written for the systems.glam.sdk.mapping tests (GLAM-1447 step 4): the entries as the generated staging document will list them once the monorepo flips them from unsupported, source positions from the managed IDL the generator reads",
+    "source_idl": "glam managed anchor_v1/idls/external/loopscale (revision bdd5dde55d50, idl 0f36211402c6)",
+    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_loopscale_staging (revision e8808e5c2c7c, idl 18270b2bc1ea)",
+    "config_revision": 1
+  },
+  "instructions": [
+    {
+      "name": "update_strategy",
+      "discriminator": [
+        16,
+        76,
+        138,
+        179,
+        171,
+        112,
+        196,
+        21
+      ],
+      "disposition": "map",
+      "handler": {
+        "name": "update_strategy",
+        "discriminator": [
+          16,
+          76,
+          138,
+          179,
+          171,
+          112,
+          196,
+          21
+        ]
+      },
+      "source_accounts": [
+        {
+          "name": "bs_auth",
+          "writable": false,
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true,
+          "expect": "glam_signer"
+        },
+        {
+          "name": "lender",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "strategy",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "principal_mint",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "strategy_ta",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "system_program",
+          "writable": false,
+          "signer": false,
+          "expect": "11111111111111111111111111111111"
+        },
+        {
+          "name": "associated_token_program",
+          "writable": false,
+          "signer": false,
+          "expect": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "token_program",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "protocol_admin_state",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "event_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "name": "program",
+          "writable": false,
+          "signer": false,
+          "expect": "1oopBoJG58DgkUVKkEzKgyG9dvRmpgeEm1AVjoHkF78"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "1oopBoJG58DgkUVKkEzKgyG9dvRmpgeEm1AVjoHkF78",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 0,
+          "writable": false,
+          "signer": true
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 3,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 4,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "source",
+          "source": 5,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 11,
+          "kind": "static",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 12,
+          "kind": "source",
+          "source": 8,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 13,
+          "kind": "source",
+          "source": 9,
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 14,
+          "kind": "source",
+          "source": 10,
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "any"
+      },
+      "supplied_accounts": [
+        {
+          "role": "loopscale_strategy_market"
+        }
+      ]
+    }
+  ]
+}

@@ -33,7 +33,12 @@ plus service components for operating against it.
     for the deployment, the `Path` and `Collection` overloads over a local
     set, every one refusing another environment's documents, and
     `GlamVaultAccounts.mappingContext()` is what a mapping needs from a
-    vault — state, vault, fee payer as signer, integration authorities),
+    vault — state, vault, fee payer as signer, integration authorities — and
+    its `mappingContext(supplier)` overload adds the supplier of the accounts
+    a handler reads that a native instruction never carries),
+    `mapping/` (`GlamSuppliedAccounts` and the resolvers behind it: the Orca
+    liquidity handlers' oracle prefix under GLAM's one oracle-selection rule,
+    and the Loopscale `update_strategy` market),
     `EmbeddedMappings` (the documents the jar carries, indexed and held to
     their environment and proxy programs), and the hand-written Jupiter swap
     wrapper in `idl/programs/glam/jupiter/`.
