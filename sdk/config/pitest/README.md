@@ -365,12 +365,14 @@ Kamino reserves reported with their mint; the stored market from the recorded st
 market with and without a lookup, a named market the strategy is known to store and one
 it is known not to (refused: the deployed program keeps the stored market, a fact the
 ticket's LiteSVM coverage established), no params and params naming none, a strategy not
-fetched, a fetched account that is not a strategy, the strategy's native position pinned
-against the generated binding; the five entries mapped through the mapper over
-hand-written staging documents (`supplied-accounts/staging`, source positions from the
-managed IDLs the generator reads), the bundled builders' extra whirlpool program account
-and the native extras after the prefix, the update's payer held to the GLAM signer, and
-the `context` refusals with their messages.
+fetched, a fetched account that is not a strategy, the strategy read from the role's `of` and, for a
+document naming none, from its native position pinned against the generated binding; the
+five entries mapped through the mapper over the staging documents the monorepo generates
+(`supplied-accounts/staging`, copied from glamsystems/glam PR #1440 at 9ad419cca; the native
+instructions built with the managed IDL's 15 and 19 positions), the native extras after the
+prefix, the update's payer held to the GLAM signer, the `context` refusals with their
+messages, and `withKaminoRefresh` leading a build with the refresh only when a reserve was
+chosen.
 
 No fuzz target is owed: `storedMarket` is a fixed-offset read behind a length and a
 discriminator check, whose three outcomes the tests pin, and the update decode is
@@ -388,7 +390,10 @@ role the supplier does not serve. The same run mutated the tests' fixture reader
 matched no exclusion; it moved to the excluded `tests` package. The observation after the
 review rewrite (697 mutants, 675 detected; the baseline's 10 survivors and 12 uncovered
 mutants unchanged) added no rows, and the one after the market-change refusal (703 mutants,
-681 detected, the same 22 undetected) added none.
+681 detected, the same 22 undetected) added none. The generated-document round surfaced one
+fresh survivor, a capacity-hint addition in `GlamSuppliedAccounts.withKaminoRefresh`
+(MathMutator), refactored out; the observation after that (711 mutants, 689 detected, the
+same 22 undetected; the package's 152 all killed) added no rows.
 
 ## Timed-out mutants (audited set, 2026-07-26)
 

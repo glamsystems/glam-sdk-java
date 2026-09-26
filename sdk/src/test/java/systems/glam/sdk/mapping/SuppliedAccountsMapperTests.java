@@ -32,12 +32,11 @@ import static systems.glam.sdk.mapping.LoopscaleStrategyMarketResolver.strategyM
 import static systems.glam.sdk.mapping.LoopscaleStrategyMarketResolverTests.params;
 import static systems.glam.sdk.mapping.LoopscaleStrategyMarketResolverTests.updateStrategy;
 
-/// The five entries mapped through the mapper with the supplier, over hand-written staging documents
-/// (`supplied-accounts/staging`) that list the entries as the generated set will once the monorepo flips
-/// them, with the source positions of the managed IDL the generator reads: the seats, then the appended
-/// global configuration, then the supplied accounts read-only, then the native extras in place. The
-/// bundled whirlpool builders append a `whirlpool_program` account the managed IDL does not list, so it
-/// rides as the first native extra.
+/// The five entries mapped through the mapper with the supplier, over the staging documents the monorepo
+/// generates (`supplied-accounts/staging`, see its README): the seats, then the appended global
+/// configuration, then the supplied accounts read-only, then the native extras in place. The bundled
+/// whirlpool builders append a `whirlpool_program` account the managed IDL and the documents do not list
+/// (15 and 19 positions), so the native instructions here are built without it.
 final class SuppliedAccountsMapperTests {
 
   private static final PublicKey FEE_PAYER = fromBase58Encoded("F1oQY1jbdiJyxxeeuMBF2NsUckboyWo6TSXNqzJbrhxs");
@@ -64,11 +63,19 @@ final class SuppliedAccountsMapperTests {
     return GlamSuppliedAccounts.create(globalConfig(), strategyMarkets(Map.of(STRATEGY_KEY, strategy())));
   }
 
+  /// The native liquidity accounts as the managed IDL lists them: the bundled builder's trailing whirlpool
+  /// program account dropped.
+  private static List<AccountMeta> liquidityKeys(final PublicKey vault, final PublicKey mintA, final PublicKey mintB) {
+    final var keys = WhirlpoolProgram.increaseLiquidityV2Keys(
+        SOLANA, WHIRLPOOL, SOLANA.tokenProgram(), SOLANA.tokenProgram(), vault, key(31), key(32), mintA, mintB,
+        key(33), key(34), key(35), key(36), key(37), key(38), WHIRLPOOL_PROGRAM
+    );
+    return keys.subList(0, 15);
+  }
+
   private static Instruction increaseLiquidity(final PublicKey vault, final PublicKey mintA, final PublicKey mintB) {
     return WhirlpoolProgram.increaseLiquidityV2(
-        OrcaAccounts.MAIN_NET.invokedWhirlpoolProgram(), SOLANA,
-        WHIRLPOOL, SOLANA.tokenProgram(), SOLANA.tokenProgram(), vault, key(31), key(32), mintA, mintB,
-        key(33), key(34), key(35), key(36), key(37), key(38), WHIRLPOOL_PROGRAM,
+        OrcaAccounts.MAIN_NET.invokedWhirlpoolProgram(), liquidityKeys(vault, mintA, mintB),
         BigInteger.valueOf(1_000L), 10L, 20L, null
     );
   }
@@ -106,7 +113,7 @@ final class SuppliedAccountsMapperTests {
 
   /// increase_liquidity_v2 over two USD-priced mints: the twenty-one seats, the appended global
   /// configuration, the two oracles read-only in mint order, no SOL oracle, and the native extras after
-  /// them with their flags, the builder's whirlpool program account first among them.
+  /// them with their flags.
   @Test
   void increaseLiquidityV2MapsWithTheOraclePrefixBeforeTheNativeExtras() {
     final var vault = vault();
@@ -121,7 +128,6 @@ final class SuppliedAccountsMapperTests {
     final var expected = new ArrayList<>(liquiditySeats(vault, USDC, WSOL));
     expected.add(createRead(USDC_ORACLE));
     expected.add(createRead(WSOL_ORACLE));
-    expected.add(createRead(WHIRLPOOL_PROGRAM));
     expected.addAll(EXTRAS);
     assertEquals(expected, instruction.accounts());
     assertArrayEquals(source.data(), instruction.data(), "the payload rides along unchanged");
@@ -142,12 +148,8 @@ final class SuppliedAccountsMapperTests {
         }), WSOL),
         new LoopscaleStrategyMarketResolver(LOOPSCALE_PROGRAM, null)
     );
-    final var keys = WhirlpoolProgram.increaseLiquidityV2Keys(
-        SOLANA, WHIRLPOOL, SOLANA.tokenProgram(), SOLANA.tokenProgram(), vault.vaultPublicKey(), key(31), key(32), jito, USDC,
-        key(33), key(34), key(35), key(36), key(37), key(38), WHIRLPOOL_PROGRAM
-    );
     final var source = WhirlpoolProgram.increaseLiquidityByTokenAmountsV2(
-        OrcaAccounts.MAIN_NET.invokedWhirlpoolProgram(), keys,
+        OrcaAccounts.MAIN_NET.invokedWhirlpoolProgram(), liquidityKeys(vault.vaultPublicKey(), jito, USDC),
         new IncreaseLiquidityMethod.ByTokenAmounts(10L, 20L, BigInteger.ONE, BigInteger.TWO), null
     );
     final var result = mapped(mapper(), source, vault, supplier);
@@ -156,7 +158,6 @@ final class SuppliedAccountsMapperTests {
     expected.add(createRead(pool));
     expected.add(createRead(USDC_ORACLE));
     expected.add(createRead(WSOL_ORACLE));
-    expected.add(createRead(WHIRLPOOL_PROGRAM));
     assertEquals(expected, result.instruction().accounts());
     assertEquals(List.of(), supplier.kaminoReserves());
   }
@@ -165,19 +166,14 @@ final class SuppliedAccountsMapperTests {
   @Test
   void decreaseLiquidityV2MapsWithTheOraclePrefix() {
     final var vault = vault();
-    final var keys = WhirlpoolProgram.increaseLiquidityV2Keys(
-        SOLANA, WHIRLPOOL, SOLANA.tokenProgram(), SOLANA.tokenProgram(), vault.vaultPublicKey(), key(31), key(32), WSOL, MSOL,
-        key(33), key(34), key(35), key(36), key(37), key(38), WHIRLPOOL_PROGRAM
-    );
     final var source = WhirlpoolProgram.decreaseLiquidityV2(
-        OrcaAccounts.MAIN_NET.invokedWhirlpoolProgram(), keys, BigInteger.valueOf(500L), 1L, 2L, null
+        OrcaAccounts.MAIN_NET.invokedWhirlpoolProgram(), liquidityKeys(vault.vaultPublicKey(), WSOL, MSOL), BigInteger.valueOf(500L), 1L, 2L, null
     );
     final var result = mapped(mapper(), source, vault, recorded());
     assertEquals("decrease_liquidity_v2", result.handler());
     final var expected = new ArrayList<>(liquiditySeats(vault, WSOL, MSOL));
     expected.add(createRead(WSOL_ORACLE));
     expected.add(createRead(MSOL_ORACLE));
-    expected.add(createRead(WHIRLPOOL_PROGRAM));
     assertEquals(expected, result.instruction().accounts());
   }
 
@@ -186,10 +182,12 @@ final class SuppliedAccountsMapperTests {
   @Test
   void repositionLiquidityV2MapsWithTheOraclePrefixFromItsMintPositions() {
     final var vault = vault();
+    final var repositionKeys = WhirlpoolProgram.repositionLiquidityV2Keys(
+        SOLANA, WHIRLPOOL, SOLANA.tokenProgram(), SOLANA.tokenProgram(), vault.vaultPublicKey(), FEE_PAYER, key(31), key(32), USDC, WSOL,
+        key(33), key(34), key(35), key(36), key(37), key(38), key(39), key(40), WHIRLPOOL_PROGRAM
+    );
     final var source = WhirlpoolProgram.repositionLiquidityV2(
-        OrcaAccounts.MAIN_NET.invokedWhirlpoolProgram(), SOLANA,
-        WHIRLPOOL, SOLANA.tokenProgram(), SOLANA.tokenProgram(), vault.vaultPublicKey(), FEE_PAYER, key(31), key(32), USDC, WSOL,
-        key(33), key(34), key(35), key(36), key(37), key(38), key(39), key(40), WHIRLPOOL_PROGRAM,
+        OrcaAccounts.MAIN_NET.invokedWhirlpoolProgram(), repositionKeys.subList(0, 19),
         -100, 100, new RepositionLiquidityMethod.ByLiquidity(BigInteger.TEN, 1L, 2L, 3L, 4L), null
     ).extraAccounts(EXTRAS);
     final var result = mapped(mapper(), source, vault, recorded());
@@ -220,8 +218,7 @@ final class SuppliedAccountsMapperTests {
         createWrite(key(40)),
         createRead(GLOBAL_CONFIG_KEY),
         createRead(USDC_ORACLE),
-        createRead(WSOL_ORACLE),
-        createRead(WHIRLPOOL_PROGRAM)
+        createRead(WSOL_ORACLE)
     ));
     expected.addAll(EXTRAS);
     assertEquals(expected, result.instruction().accounts());

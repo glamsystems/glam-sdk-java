@@ -31,7 +31,7 @@ final class GlamSuppliedAccountsTests {
   private static final PublicKey ORCA_PROXY = GlamAccounts.MAIN_NET_STAGING.orcaIntegrationProgram();
   private static final PublicKey WHIRLPOOL = fromBase58Encoded("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc");
   private static final PublicKey LOOPSCALE = LoopscaleAccounts.MAIN_NET.loopscaleProgram();
-  private static final List<Role> MARKET_ROLE = List.of(new Role(LoopscaleStrategyMarketResolver.LOOPSCALE_STRATEGY_MARKET, List.of(), false));
+  private static final List<Role> MARKET_ROLE = List.of(new Role(LoopscaleStrategyMarketResolver.LOOPSCALE_STRATEGY_MARKET, List.of(STRATEGY_KEY), false));
 
   private static SuppliedAccountsRequest orcaRequest(final PublicKey mintA, final PublicKey mintB) {
     return new SuppliedAccountsRequest(
@@ -138,8 +138,16 @@ final class GlamSuppliedAccountsTests {
     supplier.reset();
     assertEquals(List.of(), supplier.kaminoReserves());
     assertNull(supplier.kaminoReserveRefresh(invokedLending, decodedReserves));
+    final var mapped = List.of(updateStrategy(STRATEGY_KEY, null));
+    assertSame(mapped, supplier.withKaminoRefresh(mapped, invokedLending, decodedReserves), "nothing chosen: the build's instructions as they are");
     assertEquals(List.of(solReserve, usdcReserve), supplier.apply(orcaRequest(WSOL, USDC)));
     assertEquals(List.of(solReserve, usdcReserve), supplier.kaminoReserves(), "chosen afresh after the reset");
+    final var built = supplier.withKaminoRefresh(mapped, invokedLending, decodedReserves);
+    assertEquals(2, built.size(), "the refresh leads the build");
+    assertEquals(lendingProgram, built.getFirst().programId().publicKey());
+    assertEquals(new KaminoReserveRefresh(solReserve, key(70), WSOL, null, null, null, key(72)).accounts(lendingProgram).subList(0, 2), built.getFirst().accounts().subList(0, 2));
+    assertSame(mapped.getFirst(), built.get(1));
+    assertThrows(UnsupportedOperationException.class, () -> built.add(mapped.getFirst()));
   }
 
   /// A vault's mapping context carries the supplier beside the state, vault, signer and integration

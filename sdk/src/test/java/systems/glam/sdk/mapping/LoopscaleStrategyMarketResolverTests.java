@@ -27,7 +27,10 @@ final class LoopscaleStrategyMarketResolverTests {
 
   private static final PublicKey LOOPSCALE = LoopscaleAccounts.MAIN_NET.loopscaleProgram();
   private static final PublicKey PROXY = GlamAccounts.MAIN_NET_STAGING.loopscaleIntegrationProgram();
-  private static final Role MARKET_ROLE = new Role(LOOPSCALE_STRATEGY_MARKET, List.of(), false);
+  /// The role as the generated document lists it, naming the strategy at its `of` position.
+  private static final Role MARKET_ROLE = new Role(LOOPSCALE_STRATEGY_MARKET, List.of(STRATEGY_KEY), false);
+  /// The role without an `of`, for a document that names none.
+  private static final Role BARE_MARKET_ROLE = new Role(LOOPSCALE_STRATEGY_MARKET, List.of(), false);
   /// Two collateral terms ahead of the params, so the market is read past variable-length data.
   private static final MultiCollateralTermsUpdateParams[] TERMS = {
       new MultiCollateralTermsUpdateParams(1_200L, new CollateralTermsIndices[]{new CollateralTermsIndices(1, 2), new CollateralTermsIndices(3, 4)}),
@@ -161,18 +164,25 @@ final class LoopscaleStrategyMarketResolverTests {
     assertFalse(serves(List.of(new Role("asset_oracle", List.of(key(1)), false))));
   }
 
-  /// The strategy is read at position three of the native instruction, as the Loopscale program lays it
-  /// out; an instruction too short to carry it, with no data, or with data that is not an update, is
-  /// refused.
+  /// The strategy is the role's `of` address when the document names one, else the account at position
+  /// three of the native instruction, as the Loopscale program lays it out; an instruction too short to
+  /// carry it, with no data, or with data that is not an update, is refused.
   @Test
-  void theStrategySitsAtPositionThreeOfTheNativeInstruction() {
+  void theStrategyIsTheRolesOfElseTheNativePositionThree() {
     final var instruction = updateStrategy(STRATEGY_KEY, params(null));
     assertEquals(STRATEGY_KEY, instruction.accounts().get(STRATEGY_POSITION).publicKey());
     assertEquals(3, STRATEGY_POSITION);
 
     final var resolver = recorded();
+    final var bare = new SuppliedAccountsRequest(PROXY, LOOPSCALE, UPDATE_STRATEGY, UPDATE_STRATEGY, List.of(BARE_MARKET_ROLE), instruction);
+    assertEquals(List.of(STRATEGY_MARKET), resolver.resolve(bare), "no of: the strategy at position three");
+    final var other = key(77);
+    final var lookup = new LoopscaleStrategyMarketResolver(LOOPSCALE, strategyMarkets(Map.of(other, strategy())));
+    assertEquals(List.of(STRATEGY_MARKET), lookup.resolve(new SuppliedAccountsRequest(PROXY, LOOPSCALE, UPDATE_STRATEGY, UPDATE_STRATEGY,
+        List.of(new Role(LOOPSCALE_STRATEGY_MARKET, List.of(other), false)), instruction)), "the of address is the strategy, whatever position three holds");
+
     final var truncated = Instruction.createInstruction(instruction.programId(), instruction.accounts().subList(0, 3), instruction.data());
-    var refused = assertThrows(IllegalArgumentException.class, () -> resolver.resolve(request(truncated)));
+    var refused = assertThrows(IllegalArgumentException.class, () -> resolver.resolve(new SuppliedAccountsRequest(PROXY, LOOPSCALE, UPDATE_STRATEGY, UPDATE_STRATEGY, List.of(BARE_MARKET_ROLE), truncated)));
     assertEquals("update_strategy carries 3 accounts; the strategy sits at position 3.", refused.getMessage());
 
     final var dataless = Instruction.createInstruction(instruction.programId(), instruction.accounts(), new byte[0]);

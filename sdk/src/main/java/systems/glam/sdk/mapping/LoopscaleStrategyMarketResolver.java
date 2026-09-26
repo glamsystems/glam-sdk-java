@@ -5,6 +5,8 @@ import software.sava.idl.clients.loopscale.gen.LoopscaleProgram;
 import software.sava.idl.clients.loopscale.gen.types.Strategy;
 import systems.glam.ix.proxy.SuppliedAccountsRequest;
 
+import software.sava.core.tx.Instruction;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -24,7 +26,8 @@ public final class LoopscaleStrategyMarketResolver {
   public static final String LOOPSCALE_STRATEGY_MARKET = "loopscale_strategy_market";
   public static final String UPDATE_STRATEGY = "update_strategy";
   /// The strategy's position in Loopscale's `update_strategy`: the protocol admin, the payer, the lender,
-  /// then the strategy.
+  /// then the strategy. The generated document names it as the role's one `of` position; the position
+  /// is the fallback for a document that names none.
   public static final int STRATEGY_POSITION = 3;
   /// The least a strategy account holds to store a market at the program's offset.
   public static final int MIN_STRATEGY_BYTES = Strategy.MARKET_INFORMATION_OFFSET + PublicKey.PUBLIC_KEY_LENGTH;
@@ -75,12 +78,7 @@ public final class LoopscaleStrategyMarketResolver {
     if (strategyMarkets == null) {
       return named == null ? null : List.of(named);
     }
-    final var accounts = instruction.accounts();
-    if (accounts.size() <= STRATEGY_POSITION) {
-      throw new IllegalArgumentException(
-          "update_strategy carries " + accounts.size() + " accounts; the strategy sits at position " + STRATEGY_POSITION + '.');
-    }
-    final var strategy = accounts.get(STRATEGY_POSITION).publicKey();
+    final var strategy = strategy(request.roles().getFirst(), instruction);
     final var stored = strategyMarkets.apply(strategy);
     if (named != null) {
       if (stored != null && !stored.equals(named)) {
@@ -95,6 +93,20 @@ public final class LoopscaleStrategyMarketResolver {
           "The market of strategy " + strategy + " is not known: fetch the strategy account before mapping, or name market_information in the update.");
     }
     return List.of(stored);
+  }
+
+  /// The strategy the role names at its `of` position, else the one at the instruction's strategy position.
+  private static PublicKey strategy(final SuppliedAccountsRequest.Role role, final Instruction instruction) {
+    final var of = role.of();
+    if (of.size() == 1) {
+      return of.getFirst();
+    }
+    final var accounts = instruction.accounts();
+    if (accounts.size() <= STRATEGY_POSITION) {
+      throw new IllegalArgumentException(
+          "update_strategy carries " + accounts.size() + " accounts; the strategy sits at position " + STRATEGY_POSITION + '.');
+    }
+    return accounts.get(STRATEGY_POSITION).publicKey();
   }
 
   /// The market a strategy account stores, at the offset the Loopscale program reads it from; the data must

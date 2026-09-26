@@ -84,9 +84,28 @@ public final class GlamSuppliedAccounts implements Function<SuppliedAccountsRequ
     kaminoReserves.clear();
   }
 
+  /// `mapped`, the instructions of one transaction build, with the [#kaminoReserveRefresh] in front of them
+  /// when this supplier chose a reserve while they were mapped, and unchanged otherwise: the handler prices
+  /// through a reserve's last write, so the refresh precedes every mapped instruction.
+  ///
+  /// @throws IllegalStateException if a chosen reserve was not decoded, or prices another mint
+  public List<Instruction> withKaminoRefresh(final List<Instruction> mapped,
+                                             final AccountMeta invokedLendingProgram,
+                                             final Function<PublicKey, KaminoReserveRefresh> decodedReserves) {
+    final var refresh = kaminoReserveRefresh(invokedLendingProgram, decodedReserves);
+    if (refresh == null) {
+      return mapped;
+    }
+    final var withRefresh = new ArrayList<Instruction>();
+    withRefresh.add(refresh);
+    withRefresh.addAll(mapped);
+    return List.copyOf(withRefresh);
+  }
+
   /// One `refresh_reserves_batch` over [#kaminoReserves()], from the reserve accounts the caller fetched and
-  /// decoded, to send in front of the mapped instructions; null when no reserve was chosen. Each reserve's
-  /// liquidity mint must be the mint it was chosen to price, as the handler's oracle check requires.
+  /// decoded, to send in front of the mapped instructions (see [#withKaminoRefresh]); null when no reserve
+  /// was chosen. Each reserve's liquidity mint must be the mint it was chosen to price, as the handler's
+  /// oracle check requires.
   ///
   /// @throws IllegalStateException if a chosen reserve was not decoded, or prices another mint
   public Instruction kaminoReserveRefresh(final AccountMeta invokedLendingProgram,
