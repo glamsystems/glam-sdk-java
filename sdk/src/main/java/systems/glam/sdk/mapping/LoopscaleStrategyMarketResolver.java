@@ -14,6 +14,11 @@ import java.util.function.Function;
 /// market the strategy account stores. The strategy account is read through a lookup the caller builds from
 /// accounts fetched before mapping, since the mapper's supplier is synchronous; [#strategyMarkets(Map)]
 /// builds one from fetched account data, and [#storedMarket(byte[])] reads the market a strategy stores.
+///
+/// The deployed Loopscale program keeps a strategy's stored market whatever the update names, and the
+/// handler's check after the CPI then refuses the update (ProtocolPolicyViolation), so only the stored
+/// market ever works: when the lookup knows the stored market and the update names another, the resolver
+/// refuses up front rather than supply a prefix the transaction cannot use.
 public final class LoopscaleStrategyMarketResolver {
 
   public static final String LOOPSCALE_STRATEGY_MARKET = "loopscale_strategy_market";
@@ -43,11 +48,14 @@ public final class LoopscaleStrategyMarketResolver {
 
   /// The market for the request: the one the update names, else the one the strategy stores; null when
   /// this resolver serves no such entry, because the request is not Loopscale's `update_strategy` or the
-  /// update names no market and no strategy lookup was configured.
+  /// update names no market and no strategy lookup was configured. A named market is served without a
+  /// lookup, or when the lookup does not know the strategy; a lookup that knows a different stored market
+  /// refuses it.
   ///
   /// @throws IllegalArgumentException when the instruction's data cannot be read as an update or it
   ///                                  carries no strategy
-  /// @throws IllegalStateException    when the strategy's account was not fetched before mapping
+  /// @throws IllegalStateException    when the strategy's account was not fetched before mapping, or the
+  ///                                  update names a market other than the one the strategy stores
   public List<PublicKey> resolve(final SuppliedAccountsRequest request) {
     if (!loopscaleProgram.equals(request.program()) || !UPDATE_STRATEGY.equals(request.source())) {
       return null;
@@ -63,11 +71,9 @@ public final class LoopscaleStrategyMarketResolver {
       throw new IllegalArgumentException("update_strategy carries no data to read the update from.");
     }
     final var params = data.params();
-    if (params != null && params.marketInformation() != null) {
-      return List.of(params.marketInformation());
-    }
+    final var named = params == null ? null : params.marketInformation();
     if (strategyMarkets == null) {
-      return null;
+      return named == null ? null : List.of(named);
     }
     final var accounts = instruction.accounts();
     if (accounts.size() <= STRATEGY_POSITION) {
@@ -75,12 +81,20 @@ public final class LoopscaleStrategyMarketResolver {
           "update_strategy carries " + accounts.size() + " accounts; the strategy sits at position " + STRATEGY_POSITION + '.');
     }
     final var strategy = accounts.get(STRATEGY_POSITION).publicKey();
-    final var market = strategyMarkets.apply(strategy);
-    if (market == null) {
+    final var stored = strategyMarkets.apply(strategy);
+    if (named != null) {
+      if (stored != null && !stored.equals(named)) {
+        throw new IllegalStateException(
+            "update_strategy names market " + named + ", but strategy " + strategy + " stores " + stored
+                + "; the deployed Loopscale program keeps the stored market and the handler then refuses the update (ProtocolPolicyViolation). Name the stored market, or none.");
+      }
+      return List.of(named);
+    }
+    if (stored == null) {
       throw new IllegalStateException(
           "The market of strategy " + strategy + " is not known: fetch the strategy account before mapping, or name market_information in the update.");
     }
-    return List.of(market);
+    return List.of(stored);
   }
 
   /// The market a strategy account stores, at the offset the Loopscale program reads it from; the data must

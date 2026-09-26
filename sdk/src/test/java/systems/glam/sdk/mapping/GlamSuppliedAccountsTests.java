@@ -66,7 +66,9 @@ final class GlamSuppliedAccountsTests {
     final var supplier = GlamSuppliedAccounts.create(globalConfig(), LoopscaleStrategyMarketResolver.strategyMarkets(Map.of(STRATEGY_KEY, strategy())));
     assertEquals(List.of(USDC_ORACLE, WSOL_ORACLE), supplier.apply(orcaRequest(USDC, WSOL)));
     assertEquals(List.of(STRATEGY_MARKET), supplier.apply(updateRequest(null)));
-    assertEquals(List.of(key(8)), supplier.apply(updateRequest(key(8))));
+    assertEquals(List.of(STRATEGY_MARKET), supplier.apply(updateRequest(STRATEGY_MARKET)));
+    final var change = assertThrows(IllegalStateException.class, () -> supplier.apply(updateRequest(key(8))));
+    assertTrue(change.getMessage().contains("stores " + STRATEGY_MARKET), "a market change the deployed program cannot make is refused");
 
     final var unknown = new SuppliedAccountsRequest(ORCA_PROXY, WHIRLPOOL, "swap_v2", "swap_v2",
         List.of(new Role("pool_oracle", List.of(), false)), updateStrategy(STRATEGY_KEY, null));

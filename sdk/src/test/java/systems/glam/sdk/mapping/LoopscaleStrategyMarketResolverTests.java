@@ -102,17 +102,26 @@ final class LoopscaleStrategyMarketResolverTests {
     assertEquals("The account fetched for strategy " + STRATEGY_KEY + " is not a strategy: The account does not carry the Loopscale strategy discriminator.", refused.getMessage());
   }
 
-  /// An update that names a market in its params supplies that market: the strategy account is not
-  /// consulted, and none need be fetched.
+  /// An update that names a market in its params supplies that market when no lookup is configured, when
+  /// the lookup does not know the strategy, and when it names the market the strategy stores; a lookup
+  /// that knows a different stored market refuses the update, naming both, since the deployed program
+  /// keeps the stored market and the handler then refuses the update.
   @Test
-  void anUpdateNamingAMarketSuppliesItWithoutTheStrategy() {
+  void anUpdateNamingAMarketSuppliesItUnlessTheStrategyIsKnownToStoreAnother() {
     final var named = key(7);
-    final var resolver = new LoopscaleStrategyMarketResolver(LOOPSCALE, strategy -> {
-      throw new AssertionError("the strategy account must not be consulted when the update names the market");
-    });
-    assertEquals(List.of(named), resolver.resolve(request(updateStrategy(STRATEGY_KEY, params(named)))));
     assertEquals(List.of(named), new LoopscaleStrategyMarketResolver(LOOPSCALE, null).resolve(request(updateStrategy(STRATEGY_KEY, params(named)))),
         "no lookup configured, and none needed");
+    assertEquals(List.of(named), new LoopscaleStrategyMarketResolver(LOOPSCALE, strategyMarkets(Map.of())).resolve(request(updateStrategy(STRATEGY_KEY, params(named)))),
+        "the strategy was not fetched, so nothing contradicts the update");
+    assertEquals(List.of(STRATEGY_MARKET), recorded().resolve(request(updateStrategy(STRATEGY_KEY, params(STRATEGY_MARKET)))),
+        "the stored market, named");
+
+    final var refused = assertThrows(IllegalStateException.class, () -> recorded().resolve(request(updateStrategy(STRATEGY_KEY, params(named)))));
+    assertEquals(
+        "update_strategy names market " + named + ", but strategy " + STRATEGY_KEY + " stores " + STRATEGY_MARKET
+            + "; the deployed Loopscale program keeps the stored market and the handler then refuses the update (ProtocolPolicyViolation). Name the stored market, or none.",
+        refused.getMessage()
+    );
   }
 
   /// An update naming no market, with params that leave it out or with no params at all, supplies the

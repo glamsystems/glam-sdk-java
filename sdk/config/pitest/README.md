@@ -362,7 +362,9 @@ messages by full text and the shape and role refusals by full text or a distingu
 phrase; the required-but-unread SOL role, a second SOL role, an asset role after it;
 Kamino reserves reported with their mint; the stored market from the recorded strategy
 (`accounts/loopscale/13RqwWva…`), read past two collateral terms in the update, a named
-market with and without a lookup, no params and params naming none, a strategy not
+market with and without a lookup, a named market the strategy is known to store and one
+it is known not to (refused: the deployed program keeps the stored market, a fact the
+ticket's LiteSVM coverage established), no params and params naming none, a strategy not
 fetched, a fetched account that is not a strategy, the strategy's native position pinned
 against the generated binding; the five entries mapped through the mapper over
 hand-written staging documents (`supplied-accounts/staging`, source positions from the
@@ -385,7 +387,8 @@ was the Loopscale dispatch guard, killed by an `update_strategy` request asking 
 role the supplier does not serve. The same run mutated the tests' fixture reader, which
 matched no exclusion; it moved to the excluded `tests` package. The observation after the
 review rewrite (697 mutants, 675 detected; the baseline's 10 survivors and 12 uncovered
-mutants unchanged) added no rows.
+mutants unchanged) added no rows, and the one after the market-change refusal (703 mutants,
+681 detected, the same 22 undetected) added none.
 
 ## Timed-out mutants (audited set, 2026-07-26)
 

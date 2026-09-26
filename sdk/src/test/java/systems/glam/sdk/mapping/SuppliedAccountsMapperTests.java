@@ -265,6 +265,13 @@ final class SuppliedAccountsMapperTests {
     assertEquals(createRead(named), fromParams.instruction().accounts().get(15), "the update's market, without the strategy account");
     assertEquals(16, fromParams.instruction().accounts().size());
 
+    // a change away from the stored market is refused when the strategy is known: the deployed program
+    // would keep the stored market and the handler refuse the update after the CPI
+    final var change = assertInstanceOf(MapResult.Unsupported.class,
+        mapper.map(updateStrategy(FEE_PAYER, vault.vaultPublicKey(), admin, STRATEGY_KEY, params(named)), vault.mappingContext(recorded())));
+    assertEquals(UnsupportedReason.CONTEXT, change.reason());
+    assertTrue(change.message().startsWith("the context's supplied accounts failed for update_strategy: update_strategy names market " + named + ", but strategy " + STRATEGY_KEY + " stores " + STRATEGY_MARKET), change.message());
+
     final var vaultAsPayer = updateStrategy(vault.vaultPublicKey(), vault.vaultPublicKey(), admin, STRATEGY_KEY, params(null));
     final var refused = assertInstanceOf(MapResult.Unsupported.class, mapper.map(vaultAsPayer, vault.mappingContext(recorded())));
     assertEquals(UnsupportedReason.ACCOUNT_EXPECTATION, refused.reason());
