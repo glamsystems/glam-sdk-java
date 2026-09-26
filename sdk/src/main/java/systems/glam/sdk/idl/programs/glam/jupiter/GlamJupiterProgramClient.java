@@ -30,26 +30,10 @@ public interface GlamJupiterProgramClient {
     return createClient(nativeProgramAccountClient, JupiterAccounts.MAIN_NET);
   }
 
-  /// Removes signature requirements for the vault key.
-  ///
-  /// Jupiter assumes a direct call instead of a CPI call, which implicitly considers the calling program to be authorized.
-  static List<AccountMeta> fixCPICallerRights(final List<AccountMeta> accountList) {
-    final var accounts = accountList.toArray(AccountMeta[]::new);
-    for (int i = 0; i < accounts.length; i++) {
-      final var account = accounts[i];
-      if (account.signer()) {
-        accounts[i] = account.write()
-            ? AccountMeta.createWrite(account.publicKey())
-            : AccountMeta.createRead(account.publicKey());
-        break;
-      }
-    }
-    return Arrays.asList(accounts);
-  }
-
   /// Removes the signature requirement of `vault` wherever the route seats it, and of no other account:
-  /// the vault PDA signs through the GLAM program's CPI, and a route may seat other signers before it. A
-  /// vault seat that does not sign is rewritten to the same read or write meta.
+  /// Jupiter assumes a direct call, so its route seats the vault as a signer, but the vault PDA signs
+  /// through the GLAM program's CPI, and a route may seat other signers before it. A vault seat that
+  /// does not sign is rewritten to the same read or write meta.
   static List<AccountMeta> fixCPICallerRights(final List<AccountMeta> accountList, final PublicKey vault) {
     final var accounts = accountList.toArray(AccountMeta[]::new);
     for (int i = 0; i < accounts.length; i++) {
@@ -63,13 +47,12 @@ public interface GlamJupiterProgramClient {
     return Arrays.asList(accounts);
   }
 
-  /// Removes signature requirements for the vault key.
-  ///
-  /// Jupiter assumes a direct call instead of a CPI call, which implicitly considers the calling program to be authorized.
-  static Instruction fixCPICallerRights(final Instruction swapIx) {
+  /// The route with `vault`'s signature requirement removed, as [#fixCPICallerRights(List, PublicKey)]
+  /// rewrites its accounts; program and data are unchanged.
+  static Instruction fixCPICallerRights(final Instruction swapIx, final PublicKey vault) {
     return Instruction.createInstruction(
         swapIx.programId(),
-        fixCPICallerRights(swapIx.accounts()),
+        fixCPICallerRights(swapIx.accounts(), vault),
         swapIx.data()
     );
   }

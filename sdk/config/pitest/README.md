@@ -329,6 +329,14 @@ capacity-hint additions. Four were missing assertions, now
 history-free observation after that (567 mutants, 545 detected) added no rows,
 and `pitestSdkBaselineRetag` refreshed `swapChecked`'s drifted `# line` tag.
 
+Follow-up after review (2026-09-26): the positional `fixCPICallerRights` overloads,
+which stripped the first signer whatever its key, were removed in favour of the keyed
+`List` and `Instruction` forms, so nine of their mutants left the population; three tests
+were added for properties the review found unpinned (the context's defensive copy of
+`kaminoReserves`, refreshed once for distinct records sharing a reserve key, and
+input-output-SOL/USD role order with distinct reserves). The fresh observation after that
+(558 mutants, 536 detected) added no rows; `swapChecked`'s `# untriaged` row is unchanged.
+
 ## Timed-out mutants (audited set, 2026-07-26)
 
 For a member of this set a weakened covering assertion would not show up as a

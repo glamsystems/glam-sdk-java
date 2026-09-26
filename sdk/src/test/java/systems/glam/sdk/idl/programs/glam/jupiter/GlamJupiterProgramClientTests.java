@@ -15,6 +15,7 @@ import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolProgram;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.zip.GZIPInputStream;
@@ -56,32 +57,30 @@ final class GlamJupiterProgramClientTests {
     );
   }
 
+  /// The vault's signature requirement is removed wherever the route seats it, keeping its write
+  /// access; every other seat, signer or not, is left as it is, and a route without a vault seat is
+  /// returned unchanged. The instruction form rewrites the accounts the same way and keeps the
+  /// program and data.
   @Test
-  void fixCPICallerRightsStripsOnlyTheFirstSigner() {
-    final var fixed = GlamJupiterProgramClient.fixCPICallerRights(routeIx().accounts());
+  void fixCPICallerRightsStripsTheVaultWhereverItSits() {
+    final var fixed = GlamJupiterProgramClient.fixCPICallerRights(routeIx().accounts(), VAULT_KEY);
     assertEquals(createRead(key(11)), fixed.get(0));
     // the vault keeps write access but loses its signer requirement
     assertEquals(createWrite(VAULT_KEY), fixed.get(1));
     assertFalse(fixed.get(1).signer());
     assertEquals(createWrite(key(12)), fixed.get(2));
-    // only the FIRST signer is stripped; later signers keep their rights
+    // a later signer keeps its rights
     assertEquals(createReadOnlySigner(key(13)), fixed.get(3));
     assertTrue(fixed.get(3).signer());
 
-    final var readOnlySignerFirst = GlamJupiterProgramClient.fixCPICallerRights(
-        List.of(createReadOnlySigner(key(14)), createWrite(key(15)))
-    );
-    assertEquals(createRead(key(14)), readOnlySignerFirst.getFirst());
-
-    final var fixedIx = GlamJupiterProgramClient.fixCPICallerRights(routeIx());
+    final var fixedIx = GlamJupiterProgramClient.fixCPICallerRights(routeIx(), VAULT_KEY);
     assertEquals(JupiterAccounts.MAIN_NET.swapProgram(), fixedIx.programId().publicKey());
     assertArrayEquals(new byte[]{9, 8, 7, 6}, fixedIx.data());
     assertEquals(fixed, fixedIx.accounts());
 
-    // no signer at all: the scan must run off the end gracefully, not index
-    // past it
-    final var noSigners = List.of(createRead(key(16)), createWrite(key(17)));
-    assertEquals(noSigners, GlamJupiterProgramClient.fixCPICallerRights(noSigners));
+    // no vault seat at all: nothing is rewritten, another signer included
+    final var noVault = List.of(createRead(key(16)), createWritableSigner(key(17)));
+    assertEquals(noVault, GlamJupiterProgramClient.fixCPICallerRights(noVault, VAULT_KEY));
   }
 
   @Test
@@ -130,9 +129,11 @@ final class GlamJupiterProgramClientTests {
     for (int i = 7; i <= 9; ++i) {
       assertEquals(createRead(protocolProgram), accounts.get(i), "slot " + i);
     }
-    // the route's accounts follow, with the vault's signer bit stripped
-    final var fixed = GlamJupiterProgramClient.fixCPICallerRights(routeIx().accounts());
-    assertEquals(fixed, accounts.subList(10, accounts.size()));
+    // the route's accounts follow, with the vault's signer bit stripped and the later signer kept
+    assertEquals(
+        List.of(createRead(key(11)), createWrite(VAULT_KEY), createWrite(key(12)), createReadOnlySigner(key(13))),
+        accounts.subList(10, accounts.size())
+    );
 
     final var ixData = GlamProtocolProgram.JupiterSwapV2IxData.read(swapIx);
     assertTrue(ixData.skipQuotePriceCheck());
@@ -248,8 +249,6 @@ final class GlamJupiterProgramClientTests {
     final var byKey = GlamJupiterProgramClient.fixCPICallerRights(route.accounts(), VAULT_KEY);
     assertEquals(createReadOnlySigner(key(13)), byKey.get(0), "another signer keeps its rights");
     assertEquals(createWrite(VAULT_KEY), byKey.get(2), "the vault keeps write access and loses its signer bit");
-    // the positional form would have stripped the first signer instead
-    assertEquals(createRead(key(13)), GlamJupiterProgramClient.fixCPICallerRights(route.accounts()).get(0));
     // a read-only vault seat loses the bit the same way
     assertEquals(createRead(VAULT_KEY),
         GlamJupiterProgramClient.fixCPICallerRights(List.of(createReadOnlySigner(VAULT_KEY)), VAULT_KEY).getFirst());
@@ -352,7 +351,7 @@ final class GlamJupiterProgramClientTests {
     final var batch = KaminoReserveRefresh.refreshInstruction(
         KaminoAccounts.MAIN_NET.invokedKLendProgram(), List.of(pythOnly, full, pythOnly, full));
     assertEquals(lendingProgram, batch.programId().publicKey());
-    final var expected = new java.util.ArrayList<>(pythOnly.accounts(lendingProgram));
+    final var expected = new ArrayList<>(pythOnly.accounts(lendingProgram));
     expected.addAll(full.accounts(lendingProgram));
     assertEquals(expected, batch.accounts(), "each reserve once, in first-seen order");
     assertFalse(KaminoLendingProgram.RefreshReservesBatchIxData.read(batch).skipPriceUpdates());
@@ -464,6 +463,73 @@ final class GlamJupiterProgramClientTests {
     // reserves left unset are an empty list, never null
     assertEquals(List.of(), contextBuilder(key(21)).create().kaminoReserves());
     assertEquals(List.of(), contextBuilder(key(21)).kaminoReserves(null).create().kaminoReserves());
+  }
+
+  /// The context keeps its own copy of the caller's reserves: a list mutated or reused after the
+  /// context is built does not reach the swap, the copy cannot be modified through the accessor at
+  /// any size, and a list holding a null reserve is refused when the context is built.
+  @Test
+  void kaminoReservesAreCopiedWhenTheContextIsBuilt() {
+    final var client = createClient();
+    final var priced = reserve(41, key(51));
+    final var reserves = new ArrayList<KaminoReserveRefresh>();
+    reserves.add(priced);
+    final var context = contextBuilder(key(21)).inputTokenOracleKey(priced.reserve()).kaminoReserves(reserves).create();
+    reserves.clear();
+    reserves.add(reserve(43, key(53)));
+
+    assertEquals(List.of(priced), context.kaminoReserves(), "the context holds what it was built with");
+    final var instructions = client.swap(context);
+    assertEquals(2, instructions.size(), "the refresh still leads the swap");
+    assertEquals(priced.accounts(KaminoAccounts.MAIN_NET.kLendProgram()), instructions.getFirst().accounts());
+
+    assertThrows(UnsupportedOperationException.class, () -> context.kaminoReserves().add(priced));
+    assertThrows(UnsupportedOperationException.class, () -> contextBuilder(key(21)).create().kaminoReserves().add(priced));
+    final var withNull = java.util.Arrays.asList(priced, null);
+    assertThrows(NullPointerException.class, () -> contextBuilder(key(21)).kaminoReserves(withNull).create());
+  }
+
+  /// A reserve is refreshed once however many records name it: records are told apart by reserve
+  /// key, not by identity or equality, and the first listed one supplies the accounts, in the batch
+  /// builder and through the client.
+  @Test
+  void aReserveNamedByDistinctRecordsIsRefreshedOnce() {
+    final var lendingProgram = KaminoAccounts.MAIN_NET.kLendProgram();
+    final var first = new KaminoReserveRefresh(key(41), key(141), key(241), null, null, null, key(51));
+    final var second = new KaminoReserveRefresh(key(41), key(142), key(242), key(64), null, null, null);
+    assertNotEquals(first, second, "the same reserve under two decodes");
+
+    final var batch = KaminoReserveRefresh.refreshInstruction(
+        KaminoAccounts.MAIN_NET.invokedKLendProgram(), List.of(first, second, first));
+    assertEquals(first.accounts(lendingProgram), batch.accounts(), "six accounts, the first record's");
+
+    final var instructions = createClient().swap(contextBuilder(key(21))
+        .inputTokenOracleKey(key(41)).outputTokenOracleKey(key(41))
+        .kaminoReserves(List.of(second, first))
+        .create());
+    assertEquals(2, instructions.size(), "one refresh, then the swap");
+    assertEquals(second.accounts(lendingProgram), instructions.getFirst().accounts(),
+        "one reserve pricing both roles under two records: refreshed once, as first listed");
+  }
+
+  /// Reserves are refreshed in role order, input, output then SOL/USD, whatever order the caller
+  /// lists them in.
+  @Test
+  void reservesAreRefreshedInRoleOrder() {
+    final var lendingProgram = KaminoAccounts.MAIN_NET.kLendProgram();
+    final var inputReserve = reserve(41, key(51));
+    final var outputReserve = reserve(44, key(54));
+    final var solReserve = reserve(42, null);
+    final var refresh = createClient().swap(contextBuilder(key(21))
+        .solUsdOracleKey(solReserve.reserve())
+        .inputTokenOracleKey(inputReserve.reserve())
+        .outputTokenOracleKey(outputReserve.reserve())
+        .kaminoReserves(List.of(solReserve, outputReserve, inputReserve))
+        .create()).getFirst();
+    final var expected = new ArrayList<>(inputReserve.accounts(lendingProgram));
+    expected.addAll(outputReserve.accounts(lendingProgram));
+    expected.addAll(solReserve.accounts(lendingProgram));
+    assertEquals(expected, refresh.accounts(), "input, output, SOL/USD");
   }
 
   @Test
