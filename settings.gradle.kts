@@ -53,5 +53,10 @@ javaModules {
   }
 }
 
-//includeBuild("../ravina")
+// Sibling checkouts that can stand in for their published modules while a change to one is
+// unpublished. Uncomment only for that, and re-comment before shipping: CI has no sibling
+// checkout (see AGENTS.md, "Changing a dependency").
+//includeBuild("../sava")
 //includeBuild("../idl-clients")
+//includeBuild("../ravina")
+//includeBuild("../ix-mapper-java")
