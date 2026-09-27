@@ -51,9 +51,7 @@ hardening {
       // machine-dependent. Exact names — Integ* would also match
       // IntegrationServiceContext.
       "systems.glam.services.Integ",
-      "systems.glam.services.Integ\$*",
-      "systems.glam.services.oracles.scope.Integ",
-      "systems.glam.services.oracles.scope.Integ\$*"
+      "systems.glam.services.Integ\$*"
     )
     targetTests = "systems.glam.services.*Test*"
   }
