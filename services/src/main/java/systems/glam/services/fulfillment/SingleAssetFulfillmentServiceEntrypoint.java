@@ -155,7 +155,9 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
         txMonitorService
     );
 
-    final var instructionProcessor = delegateServiceConfig.createInstructionProcessor(transactionProcessor, instructionService);
+    final var instructionProcessor = delegateServiceConfig.createInstructionProcessor(
+        transactionProcessor, instructionService, glamAccounts
+    );
 
     final var baseAssetMintContext = MintContext.createContext(solanaAccounts, baseAssetAccountFuture.join());
 

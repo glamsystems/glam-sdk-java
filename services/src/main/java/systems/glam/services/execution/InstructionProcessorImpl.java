@@ -10,7 +10,6 @@ import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.solana.transactions.InstructionService;
 import software.sava.services.solana.transactions.TransactionProcessor;
 import software.sava.services.solana.transactions.TransactionResult;
-import systems.glam.sdk.GlamAccounts;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolError;
 
 import java.math.BigDecimal;
@@ -26,6 +25,7 @@ import static software.sava.services.solana.transactions.TransactionResult.SIZE_
 
 public record InstructionProcessorImpl(TransactionProcessor transactionProcessor,
                                        InstructionService instructionService,
+                                       PublicKey mintProgram,
                                        BigDecimal maxLamportPriorityFee,
                                        NotifyClient notifyClient,
                                        double cuBudgetMultiplier,
@@ -135,8 +135,8 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
         throw ex;
       }
 
-      // formatted before the batch is cleared below: the result keeps the batch list itself,
-      // not a copy, so a report taken after the clear would count zero instructions
+      // formatted before the batch is cleared below: ravina's result has kept its own copy of the
+      // batch since d0262bc, but one that held the list itself would report zero instructions
       final var formattedTxResult = FormatUtil.formatTransactionResult(txResult);
 
       // Deliberately cleared before the error check: failed batches are
@@ -154,8 +154,10 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
                 """,
             logContext, formattedTxResult
         );
-        if (batchSize > 1) {
-          if (error == SIZE_LIMIT_EXCEEDED) {
+        if (error == SIZE_LIMIT_EXCEEDED) {
+          // batchSize bounds the batch, which the account limit may have cut shorter: a bound of
+          // one cannot halve, and the refusal falls through to the page below
+          if (batchSize > 1) {
             batchSize = (batchSize & 1) == 1 ? (batchSize >> 1) + 1 : batchSize >> 1;
             logger.log(WARNING, msg);
             if (instructions.isEmpty()) {
@@ -165,17 +167,19 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
               return false;
             }
             continue;
-          } else if (error instanceof TransactionError.InstructionError(final int index, final IxError ixError)) {
-            if (ixError instanceof IxError.Custom(final long errorId)) {
-              final var transaction = txResult.transaction();
-              final var failedIx = transaction.instructions().get(index);
-              if (failedIx.programId().publicKey().equals(GlamAccounts.MAIN_NET.mintProgram())) {
-                final var glamError = GlamProtocolError.getInstance((int) errorId);
-                if (glamError instanceof GlamProtocolError.PriceTooOld) {
-                  logger.log(WARNING, msg);
-                  // TODO: refresh oracles
-                  return false; // re-fetch and retry
-                }
+          }
+        } else if (error instanceof TransactionError.InstructionError(final int index, final IxError ixError)) {
+          // PriceTooOld is the protocol program's error, reaching a mint instruction through its
+          // pricing CPI; a simulation failure arrives here too, with the simulated transaction
+          if (ixError instanceof IxError.Custom(final long errorId)) {
+            final var transaction = txResult.transaction();
+            final var failedIx = transaction.instructions().get(index);
+            if (failedIx.programId().publicKey().equals(mintProgram)) {
+              final var glamError = GlamProtocolError.getInstance((int) errorId);
+              if (glamError instanceof GlamProtocolError.PriceTooOld) {
+                logger.log(WARNING, msg);
+                // TODO: refresh oracles
+                return false; // re-fetch and retry
               }
             }
           }

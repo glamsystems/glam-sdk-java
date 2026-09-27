@@ -101,7 +101,8 @@ public interface DelegateServiceConfig {
   EpochInfoService createEpochInfoService();
 
   InstructionProcessor createInstructionProcessor(final TransactionProcessor transactionProcessor,
-                                                  final InstructionService instructionService);
+                                                  final InstructionService instructionService,
+                                                  final GlamAccounts glamAccounts);
 
   ServiceContext createServiceContext(final ExecutorService taskExecutor,
                                       final PublicKey serviceKey,

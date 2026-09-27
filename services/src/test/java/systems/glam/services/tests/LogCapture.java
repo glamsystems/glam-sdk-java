@@ -75,6 +75,17 @@ public final class LogCapture extends Handler implements AutoCloseable {
     );
   }
 
+  /// As [#assertLogged(String)], at `level`: a System.Logger level arrives as its JUL counterpart.
+  public void assertLogged(final Level level, final String fragment) {
+    assertTrue(
+        records.stream().anyMatch(record -> {
+          final var message = format(record);
+          return level.equals(record.getLevel()) && message != null && message.contains(fragment);
+        }),
+        () -> "expected a " + level + " record containing \"" + fragment + "\", got " + messages()
+    );
+  }
+
   /// Idempotent: a test that closes in a finally block after an assertion already
   /// closed it must not restore stale state over a later capture.
   @Override

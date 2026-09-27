@@ -4,10 +4,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.util.LamportDecimal;
+import software.sava.services.solana.transactions.InstructionService;
+import software.sava.services.solana.transactions.TransactionProcessor;
 import systems.comodal.jsoniter.JsonIterator;
+import systems.glam.sdk.GlamAccounts;
 import systems.glam.services.tests.RecordingHeartbeat;
 import systems.glam.services.tests.Workers;
 
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
@@ -67,6 +71,43 @@ final class BaseDelegateServiceConfigTests {
           "endpoint": "%s"
         }
         """.formatted(RPC_ENDPOINT, WS_ENDPOINT);
+  }
+
+  /// A stand-in whose every call fails: the processor below is only built, never run.
+  private static <T> T refusing(final Class<T> type) {
+    return type.cast(Proxy.newProxyInstance(
+        type.getClassLoader(),
+        new Class<?>[]{type},
+        (proxy, method, args) -> {
+          throw new UnsupportedOperationException(method.getName());
+        }
+    ));
+  }
+
+  @Test
+  void theInstructionProcessorServesTheDeploymentItIsGiven() {
+    // values away from the parser's defaults, so a factory that ignored the config would show
+    final var config = parseJson("""
+        {
+          %s,
+          "maxSOLPriorityFee": 0.001,
+          "defaultCuBudgetMultiplier": 1.5,
+          "maxTransactionRetries": 5
+        }
+        """.formatted(minimalRpcJson()));
+    final var transactionProcessor = refusing(TransactionProcessor.class);
+    final var instructionService = refusing(InstructionService.class);
+
+    final var processor = config.createInstructionProcessor(
+        transactionProcessor, instructionService, GlamAccounts.MAIN_NET_STAGING
+    );
+    assertEquals(GlamAccounts.MAIN_NET_STAGING.mintProgram(), processor.mintProgram());
+    assertSame(transactionProcessor, processor.transactionProcessor());
+    assertSame(instructionService, processor.instructionService());
+    assertEquals(LamportDecimal.fromBigDecimal(new BigDecimal("0.001")), processor.maxLamportPriorityFee());
+    assertSame(config.notifyClient(), processor.notifyClient());
+    assertEquals(1.5, processor.cuBudgetMultiplier(), 0.001);
+    assertEquals(5, processor.maxRetries());
   }
 
   @Test

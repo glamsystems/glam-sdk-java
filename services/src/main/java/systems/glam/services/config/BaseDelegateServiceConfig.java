@@ -141,10 +141,12 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
 
   @Override
   public InstructionProcessor createInstructionProcessor(final TransactionProcessor transactionProcessor,
-                                                         final InstructionService instructionService) {
+                                                         final InstructionService instructionService,
+                                                         final GlamAccounts glamAccounts) {
     return InstructionProcessor.createProcessor(
         transactionProcessor,
         instructionService,
+        glamAccounts,
         maxLamportPriorityFee,
         notifyClient,
         defaultCuBudgetMultiplier,

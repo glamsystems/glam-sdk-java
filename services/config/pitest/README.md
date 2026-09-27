@@ -1227,6 +1227,63 @@ and `MinGlamStateAccount.externalPositionsOffset` (one mutant each) and
 KILLED -> TIMED_OUT flip in one of the three runs and KILLED in the others.
 Load flips; no record change.
 
+### 2026-09-26 — the stale-price page, the stake-pool sleep mutant
+
+`InstructionProcessorImpl` now carries the mint program of the deployment it
+sends to (`mintProgram`, from the `GlamAccounts` the entrypoint serves) and
+retries a stale price on it quietly at every batch size; before, the check sat
+under the multi-instruction gate and compared against mainnet's mint program,
+so under the staging entrypoint it could never match. The tests pin a
+single-instruction stale price, the processor's own deployment, another
+deployment's mint program, the failed instruction's index (a stale price
+reported against a different instruction pages), both deployments numbering
+`PriceTooOld` alike (the processor decodes with the production table), and
+the factory and `createInstructionProcessor` wiring. No new unkilled mutant:
+the two `processInstructions` `RemoveConditionalMutator_EQUAL_IF` rows are
+still the `InstructionError` and `Custom` pattern checks. The factory tests
+kill `InstructionProcessor,createProcessor,NullReturnValsMutator` and
+`BaseDelegateServiceConfig,createInstructionProcessor,NullReturnValsMutator`,
+both `NO_COVERAGE` rows until now; they stay as unmatched evidence for the
+next prune. The edits moved 11 accepted keys (`BaseDelegateServiceConfig` and
+its `ConfigParser`, `SingleAssetFulfillmentServiceEntrypoint`, and that
+`processInstructions` pair) without changing the code under them;
+`pitestServicesBaselineRetag` refreshed their 17 line tags and kept all 161
+rows.
+
+`StakePoolCacheImpl,run,VoidMethodCallMutator` (the removed `Thread.sleep`)
+read TIMED_OUT in all three fresh history-free runs that day, two full and one
+scoped (load average 26-60), after the BOM moved ravina from 25.6.3 to 25.6.4;
+it had read KILLED before. The old kill was ravina's, not the test's. Without
+the sleep, the loop in `theRunLoopTicksOncePerPassOverEveryProgram` keeps
+polling past the interrupt the test raises, drains the fixture's capacity
+(1,000 per second, one weight per millisecond), and 25.6.3's
+`CapacityStateVal.durationUntil` then owed a 1ms wait: `CourteousBalancedCall`
+slept on the interrupted thread, the sleep threw, and the loop left through
+its failure exit. 25.6.4's `durationUntil` subtracts the time already
+accrued, so under this fixture the wait truncates to 0ms, nothing sleeps,
+nothing answers the interrupt, and the test spins into the watchdog. PIT runs
+that test first for this mutant (it is the one the later reports name), so
+`theRunLoopPollsEveryProgramOnTheDelay` never faced it; read from its code, it
+would have failed its spinning check and left its runner looping, since the
+interrupt that stops the runner came after that assertion and the mutant
+ignores it anyway. Now, in the first test, the fake RPC refuses a poll past
+the interrupt, so the loop leaves through its failure exit and the pass count
+fails; the test also clears the interrupt it raises. In the second, the
+spinning check still does the failing, and a `finally` refuses every poll and
+joins the runner so it cannot outlive the test. KILLED by the first test in a
+scoped run, and detected without a timeout in the two full runs after. No
+record change. Full runs after: `pitestServices` 1627 mutants, 1468
+detected; `pitestSdk` 713, 691 (the two new `Protocol` mutants of the
+unknown-bit fix both killed).
+
+Timeout-quiet context from those runs: `SingleAssetFulfillmentService.compareAndSet`
+(`RemoveConditionalMutator_EQUAL_ELSE`), `MinGlamStateAccount.externalPositionsOffset`
+(`RemoveConditionalMutator_ORDER_ELSE`), `BatchSqlExecutorImpl.run`
+(`ConditionalsBoundaryMutator`), and `GlobalConfigCacheImpl.run` and
+`KeyedFlatFileImpl.overwriteFile` (`VoidMethodCallMutator`) each moved between
+KILLED and TIMED_OUT across the runs. All are audited keys. Load flips; no
+record change.
+
 ### Family labels
 
 Each accepted row carries a `# <family>` label whose argument is the pass

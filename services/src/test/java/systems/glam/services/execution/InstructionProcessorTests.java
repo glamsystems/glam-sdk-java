@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.logging.Level;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -98,9 +99,37 @@ final class InstructionProcessorTests {
   }
 
   private static InstructionProcessorImpl processor(final ScriptedService service, final RecordingNotify notify) {
+    return processor(service, notify, GlamAccounts.MAIN_NET.mintProgram());
+  }
+
+  private static InstructionProcessorImpl processor(final ScriptedService service,
+                                                    final RecordingNotify notify,
+                                                    final PublicKey mintProgram) {
     return new InstructionProcessorImpl(
-        feePayer(), service.service(), new BigDecimal("0.001"), notify.client(), 1.2, 3
+        feePayer(), service.service(), mintProgram, new BigDecimal("0.001"), notify.client(), 1.2, 3
     );
+  }
+
+  /// The transaction's instruction at `failedIndex` fails with the protocol's PriceTooOld, which
+  /// reaches a mint instruction through its pricing CPI; `programs` are the programs the
+  /// transaction's instructions invoke, in order.
+  private static Function<List<Instruction>, TransactionResult> stalePriceAt(final int failedIndex,
+                                                                            final PublicKey... programs) {
+    final var txInstructions = new ArrayList<Instruction>(programs.length);
+    for (final var program : programs) {
+      txInstructions.add(Instruction.createInstruction(
+          AccountMeta.createInvoked(program),
+          List.of(AccountMeta.createRead(key(7))),
+          new byte[]{7}
+      ));
+    }
+    return batch -> new TransactionResult(
+        List.copyOf(batch), false, 200_000, 1L, Transaction.createTx(FEE_PAYER, txInstructions), 100, null,
+        new TransactionError.InstructionError(failedIndex, new IxError.Custom(51_102L)), "sig", null);
+  }
+
+  private static Function<List<Instruction>, TransactionResult> stalePrice(final PublicKey program) {
+    return stalePriceAt(0, program);
   }
 
   @Test
@@ -297,14 +326,15 @@ final class InstructionProcessorTests {
     assertEquals(List.of(2, 1, 1), service.batchSizes);
   }
 
-  /// Ravina's result keeps the batch list it was handed, not a copy, and the processor clears
-  /// that list once the batch is done: the report must be taken first, so the log and the page
-  /// carry the batch's real instruction count. The fixture aliases the list the way ravina does.
+  /// The log and the page carry the batch's real instruction count although the processor clears
+  /// the batch list once the batch is done. Since ravina's d0262bc a result copies the batch on
+  /// construction, so no fixture can alias the list any more; formatting before the clear matters
+  /// again only for a result that holds the caller's list.
   @Test
   void theReportCountsTheBatchBeforeItIsCleared() throws InterruptedException {
     final var service = new ScriptedService();
     final var notify = new RecordingNotify();
-    // the result over the batch reference itself, as ravina builds it; result(...) copies
+    // handed the batch reference itself, which the result's constructor copies
     service.script.add(batch -> new TransactionResult(
         batch, false, 200_000, 1L, Transaction.createTx(FEE_PAYER, List.copyOf(batch)), 100, null, null, "sig", null));
     service.script.add(batch -> new TransactionResult(
@@ -423,6 +453,90 @@ final class InstructionProcessorTests {
       log.assertLogged("test Failed");
     }
     assertTrue(notify.messages.isEmpty(), () -> notify.messages.toString());
+  }
+
+  @Test
+  void aStalePriceInASingleInstructionBatchRetriesQuietly() throws InterruptedException {
+    final var service = new ScriptedService();
+    final var notify = new RecordingNotify();
+    service.script.add(stalePrice(GlamAccounts.MAIN_NET.mintProgram()));
+    final var instructions = new ArrayList<>(List.of(instruction(1, 2)));
+
+    try (final var log = systems.glam.services.tests.LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      assertFalse(processor(service, notify).processInstructions("test", instructions));
+      log.assertLogged(Level.WARNING, "test Failed");
+    }
+    assertTrue(notify.messages.isEmpty(), () -> notify.messages.toString());
+    assertEquals(List.of(1), service.batchSizes);
+  }
+
+  @Test
+  void aStalePriceRetriesQuietlyOnTheProcessorsOwnMintProgram() throws InterruptedException {
+    final var stagingMint = GlamAccounts.MAIN_NET_STAGING.mintProgram();
+    assertNotEquals(GlamAccounts.MAIN_NET.mintProgram(), stagingMint);
+    final var service = new ScriptedService();
+    final var notify = new RecordingNotify();
+    service.script.add(stalePrice(stagingMint));
+    final var instructions = new ArrayList<>(List.of(instruction(1, 2), instruction(2, 2)));
+
+    assertFalse(processor(service, notify, stagingMint).processInstructions("test", instructions));
+    assertTrue(notify.messages.isEmpty(), () -> notify.messages.toString());
+  }
+
+  @Test
+  void theStalePriceMustComeFromTheFailedInstruction() throws InterruptedException {
+    final var mint = GlamAccounts.MAIN_NET.mintProgram();
+    // the mint instruction is the one that failed: quiet
+    final var quietService = new ScriptedService();
+    final var quietNotify = new RecordingNotify();
+    quietService.script.add(stalePriceAt(1, key(500), mint));
+    assertFalse(processor(quietService, quietNotify)
+        .processInstructions("test", new ArrayList<>(List.of(instruction(1, 2), instruction(2, 2)))));
+    assertTrue(quietNotify.messages.isEmpty(), () -> quietNotify.messages.toString());
+
+    // a mint instruction rides along, but another program failed with the same code: it pages
+    final var pagedService = new ScriptedService();
+    final var pagedNotify = new RecordingNotify();
+    pagedService.script.add(stalePriceAt(1, mint, key(500)));
+    assertFalse(processor(pagedService, pagedNotify)
+        .processInstructions("test", new ArrayList<>(List.of(instruction(1, 2), instruction(2, 2)))));
+    assertEquals(1, pagedNotify.messages.size());
+  }
+
+  /// The processor decodes a staging mint failure with the production protocol's error table, which
+  /// is right only while both deployments number PriceTooOld the same.
+  @Test
+  void bothDeploymentsNumberPriceTooOldAlike() {
+    assertEquals(
+        systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolError.PriceTooOld.INSTANCE.code(),
+        systems.glam.sdk.idl.programs.glam.staging.protocol.gen.GlamProtocolError.PriceTooOld.INSTANCE.code()
+    );
+  }
+
+  @Test
+  void theFactoryServesTheDeploymentItIsGiven() throws InterruptedException {
+    final var service = new ScriptedService();
+    final var notify = new RecordingNotify();
+    final var processor = InstructionProcessor.createProcessor(
+        feePayer(), service.service(), GlamAccounts.MAIN_NET_STAGING, new BigDecimal("0.001"), notify.client(), 1.2, 3
+    );
+    assertEquals(GlamAccounts.MAIN_NET_STAGING.mintProgram(), processor.mintProgram());
+    service.script.add(stalePrice(GlamAccounts.MAIN_NET_STAGING.mintProgram()));
+
+    assertFalse(processor.processInstructions("test", new ArrayList<>(List.of(instruction(1, 2)))));
+    assertTrue(notify.messages.isEmpty(), () -> notify.messages.toString());
+  }
+
+  @Test
+  void aStalePriceOnAnotherDeploymentsMintProgramPages() throws InterruptedException {
+    final var service = new ScriptedService();
+    final var notify = new RecordingNotify();
+    service.script.add(stalePrice(GlamAccounts.MAIN_NET.mintProgram()));
+    final var instructions = new ArrayList<>(List.of(instruction(1, 2), instruction(2, 2)));
+
+    final var stagingProcessor = processor(service, notify, GlamAccounts.MAIN_NET_STAGING.mintProgram());
+    assertFalse(stagingProcessor.processInstructions("test", instructions));
+    assertEquals(1, notify.messages.size());
   }
 
   @Test
