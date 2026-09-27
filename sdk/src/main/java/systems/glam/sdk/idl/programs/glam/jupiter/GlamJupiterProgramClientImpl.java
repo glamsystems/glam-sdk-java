@@ -184,23 +184,6 @@ final class GlamJupiterProgramClientImpl implements GlamJupiterProgramClient {
     }
   }
 
-  private Instruction jupiterSwap(final PublicKey inputProgramStateKey,
-                                  final PublicKey outputProgramStateKey,
-                                  final Instruction swapInstruction) {
-    final var fixedAccounts = GlamJupiterProgramClient.fixCPICallerRights(
-        swapInstruction.accounts(), glamVaultAccounts.vaultPublicKey()
-    );
-    return GlamProtocolProgram.jupiterSwap(
-        invokedProgram,
-        glamVaultAccounts.glamStateKey(),
-        glamVaultAccounts.vaultPublicKey(),
-        feePayer.publicKey(),
-        swapProgram,
-        inputProgramStateKey, outputProgramStateKey,
-        swapInstruction.data()
-    ).extraAccounts(fixedAccounts);
-  }
-
   @Override
   public Map<PublicKey, Instruction> createSwapTokenAccountsIdempotent(final PublicKey inputTokenProgram,
                                                                        final PublicKey inputMintKey,
@@ -222,84 +205,6 @@ final class GlamJupiterProgramClientImpl implements GlamJupiterProgramClient {
       );
     } else {
       return Map.of(outputVaultATA, createVaultOutputATA);
-    }
-  }
-
-  @Override
-  public List<Instruction> swapWithProgramStateChecked(final PublicKey inputProgramStateKey,
-                                                       final PublicKey inputMintKey,
-                                                       final PublicKey inputTokenProgram,
-                                                       final PublicKey outputProgramStateKey,
-                                                       final PublicKey outputMintKey,
-                                                       final PublicKey outputTokenProgram,
-                                                       final long amount,
-                                                       final Instruction swapInstruction,
-                                                       final boolean wrapSOL) {
-    final var inputVaultATA = glamAccountClient.findATA(inputTokenProgram, inputMintKey).publicKey();
-    final var outputVaultATA = glamAccountClient.findATA(outputTokenProgram, outputMintKey).publicKey();
-    final var createVaultOutputATA = glamAccountClient.createATAForOwnerFundedByFeePayer(
-        true, outputVaultATA, outputMintKey, outputTokenProgram
-    );
-    final var glamJupiterSwap = jupiterSwap(
-        inputProgramStateKey,
-        outputProgramStateKey,
-        swapInstruction
-    );
-
-    if (wrapSOL && inputMintKey.equals(solanaAccounts.wrappedSolTokenMint())) {
-      return List.of(
-          glamAccountClient.createATAForOwnerFundedByFeePayer(
-              true, inputVaultATA, inputMintKey, inputTokenProgram
-          ),
-          fundWrappedSol(inputVaultATA, amount),
-          glamAccountClient.syncNative(),
-          createVaultOutputATA,
-          glamJupiterSwap
-      );
-    } else {
-      return List.of(createVaultOutputATA, glamJupiterSwap);
-    }
-  }
-
-  @Override
-  public Instruction swapWithProgramStateUncheckedAndNoWrap(final PublicKey inputProgramStateKey,
-                                                            final PublicKey inputMintKey,
-                                                            final PublicKey inputTokenProgram,
-                                                            final PublicKey outputProgramStateKey,
-                                                            final PublicKey outputMintKey,
-                                                            final PublicKey outputTokenProgram,
-                                                            final Instruction swapInstruction) {
-    return jupiterSwap(
-        inputProgramStateKey,
-        outputProgramStateKey,
-        swapInstruction
-    );
-  }
-
-  @Override
-  public List<Instruction> swapWithProgramStateUnchecked(final PublicKey inputProgramStateKey,
-                                                         final PublicKey inputMintKey,
-                                                         final PublicKey inputTokenProgram,
-                                                         final PublicKey outputProgramStateKey,
-                                                         final PublicKey outputMintKey,
-                                                         final PublicKey outputTokenProgram,
-                                                         final long amount,
-                                                         final Instruction swapInstruction,
-                                                         final boolean wrapSOL) {
-    final var glamJupiterSwap = swapWithProgramStateUncheckedAndNoWrap(
-        inputProgramStateKey, inputMintKey, inputTokenProgram,
-        outputProgramStateKey, outputMintKey, outputTokenProgram,
-        swapInstruction
-    );
-    if (wrapSOL && inputMintKey.equals(solanaAccounts.wrappedSolTokenMint())) {
-      final var wrappedSolPDA = glamAccountClient.wrappedSolPDA().publicKey();
-      return List.of(
-          fundWrappedSol(wrappedSolPDA, amount),
-          glamAccountClient.syncNative(),
-          glamJupiterSwap
-      );
-    } else {
-      return List.of(glamJupiterSwap);
     }
   }
 }

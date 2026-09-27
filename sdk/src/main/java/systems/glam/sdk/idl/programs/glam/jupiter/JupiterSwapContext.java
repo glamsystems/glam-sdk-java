@@ -8,7 +8,8 @@ import java.util.Objects;
 
 /// What one swap through GLAM needs from the caller. The mint keys and token programs of both sides are
 /// required; the oracles, program-state keys and Kamino reserves are the caller's knowledge of the global
-/// configuration and may be absent.
+/// configuration and may be absent. A program-state key is the stake pool of an LST mint on its side,
+/// which lets the program treat that mint as an LST for a delegate's LST-swap permission.
 ///
 /// `kaminoReserves` are the reserves that price any of the three roles (the SOL/USD, input and output
 /// oracles registered as `KaminoReserve`), decoded by the caller from the reserve accounts: the program

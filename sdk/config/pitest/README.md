@@ -337,6 +337,17 @@ were added for properties the review found unpinned (the context's defensive cop
 input-output-SOL/USD role order with distinct reserves). The fresh observation after that
 (558 mutants, 536 detected) added no rows; `swapChecked`'s `# untriaged` row is unchanged.
 
+Follow-up (2026-09-27): the v1 `jupiter_swap` overloads (`swapChecked`, `swapUnchecked`,
+`swapUncheckedAndNoWrap` and the `swapWithProgramState*` family), which the program is to
+drop at its next audit, were removed, so only `swap(JupiterSwapContext)` builds a swap and
+it builds `jupiter_swap_v2`. The two tests that only exercised those overloads went with
+them; two of their properties moved to the v2 path. One is the wrap gate on the checked path:
+a non-wSOL input with `wrapSOL` set is not wrapped, the direction the untriaged
+`swapChecked` `RemoveConditionalMutator_EQUAL_IF` row had survived on. The other is the
+program-state keys filling the stake-pool seats. The fresh history-free observation after
+that (685 mutants, 664 detected) kills every jupiter-package mutant, so that row is now a
+prune candidate; no row was added.
+
 ## Supplied-accounts resolvers (2026-09-26, GLAM-1447 step 4)
 
 `systems.glam.sdk.mapping` is new: `OracleDenomination` (the unit each oracle source
