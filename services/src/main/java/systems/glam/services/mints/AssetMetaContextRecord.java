@@ -3,6 +3,7 @@ package systems.glam.services.mints;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.meta.AccountMeta;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.OracleSource;
+import systems.glam.sdk.mapping.RegisteredOracles;
 
 public record AssetMetaContextRecord(int index,
                                      PublicKey asset,
@@ -17,17 +18,19 @@ public record AssetMetaContextRecord(int index,
   @Override
   public int compareTo(final AssetMetaContext o) {
     final int oPriority = o.priority();
+    final int byPriority;
     if (this.priority < 0) {
-      if (oPriority < 0) {
-        return Integer.compare(-this.priority, -oPriority);
-      } else {
-        return 1;
-      }
+      byPriority = oPriority < 0 ? Integer.compare(-this.priority, -oPriority) : 1;
     } else if (oPriority < 0) {
-      return -1;
+      byPriority = -1;
     } else {
-      return Integer.compare(this.priority, oPriority);
+      byPriority = Integer.compare(this.priority, oPriority);
     }
+    // Among equal priorities GLAM's oracle-selection rule decides by source: the Kamino reserve
+    // first, then the program's declaration order. Equal priority and source keep the stored order.
+    return byPriority != 0
+        ? byPriority
+        : Integer.compare(RegisteredOracles.sourceRank(oracleSource), RegisteredOracles.sourceRank(o.oracleSource()));
   }
 
   @Override

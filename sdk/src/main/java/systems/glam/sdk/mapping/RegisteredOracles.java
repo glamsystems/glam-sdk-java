@@ -85,7 +85,7 @@ public final class RegisteredOracles {
 
   /// The rank of a source among equal priorities: the Kamino reserve first, then the program's declaration
   /// order.
-  static int sourceRank(final OracleSource source) {
+  public static int sourceRank(final OracleSource source) {
     return source == OracleSource.KaminoReserve ? -1 : source.ordinal();
   }
 
