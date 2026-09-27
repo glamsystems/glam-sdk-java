@@ -77,8 +77,11 @@ plus service components for operating against it.
 - `./gradlew check` — full build + tests. CI (reusable workflows from
   sava-build) runs exactly this; keep it green.
 - Commits follow Conventional Commits (`feat(sdk): ...`, `fix(services): ...`);
-  release-please cuts releases from them. Don't hand-edit versions or
-  `CHANGELOG.md`.
+  release-please cuts releases from them under `always-bump-patch`, so a
+  breaking change is named with a `Release-As: x.y.0` footer on a commit that
+  changes a file of the package (release-please splits commits by path and
+  drops one that touches nothing outside the excluded `ix-mapper-ts/` tree, an
+  empty commit included). Don't hand-edit versions or `CHANGELOG.md`.
 
 ## Changing a dependency
 
