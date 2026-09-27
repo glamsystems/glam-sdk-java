@@ -283,43 +283,15 @@ final class GlamAccountClientTests {
             client.priceKaminoVaultShares(sol, base, 4, false),
             client.priceKaminoVaultShares(sol, base, 4))
     );
-    // the rest of the pricing surface is staging-only; the interface defaults
-    // route identically, just through the staging implementation
+    // stake accounts stay on the staging mint; the integration pricers moved to their ext
+    // programs emit no event and have no CPI branch (GlamStagingAccountClientTests)
     final var staging = GlamAccountClient.createClient(
         SOLANA_ACCOUNTS, GlamAccounts.MAIN_NET_STAGING, FEE_PAYER, STATE_KEY);
     final var stagingCases = List.of(
-        new Case("priceLoopscaleLoans",
-            staging.priceLoopscaleLoans(sol, base, true),
-            staging.priceLoopscaleLoans(sol, base, false),
-            staging.priceLoopscaleLoans(sol, base)),
-        new Case("priceLoopscaleStrategies",
-            staging.priceLoopscaleStrategies(sol, base, true),
-            staging.priceLoopscaleStrategies(sol, base, false),
-            staging.priceLoopscaleStrategies(sol, base)),
-        new Case("priceLoopscaleVaultPositions",
-            staging.priceLoopscaleVaultPositions(sol, base, 5, true),
-            staging.priceLoopscaleVaultPositions(sol, base, 5, false),
-            staging.priceLoopscaleVaultPositions(sol, base, 5)),
-        new Case("priceOrcaWhirlpoolPositions",
-            staging.priceOrcaWhirlpoolPositions(sol, base, 6, true),
-            staging.priceOrcaWhirlpoolPositions(sol, base, 6, false),
-            staging.priceOrcaWhirlpoolPositions(sol, base, 6)),
         new Case("priceStakeAccounts",
             staging.priceStakeAccounts(sol, base, true),
             staging.priceStakeAccounts(sol, base, false),
-            staging.priceStakeAccounts(sol, base)),
-        new Case("priceMarginfiAccounts",
-            staging.priceMarginfiAccounts(sol, base, true),
-            staging.priceMarginfiAccounts(sol, base, false),
-            staging.priceMarginfiAccounts(sol, base)),
-        new Case("pricePhoenixTraders",
-            staging.pricePhoenixTraders(sol, base, true),
-            staging.pricePhoenixTraders(sol, base, false),
-            staging.pricePhoenixTraders(sol, base)),
-        new Case("priceBridgeManagedTransfers",
-            staging.priceBridgeManagedTransfers(sol, base, true),
-            staging.priceBridgeManagedTransfers(sol, base, false),
-            staging.priceBridgeManagedTransfers(sol, base))
+            staging.priceStakeAccounts(sol, base))
     );
     for (final var priced : productionCases) {
       assertTrue(priced.cpi.accounts().contains(eventAuthority),
@@ -338,19 +310,6 @@ final class GlamAccountClientTests {
       assertTrue(priced.byDefault.accounts().contains(createRead(sol)), priced.name);
       assertTrue(priced.byDefault.accounts().contains(createRead(base)), priced.name);
     }
-
-    // priceRegisteredPositions is the exception, and deliberately so: it replaced
-    // priceExternalPositions and takes no oracles at all — the program values the
-    // positions from the observation state — so only the overload routing and the
-    // event-authority swap carry over.
-    final var registered = new Case("priceRegisteredPositions",
-        staging.priceRegisteredPositions(true),
-        staging.priceRegisteredPositions(false),
-        staging.priceRegisteredPositions());
-    assertEquals(registered.noCpi().accounts(), registered.byDefault().accounts(),
-        () -> registered.name() + ": the convenience overload drifted from the no-CPI instruction");
-    assertNotEquals(registered.noCpi().accounts(), registered.cpi().accounts(),
-        () -> registered.name() + ": the CPI branch changed nothing");
   }
 
   @Test
@@ -430,24 +389,16 @@ final class GlamAccountClientTests {
     final var staging = GlamAccountClient.createClient(
         SOLANA_ACCOUNTS, GlamAccounts.MAIN_NET_STAGING, FEE_PAYER, STATE_KEY
     );
-    final var ix = staging.priceRegisteredPositions(false);
-
-    final var accounts = ix.accounts();
-    // the observation state was a trailing extra account under priceExternalPositions;
-    // priceRegisteredPositions promotes it to the third named account and drops the
-    // oracles, the vault and the global config with it
-    assertEquals(7, accounts.size());
     final var observationPDA = systems.glam.sdk.idl.programs.glam.staging.registered_positions.gen.ExtRpiPDAs
         .observationStatePDA(
             GlamAccounts.MAIN_NET_STAGING.externalPositionProgram(),
             STATE_KEY
         );
-    assertEquals(createRead(observationPDA.publicKey()), accounts.get(2));
-    // without CPI events the event authority slot is the mint program itself
-    assertEquals(createRead(GlamAccounts.MAIN_NET_STAGING.mintProgram()), accounts.get(5));
-
-    final var cpiAccounts = staging.priceRegisteredPositions(true).accounts();
-    assertEquals(createRead(GlamAccounts.MAIN_NET_STAGING.mintEventAuthority()), cpiAccounts.get(5));
+    // ext_rpi's pricer names the observation state second, after the state, and nothing else of
+    // the vault: no signer, no oracles, no event accounts
+    final var derived = staging.priceRegisteredPositions();
+    assertEquals(createRead(observationPDA.publicKey()), derived.accounts().get(1));
+    assertEquals(staging.priceRegisteredPositions(observationPDA.publicKey()).accounts(), derived.accounts());
   }
 
   @Test
@@ -456,14 +407,18 @@ final class GlamAccountClientTests {
     final var a = key(41);
     final var b = key(42);
     assertThrows(IllegalStateException.class, () -> client.priceSingleAssetVault(a, false));
-    assertThrows(IllegalStateException.class, () -> client.priceRegisteredPositions(b, false));
-    assertThrows(IllegalStateException.class, () -> client.priceLoopscaleLoans(a, b, false));
-    assertThrows(IllegalStateException.class, () -> client.priceLoopscaleStrategies(a, b, false));
-    assertThrows(IllegalStateException.class, () -> client.priceLoopscaleVaultPositions(a, b, 2, false));
-    assertThrows(IllegalStateException.class, () -> client.priceOrcaWhirlpoolPositions(a, b, 2, false));
+    assertThrows(IllegalStateException.class, () -> client.priceRegisteredPositions(b));
+    assertThrows(IllegalStateException.class, () -> client.priceRegisteredPositions());
+    assertThrows(IllegalStateException.class, () -> client.priceLoopscaleLoans(a, b));
+    assertThrows(IllegalStateException.class, () -> client.priceLoopscaleStrategies(a, b));
+    assertThrows(IllegalStateException.class, () -> client.priceLoopscaleVaultPositions(a, b, 2));
+    assertThrows(IllegalStateException.class, () -> client.priceOrcaWhirlpoolPositions(a, b, 2));
     assertThrows(IllegalStateException.class, () -> client.priceStakeAccounts(a, b, false));
-    assertThrows(IllegalStateException.class, () -> client.priceMarginfiAccounts(a, b, false));
-    assertThrows(IllegalStateException.class, () -> client.pricePhoenixTraders(a, b, false));
-    assertThrows(IllegalStateException.class, () -> client.priceBridgeManagedTransfers(a, b, false));
+    assertThrows(IllegalStateException.class, () -> client.priceMarginfiAccounts(a, b));
+    assertThrows(IllegalStateException.class, () -> client.pricePhoenixTraders(a, b));
+    assertThrows(IllegalStateException.class, () -> client.priceNeutralBundleDepositors(a, b));
+    assertThrows(IllegalStateException.class, () -> client.priceJupiterEarnPositions(a, b));
+    assertThrows(IllegalStateException.class, () -> client.priceJupiterBorrowPositions(a, b));
+    assertThrows(IllegalStateException.class, () -> client.priceBridgeManagedTransfers(b));
   }
 }

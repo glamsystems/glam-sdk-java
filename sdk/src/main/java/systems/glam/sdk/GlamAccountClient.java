@@ -9,7 +9,6 @@ import software.sava.idl.clients.spl.SPLClient;
 import software.sava.rpc.json.http.response.AccountInfo;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateAccount;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.StateModel;
-import systems.glam.sdk.idl.programs.glam.staging.registered_positions.gen.ExtRpiPDAs;
 
 import java.util.OptionalLong;
 
@@ -152,59 +151,33 @@ public interface GlamAccountClient extends SPLAccountClient {
 
   Instruction priceSingleAssetVault(final PublicKey baseAssetTokenAccount, final boolean cpiEmitEvents);
 
-  Instruction priceRegisteredPositions(final PublicKey observationStateKey, final boolean cpiEmitEvents);
+  // The integration pricers below are hosted by the ext program that owns the positions (GLAM-1305,
+  // glam-next anchor_v1/PRICING.md) and exist on staging only. An ext pricer takes glam_mint's account
+  // list without its signer and event accounts, signs with its own integration authority, and emits
+  // no event: its record is the argument of the `glam_protocol::update_priced_protocol` call it makes.
+  // The vault's integration ACL must hold the ext program.
 
-  default Instruction priceRegisteredPositions(final boolean cpiEmitEvents) {
-    final var observationPDA = ExtRpiPDAs.observationStatePDA(
-        glamAccounts().externalPositionProgram(),
-        vaultAccounts().glamStateKey()
-    );
-    return priceRegisteredPositions(observationPDA.publicKey(), cpiEmitEvents);
-  }
+  /// ext_rpi's `price_registered_positions` over the vault's observation state.
+  Instruction priceRegisteredPositions(final PublicKey observationStateKey);
 
-  default Instruction priceRegisteredPositions() {
-    return priceRegisteredPositions(false);
-  }
+  /// ext_rpi's `price_registered_positions` over the observation state derived for this vault.
+  Instruction priceRegisteredPositions();
 
-  Instruction priceLoopscaleLoans(final PublicKey solUSDOracleKey,
-                                  final PublicKey baseAssetUsdOracleKey,
-                                  final boolean cpiEmitEvents);
+  /// ext_loopscale's `price_loopscale_loans`.
+  Instruction priceLoopscaleLoans(final PublicKey solUSDOracleKey, final PublicKey baseAssetUsdOracleKey);
 
-  default Instruction priceLoopscaleLoans(final PublicKey solUSDOracleKey,
-                                          final PublicKey baseAssetUsdOracleKey) {
-    return priceLoopscaleLoans(solUSDOracleKey, baseAssetUsdOracleKey, false);
-  }
+  /// ext_loopscale's `price_loopscale_strategies`.
+  Instruction priceLoopscaleStrategies(final PublicKey solUSDOracleKey, final PublicKey baseAssetUsdOracleKey);
 
-  Instruction priceLoopscaleStrategies(final PublicKey solUSDOracleKey,
-                                       final PublicKey baseAssetUsdOracleKey,
-                                       final boolean cpiEmitEvents);
-
-  default Instruction priceLoopscaleStrategies(final PublicKey solUSDOracleKey,
-                                               final PublicKey baseAssetUsdOracleKey) {
-    return priceLoopscaleStrategies(solUSDOracleKey, baseAssetUsdOracleKey, false);
-  }
-
+  /// ext_loopscale's `price_loopscale_vault_positions`.
   Instruction priceLoopscaleVaultPositions(final PublicKey solUSDOracleKey,
                                            final PublicKey baseAssetUsdOracleKey,
-                                           final int numVaults,
-                                           final boolean cpiEmitEvents);
+                                           final int numVaults);
 
-  default Instruction priceLoopscaleVaultPositions(final PublicKey solUSDOracleKey,
-                                                   final PublicKey baseAssetUsdOracleKey,
-                                                   final int numVaults) {
-    return priceLoopscaleVaultPositions(solUSDOracleKey, baseAssetUsdOracleKey, numVaults, false);
-  }
-
+  /// ext_orca's `price_orca_whirlpool_positions`.
   Instruction priceOrcaWhirlpoolPositions(final PublicKey solUSDOracleKey,
                                           final PublicKey baseAssetUsdOracleKey,
-                                          final int numPositions,
-                                          final boolean cpiEmitEvents);
-
-  default Instruction priceOrcaWhirlpoolPositions(final PublicKey solUSDOracleKey,
-                                                  final PublicKey baseAssetUsdOracleKey,
-                                                  final int numPositions) {
-    return priceOrcaWhirlpoolPositions(solUSDOracleKey, baseAssetUsdOracleKey, numPositions, false);
-  }
+                                          final int numPositions);
 
   Instruction priceStakeAccounts(final PublicKey solUSDOracleKey,
                                  final PublicKey baseAssetUsdOracleKey,
@@ -215,30 +188,24 @@ public interface GlamAccountClient extends SPLAccountClient {
     return priceStakeAccounts(solUSDOracleKey, baseAssetUsdOracleKey, false);
   }
 
-  Instruction priceMarginfiAccounts(final PublicKey solUSDOracleKey,
-                                    final PublicKey baseAssetUsdOracleKey,
-                                    final boolean cpiEmitEvents);
+  /// ext_marginfi's `price_marginfi_accounts`.
+  Instruction priceMarginfiAccounts(final PublicKey solUSDOracleKey, final PublicKey baseAssetUsdOracleKey);
 
-  default Instruction priceMarginfiAccounts(final PublicKey solUSDOracleKey,
-                                            final PublicKey baseAssetUsdOracleKey) {
-    return priceMarginfiAccounts(solUSDOracleKey, baseAssetUsdOracleKey, false);
-  }
+  /// ext_phoenix's `price_phoenix_traders`.
+  Instruction pricePhoenixTraders(final PublicKey solUSDOracleKey, final PublicKey baseAssetUsdOracleKey);
 
-  Instruction pricePhoenixTraders(final PublicKey solUSDOracleKey,
-                                  final PublicKey baseAssetUsdOracleKey,
-                                  final boolean cpiEmitEvents);
+  /// ext_neutral's `price_neutral_bundle_depositors`.
+  Instruction priceNeutralBundleDepositors(final PublicKey solUSDOracleKey, final PublicKey baseAssetUsdOracleKey);
 
-  default Instruction pricePhoenixTraders(final PublicKey solUSDOracleKey,
-                                          final PublicKey baseAssetUsdOracleKey) {
-    return pricePhoenixTraders(solUSDOracleKey, baseAssetUsdOracleKey, false);
-  }
+  /// ext_jupiter's `price_jupiter_earn_positions`.
+  Instruction priceJupiterEarnPositions(final PublicKey solUSDOracleKey, final PublicKey baseAssetUsdOracleKey);
 
-  Instruction priceBridgeManagedTransfers(final PublicKey solUSDOracleKey,
-                                          final PublicKey baseAssetUsdOracleKey,
-                                          final boolean cpiEmitEvents);
+  /// ext_jupiter's `price_jupiter_borrow_positions`.
+  Instruction priceJupiterBorrowPositions(final PublicKey solUSDOracleKey, final PublicKey baseAssetUsdOracleKey);
 
-  default Instruction priceBridgeManagedTransfers(final PublicKey solUSDOracleKey,
-                                                  final PublicKey baseAssetUsdOracleKey) {
-    return priceBridgeManagedTransfers(solUSDOracleKey, baseAssetUsdOracleKey, false);
-  }
+  /// ext_bridge's `price_managed_transfers` over this vault's bridge registry. It takes no SOL oracle;
+  /// the caller appends one oracle per active managed transfer, in registry order. With no transfer it
+  /// writes no record. glam_mint's `price_bridge_managed_transfers` always wrote zero and
+  /// no positions, so it could replace a real record, and it is not offered.
+  Instruction priceBridgeManagedTransfers(final PublicKey baseAssetUsdOracleKey);
 }

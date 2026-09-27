@@ -79,12 +79,18 @@ remaining `NO_COVERAGE` blocks — 108 baseline rows dropped:
   every dynamic-account name routed through `setAccount` into a live array
   (each slot must hold exactly the meta the name stands for), unknown/null
   names rejected, and the cache pinned by identity across equal configs.
-- **`GlamAccountClient(+Impl)` pricing family**: all thirteen convenience
-  overloads equal their no-CPI form (this family produced the real
-  dropped-oracle-keys bug), the four production `cpiEmitEvents` branches
-  swap the program slot for the mint event authority, staging-only methods
-  driven through the staging client; plus `createAccount`,
-  `createAccountWithSeed`, the escrow ATA and `updateState` wiring.
+- **`GlamAccountClient(+Impl)` pricing family**: the convenience overloads
+  left on glam_mint's pricers equal their no-CPI form (this family produced
+  the real dropped-oracle-keys bug), the four production `cpiEmitEvents`
+  branches swap the program slot for the mint event authority, the
+  integration pricers hosted by their ext programs (GLAM-1305) are pinned
+  account by account and against their Anchor discriminators, computed as
+  literals rather than read from generated constants,
+  staging-only methods driven through the staging client; plus
+  `createAccount`, `createAccountWithSeed`, the escrow ATA and `updateState`
+  wiring. *(2026-09-27: Loopscale, Orca, Phoenix, Marginfi, registered
+  positions and managed transfers moved to their ext programs and lost their
+  `cpiEmitEvents` overloads; Neutral and Jupiter gained ext bindings.)*
 - **`GlamJupiterProgramClient(+Impl)`**: every swap convenience overload
   equals its fully-explicit form, program-state keys survive the
   delegation hops *and* reach the CPI, the route's accounts ride as extra

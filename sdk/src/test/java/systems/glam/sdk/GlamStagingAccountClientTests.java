@@ -6,6 +6,15 @@ import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.tx.Instruction;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.Context;
+import systems.glam.sdk.idl.programs.glam.config.gen.GlamConfigPDAs;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.ExtBridgePDAs;
+import systems.glam.sdk.idl.programs.glam.staging.jupiter.gen.ExtJupiterPDAs;
+import systems.glam.sdk.idl.programs.glam.staging.loopscale.gen.ExtLoopscalePDAs;
+import systems.glam.sdk.idl.programs.glam.staging.marginfi.gen.ExtMarginfiPDAs;
+import systems.glam.sdk.idl.programs.glam.staging.nt.gen.ExtNeutralPDAs;
+import systems.glam.sdk.idl.programs.glam.staging.orca.gen.ExtOrcaPDAs;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.ExtPhoenixPDAs;
+import systems.glam.sdk.idl.programs.glam.staging.registered_positions.gen.ExtRpiPDAs;
 
 import java.math.BigInteger;
 import java.util.Base64;
@@ -17,6 +26,7 @@ import java.util.function.BiFunction;
 import static org.junit.jupiter.api.Assertions.*;
 import static software.sava.core.accounts.PublicKey.fromBase58Encoded;
 import static software.sava.core.accounts.meta.AccountMeta.createRead;
+import static software.sava.core.accounts.meta.AccountMeta.createWrite;
 
 final class GlamStagingAccountClientTests {
 
@@ -58,15 +68,7 @@ final class GlamStagingAccountClientTests {
     final var solOracle = key(11);
     final var baseOracle = key(12);
     assertMintProgramPricing((c, cpi) -> c.priceSingleAssetVault(key(13), cpi));
-    assertMintProgramPricing((c, cpi) -> c.priceRegisteredPositions(key(14), cpi));
-    assertMintProgramPricing((c, cpi) -> c.priceLoopscaleLoans(solOracle, baseOracle, cpi));
-    assertMintProgramPricing((c, cpi) -> c.priceLoopscaleStrategies(solOracle, baseOracle, cpi));
-    assertMintProgramPricing((c, cpi) -> c.priceLoopscaleVaultPositions(solOracle, baseOracle, 3, cpi));
-    assertMintProgramPricing((c, cpi) -> c.priceOrcaWhirlpoolPositions(solOracle, baseOracle, 3, cpi));
     assertMintProgramPricing((c, cpi) -> c.priceStakeAccounts(solOracle, baseOracle, cpi));
-    assertMintProgramPricing((c, cpi) -> c.priceMarginfiAccounts(solOracle, baseOracle, cpi));
-    assertMintProgramPricing((c, cpi) -> c.pricePhoenixTraders(solOracle, baseOracle, cpi));
-    assertMintProgramPricing((c, cpi) -> c.priceBridgeManagedTransfers(solOracle, baseOracle, cpi));
     assertMintProgramPricing((c, cpi) -> c.priceVaultTokens(solOracle, baseOracle, new short[][]{{1, 2, 3, 4}}, cpi));
     assertMintProgramPricing((c, cpi) -> c.priceDriftUsers(solOracle, baseOracle, 2, cpi));
     assertMintProgramPricing((c, cpi) -> c.priceDriftVaultDepositors(solOracle, baseOracle, 1, 2, 3, cpi));
@@ -75,9 +77,136 @@ final class GlamStagingAccountClientTests {
     assertMintProgramPricing((c, cpi) -> c.validateAum(cpi));
 
     // the oracle keys must actually land in the instruction
-    final var ix = createClient().priceLoopscaleLoans(solOracle, baseOracle, false);
+    final var ix = createClient().priceStakeAccounts(solOracle, baseOracle, false);
     assertTrue(ix.accounts().contains(createRead(solOracle)));
     assertTrue(ix.accounts().contains(createRead(baseOracle)));
+  }
+
+  /// The integration pricers moved out of glam_mint (GLAM-1305) are built against the ext program
+  /// that owns the positions. Each takes glam_mint's `PriceVaultCommon` list without its signer and
+  /// its two event accounts, with the ext program's own integration authority:
+  ///
+  ///   [glam_state W, glam_vault, sol_usd_oracle, base_asset_oracle, integration_authority
+  ///    (PDA "integration-authority" under the ext program), glam_config, glam_protocol_program]
+  ///
+  /// and keeps the glam_mint instruction's name, so its discriminator: sha256("global:<name>")[..8]
+  /// of `price_loopscale_loans` is 6ab48ac15a03182a, and so on for each, followed by the u8
+  /// argument where there is one.
+  @Test
+  void theIntegrationPricersRouteThroughTheirExtPrograms() {
+    final var client = createClient();
+    final var solOracle = key(31);
+    final var baseOracle = key(32);
+    final var vault = client.vaultAccounts().vaultPublicKey();
+    final var globalConfig = GlamConfigPDAs.globalConfigPDA(STAGING.configProgram()).publicKey();
+
+    record Case(String name, Instruction ix, PublicKey extProgram, PublicKey authority, byte[] mintData) {
+    }
+    final var loopscale = STAGING.loopscaleIntegrationProgram();
+    final var loopscaleAuthority = ExtLoopscalePDAs.integrationAuthorityPDA(loopscale).publicKey();
+    final var orca = STAGING.orcaIntegrationProgram();
+    final var marginfi = STAGING.marginFiIntegrationProgram();
+    final var phoenix = STAGING.phoenixIntegrationProgram();
+    final var neutral = STAGING.neutralTradeIntegrationProgram();
+    final var jupiter = STAGING.jupiterIntegrationProgram();
+    final var jupiterAuthority = ExtJupiterPDAs.integrationAuthorityPDA(jupiter).publicKey();
+    final var cases = List.of(
+        new Case("price_loopscale_loans", client.priceLoopscaleLoans(solOracle, baseOracle),
+            loopscale, loopscaleAuthority, hex("6ab48ac15a03182a")),
+        new Case("price_loopscale_strategies", client.priceLoopscaleStrategies(solOracle, baseOracle),
+            loopscale, loopscaleAuthority, hex("a934190b608a0aae")),
+        new Case("price_loopscale_vault_positions", client.priceLoopscaleVaultPositions(solOracle, baseOracle, 3),
+            loopscale, loopscaleAuthority, hex("62e5639a5e8b7cdc03")),
+        new Case("price_orca_whirlpool_positions", client.priceOrcaWhirlpoolPositions(solOracle, baseOracle, 7),
+            orca, ExtOrcaPDAs.integrationAuthorityPDA(orca).publicKey(),
+            hex("0351752205ee9ee807")),
+        new Case("price_marginfi_accounts", client.priceMarginfiAccounts(solOracle, baseOracle),
+            marginfi, ExtMarginfiPDAs.integrationAuthorityPDA(marginfi).publicKey(),
+            hex("92d7b4e7bfbc2aeb")),
+        new Case("price_phoenix_traders", client.pricePhoenixTraders(solOracle, baseOracle),
+            phoenix, ExtPhoenixPDAs.integrationAuthorityPDA(phoenix).publicKey(),
+            hex("705ab12e91bfdbd5")),
+        new Case("price_neutral_bundle_depositors", client.priceNeutralBundleDepositors(solOracle, baseOracle),
+            neutral, ExtNeutralPDAs.integrationAuthorityPDA(neutral).publicKey(),
+            hex("ca5dcd1d25b47f66")),
+        new Case("price_jupiter_earn_positions", client.priceJupiterEarnPositions(solOracle, baseOracle),
+            jupiter, jupiterAuthority, hex("780a0a89913ca410")),
+        new Case("price_jupiter_borrow_positions", client.priceJupiterBorrowPositions(solOracle, baseOracle),
+            jupiter, jupiterAuthority, hex("37fb21375011129a"))
+    );
+    for (final var priced : cases) {
+      assertEquals(priced.extProgram, priced.ix.programId().publicKey(), priced.name);
+      assertEquals(
+          List.of(
+              createWrite(STATE_KEY),
+              createRead(vault),
+              createRead(solOracle),
+              createRead(baseOracle),
+              createRead(priced.authority),
+              createRead(globalConfig),
+              createRead(STAGING.protocolProgram())
+          ),
+          priced.ix.accounts(),
+          priced.name
+      );
+      assertArrayEquals(priced.mintData, priced.ix.copyData(), priced.name);
+    }
+  }
+
+  /// ext_rpi's pricer takes the observation state in place of the vault, oracles and config.
+  @Test
+  void registeredPositionsPriceThroughExtRpiOverTheDerivedObservationState() {
+    final var client = createClient();
+    final var extRpi = STAGING.externalPositionProgram();
+    final var observationState = ExtRpiPDAs.observationStatePDA(extRpi, STATE_KEY).publicKey();
+
+    final var ix = client.priceRegisteredPositions();
+    assertEquals(extRpi, ix.programId().publicKey());
+    assertEquals(
+        List.of(
+            createWrite(STATE_KEY),
+            createRead(observationState),
+            createRead(ExtRpiPDAs.integrationAuthorityPDA(extRpi).publicKey()),
+            createRead(STAGING.protocolProgram())
+        ),
+        ix.accounts()
+    );
+    assertArrayEquals(hex("5a9da232ec10bc03"), ix.copyData());
+
+    final var explicit = key(33);
+    assertEquals(createRead(explicit), client.priceRegisteredPositions(explicit).accounts().get(1));
+  }
+
+  /// ext_bridge's pricer is not glam_mint's renamed: `price_managed_transfers` over the vault's
+  /// bridge registry, with protocol before config and only the base-asset oracle.
+  @Test
+  void managedTransfersPriceThroughExtBridgeOverTheVaultsRegistry() {
+    final var client = createClient();
+    final var extBridge = STAGING.bridgeIntegrationProgram();
+    final var baseOracle = key(34);
+
+    final var ix = client.priceBridgeManagedTransfers(baseOracle);
+    assertEquals(extBridge, ix.programId().publicKey());
+    assertEquals(
+        List.of(
+            createWrite(STATE_KEY),
+            createRead(ExtBridgePDAs.bridgeRegistryPDA(extBridge, STATE_KEY).publicKey()),
+            createRead(ExtBridgePDAs.integrationAuthorityPDA(extBridge).publicKey()),
+            createRead(STAGING.protocolProgram()),
+            createRead(GlamConfigPDAs.globalConfigPDA(STAGING.configProgram()).publicKey()),
+            createRead(baseOracle)
+        ),
+        ix.accounts()
+    );
+    assertArrayEquals(hex("4d4c143029a8cd51"), ix.copyData());
+  }
+
+  /// Instruction data written out byte by byte. An Anchor discriminator is
+  /// `sha256("global:<instruction name>")[..8]`, computed here independently of the generated
+  /// constants (which glam_mint's copies of these pricers will lose, GLAM-1305 step 3); a u8
+  /// argument follows as one byte.
+  private static byte[] hex(final String hex) {
+    return java.util.HexFormat.of().parseHex(hex);
   }
 
   @Test
