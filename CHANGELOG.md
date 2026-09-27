@@ -1,5 +1,47 @@
 # Changelog
 
+## [25.19.0](https://github.com/glamsystems/glam-sdk-java/compare/25.18.1...25.19.0) (2026-09-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* **services:** InstructionProcessor.createProcessor and DelegateServiceConfig.createInstructionProcessor take the GlamAccounts of the deployment the processor serves, InstructionProcessorImpl gains a mintProgram component, and InstructionProcessor declares mintProgram().
+* **sdk:** GlamJupiterProgramClient.fixCPICallerRights(List) and fixCPICallerRights(Instruction) are removed; use the overloads that take the vault key.
+* **sdk:** JupiterSwapContext's canonical constructor takes a trailing List<KaminoReserveRefresh> and refuses a null inputMintKey, inputTokenProgram, outputMintKey, outputTokenProgram or swapInstruction; build it through JupiterSwapContext.build(). A requested skip now names the global configuration and the caller's oracles in the CPI, and a wrap prelude's transfer carries the Token program as its sixth account.
+* **services:** InstructionProcessor.processInstructions and ExecutionServiceContext.createContext drop their transaction-factory parameter, ExecutionServiceContext.transactionFactory() is removed, and SingleAssetFulfillmentServiceEntrypoint takes and exposes the TxMonitorService as a record component. A SIZE_LIMIT_EXCEEDED refusal of the whole remaining list now returns false after notifying instead of sending an empty transaction.
+* **sdk:** the systems.glam.sdk.proxy package is gone (DynamicGlamAccountFactory, CachedDynamicGlamAccountFactory, IndexedExtAuthority, IndexedReadState, IndexedReadVault, IndexedWriteState, IndexedWriteVault), as are GlamVaultAccounts.loadMappingConfigs and both GlamVaultAccounts.createMapper statics. GlamAccounts.createMapper(Path, DynamicGlamAccountFactory) is now createMapper(Path) returning an ix-proxy InstructionMapper; map with GlamVaultAccounts.mappingContext(). GlamAccounts declares exponentIntegrationProgram, invokedExponentIntegrationProgram and readExponentIntegrationAuthority, which an implementor outside the builder must supply. The jar's mapping documents live under glam/ix-mappings/<environment>/ in the schema_version 1 document format, no longer as flat mapping-configs-v1 files, and the sdk module no longer requires systems.comodal.json_iterator.
+* **services:** IntegLookupTableCache is removed; IntegrationServiceContext.createContext drops its IntegLookupTableCache parameter and integTableCache() is gone. DelegateServiceConfig drops tableCacheConfig() and createLookupTableCache(), and createTransactionProcessor no longer takes a LookupTableCache (the returned processor's lookupTableCache() is null). InstructionProcessor and FormatUtil.formatInstructionException lose their lookup-table overloads and parameters, and DefensivePollingConfig loses integTables. JSON service configs must drop "tableCache" and "defensivePolling.integTables". Alert payloads lose "t" and "numTables".
+* **sdk:** the systems.glam.sdk.lut package (VaultTableBuilder, VaultTableBuilder.Builder, TableTask) is no longer exported, and GlamVaultAccounts drops vaultTableFilter, activeVaultTableFilters, deriveVaulKeyTableFilter, deriveVaultActiveTableFilters and vaultTablePrefixKeys.
+
+### Features
+
+* **sdk:** add pricing instructions for Loopscale loans, strategies, vault positions, Neutral Trade bundle depositors, and Registered Positions ([0f9be4f](https://github.com/glamsystems/glam-sdk-java/commit/0f9be4fe4c3cb5d155145c377e08a6d54d0c9189))
+* **sdk:** resolve the Orca oracle prefix and the Loopscale market as supplied accounts (GLAM-1447) ([9dc5bf0](https://github.com/glamsystems/glam-sdk-java/commit/9dc5bf053e7f59ce4651a0ad77176ea895df4662))
+* **sdk:** serve the ix-mapper mapping documents from the jar ([09e1ae7](https://github.com/glamsystems/glam-sdk-java/commit/09e1ae70bb078b8f0f5e33ebfd79e99941c6c16d))
+
+
+### Bug Fixes
+
+* **sdk:** build Jupiter swaps the protocol handlers accept (GLAM-1537) ([c65f70a](https://github.com/glamsystems/glam-sdk-java/commit/c65f70a028c6ef0ed3ab03373a13bab5c442a7a4))
+* **sdk:** drop the positional fixCPICallerRights overloads (GLAM-1537) ([3e00eaf](https://github.com/glamsystems/glam-sdk-java/commit/3e00eaf469e4e3388d3cfe4eabc61d118a6d520e))
+* **sdk:** refuse an update_strategy market change the deployed program cannot make (GLAM-1447) ([8f50659](https://github.com/glamsystems/glam-sdk-java/commit/8f506595ce53fd2a9097950157490c9994a02ae4))
+* **sdk:** skip a delegate protocol bit the SDK does not know ([38bf225](https://github.com/glamsystems/glam-sdk-java/commit/38bf225cbec782396209c66d344f73c91a8e13e6))
+* **services:** report a batch's instruction count before the batch is cleared ([a936d23](https://github.com/glamsystems/glam-sdk-java/commit/a936d2396b6bb61f048a2f409b183103be11795f))
+* **services:** retry a stale price quietly on the deployment's own mint program ([71a5738](https://github.com/glamsystems/glam-sdk-java/commit/71a57384664f3468f3ef048b0b939f22c0cb6609))
+
+
+### Documentation
+
+* name 25.19.0 for the breaking sdk and services changes, and say how a version is named here ([9ce9e77](https://github.com/glamsystems/glam-sdk-java/commit/9ce9e7772cf51c99391ba5d5fab4b5a92a3c88ca))
+
+
+### Code Refactoring
+
+* **sdk:** map instructions through ix-proxy's mapping documents ([8cd2936](https://github.com/glamsystems/glam-sdk-java/commit/8cd2936717fa896aad470506f1b794d340e8bea7))
+* **sdk:** remove vault lookup-table building ([e873065](https://github.com/glamsystems/glam-sdk-java/commit/e87306580ea3862df7c2bb06129abff4fd0a74d7))
+* **services:** drop lookup-table caching and v0 transaction plumbing ([6e55c9f](https://github.com/glamsystems/glam-sdk-java/commit/6e55c9faa047c51ff594e946b90b2f3405f678e8))
+* **services:** send instructions on ravina's v1-only path ([a610d1d](https://github.com/glamsystems/glam-sdk-java/commit/a610d1d282fe3545c701251a62f141450df33f0c))
+
 ## [25.18.1](https://github.com/glamsystems/glam-sdk-java/compare/25.18.0...25.18.1) (2026-09-16)
 
 
