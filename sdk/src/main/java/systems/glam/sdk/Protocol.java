@@ -71,24 +71,31 @@ public enum Protocol {
     return protocolMap.get(constantsClass).get(protocolBitFlag);
   }
 
+  /// Null when no entry claims `protocolBitFlag`: an ACL written by a program newer than this SDK can
+  /// grant a protocol it does not know, and that grant is left out rather than decoded without one.
   private static ProtocolPermissions fromProtocolBitFlag(final Class<?> constantsClass,
                                                          final int protocolBitFlag,
                                                          final long permissionMask) {
-    return new ProtocolPermissions(fromProtocolBitFlag(constantsClass, protocolBitFlag), permissionMask);
+    final var protocol = fromProtocolBitFlag(constantsClass, protocolBitFlag);
+    return protocol == null ? null : new ProtocolPermissions(protocol, permissionMask);
   }
 
+  /// Null for a `protocolBitFlag` no entry claims.
   public static ProtocolPermissions fromGlamProtocolBitFlag(final int protocolBitFlag, final long permissionMask) {
     return fromProtocolBitFlag(GlamProtocolConstants.class, protocolBitFlag, permissionMask);
   }
 
+  /// Null for a `protocolBitFlag` no entry claims.
   public static ProtocolPermissions fromMintProtocolBitFlag(final int protocolBitFlag, final long permissionMask) {
     return fromProtocolBitFlag(GlamMintConstants.class, protocolBitFlag, permissionMask);
   }
 
+  /// Null for a `protocolBitFlag` no entry claims.
   public static ProtocolPermissions fromSplProtocolBitFlag(final int protocolBitFlag, final long permissionMask) {
     return fromProtocolBitFlag(ExtSplConstants.class, protocolBitFlag, permissionMask);
   }
 
+  /// Null for a `protocolBitFlag` no entry claims.
   public static ProtocolPermissions fromKaminoProtocolBitFlag(final int protocolBitFlag, final long permissionMask) {
     return fromProtocolBitFlag(ExtKaminoConstants.class, protocolBitFlag, permissionMask);
   }

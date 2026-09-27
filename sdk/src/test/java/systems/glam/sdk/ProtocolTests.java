@@ -7,6 +7,7 @@ import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolConstants;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplConstants;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 final class ProtocolTests {
@@ -47,6 +48,16 @@ final class ProtocolTests {
     assertEquals(ExtKaminoConstants.PROTO_KAMINO_LENDING, Protocol.KAMINO_LENDING.protocolBitFlag());
     assertEquals(ExtKaminoConstants.PROTO_KAMINO_VAULTS, Protocol.KAMINO_VAULTS.protocolBitFlag());
     assertEquals(ExtKaminoConstants.PROTO_KAMINO_FARMS, Protocol.KAMINO_FARMS.protocolBitFlag());
+  }
+
+  @Test
+  void aBitNoProtocolClaimsDecodesToNull() {
+    // an ACL written by a program newer than this SDK can carry a protocol bit no Protocol entry
+    // claims; each decoder answers null for it, the "not understood" of adaptPermissions
+    assertNull(Protocol.fromGlamProtocolBitFlag(GlamProtocolConstants.PROTO_JUPITER_SWAP << 1, 21));
+    assertNull(Protocol.fromMintProtocolBitFlag(GlamMintConstants.PROTO_MINT << 1, 8));
+    assertNull(Protocol.fromSplProtocolBitFlag(ExtSplConstants.PROTO_TOKEN << 1, 3));
+    assertNull(Protocol.fromKaminoProtocolBitFlag(ExtKaminoConstants.PROTO_KAMINO_FARMS << 1, 7));
   }
 
   @Test

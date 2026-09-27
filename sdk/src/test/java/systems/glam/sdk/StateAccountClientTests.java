@@ -296,6 +296,39 @@ final class StateAccountClientTests {
   }
 
   @Test
+  void unknownDelegateProtocolBitsAreSkipped() {
+    // a program newer than this SDK can grant a protocol bit no Protocol entry claims, on an
+    // integration program the SDK does know: client construction must survive it
+    final var mintOnlyDelegate = fromBase58Encoded("HVDx4ijqYDMZF8dM4yFQrQG8cqwkC6LZZ4WgwYa3eLge");
+    final var state = stateAccount(
+        0,
+        new IntegrationAcl[0],
+        new DelegateAcl[]{
+            delegateAcl(
+                DELEGATE,
+                // the unknown bit first: decoding must carry on past it
+                grant(
+                    KAMINO_PROGRAM,
+                    Protocol.KAMINO_FARMS.protocolBitFlag() << 1, 3L,
+                    Protocol.KAMINO_LENDING.protocolBitFlag(), 40L
+                )
+            ),
+            delegateAcl(mintOnlyDelegate, grant(MINT_PROGRAM, Protocol.MINT.protocolBitFlag() << 1, 32L))
+        },
+        notifyAndSettle(NoticePeriodType.Soft, TimeUnit.Second)
+    );
+    final var client = createClient(state);
+    // the known grant beside the unknown bit holds
+    assertTrue(client.delegateHasPermissions(
+        DELEGATE, Map.of(KAMINO_PROGRAM, Protocol.KAMINO_LENDING.permissions(32L))
+    ));
+    // a delegate granted only an unknown bit holds nothing: fail closed
+    assertFalse(client.delegateHasPermissions(
+        mintOnlyDelegate, Map.of(MINT_PROGRAM, Protocol.MINT.permissions(32L))
+    ));
+  }
+
+  @Test
   void isDelegated() {
     final var state = defaultState();
     assertTrue(GlamAccountClient.isDelegated(state, DELEGATE));

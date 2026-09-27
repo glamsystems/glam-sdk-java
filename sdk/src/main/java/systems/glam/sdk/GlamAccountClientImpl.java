@@ -42,8 +42,10 @@ class GlamAccountClientImpl implements GlamAccountClient {
   }
 
   /// Returns null for integration programs without an adapter (e.g. drift ACLs
-  /// on accounts created before support was dropped) — callers skip them so a
-  /// stale on-chain ACL cannot fail client construction.
+  /// on accounts created before support was dropped), and for a protocol bit no
+  /// [Protocol] entry claims (an ACL written by a newer program) — callers skip
+  /// both, so an on-chain ACL the SDK cannot read reads as not granted rather
+  /// than failing client construction.
   static ProtocolPermissions adaptPermissions(final GlamAccounts glamAccounts,
                                               final PublicKey integrationProgram,
                                               final int protocolBitFlag,
