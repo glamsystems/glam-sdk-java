@@ -277,6 +277,11 @@ trusting the source).
 review the resulting corpus diff, and update the corpus provenance notes in
 `src/test/resources/fuzz/` when seeds change.
 
+**Fuzz budget.** The pre-release campaign is
+`./gradlew --no-daemon fuzzAll -PmaxFuzzTime=300 -PmaxParallelFuzzTargets=3`:
+300 seconds per target, all three at once (chosen 2026-09-26), run from the
+same clean detached worktree as certification.
+
 **Local instances of the generic rules.** The recording proxies here are
 `SolanaRpcClient` / `AccountFetcher` — give them return values a real assertion
 can tell from a mutated default.
