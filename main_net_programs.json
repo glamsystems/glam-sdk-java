@@ -230,7 +230,8 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/glam_protocol.json"
       },
-      "generateNext": true
+      "generateNext": true,
+      "ignoreInstructions": ["jupiterSwap"]
     },
     {
       "name": "GLAM Policy Program",
@@ -692,7 +693,8 @@
         "repo": "glamsystems/glam-sdk-ts",
         "path": "idl/glam_protocol-staging.json"
       },
-      "generateNext": true
+      "generateNext": true,
+      "ignoreInstructions": ["jupiterSwap"]
     },
     {
       "name": "GLAM Staging SPL",
