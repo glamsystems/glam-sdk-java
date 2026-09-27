@@ -168,6 +168,10 @@ final class StakePoolCacheTests {
         // so a missing tick fails the count below instead of hanging the loop
         if (fetched.size() == 6) {
           Thread.currentThread().interrupt();
+        } else if (fetched.size() > 6) {
+          // a loop that did not leave through its sleep: nothing else on this call path
+          // answers the interrupt, so end it through the failure exit and let the count fail
+          throw new IllegalStateException("polled past the interrupt");
         }
       }
       return List.of();
@@ -179,6 +183,9 @@ final class StakePoolCacheTests {
       assertEquals(6, fetched.size());
       assertEquals(3, fetched.stream().distinct().count());
       assertEquals(2, heartbeat.ticks());
+    } finally {
+      // only the sleep consumes the interrupt this test raises on its own thread
+      Thread.interrupted();
     }
   }
 
@@ -321,7 +328,11 @@ final class StakePoolCacheTests {
     final var polled = new ConcurrentHashMap<PublicKey, Integer>();
     final var mint = key(32);
     final var running = new java.util.concurrent.atomic.AtomicBoolean(false);
+    final var refusing = new java.util.concurrent.atomic.AtomicBoolean(false);
     try (final var cache = initCache(tempDir, rpcCaller(program -> {
+      if (refusing.get()) {
+        throw new IllegalStateException("the test is over");
+      }
       polled.merge(program, 1, Integer::sum);
       // the pool only exists once the run loop is polling: finding it proves
       // the loop routes results through accept, not that init already did
@@ -332,24 +343,33 @@ final class StakePoolCacheTests {
       running.set(true);
       final var runner = new Thread(cache::run);
       runner.start();
-      final long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(1);
-      while (polled.size() < 3 || polled.values().stream().anyMatch(count -> count < 2)) {
-        assertTrue(System.nanoTime() < deadline, () -> "programs polled: " + polled);
-        //noinspection BusyWait
-        Thread.sleep(1L);
-      }
-      // the poll results run through accept: the new pool is indexed
-      assertNotNull(cache.get(mint));
-      // the sleep paces the loop: watch a window, not an instant — without the
-      // sleep these counts would grow by hundreds here
-      final var counted = Map.copyOf(polled);
-      Thread.sleep(150L);
-      assertTrue(polled.values().stream().allMatch(count -> count < 40),
-          () -> "the poll loop is spinning: " + polled + " after " + counted);
+      try {
+        final long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(1);
+        while (polled.size() < 3 || polled.values().stream().anyMatch(count -> count < 2)) {
+          assertTrue(System.nanoTime() < deadline, () -> "programs polled: " + polled);
+          //noinspection BusyWait
+          Thread.sleep(1L);
+        }
+        // the poll results run through accept: the new pool is indexed
+        assertNotNull(cache.get(mint));
+        // the sleep paces the loop: watch a window, not an instant — without the
+        // sleep these counts would grow by hundreds here
+        final var counted = Map.copyOf(polled);
+        Thread.sleep(150L);
+        assertTrue(polled.values().stream().allMatch(count -> count < 40),
+            () -> "the poll loop is spinning: " + polled + " after " + counted);
 
-      runner.interrupt();
-      runner.join(1_000L);
-      assertFalse(runner.isAlive());
+        runner.interrupt();
+        runner.join(1_000L);
+        assertFalse(runner.isAlive());
+      } finally {
+        // a failed assertion above must not leave the loop running into the next test, and a
+        // loop without its sleep never answers the interrupt: refusing the poll ends it through
+        // its failure exit
+        refusing.set(true);
+        runner.interrupt();
+        runner.join(1_000L);
+      }
     }
   }
 
