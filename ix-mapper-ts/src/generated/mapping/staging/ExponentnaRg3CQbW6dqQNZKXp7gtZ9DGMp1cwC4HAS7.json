@@ -4,7 +4,7 @@
   "program_id": "ExponentnaRg3CQbW6dqQNZKXp7gtZ9DGMp1cwC4HAS7",
   "proxy_program_id": "gstgx5AbCFq4mfYKbZP23YDC7XZFUx2EURiG3PcWX6W",
   "provenance": {
-    "generator": "idl-src-gen@51f2f4d10f5b053033ef81672c0ec924173b2a86",
+    "generator": "idl-src-gen@633ad602d3fecbb9458e42d9ae4ce0046bf023fe",
     "source_idl": "glam managed anchor_v1/idls/external/exponent_core (revision a8d92bfc0776, idl 2e84927ce940)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/ext_exponent_staging (revision 04b387ad24f9, idl b7958bc6431e)",
     "config_revision": 1

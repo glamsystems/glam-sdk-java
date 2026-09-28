@@ -4,7 +4,7 @@
   "program_id": "FarmsPZpWu9i7Kky8tPN37rs2TpmMrAZrC7S7vJa91Hr",
   "proxy_program_id": "G1NTkDEUR3pkEqGCKZtmtmVzCUEdYa86pezHkwYbLyde",
   "provenance": {
-    "generator": "idl-src-gen@51f2f4d10f5b053033ef81672c0ec924173b2a86",
+    "generator": "idl-src-gen@633ad602d3fecbb9458e42d9ae4ce0046bf023fe",
     "source_idl": "glam managed anchor_v1/idls/external/kamino_farms (revision 649915b9c497, idl d8ac1c6584e5)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/ext_kamino (revision c0b702e858e3, idl c57168bbe1f3)",
     "config_revision": 1
@@ -212,7 +212,7 @@
         }
       ],
       "remaining_accounts": {
-        "kind": "any"
+        "kind": "none"
       }
     },
     {
@@ -374,7 +374,7 @@
         }
       ],
       "remaining_accounts": {
-        "kind": "any"
+        "kind": "none"
       }
     },
     {
@@ -555,7 +555,7 @@
         }
       ],
       "remaining_accounts": {
-        "kind": "any"
+        "kind": "none"
       }
     },
     {
@@ -670,7 +670,7 @@
         }
       ],
       "remaining_accounts": {
-        "kind": "any"
+        "kind": "none"
       }
     },
     {
@@ -867,7 +867,7 @@
         }
       ],
       "remaining_accounts": {
-        "kind": "any"
+        "kind": "none"
       }
     }
   ]

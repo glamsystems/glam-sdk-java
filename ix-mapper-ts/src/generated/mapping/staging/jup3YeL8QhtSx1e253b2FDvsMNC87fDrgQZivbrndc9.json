@@ -4,7 +4,7 @@
   "program_id": "jup3YeL8QhtSx1e253b2FDvsMNC87fDrgQZivbrndc9",
   "proxy_program_id": "gstgJbGqoE3p1SdFA2dET9tcaCzNqGcdD8wpbGctnU9",
   "provenance": {
-    "generator": "idl-src-gen@51f2f4d10f5b053033ef81672c0ec924173b2a86",
+    "generator": "idl-src-gen@633ad602d3fecbb9458e42d9ae4ce0046bf023fe",
     "source_idl": "glam managed anchor_v1/idls/external/jupiter_lending (revision 5a80a0ab6bd6, idl ef547c925d93)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/ext_jupiter_staging (revision a4255f99547c, idl f424fb73040c)",
     "config_revision": 1

@@ -4,12 +4,54 @@
   "program_id": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
   "proxy_program_id": "gstgPL7r9aYedDDsXNtLpr4atYtNvY7zubAWWstqS3L",
   "provenance": {
-    "generator": "idl-src-gen@51f2f4d10f5b053033ef81672c0ec924173b2a86",
-    "source_idl": "glam managed anchor_v1/idls/external/phoenix (revision 5cf0f2d806d4, idl a5ad7ff67fd3)",
+    "generator": "idl-src-gen@633ad602d3fecbb9458e42d9ae4ce0046bf023fe",
+    "source_idl": "glam managed anchor_v1/idls/external/phoenix (revision 211ee16d0201, idl 9b9817f30419)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/ext_phoenix_staging (revision 999879b97137, idl 9687f84b921a)",
     "config_revision": 1
   },
   "instructions": [
+    {
+      "name": "accept_escrow_request",
+      "discriminator": [182, 41, 62, 227, 228, 175, 22, 137],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "acknowledge_restart",
+      "discriminator": [211, 56, 236, 97, 132, 106, 54, 156],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "activate_native_sol",
+      "discriminator": [15, 246, 91, 93, 70, 233, 191, 120],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "add_market",
+      "discriminator": [41, 137, 185, 126, 69, 139, 254, 55],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "authorized_force_cancel",
+      "discriminator": [13, 22, 221, 234, 211, 165, 172, 2],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "authorized_force_cancel_by_id",
+      "discriminator": [122, 159, 12, 159, 144, 108, 225, 241],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "authorized_transfer_collateral",
+      "discriminator": [222, 214, 69, 15, 116, 115, 121, 37],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
     {
       "name": "cancel_all",
       "discriminator": [98, 191, 75, 220, 115, 40, 71, 237],
@@ -195,6 +237,24 @@
       "remaining_accounts": {
         "kind": "any"
       }
+    },
+    {
+      "name": "cancel_all_plus_conditional",
+      "discriminator": [142, 173, 238, 126, 79, 19, 53, 103],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "cancel_conditional_order",
+      "discriminator": [82, 104, 25, 51, 248, 54, 66, 184],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "cancel_escrow_request",
+      "discriminator": [202, 26, 163, 239, 32, 8, 85, 2],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
     },
     {
       "name": "cancel_orders_by_id",
@@ -575,14 +635,68 @@
       }
     },
     {
+      "name": "change_exchange_status",
+      "discriminator": [212, 102, 200, 118, 138, 162, 228, 165],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "change_market_status",
+      "discriminator": [221, 127, 224, 41, 177, 145, 126, 8],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "change_spot_asset_params",
+      "discriminator": [41, 110, 206, 72, 187, 197, 197, 112],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "claim_authority",
+      "discriminator": [222, 132, 185, 123, 127, 107, 6, 31],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "claim_fees",
+      "discriminator": [82, 251, 233, 156, 12, 52, 184, 202],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
       "name": "clear_expired_orders",
       "discriminator": [128, 95, 102, 169, 146, 205, 248, 94],
       "disposition": "passthrough",
       "reason": "no signer account: the instruction needs no authority the vault holds"
     },
     {
+      "name": "clear_position_flip_orders",
+      "discriminator": [245, 113, 37, 98, 82, 52, 120, 91],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "close_market",
+      "discriminator": [88, 154, 248, 186, 48, 14, 123, 244],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
       "name": "close_matched_positions",
       "discriminator": [112, 174, 32, 120, 93, 113, 10, 161],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "close_trader_account",
+      "discriminator": [126, 222, 38, 149, 207, 164, 108, 187],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "configure_native_sol",
+      "discriminator": [241, 19, 44, 37, 119, 51, 197, 27],
       "disposition": "unsupported",
       "reason": "no GLAM handler proxies this instruction"
     },
@@ -593,14 +707,44 @@
       "reason": "no signer account: the instruction needs no authority the vault holds"
     },
     {
+      "name": "create_conditional_orders_account",
+      "discriminator": [201, 6, 112, 61, 231, 15, 57, 248],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "create_escrow_account",
+      "discriminator": [146, 147, 225, 47, 51, 64, 112, 1],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "create_escrow_request",
+      "discriminator": [116, 164, 236, 204, 187, 132, 195, 219],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
       "name": "create_permission",
       "discriminator": [190, 182, 26, 164, 156, 221, 8, 0],
       "disposition": "unsupported",
       "reason": "no GLAM handler proxies this instruction"
     },
     {
+      "name": "deactivate_spline",
+      "discriminator": [0, 254, 22, 100, 238, 197, 118, 181],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
       "name": "delegate_trader",
       "discriminator": [3, 164, 192, 106, 119, 91, 122, 224],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "delete_tombstoned_market",
+      "discriminator": [146, 17, 252, 116, 222, 113, 52, 102],
       "disposition": "unsupported",
       "reason": "no GLAM handler proxies this instruction"
     },
@@ -791,8 +935,26 @@
       }
     },
     {
+      "name": "enable_feature",
+      "discriminator": [27, 23, 206, 255, 190, 19, 231, 92],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "execute_conditional_orders",
+      "discriminator": [101, 214, 110, 0, 190, 226, 177, 236],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
       "name": "execute_stop_loss",
       "discriminator": [38, 122, 90, 90, 182, 241, 7, 4],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "force_cancel_after_hours",
+      "discriminator": [147, 13, 224, 61, 248, 234, 64, 164],
       "disposition": "unsupported",
       "reason": "no GLAM handler proxies this instruction"
     },
@@ -805,8 +967,26 @@
     {
       "name": "force_cancel_risk_increasing",
       "discriminator": [41, 55, 217, 35, 92, 72, 42, 238],
-      "disposition": "passthrough",
-      "reason": "no signer account: the instruction needs no authority the vault holds"
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "force_cancel_stop_loss",
+      "discriminator": [114, 230, 115, 170, 66, 79, 19, 172],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "initialize_arena",
+      "discriminator": [11, 37, 221, 1, 205, 120, 25, 230],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "liquidate_native_sol",
+      "discriminator": [173, 44, 209, 10, 104, 250, 64, 50],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
     },
     {
       "name": "liquidate_via_market_order",
@@ -823,6 +1003,42 @@
     {
       "name": "log",
       "discriminator": [141, 230, 214, 242, 9, 209, 207, 170],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "log_event_lengths",
+      "discriminator": [247, 7, 134, 203, 181, 71, 153, 71],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "market_closed_force_cancel_all",
+      "discriminator": [229, 101, 143, 249, 150, 175, 175, 219],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "migrate_trader_state",
+      "discriminator": [22, 14, 74, 214, 108, 72, 207, 100],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
+    },
+    {
+      "name": "name_successor",
+      "discriminator": [160, 203, 37, 229, 225, 119, 129, 236],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "ping_conditional_orders",
+      "discriminator": [135, 170, 166, 34, 208, 230, 91, 64],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "place_attached_conditional_order",
+      "discriminator": [43, 117, 136, 128, 72, 150, 101, 122],
       "disposition": "unsupported",
       "reason": "no GLAM handler proxies this instruction"
     },
@@ -1013,6 +1229,12 @@
       }
     },
     {
+      "name": "place_limit_order_with_conditionals",
+      "discriminator": [95, 45, 68, 168, 232, 218, 210, 92],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
       "name": "place_market_order",
       "discriminator": [90, 118, 192, 252, 192, 99, 39, 145],
       "disposition": "map",
@@ -1197,6 +1419,12 @@
       "remaining_accounts": {
         "kind": "any"
       }
+    },
+    {
+      "name": "place_market_order_delegated",
+      "discriminator": [160, 35, 21, 235, 110, 182, 245, 65],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
     },
     {
       "name": "place_multi_limit_order",
@@ -1385,8 +1613,38 @@
       }
     },
     {
+      "name": "place_multi_limit_order_v2",
+      "discriminator": [64, 111, 40, 210, 2, 177, 38, 178],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "place_position_conditional_order",
+      "discriminator": [65, 108, 83, 129, 76, 193, 92, 143],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
       "name": "place_stop_loss",
       "discriminator": [236, 46, 164, 66, 235, 92, 162, 137],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "realloc_trader",
+      "discriminator": [174, 248, 63, 35, 225, 236, 19, 204],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "rebirth",
+      "discriminator": [143, 241, 154, 79, 116, 226, 255, 144],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "register_spline",
+      "discriminator": [30, 176, 160, 79, 252, 117, 241, 58],
       "disposition": "unsupported",
       "reason": "no GLAM handler proxies this instruction"
     },
@@ -1394,7 +1652,25 @@
       "name": "register_trader",
       "discriminator": [75, 243, 224, 167, 1, 5, 51, 32],
       "disposition": "unsupported",
-      "reason": "not derived: source account 'phoenix_program' (position 0) has no destination slot and no header/static replacement — the extension may predate it"
+      "reason": "not derived: argument layout differs: source [u32,u32,u8,u8], handler [u64,u8,u8]; the mapper relays the payload verbatim"
+    },
+    {
+      "name": "remove_all_oracles",
+      "discriminator": [164, 64, 91, 210, 137, 189, 135, 38],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "remove_empty_arena",
+      "discriminator": [155, 65, 162, 79, 211, 221, 197, 168],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "remove_oracle",
+      "discriminator": [60, 93, 51, 197, 182, 42, 170, 26],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
     },
     {
       "name": "revoke_permission",
@@ -1403,8 +1679,38 @@
       "reason": "no GLAM handler proxies this instruction"
     },
     {
+      "name": "set_multi_arena_additional_nodes_watermark",
+      "discriminator": [236, 252, 222, 208, 31, 131, 157, 147],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_multi_arena_num_nodes_per_arena",
+      "discriminator": [91, 180, 241, 192, 78, 132, 252, 131],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
       "name": "set_permission",
       "discriminator": [70, 126, 41, 194, 245, 189, 128, 8],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_permission_delegated",
+      "discriminator": [35, 25, 57, 68, 255, 26, 161, 229],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_spot_asset_price",
+      "discriminator": [246, 172, 230, 25, 190, 58, 58, 9],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "set_trader_cap_override",
+      "discriminator": [191, 147, 175, 185, 192, 100, 233, 94],
       "disposition": "unsupported",
       "reason": "no GLAM handler proxies this instruction"
     },
@@ -1419,6 +1725,24 @@
       "discriminator": [191, 72, 45, 190, 214, 250, 182, 213],
       "disposition": "unsupported",
       "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "settle_closed_market_position",
+      "discriminator": [27, 222, 221, 233, 136, 15, 254, 210],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "swap_native",
+      "discriminator": [88, 147, 177, 186, 129, 234, 239, 231],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "sync_native",
+      "discriminator": [155, 219, 36, 36, 239, 128, 21, 65],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
     },
     {
       "name": "sync_parent_to_child",
@@ -1570,10 +1894,10 @@
       }
     },
     {
-      "name": "sync_trader_capabilities",
-      "discriminator": [154, 64, 87, 130, 130, 34, 138, 0],
-      "disposition": "passthrough",
-      "reason": "no signer account: the instruction needs no authority the vault holds"
+      "name": "tombstone_market",
+      "discriminator": [90, 177, 17, 88, 85, 11, 177, 96],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
     },
     {
       "name": "transfer_collateral",
@@ -1752,175 +2076,20 @@
     {
       "name": "transfer_collateral_child_to_parent",
       "discriminator": [51, 100, 177, 115, 139, 135, 247, 139],
-      "disposition": "map",
-      "handler": {
-        "name": "transfer_collateral_child_to_parent",
-        "discriminator": [51, 100, 177, 115, 139, 135, 247, 139]
-      },
-      "source_accounts": [
-        {
-          "name": "phoenix_program",
-          "writable": false,
-          "signer": false
-        },
-        {
-          "name": "phoenix_log_authority",
-          "writable": false,
-          "signer": false
-        },
-        {
-          "name": "global_configuration",
-          "writable": false,
-          "signer": false
-        },
-        {
-          "name": "trader_wallet",
-          "writable": false,
-          "signer": false
-        },
-        {
-          "name": "child_trader_account",
-          "writable": true,
-          "signer": false
-        },
-        {
-          "name": "parent_trader_account",
-          "writable": true,
-          "signer": false
-        },
-        {
-          "name": "perp_asset_map",
-          "writable": false,
-          "signer": false
-        },
-        {
-          "name": "global_trader_index",
-          "writable": true,
-          "signer": false
-        },
-        {
-          "name": "active_trader_buffer",
-          "writable": true,
-          "signer": false
-        }
-      ],
-      "destination_accounts": [
-        {
-          "index": 0,
-          "kind": "dynamic",
-          "name": "glam_state",
-          "writable": true,
-          "signer": false
-        },
-        {
-          "index": 1,
-          "kind": "dynamic",
-          "name": "glam_vault",
-          "writable": true,
-          "signer": false
-        },
-        {
-          "index": 2,
-          "kind": "dynamic",
-          "name": "glam_signer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "index": 3,
-          "kind": "dynamic",
-          "name": "integration_authority",
-          "writable": false,
-          "signer": false
-        },
-        {
-          "index": 4,
-          "kind": "static",
-          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih",
-          "writable": false,
-          "signer": false
-        },
-        {
-          "index": 5,
-          "kind": "static",
-          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
-          "writable": false,
-          "signer": false
-        },
-        {
-          "index": 6,
-          "kind": "static",
-          "address": "11111111111111111111111111111111",
-          "writable": false,
-          "signer": false
-        },
-        {
-          "index": 7,
-          "kind": "source",
-          "source": 0,
-          "writable": false,
-          "signer": false
-        },
-        {
-          "index": 8,
-          "kind": "source",
-          "source": 1,
-          "writable": false,
-          "signer": false
-        },
-        {
-          "index": 9,
-          "kind": "source",
-          "source": 2,
-          "writable": false,
-          "signer": false
-        },
-        {
-          "index": 10,
-          "kind": "source",
-          "source": 3,
-          "writable": false,
-          "signer": false
-        },
-        {
-          "index": 11,
-          "kind": "source",
-          "source": 4,
-          "writable": true,
-          "signer": false
-        },
-        {
-          "index": 12,
-          "kind": "source",
-          "source": 5,
-          "writable": true,
-          "signer": false
-        },
-        {
-          "index": 13,
-          "kind": "source",
-          "source": 6,
-          "writable": false,
-          "signer": false
-        },
-        {
-          "index": 14,
-          "kind": "source",
-          "source": 7,
-          "writable": true,
-          "signer": false
-        },
-        {
-          "index": 15,
-          "kind": "source",
-          "source": 8,
-          "writable": true,
-          "signer": false
-        }
-      ],
-      "remaining_accounts": {
-        "kind": "any"
-      }
+      "disposition": "unsupported",
+      "reason": "not derived: argument layout differs: source [], handler [u64]; the mapper relays the payload verbatim"
+    },
+    {
+      "name": "transfer_native_sol",
+      "discriminator": [204, 65, 217, 206, 56, 180, 74, 252],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "transfer_native_sol_from_child_to_parent",
+      "discriminator": [90, 175, 49, 106, 54, 115, 8, 185],
+      "disposition": "passthrough",
+      "reason": "no signer account: the instruction needs no authority the vault holds"
     },
     {
       "name": "uncross_crank",
@@ -1929,8 +2098,26 @@
       "reason": "no signer account: the instruction needs no authority the vault holds"
     },
     {
-      "name": "update_oracle_prices",
-      "discriminator": [31, 180, 61, 161, 248, 128, 43, 94],
+      "name": "update_authorities",
+      "discriminator": [175, 228, 137, 18, 175, 70, 220, 165],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_commodity_market_state",
+      "discriminator": [45, 245, 97, 184, 200, 147, 142, 73],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_funding_parameters",
+      "discriminator": [101, 195, 104, 104, 116, 20, 223, 188],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_market_fees",
+      "discriminator": [187, 36, 121, 171, 131, 19, 243, 117],
       "disposition": "unsupported",
       "reason": "no GLAM handler proxies this instruction"
     },
@@ -1941,14 +2128,92 @@
       "reason": "no GLAM handler proxies this instruction"
     },
     {
+      "name": "update_perp_cancel_risk_factor",
+      "discriminator": [88, 6, 185, 205, 118, 28, 129, 242],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_perp_isolated_only",
+      "discriminator": [101, 56, 163, 250, 73, 35, 115, 91],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_perp_leverage_tiers",
+      "discriminator": [110, 223, 244, 99, 34, 83, 97, 121],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_perp_mark_price_parameters",
+      "discriminator": [254, 86, 13, 94, 43, 224, 160, 226],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_perp_max_liquidation_size",
+      "discriminator": [221, 63, 2, 199, 44, 241, 124, 222],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_perp_open_interest_cap",
+      "discriminator": [75, 137, 116, 5, 80, 123, 107, 177],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_perp_parameters_delegated",
+      "discriminator": [245, 185, 52, 228, 181, 88, 142, 222],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_perp_risk_factors",
+      "discriminator": [8, 242, 209, 204, 79, 145, 24, 37],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_perp_transfer_fee_tiers",
+      "discriminator": [170, 246, 183, 193, 115, 189, 151, 94],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_perp_u_pnl_risk_factor",
+      "discriminator": [113, 214, 226, 254, 147, 9, 94, 220],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_perp_u_pnl_risk_factor_for_withdrawals",
+      "discriminator": [252, 32, 10, 88, 238, 245, 104, 59],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
       "name": "update_spline_parameters",
       "discriminator": [241, 91, 139, 170, 18, 41, 203, 22],
       "disposition": "unsupported",
       "reason": "no GLAM handler proxies this instruction"
     },
     {
+      "name": "update_spline_position_limits_config",
+      "discriminator": [96, 60, 5, 112, 19, 144, 13, 107],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
       "name": "update_spline_price",
       "discriminator": [45, 155, 200, 52, 37, 214, 187, 140],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_trader_fees",
+      "discriminator": [182, 233, 57, 205, 174, 168, 73, 237],
       "disposition": "unsupported",
       "reason": "no GLAM handler proxies this instruction"
     },
@@ -2100,6 +2365,24 @@
       "remaining_accounts": {
         "kind": "any"
       }
+    },
+    {
+      "name": "update_withdraw_parameters",
+      "discriminator": [87, 209, 225, 132, 91, 151, 249, 132],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "update_withdraw_rate_limits",
+      "discriminator": [187, 246, 146, 182, 141, 216, 36, 1],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "upsert_escrow_request",
+      "discriminator": [213, 56, 86, 93, 34, 103, 160, 99],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
     },
     {
       "name": "withdraw_funds",
@@ -2310,6 +2593,18 @@
       "remaining_accounts": {
         "kind": "any"
       }
+    },
+    {
+      "name": "withdraw_funds_with_fee",
+      "discriminator": [202, 94, 94, 42, 155, 227, 88, 97],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "withdraw_native_sol",
+      "discriminator": [201, 104, 187, 105, 80, 204, 84, 138],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
     }
   ]
 }
