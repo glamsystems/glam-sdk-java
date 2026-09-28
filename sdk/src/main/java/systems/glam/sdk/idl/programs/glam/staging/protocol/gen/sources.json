@@ -1,6 +1,6 @@
 {
   "program": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
-  "deployed": "anchor",
+  "deployed": "metadata",
   "lastDeploySlot": 446999833,
   "programDataState": "upgradeable",
   "programDataStateSlot": 439884391,
@@ -11,13 +11,13 @@
       "origin": "5UELoo8jJyAqdh3yziYoG3jpWMN9f3ab8wmmKAkP3mqx",
       "hash": "912738dc2c40090066c08c675584a8b3c0131c5daa504315fcbdc140732b4dad",
       "matchesDeployed": true,
-      "verbatim": "idl.json"
+      "verbatim": "anchor.original.json"
     },
     "metadata": {
       "origin": "SMGmM9PtEW3VtPFBgDBcnoTf128HpACNz1dxTfHeFJ1",
       "hash": "912738dc2c40090066c08c675584a8b3c0131c5daa504315fcbdc140732b4dad",
       "matchesDeployed": true,
-      "verbatim": "metadata.original.json"
+      "verbatim": "idl.json"
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/glam_protocol-staging.json",

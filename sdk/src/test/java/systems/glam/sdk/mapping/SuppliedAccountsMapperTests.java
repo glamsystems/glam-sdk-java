@@ -34,9 +34,7 @@ import static systems.glam.sdk.mapping.LoopscaleStrategyMarketResolverTests.upda
 
 /// The five entries mapped through the mapper with the supplier, over the staging documents the monorepo
 /// generates (`supplied-accounts/staging`, see its README): the seats, then the appended global
-/// configuration, then the supplied accounts read-only, then the native extras in place. The bundled
-/// whirlpool builders append a `whirlpool_program` account the managed IDL and the documents do not list
-/// (15 and 19 positions), so the native instructions here are built without it.
+/// configuration, then the supplied accounts read-only, then the native extras in place.
 final class SuppliedAccountsMapperTests {
 
   private static final PublicKey FEE_PAYER = fromBase58Encoded("F1oQY1jbdiJyxxeeuMBF2NsUckboyWo6TSXNqzJbrhxs");
@@ -63,14 +61,12 @@ final class SuppliedAccountsMapperTests {
     return GlamSuppliedAccounts.create(globalConfig(), strategyMarkets(Map.of(STRATEGY_KEY, strategy())));
   }
 
-  /// The native liquidity accounts as the managed IDL lists them: the bundled builder's trailing whirlpool
-  /// program account dropped.
+  /// The native liquidity accounts as the managed IDL lists them.
   private static List<AccountMeta> liquidityKeys(final PublicKey vault, final PublicKey mintA, final PublicKey mintB) {
-    final var keys = WhirlpoolProgram.increaseLiquidityV2Keys(
+    return WhirlpoolProgram.increaseLiquidityV2Keys(
         SOLANA, WHIRLPOOL, SOLANA.tokenProgram(), SOLANA.tokenProgram(), vault, key(31), key(32), mintA, mintB,
-        key(33), key(34), key(35), key(36), key(37), key(38), WHIRLPOOL_PROGRAM
+        key(33), key(34), key(35), key(36), key(37), key(38)
     );
-    return keys.subList(0, 15);
   }
 
   private static Instruction increaseLiquidity(final PublicKey vault, final PublicKey mintA, final PublicKey mintB) {
@@ -184,10 +180,10 @@ final class SuppliedAccountsMapperTests {
     final var vault = vault();
     final var repositionKeys = WhirlpoolProgram.repositionLiquidityV2Keys(
         SOLANA, WHIRLPOOL, SOLANA.tokenProgram(), SOLANA.tokenProgram(), vault.vaultPublicKey(), FEE_PAYER, key(31), key(32), USDC, WSOL,
-        key(33), key(34), key(35), key(36), key(37), key(38), key(39), key(40), WHIRLPOOL_PROGRAM
+        key(33), key(34), key(35), key(36), key(37), key(38), key(39), key(40)
     );
     final var source = WhirlpoolProgram.repositionLiquidityV2(
-        OrcaAccounts.MAIN_NET.invokedWhirlpoolProgram(), repositionKeys.subList(0, 19),
+        OrcaAccounts.MAIN_NET.invokedWhirlpoolProgram(), repositionKeys,
         -100, 100, new RepositionLiquidityMethod.ByLiquidity(BigInteger.TEN, 1L, 2L, 3L, 4L), null
     ).extraAccounts(EXTRAS);
     final var result = mapped(mapper(), source, vault, recorded());

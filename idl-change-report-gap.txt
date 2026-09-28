@@ -52,8 +52,8 @@ GLAM Staging MarginFi: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ex
   instructions removed (1): price_marginfi_accounts
   accounts added (1): StateAccount
 
-GLAM Staging Marinade: the metadata IDL at F3FArTonLL2Lia7F596UA1NxxenB2wgK2iuiU18yqTXF differs from the deployed idl.json
-  accounts removed (1): StateAccount
+GLAM Staging Marinade: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_marinade-staging.json differs from the deployed idl.json
+  accounts added (1): StateAccount
 
 GLAM Staging Mint: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_mint-staging.json differs from the deployed idl.json
   instructions removed (2): price_drift_users, price_drift_vault_depositors
