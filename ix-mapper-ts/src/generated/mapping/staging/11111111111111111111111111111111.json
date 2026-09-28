@@ -4,7 +4,7 @@
   "program_id": "11111111111111111111111111111111",
   "proxy_program_id": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
   "provenance": {
-    "generator": "idl-src-gen@633ad602d3fecbb9458e42d9ae4ce0046bf023fe",
+    "generator": "idl-src-gen@e29276e2d5750a60473913ea2e94d14d63d8d818",
     "source_idl": "glam managed anchor_v1/idls/external/system (revision 7c70ebdc8bcf, idl bb1a83194457)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/glam_protocol_staging (revision ab88e0796ef2, idl 4b154b17ee04)",
     "config_revision": 1
