@@ -7,6 +7,10 @@ testModuleInfo {
   runtimeOnly("org.junit.jupiter.engine")
 }
 
+tasks.withType<Test>().configureEach {
+  systemProperty("java.util.logging.config.file", layout.projectDirectory.file("src/test/resources/logging.properties").asFile.absolutePath)
+}
+
 hardening {
   // git-ignored scratch files: absent in CI, and their dependencies drift out
   // of the classpath — excluding them from the tool recompiles restores parity

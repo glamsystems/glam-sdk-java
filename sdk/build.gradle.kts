@@ -125,6 +125,7 @@ tasks.named<Jar>("jar") {
 }
 
 tasks.withType<Test>().configureEach {
+  systemProperty("java.util.logging.config.file", layout.projectDirectory.file("src/test/resources/logging.properties").asFile.absolutePath)
   providers.gradleProperty("glamMappingsDir").orNull?.let { systemProperty("glam.mappings.dir", File(it).absolutePath) }
 }
 
