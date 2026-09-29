@@ -54,6 +54,7 @@ recompiled root. `build.gradle.kts` is the authoritative definition.
 | 2026-07-23 (findings fixed, main() removed) | 38 | 13 | 25 | 690/728 (94%) |
 | 2026-09-24 (lut package removed) | 24 | 13 | 11 | 464/488 (95%) |
 | 2026-09-25 (ix-mapper mapping documents) | 22 | 12 | 10 | 454/476 (95%) |
+| 2026-09-29 (`swapChecked` row pruned) | 21 | 12 | 9 | 643/664 (96%) |
 
 The 2026-07-23 vault-table-builder, kamino-lend + fetch and findings-fixed
 passes covered `lut.VaultTableBuilderImpl`, the vault address-lookup-table
@@ -353,6 +354,14 @@ a non-wSOL input with `wrapSOL` set is not wrapped, the direction the untriaged
 program-state keys filling the stake-pool seats. The fresh history-free observation after
 that (685 mutants, 664 detected) kills every jupiter-package mutant, so that row is now a
 prune candidate; no row was added.
+
+Follow-up (2026-09-29): that row is pruned. Both line-148 mutants of its key read KILLED, by
+`wrappingSwapPrependsTransferAndSync` and `checkedSwapCreatesTheOutputTokenAccount`, in two
+fresh full history-free previews and in `pitestSdkBaselinePrune`'s own write-boundary run
+(664 mutants, 643 detected, started at load average 7.4), the three matching observations
+the writer counts; the two certification runs of the 25.20.0 release commit `ae21fb0`, which
+do not count toward a prune, read the same. A kill, unlike a timeout, is not a load flip.
+The baseline is 21 rows.
 
 ## Supplied-accounts resolvers (2026-09-26, GLAM-1447 step 4)
 

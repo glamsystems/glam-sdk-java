@@ -15,7 +15,6 @@ systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parsePropert
 systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,parseProperties,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 392
 systems.glam.services.config.BaseDelegateServiceConfig,createEpochInfoService,NullReturnValsMutator,NO_COVERAGE # untriaged # line 139
 systems.glam.services.config.BaseDelegateServiceConfig,createExecutionServiceContext,NullReturnValsMutator,NO_COVERAGE # untriaged # line 193
-systems.glam.services.config.BaseDelegateServiceConfig,createInstructionProcessor,NullReturnValsMutator,NO_COVERAGE # untriaged # line 145
 systems.glam.services.config.BaseDelegateServiceConfig,createServiceContext,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 163
 systems.glam.services.config.BaseDelegateServiceConfig,createServiceContext,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 163
 systems.glam.services.config.BaseDelegateServiceConfig,createServiceContext,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 163
@@ -41,7 +40,6 @@ systems.glam.services.execution.FormatUtil,formatTransactionResult,RemoveConditi
 systems.glam.services.execution.FormatUtil,formatTransactionResult,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 134
 systems.glam.services.execution.FormatUtil,formatTransactionResult,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 134
 systems.glam.services.execution.FormatUtil,formatTransactionResult,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 134
-systems.glam.services.execution.InstructionProcessor,createProcessor,NullReturnValsMutator,NO_COVERAGE # untriaged # line 19
 systems.glam.services.execution.InstructionProcessorImpl,processInstructions,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 171
 systems.glam.services.execution.InstructionProcessorImpl,processInstructions,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 174
 systems.glam.services.execution.InstructionProcessorImpl,processInstructions,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 72

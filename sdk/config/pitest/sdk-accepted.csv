@@ -20,4 +20,3 @@ systems.glam.sdk.StagingStateAccountClientImpl,softRedeem,RemoveConditionalMutat
 systems.glam.sdk.StagingStateAccountClientImpl,softRedeem,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # untriaged # line 83
 systems.glam.sdk.StateAccountClient,createClient,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 55
 systems.glam.sdk.StateAccountClientImpl,protocolBitmask,RemoveConditionalMutator_EQUAL_IF,SURVIVED # unreachable type-check arm # line 88
-systems.glam.sdk.idl.programs.glam.jupiter.GlamJupiterProgramClientImpl,swapChecked,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 148

@@ -1284,6 +1284,41 @@ Timeout-quiet context from those runs: `SingleAssetFulfillmentService.compareAnd
 KILLED and TIMED_OUT across the runs. All are audited keys. Load flips; no
 record change.
 
+### 2026-09-29 — BOM 25.30.30, and the factory rows pruned
+
+The BOM moved ravina 25.6.4 to 25.6.5, idl-clients 25.19.7 to 25.19.8 and
+ix-proxy 25.1.0 to 25.1.1. The suite's reading did not move: every valid
+fresh full history-free run that day read 1626 mutants, 1467 detected, as
+`eb664c9` had before the bump, and `:hardeningCertifyAll` certified the suite
+on the 25.20.0 release commit `ae21fb0` at 1467/1626 with 70 timed out, every
+one audited.
+
+Two runs were discarded as invalid evidence, each for a single `RUN_ERROR` at
+a different coordinate: `BatchSqlExecutorImpl,run`
+`RemoveConditionalMutator_ORDER_IF` (line 130, an audited liveness key; load
+average 14 at the start) and `AccountFetcherImpl,createBatch`
+`RemoveConditionalMutator_EQUAL_ELSE` (line 350, the first certification
+attempt; load average 34 at the start, 42-51 during). Clean re-runs started
+below load average 8 are their closure, per the process.
+
+The two factory rows the section above left for the next prune are pruned:
+`InstructionProcessor,createProcessor,NullReturnValsMutator` and
+`BaseDelegateServiceConfig,createInstructionProcessor,NullReturnValsMutator`,
+now KILLED by `theFactoryServesTheDeploymentItIsGiven` and
+`theInstructionProcessorServesTheDeploymentItIsGiven`. Two fresh full
+history-free previews and `pitestServicesBaselinePrune`'s own write-boundary
+run read the same two-row candidate multiset (1467/1626 each, each started
+below load average 8). A kill, unlike a timeout, is not a load flip. The
+baseline is 159 rows, 113 unique keys.
+
+Timeout-quiet context from those runs: `GlobalConfigCacheImpl.run` and
+`GlobalConfigCacheImpl.topPriorityForMintChecked` (`VoidMethodCallMutator`),
+`SingleAssetFulfillmentService.compareAndSet`
+(`RemoveConditionalMutator_EQUAL_ELSE` and `RemoveConditionalMutator_ORDER_ELSE`)
+and `MinGlamStateAccount.externalPositionsOffset`
+(`RemoveConditionalMutator_ORDER_ELSE`) each moved between KILLED and TIMED_OUT
+across the runs. All are audited keys. Load flips; no record change.
+
 ### Family labels
 
 Each accepted row carries a `# <family>` label whose argument is the pass
