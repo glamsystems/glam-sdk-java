@@ -6,6 +6,8 @@ import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.spl.system.gen.SystemProgram;
+import software.sava.idl.clients.spl.token.gen.TokenProgram;
+import software.sava.idl.clients.spl.token_2022.gen.Token2022Program;
 import systems.glam.ix.proxy.InstructionEntry;
 import systems.glam.ix.proxy.MapResult;
 import systems.glam.ix.proxy.UnsupportedReason;
@@ -14,6 +16,7 @@ import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolProgram;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.ExtBridgeProgram;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,6 +30,8 @@ final class EmbeddedMapperTests {
   private static final PublicKey FEE_PAYER = fromBase58Encoded("F1oQY1jbdiJyxxeeuMBF2NsUckboyWo6TSXNqzJbrhxs");
   private static final PublicKey STATE_KEY = fromBase58Encoded("9fkan2jCsS7Xq3fLqgxgZT5pDCbj2MhQ5MAoEKSHrcAT");
   private static final PublicKey DESTINATION = fromBase58Encoded("ApgsxNeZbi9P2pCAjzYR8VauqnWZpNkbN1iRWH1QsSwH");
+  private static final PublicKey USDC = fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+  private static final PublicKey PYUSD = fromBase58Encoded("2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo");
   private static final PublicKey KAMINO_LENDING = fromBase58Encoded("KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD");
   private static final PublicKey CCTP_TOKEN_MESSENGER = fromBase58Encoded("CCTPV2vPZJS2u2BBsUoscuikbYjnpFmbFsvVuJdgUMQe");
   private static final PublicKey PHOENIX = fromBase58Encoded("EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih");
@@ -77,6 +82,70 @@ final class EmbeddedMapperTests {
       assertEquals(UnsupportedReason.ACCOUNT_EXPECTATION, refused.reason());
       assertEquals("transfer account 0 (source) must be glam_vault", refused.message());
     }
+  }
+
+  /// The SPL Token documents take the authority of transfer_checked and the owner of
+  /// close_account as a signer the caller chooses, held to the vault. Either choice maps, for
+  /// both token programs in both deployments, onto the instruction the GLAM client builds for
+  /// the same transfer or close, where the vault PDA sits unsigned and the fee payer is the only
+  /// signer. The choice never loosens the address: another authority is refused.
+  @Test
+  void aVaultTokenTransferOrCloseMapsWhetherOrNotTheCallerSignsForTheVault() {
+    final var solana = SolanaAccounts.MAIN_NET;
+    for (final var env : GlamEnv.values()) {
+      final var vaultAccounts = GlamVaultAccounts.createAccounts(env.glamAccounts(), FEE_PAYER, STATE_KEY);
+      final var vault = vaultAccounts.vaultPublicKey();
+      final var mapper = vaultAccounts.createMapper();
+      final var context = vaultAccounts.mappingContext();
+      final var client = GlamAccountClient.createClient(solana, vaultAccounts);
+      for (final boolean token2022 : new boolean[]{false, true}) {
+        final var tokenProgram = token2022 ? solana.invokedToken2022Program() : solana.invokedTokenProgram();
+        final var mint = token2022 ? PYUSD : USDC;
+        final var tokenAccount = client.vaultTokenAccount(tokenProgram.publicKey(), mint).publicKey();
+        final var transfer = client.transferTokenChecked(tokenProgram, tokenAccount, DESTINATION, 1_000L, 6, mint);
+        final var close = client.closeTokenAccount(tokenProgram, tokenAccount);
+        for (final boolean signed : new boolean[]{true, false}) {
+          final var label = env + ", " + tokenProgram.publicKey() + ", vault " + (signed ? "signed" : "unsigned") + ": ";
+          assertMapsOnto(transfer, mapper.map(transferChecked(token2022, tokenProgram, tokenAccount, mint, vault, signed), context), label + "transfer_checked");
+          final var nativeClose = token2022
+              ? Token2022Program.closeAccount(tokenProgram, tokenAccount, FEE_PAYER, vault, signed)
+              : TokenProgram.closeAccount(tokenProgram, tokenAccount, FEE_PAYER, vault, signed);
+          assertMapsOnto(close, mapper.map(nativeClose, context), label + "close_account");
+
+          final var refused = assertInstanceOf(MapResult.Unsupported.class,
+              mapper.map(transferChecked(token2022, tokenProgram, tokenAccount, mint, FEE_PAYER, signed), context), label + "another authority");
+          assertEquals(UnsupportedReason.ACCOUNT_EXPECTATION, refused.reason(), label);
+          assertEquals("transfer_checked account 3 (authority) must be glam_vault", refused.message(), label);
+        }
+      }
+    }
+  }
+
+  private static Instruction transferChecked(final boolean token2022,
+                                             final AccountMeta tokenProgram,
+                                             final PublicKey tokenAccount,
+                                             final PublicKey mint,
+                                             final PublicKey authority,
+                                             final boolean authorityIsSigner) {
+    return token2022
+        ? Token2022Program.transferChecked(tokenProgram, tokenAccount, mint, DESTINATION, authority, authorityIsSigner, 1_000L, 6)
+        : TokenProgram.transferChecked(tokenProgram, tokenAccount, mint, DESTINATION, authority, authorityIsSigner, 1_000L, 6);
+  }
+
+  private static void assertMapsOnto(final Instruction expected, final MapResult result, final String message) {
+    final var mapped = assertInstanceOf(MapResult.Mapped.class, result, () -> message + ": " + result).instruction();
+    assertEquals(expected.programId(), mapped.programId(), message);
+    assertEquals(expected.accounts(), mapped.accounts(), message);
+    assertArrayEquals(
+        Arrays.copyOfRange(expected.data(), expected.offset(), expected.offset() + expected.len()),
+        Arrays.copyOfRange(mapped.data(), mapped.offset(), mapped.offset() + mapped.len()),
+        message
+    );
+    assertEquals(
+        List.of(FEE_PAYER),
+        mapped.accounts().stream().filter(AccountMeta::signer).map(AccountMeta::publicKey).toList(),
+        message + ": the fee payer is the only signer"
+    );
   }
 
   @Test
