@@ -51,8 +51,8 @@ plus service components for operating against it.
 - `ix-mapper-ts/` — the generated ix-mapper mapping documents
   (`src/generated/mapping/{production,staging}` of the TypeScript mapper
   package, in its layout), written by the GLAM monorepo's public-sync
-  workflow and never by hand (`ix-mapper-ts/README.md`; until the first sync
-  the directory holds a copy made by hand from ix-mapper-ts 16320bf, and an
+  workflow and never by hand (`ix-mapper-ts/README.md`; the first sync,
+  `24a856a`, replaced the copy made by hand from ix-mapper-ts 16320bf, and an
   upstream change reaches the jar once its sync lands). The sdk's
   `processResources` embeds both sets as `glam/ix-mappings/{production,staging}`
   beside a build-time `index.json`, `jar` refuses an archive without them,
