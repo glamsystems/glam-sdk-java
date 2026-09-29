@@ -12,7 +12,6 @@ import software.sava.idl.clients.orca.whirlpools.gen.types.IncreaseLiquidityMeth
 import software.sava.idl.clients.orca.whirlpools.gen.types.RepositionLiquidityMethod;
 import systems.glam.ix.proxy.InstructionMapper;
 import systems.glam.ix.proxy.MapResult;
-import systems.glam.ix.proxy.MappingDocumentParser;
 import systems.glam.ix.proxy.UnsupportedReason;
 import systems.glam.sdk.GlamAccounts;
 import systems.glam.sdk.GlamVaultAccounts;
@@ -32,9 +31,9 @@ import static systems.glam.sdk.mapping.LoopscaleStrategyMarketResolver.strategyM
 import static systems.glam.sdk.mapping.LoopscaleStrategyMarketResolverTests.params;
 import static systems.glam.sdk.mapping.LoopscaleStrategyMarketResolverTests.updateStrategy;
 
-/// The five entries mapped through the mapper with the supplier, over the staging documents the monorepo
-/// generates (`supplied-accounts/staging`, see its README): the seats, then the appended global
-/// configuration, then the supplied accounts read-only, then the native extras in place.
+/// The five entries mapped through the mapper with the supplier, over the staging documents the jar
+/// embeds: the seats, then the appended global configuration, then the supplied accounts read-only,
+/// then the native extras in place.
 final class SuppliedAccountsMapperTests {
 
   private static final PublicKey FEE_PAYER = fromBase58Encoded("F1oQY1jbdiJyxxeeuMBF2NsUckboyWo6TSXNqzJbrhxs");
@@ -47,10 +46,7 @@ final class SuppliedAccountsMapperTests {
   private static final List<AccountMeta> EXTRAS = List.of(createWrite(key(60)), createRead(key(61)));
 
   private static InstructionMapper mapper() {
-    return STAGING.createMapper(List.of(
-        MappingDocumentParser.parse(read("supplied-accounts/staging/" + WHIRLPOOL_PROGRAM + ".json"), "whirlpool"),
-        MappingDocumentParser.parse(read("supplied-accounts/staging/" + LOOPSCALE_PROGRAM + ".json"), "loopscale")
-    ));
+    return STAGING.createMapper();
   }
 
   private static GlamVaultAccounts vault() {
