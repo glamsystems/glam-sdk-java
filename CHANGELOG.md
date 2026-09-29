@@ -1,5 +1,29 @@
 # Changelog
 
+## [25.20.0](https://github.com/glamsystems/glam-sdk-java/compare/25.19.0...25.20.0) (2026-09-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* **sdk:** on staging, priceLoopscaleLoans(PublicKey, PublicKey), priceLoopscaleStrategies(PublicKey, PublicKey), priceLoopscaleVaultPositions(PublicKey, PublicKey, int), priceOrcaWhirlpoolPositions(PublicKey, PublicKey, int), priceMarginfiAccounts(PublicKey, PublicKey), pricePhoenixTraders(PublicKey, PublicKey) and priceRegisteredPositions() keep their signatures but build the ext program's instruction: no fee-payer signer, no PricedProtocolRecord event, and the vault's integration ACL must hold the ext program or glam_protocol refuses the write (UnauthorizedIntegrationProgram, 48001). Their cpiEmitEvents overloads are removed, as are priceRegisteredPositions(boolean) and priceRegisteredPositions(PublicKey, boolean); priceRegisteredPositions(PublicKey) builds the ext instruction. priceBridgeManagedTransfers takes only the base-asset oracle, and the caller appends one oracle per active managed transfer. GlamAccountClient declares priceNeutralBundleDepositors, priceJupiterEarnPositions, priceJupiterBorrowPositions and priceRegisteredPositions(PublicKey), and the moved pricers are abstract rather than defaults, so an implementation outside this SDK must supply them.
+* **sdk:** the generated GlamProtocolProgram clients for the production and staging protocol programs (gen and next) no longer declare JUPITER_SWAP_DISCRIMINATOR, jupiterSwapKeys, jupiterSwap or JupiterSwapIxData; build swaps with jupiterSwapV2, or through GlamJupiterProgramClient.swap(JupiterSwapContext).
+* **sdk:** GlamJupiterProgramClient's swapChecked, swapUnchecked, swapUncheckedAndNoWrap, swapWithProgramStateChecked, swapWithProgramStateUnchecked and swapWithProgramStateUncheckedAndNoWrap overloads are removed, since they built the v1 jupiter_swap instruction; build a JupiterSwapContext and call swap(JupiterSwapContext), which builds jupiter_swap_v2.
+
+### Features
+
+* **sdk:** price the integration pricers through their ext programs (GLAM-1305) ([26fe6c1](https://github.com/glamsystems/glam-sdk-java/commit/26fe6c1c47df46ee318f256019cf35ec04021cde))
+* **services:** prefer the Kamino reserve among equal-priority oracles ([eb664c9](https://github.com/glamsystems/glam-sdk-java/commit/eb664c973f00c25d6b12342feab7c9690f392f0f))
+
+
+### Code Refactoring
+
+* **sdk:** remove the v1 Jupiter swap overloads ([1fe5e74](https://github.com/glamsystems/glam-sdk-java/commit/1fe5e74352d3649a5df8c10508822eeb5b10bb19))
+
+
+### Build System
+
+* **sdk:** leave the v1 jupiter_swap instruction out of the protocol clients ([2ee4991](https://github.com/glamsystems/glam-sdk-java/commit/2ee49911cc43dbe93dd81d3b7d36008435745fbc))
+
 ## [25.19.0](https://github.com/glamsystems/glam-sdk-java/compare/25.18.1...25.19.0) (2026-09-27)
 
 
