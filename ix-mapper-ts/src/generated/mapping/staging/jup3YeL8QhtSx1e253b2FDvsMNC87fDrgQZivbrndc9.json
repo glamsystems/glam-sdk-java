@@ -5,7 +5,7 @@
   "proxy_program_id": "gstgJbGqoE3p1SdFA2dET9tcaCzNqGcdD8wpbGctnU9",
   "provenance": {
     "generator": "idl-src-gen@e29276e2d5750a60473913ea2e94d14d63d8d818",
-    "source_idl": "glam managed anchor_v1/idls/external/jupiter_lending (revision e591e60193fb, idl ef547c925d93)",
+    "source_idl": "glam managed anchor_v1/idls/external/jupiter_lending (revision 9d233f1bc302, idl fe9ba7063fcb)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/ext_jupiter_staging (revision a4255f99547c, idl f424fb73040c)",
     "config_revision": 1
   },
@@ -106,7 +106,7 @@
         },
         {
           "name": "liquidity_program",
-          "writable": true,
+          "writable": false,
           "signer": false,
           "expect": "jupeiUmn818Jg1ekPURTpr4mFo29p46vygyykFJ3wZC"
         },
@@ -124,6 +124,7 @@
           "name": "associated_token_program",
           "writable": false,
           "signer": false,
+          "optional": "program_id",
           "expect": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
@@ -365,7 +366,7 @@
         },
         {
           "name": "liquidity_program",
-          "writable": true,
+          "writable": false,
           "signer": false,
           "expect": "jupeiUmn818Jg1ekPURTpr4mFo29p46vygyykFJ3wZC"
         },
@@ -383,6 +384,7 @@
           "name": "associated_token_program",
           "writable": false,
           "signer": false,
+          "optional": "program_id",
           "expect": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
@@ -559,6 +561,12 @@
       "reason": "no GLAM handler proxies this instruction"
     },
     {
+      "name": "rebalance_with_amounts",
+      "discriminator": [190, 33, 144, 182, 86, 4, 141, 73],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
       "name": "redeem",
       "discriminator": [184, 12, 86, 149, 70, 196, 97, 225],
       "disposition": "map",
@@ -626,7 +634,8 @@
         {
           "name": "claim_account",
           "writable": true,
-          "signer": false
+          "signer": false,
+          "optional": "program_id"
         },
         {
           "name": "liquidity",
@@ -635,7 +644,7 @@
         },
         {
           "name": "liquidity_program",
-          "writable": true,
+          "writable": false,
           "signer": false,
           "expect": "jupeiUmn818Jg1ekPURTpr4mFo29p46vygyykFJ3wZC"
         },
@@ -653,6 +662,7 @@
           "name": "associated_token_program",
           "writable": false,
           "signer": false,
+          "optional": "program_id",
           "expect": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
@@ -897,7 +907,8 @@
         {
           "name": "claim_account",
           "writable": true,
-          "signer": false
+          "signer": false,
+          "optional": "program_id"
         },
         {
           "name": "liquidity",
@@ -906,7 +917,7 @@
         },
         {
           "name": "liquidity_program",
-          "writable": true,
+          "writable": false,
           "signer": false,
           "expect": "jupeiUmn818Jg1ekPURTpr4mFo29p46vygyykFJ3wZC"
         },
@@ -924,6 +935,7 @@
           "name": "associated_token_program",
           "writable": false,
           "signer": false,
+          "optional": "program_id",
           "expect": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {

@@ -5,7 +5,7 @@
   "proxy_program_id": "gstgJbGqoE3p1SdFA2dET9tcaCzNqGcdD8wpbGctnU9",
   "provenance": {
     "generator": "idl-src-gen@e29276e2d5750a60473913ea2e94d14d63d8d818",
-    "source_idl": "glam managed anchor_v1/idls/external/jupiter_vaults (revision f28724867e2a, idl d4670504ee8c)",
+    "source_idl": "glam managed anchor_v1/idls/external/jupiter_vaults (revision a349f3da803a, idl b2ba95b281e1)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/ext_jupiter_staging (revision a4255f99547c, idl f424fb73040c)",
     "config_revision": 1
   },
@@ -278,6 +278,18 @@
       "reason": "no GLAM handler proxies this instruction"
     },
     {
+      "name": "liquidate_dex",
+      "discriminator": [28, 129, 253, 125, 243, 52, 11, 162],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "liquidate_perfect_dex",
+      "discriminator": [26, 113, 116, 50, 247, 131, 208, 5],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
       "name": "operate",
       "discriminator": [217, 106, 208, 99, 116, 151, 42, 135],
       "disposition": "map",
@@ -295,12 +307,14 @@
         {
           "name": "signer_supply_token_account",
           "writable": true,
-          "signer": false
+          "signer": false,
+          "optional": "program_id"
         },
         {
           "name": "signer_borrow_token_account",
           "writable": true,
-          "signer": false
+          "signer": false,
+          "optional": "program_id"
         },
         {
           "name": "recipient",
@@ -463,6 +477,7 @@
           "name": "associated_token_program",
           "writable": false,
           "signer": false,
+          "optional": "program_id",
           "expect": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
@@ -764,8 +779,38 @@
       }
     },
     {
+      "name": "operate_dex",
+      "discriminator": [223, 122, 223, 181, 133, 132, 116, 33],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "operate_perfect_dex",
+      "discriminator": [88, 34, 180, 77, 152, 186, 166, 162],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
       "name": "rebalance",
       "discriminator": [108, 158, 77, 9, 210, 52, 88, 62],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "rebalance_dex",
+      "discriminator": [71, 178, 19, 146, 254, 47, 109, 126],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "rebalance_dex_with_amounts",
+      "discriminator": [240, 127, 38, 166, 99, 125, 51, 124],
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
+    },
+    {
+      "name": "rebalance_with_amounts",
+      "discriminator": [190, 33, 144, 182, 86, 4, 141, 73],
       "disposition": "unsupported",
       "reason": "no GLAM handler proxies this instruction"
     },
