@@ -6,7 +6,7 @@
   "provenance": {
     "generator": "idl-src-gen@e29276e2d5750a60473913ea2e94d14d63d8d818",
     "source_idl": "glam managed anchor_v1/idls/external/whirlpools (revision 0b0be0570f29, idl f3e95ddf321d)",
-    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_orca_staging (revision 6deaac41c956, idl ee8a25b9afb3)",
+    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_orca_staging (revision b86eb3a88e0b, idl 677270974872)",
     "config_revision": 1
   },
   "instructions": [
@@ -25,8 +25,128 @@
     {
       "name": "close_position_with_token_extensions",
       "discriminator": [1, 182, 135, 59, 155, 25, 99, 223],
-      "disposition": "unsupported",
-      "reason": "not derived: extension account 'whirlpool' has no source counterpart"
+      "disposition": "map",
+      "handler": {
+        "name": "close_position_with_token_extensions",
+        "discriminator": [1, 182, 135, 59, 155, 25, 99, 223]
+      },
+      "source_accounts": [
+        {
+          "name": "position_authority",
+          "writable": false,
+          "signer": true,
+          "expect": "glam_vault"
+        },
+        {
+          "name": "receiver",
+          "writable": true,
+          "signer": false,
+          "expect": "glam_signer"
+        },
+        {
+          "name": "position",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "position_mint",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "position_token_account",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "name": "token2022_program",
+          "writable": false,
+          "signer": false,
+          "expect": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        }
+      ],
+      "destination_accounts": [
+        {
+          "index": 0,
+          "kind": "dynamic",
+          "name": "glam_state",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 1,
+          "kind": "dynamic",
+          "name": "glam_vault",
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 2,
+          "kind": "dynamic",
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "index": 3,
+          "kind": "dynamic",
+          "name": "integration_authority",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 4,
+          "kind": "static",
+          "address": "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 5,
+          "kind": "static",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 6,
+          "kind": "static",
+          "address": "11111111111111111111111111111111",
+          "writable": false,
+          "signer": false
+        },
+        {
+          "index": 7,
+          "kind": "source",
+          "source": 2,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 8,
+          "kind": "source",
+          "source": 3,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 9,
+          "kind": "source",
+          "source": 4,
+          "writable": true,
+          "signer": false
+        },
+        {
+          "index": 10,
+          "kind": "static",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+          "writable": false,
+          "signer": false
+        }
+      ],
+      "remaining_accounts": {
+        "kind": "none"
+      }
     },
     {
       "name": "collect_fees",
