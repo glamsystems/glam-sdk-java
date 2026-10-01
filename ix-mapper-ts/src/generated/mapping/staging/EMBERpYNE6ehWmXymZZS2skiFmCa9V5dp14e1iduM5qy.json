@@ -6,7 +6,7 @@
   "provenance": {
     "generator": "idl-src-gen@e29276e2d5750a60473913ea2e94d14d63d8d818",
     "source_idl": "glam managed anchor_v1/idls/external/ember (revision d81b79f21b82, idl 66de90bc15e5)",
-    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_phoenix_staging (revision 999879b97137, idl 9687f84b921a)",
+    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_phoenix_staging (revision d5e93d5ce0aa, idl a6e825dd564c)",
     "config_revision": 1
   },
   "instructions": [
