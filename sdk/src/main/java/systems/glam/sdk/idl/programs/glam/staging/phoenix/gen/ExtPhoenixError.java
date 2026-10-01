@@ -33,7 +33,12 @@ public sealed interface ExtPhoenixError extends ProgramError permits
     ExtPhoenixError.InvalidPhoenixPolicy,
     ExtPhoenixError.InvalidReferencePriceTimestamp,
     ExtPhoenixError.ReferencePriceStale,
-    ExtPhoenixError.OrderTypeNotAllowed {
+    ExtPhoenixError.OrderTypeNotAllowed,
+    ExtPhoenixError.TraderPreferenceBitsNotAdmitted,
+    ExtPhoenixError.ConditionalOrdersDisabled,
+    ExtPhoenixError.ConditionalExecutionPriceRequired,
+    ExtPhoenixError.NativeSolDepositNotAccounted,
+    ExtPhoenixError.NativeSolNotConserved {
 
   static ExtPhoenixError getInstance(final int errorCode) {
     return switch (errorCode) {
@@ -67,6 +72,11 @@ public sealed interface ExtPhoenixError extends ProgramError permits
       case 6027 -> InvalidReferencePriceTimestamp.INSTANCE;
       case 6028 -> ReferencePriceStale.INSTANCE;
       case 6029 -> OrderTypeNotAllowed.INSTANCE;
+      case 6030 -> TraderPreferenceBitsNotAdmitted.INSTANCE;
+      case 6031 -> ConditionalOrdersDisabled.INSTANCE;
+      case 6032 -> ConditionalExecutionPriceRequired.INSTANCE;
+      case 6033 -> NativeSolDepositNotAccounted.INSTANCE;
+      case 6034 -> NativeSolNotConserved.INSTANCE;
       default -> null;
     };
   }
@@ -278,6 +288,41 @@ public sealed interface ExtPhoenixError extends ProgramError permits
 
     public static final OrderTypeNotAllowed INSTANCE = new OrderTypeNotAllowed(
         6029, "Phoenix order type is not allowed by policy"
+    );
+  }
+
+  record TraderPreferenceBitsNotAdmitted(int code, String msg) implements ExtPhoenixError {
+
+    public static final TraderPreferenceBitsNotAdmitted INSTANCE = new TraderPreferenceBitsNotAdmitted(
+        6030, "Trader preference bits are not admitted by this program, and no trader was registered. Register the trader with zero preference bits."
+    );
+  }
+
+  record ConditionalOrdersDisabled(int code, String msg) implements ExtPhoenixError {
+
+    public static final ConditionalOrdersDisabled INSTANCE = new ConditionalOrdersDisabled(
+        6031, "Conditional orders are disabled by Phoenix policy: max_price_deviation_bps is 0"
+    );
+  }
+
+  record ConditionalExecutionPriceRequired(int code, String msg) implements ExtPhoenixError {
+
+    public static final ConditionalExecutionPriceRequired INSTANCE = new ConditionalExecutionPriceRequired(
+        6032, "A conditional order leg needs an explicit nonzero execution price"
+    );
+  }
+
+  record NativeSolDepositNotAccounted(int code, String msg) implements ExtPhoenixError {
+
+    public static final NativeSolDepositNotAccounted INSTANCE = new NativeSolDepositNotAccounted(
+        6033, "The deposited native SOL was not accounted as collateral in full"
+    );
+  }
+
+  record NativeSolNotConserved(int code, String msg) implements ExtPhoenixError {
+
+    public static final NativeSolNotConserved INSTANCE = new NativeSolNotConserved(
+        6034, "Native SOL lamports or accounted collateral did not move as the instruction requires"
     );
   }
 }

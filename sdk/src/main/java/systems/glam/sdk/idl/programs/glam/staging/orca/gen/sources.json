@@ -1,21 +1,21 @@
 {
   "program": "gstgo1EgmTp2PbLSaL6Qg57P7uADx3aiRZrMsewEdSy",
   "deployed": "metadata",
-  "lastDeploySlot": 448894934,
+  "lastDeploySlot": 452088285,
   "programDataState": "upgradeable",
   "programDataStateSlot": 439884391,
-  "programDataPayloadSha256": "eae80930820145de23a7e10be9eb3706c772fdc6948f1a5c5d1c26d3f6f054c1",
+  "programDataPayloadSha256": "cef41ee98204bc8c431dbf83ee4434bc1cd5153e2202f1737ac10e51558c39b8",
   "programDataPayloadLength": 759504,
   "channels": {
     "metadata": {
       "origin": "xuV58p3UoHjVGQGzkA3kuRoaBLZVnaKv8NM9LM5rfrh",
-      "hash": "1ea018a3a35e8484ef09485bf6850a4e09eb2a5e79fb573ded5a6cdb88d4c7f5",
+      "hash": "33699b1f0309fac2cb4405d83185603344127c561fe69d26d962df79982d1fef",
       "matchesDeployed": true,
       "verbatim": "idl.json"
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_orca-staging.json",
-      "hash": "d548bf91ee717747e5cf7b7ae6a9e2dbccf90bc7d5ca56014ba1fe8cfc420410",
+      "hash": "df322b3ca80e40a6120074019abe4bcebd29da66d0802535a72cfa56eaa1c504",
       "matchesDeployed": false,
       "file": "vcs.json",
       "verbatim": "vcs.json"

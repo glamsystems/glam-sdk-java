@@ -67,8 +67,13 @@ GLAM Staging Orca: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_or
   accounts added (1): StateAccount
 
 GLAM Staging Phoenix: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_phoenix-staging.json differs from the deployed idl.json
-  instructions removed (1): price_phoenix_traders
+  instructions removed (11): cancel_all_plus_conditional, cancel_conditional_order, deposit_native_sol, place_attached_conditional_order, place_limit_order_with_conditionals, place_multi_limit_order_v2, place_position_conditional_order, price_phoenix_traders, transfer_native_sol, transfer_native_sol_from_child_to_parent, withdraw_native_sol
+  instructions changed (1): transfer_collateral_child_to_parent
   accounts added (1): StateAccount
+  types added (1): TransferCollateralChildToParentInstruction
+  types removed (12): CancelConditionalOrderInstruction, CondensedOrderFlags, CondensedOrderV2, Direction, MultipleOrderPacketV2, PlaceAttachedConditionalOrderInstruction, PlaceLimitOrderWithConditionalsInstruction, PlacePositionConditionalOrderInstruction, StopLossOrderKind, TransferNativeSolInstruction, TriggerOrderParams, WithdrawNativeSolAction
+  types changed (2): PhoenixPolicy, RegisterTraderParams
+  errors removed (5): ConditionalExecutionPriceRequired, ConditionalOrdersDisabled, NativeSolDepositNotAccounted, NativeSolNotConserved, TraderPreferenceBitsNotAdmitted
 
 GLAM Staging Protocol: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_protocol-staging.json differs from the deployed idl.json
   errors added (4): InvalidNotifyAndSettle, InvalidObligationOwner, ObligationStale, ReserveStale

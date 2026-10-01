@@ -8,17 +8,23 @@ import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.core.gen.SerDe;
 
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.CancelConditionalOrderInstruction;
 import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.CancelUpToInstruction;
 import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.DepositFundsInstruction;
 import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.DepositParams;
 import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.MultipleOrderPacket;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.MultipleOrderPacketV2;
 import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.OrderIds;
 import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.OrderPacket;
 import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.PhoenixPolicy;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.PlaceAttachedConditionalOrderInstruction;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.PlaceLimitOrderWithConditionalsInstruction;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.PlacePositionConditionalOrderInstruction;
 import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.RegisterTraderParams;
-import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.TransferCollateralChildToParentInstruction;
 import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.TransferCollateralInstruction;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.TransferNativeSolInstruction;
 import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.WithdrawFundsInstruction;
+import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.WithdrawNativeSolAction;
 import systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types.WithdrawParams;
 
 import java.util.List;
@@ -26,6 +32,8 @@ import java.util.List;
 import static software.sava.core.accounts.meta.AccountMeta.createRead;
 import static software.sava.core.accounts.meta.AccountMeta.createWritableSigner;
 import static software.sava.core.accounts.meta.AccountMeta.createWrite;
+import static software.sava.core.encoding.ByteUtil.getInt64LE;
+import static software.sava.core.encoding.ByteUtil.putInt64LE;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
@@ -80,6 +88,147 @@ public final class ExtPhoenixProgram {
   public static Instruction cancelAll(final AccountMeta invokedExtPhoenixProgramMeta,
                                       final List<AccountMeta> keys) {
     return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, CANCEL_ALL_DISCRIMINATOR);
+  }
+
+  public static final Discriminator CANCEL_ALL_PLUS_CONDITIONAL_DISCRIMINATOR = toDiscriminator(142, 173, 238, 126, 79, 19, 53, 103);
+
+  /// Cancels every resting order and every conditional order of the trader on the market.
+  ///
+  public static List<AccountMeta> cancelAllPlusConditionalKeys(final SolanaAccounts solanaAccounts,
+                                                               final PublicKey glamStateKey,
+                                                               final PublicKey glamVaultKey,
+                                                               final PublicKey glamSignerKey,
+                                                               final PublicKey integrationAuthorityKey,
+                                                               final PublicKey cpiProgramKey,
+                                                               final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram())
+    );
+  }
+
+  /// Cancels every resting order and every conditional order of the trader on the market.
+  ///
+  public static Instruction cancelAllPlusConditional(final AccountMeta invokedExtPhoenixProgramMeta,
+                                                     final SolanaAccounts solanaAccounts,
+                                                     final PublicKey glamStateKey,
+                                                     final PublicKey glamVaultKey,
+                                                     final PublicKey glamSignerKey,
+                                                     final PublicKey integrationAuthorityKey,
+                                                     final PublicKey cpiProgramKey,
+                                                     final PublicKey glamProtocolProgramKey) {
+    final var keys = cancelAllPlusConditionalKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey
+    );
+    return cancelAllPlusConditional(invokedExtPhoenixProgramMeta, keys);
+  }
+
+  /// Cancels every resting order and every conditional order of the trader on the market.
+  ///
+  public static Instruction cancelAllPlusConditional(final AccountMeta invokedExtPhoenixProgramMeta,
+                                                     final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, CANCEL_ALL_PLUS_CONDITIONAL_DISCRIMINATOR);
+  }
+
+  public static final Discriminator CANCEL_CONDITIONAL_ORDER_DISCRIMINATOR = toDiscriminator(82, 104, 25, 51, 248, 54, 66, 184);
+
+  /// Cancels one or both legs of a conditional order by its index in the trader's collection.
+  ///
+  public static List<AccountMeta> cancelConditionalOrderKeys(final SolanaAccounts solanaAccounts,
+                                                             final PublicKey glamStateKey,
+                                                             final PublicKey glamVaultKey,
+                                                             final PublicKey glamSignerKey,
+                                                             final PublicKey integrationAuthorityKey,
+                                                             final PublicKey cpiProgramKey,
+                                                             final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram())
+    );
+  }
+
+  /// Cancels one or both legs of a conditional order by its index in the trader's collection.
+  ///
+  public static Instruction cancelConditionalOrder(final AccountMeta invokedExtPhoenixProgramMeta,
+                                                   final SolanaAccounts solanaAccounts,
+                                                   final PublicKey glamStateKey,
+                                                   final PublicKey glamVaultKey,
+                                                   final PublicKey glamSignerKey,
+                                                   final PublicKey integrationAuthorityKey,
+                                                   final PublicKey cpiProgramKey,
+                                                   final PublicKey glamProtocolProgramKey,
+                                                   final CancelConditionalOrderInstruction params) {
+    final var keys = cancelConditionalOrderKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey
+    );
+    return cancelConditionalOrder(invokedExtPhoenixProgramMeta, keys, params);
+  }
+
+  /// Cancels one or both legs of a conditional order by its index in the trader's collection.
+  ///
+  public static Instruction cancelConditionalOrder(final AccountMeta invokedExtPhoenixProgramMeta,
+                                                   final List<AccountMeta> keys,
+                                                   final CancelConditionalOrderInstruction params) {
+    final byte[] _data = new byte[8 + params.l()];
+    int i = CANCEL_CONDITIONAL_ORDER_DISCRIMINATOR.write(_data, 0);
+    params.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
+  }
+
+  public record CancelConditionalOrderIxData(Discriminator discriminator, CancelConditionalOrderInstruction params) implements SerDe {
+
+    public static CancelConditionalOrderIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int BYTES = 11;
+
+    public static final int PARAMS_OFFSET = 8;
+
+    public static CancelConditionalOrderIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var params = CancelConditionalOrderInstruction.read(_data, i);
+      return new CancelConditionalOrderIxData(discriminator, params);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += params.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
   }
 
   public static final Discriminator CANCEL_ORDERS_BY_ID_DISCRIMINATOR = toDiscriminator(234, 204, 126, 94, 222, 22, 141, 24);
@@ -466,6 +615,214 @@ public final class ExtPhoenixProgram {
     }
   }
 
+  public static final Discriminator DEPOSIT_NATIVE_SOL_DISCRIMINATOR = toDiscriminator(16, 147, 179, 138, 225, 77, 137, 35);
+
+  /// Deposits `lamports` of the vault's SOL into a trader as native SOL collateral: capacity
+  /// for the entry (rent from the signer), the transfer from the vault, then the sync that
+  /// accounts it; the deposit must be accounted in full.
+  ///
+  public static List<AccountMeta> depositNativeSolKeys(final SolanaAccounts solanaAccounts,
+                                                       final PublicKey glamStateKey,
+                                                       final PublicKey glamVaultKey,
+                                                       final PublicKey glamSignerKey,
+                                                       final PublicKey integrationAuthorityKey,
+                                                       final PublicKey cpiProgramKey,
+                                                       final PublicKey glamProtocolProgramKey,
+                                                       final PublicKey logAuthorityKey,
+                                                       final PublicKey globalConfigKey,
+                                                       final PublicKey traderAccountKey,
+                                                       final PublicKey globalTraderIndexKey,
+                                                       final PublicKey activeTraderBufferKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram()),
+      createRead(logAuthorityKey),
+      createWrite(globalConfigKey),
+      createWrite(traderAccountKey),
+      createWrite(globalTraderIndexKey),
+      createWrite(activeTraderBufferKey)
+    );
+  }
+
+  /// Deposits `lamports` of the vault's SOL into a trader as native SOL collateral: capacity
+  /// for the entry (rent from the signer), the transfer from the vault, then the sync that
+  /// accounts it; the deposit must be accounted in full.
+  ///
+  /// @param lamports: u64
+  public static Instruction depositNativeSol(final AccountMeta invokedExtPhoenixProgramMeta,
+                                             final SolanaAccounts solanaAccounts,
+                                             final PublicKey glamStateKey,
+                                             final PublicKey glamVaultKey,
+                                             final PublicKey glamSignerKey,
+                                             final PublicKey integrationAuthorityKey,
+                                             final PublicKey cpiProgramKey,
+                                             final PublicKey glamProtocolProgramKey,
+                                             final PublicKey logAuthorityKey,
+                                             final PublicKey globalConfigKey,
+                                             final PublicKey traderAccountKey,
+                                             final PublicKey globalTraderIndexKey,
+                                             final PublicKey activeTraderBufferKey,
+                                             final long lamports) {
+    final var keys = depositNativeSolKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey,
+      logAuthorityKey,
+      globalConfigKey,
+      traderAccountKey,
+      globalTraderIndexKey,
+      activeTraderBufferKey
+    );
+    return depositNativeSol(invokedExtPhoenixProgramMeta, keys, lamports);
+  }
+
+  /// Deposits `lamports` of the vault's SOL into a trader as native SOL collateral: capacity
+  /// for the entry (rent from the signer), the transfer from the vault, then the sync that
+  /// accounts it; the deposit must be accounted in full.
+  ///
+  /// @param lamports: u64
+  public static Instruction depositNativeSol(final AccountMeta invokedExtPhoenixProgramMeta,
+                                             final List<AccountMeta> keys,
+                                             final long lamports) {
+    final byte[] _data = new byte[16];
+    int i = DEPOSIT_NATIVE_SOL_DISCRIMINATOR.write(_data, 0);
+    putInt64LE(_data, i, lamports);
+
+    return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
+  }
+
+  /// @param lamports: u64
+  public record DepositNativeSolIxData(Discriminator discriminator, long lamports) implements SerDe {
+
+    public static DepositNativeSolIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int BYTES = 16;
+
+    public static final int LAMPORTS_OFFSET = 8;
+
+    public static DepositNativeSolIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var lamports = getInt64LE(_data, i);
+      return new DepositNativeSolIxData(discriminator, lamports);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      putInt64LE(_data, i, lamports);
+      i += 8;
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
+  public static final Discriminator PLACE_ATTACHED_CONDITIONAL_ORDER_DISCRIMINATOR = toDiscriminator(43, 117, 136, 128, 72, 150, 101, 122);
+
+  /// Attaches one or two trigger legs to a resting limit order on the orderbook's market.
+  ///
+  public static List<AccountMeta> placeAttachedConditionalOrderKeys(final SolanaAccounts solanaAccounts,
+                                                                    final PublicKey glamStateKey,
+                                                                    final PublicKey glamVaultKey,
+                                                                    final PublicKey glamSignerKey,
+                                                                    final PublicKey integrationAuthorityKey,
+                                                                    final PublicKey cpiProgramKey,
+                                                                    final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram())
+    );
+  }
+
+  /// Attaches one or two trigger legs to a resting limit order on the orderbook's market.
+  ///
+  public static Instruction placeAttachedConditionalOrder(final AccountMeta invokedExtPhoenixProgramMeta,
+                                                          final SolanaAccounts solanaAccounts,
+                                                          final PublicKey glamStateKey,
+                                                          final PublicKey glamVaultKey,
+                                                          final PublicKey glamSignerKey,
+                                                          final PublicKey integrationAuthorityKey,
+                                                          final PublicKey cpiProgramKey,
+                                                          final PublicKey glamProtocolProgramKey,
+                                                          final PlaceAttachedConditionalOrderInstruction params) {
+    final var keys = placeAttachedConditionalOrderKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey
+    );
+    return placeAttachedConditionalOrder(invokedExtPhoenixProgramMeta, keys, params);
+  }
+
+  /// Attaches one or two trigger legs to a resting limit order on the orderbook's market.
+  ///
+  public static Instruction placeAttachedConditionalOrder(final AccountMeta invokedExtPhoenixProgramMeta,
+                                                          final List<AccountMeta> keys,
+                                                          final PlaceAttachedConditionalOrderInstruction params) {
+    final byte[] _data = new byte[8 + params.l()];
+    int i = PLACE_ATTACHED_CONDITIONAL_ORDER_DISCRIMINATOR.write(_data, 0);
+    params.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
+  }
+
+  public record PlaceAttachedConditionalOrderIxData(Discriminator discriminator, PlaceAttachedConditionalOrderInstruction params) implements SerDe {
+
+    public static PlaceAttachedConditionalOrderIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int PARAMS_OFFSET = 8;
+
+    public static PlaceAttachedConditionalOrderIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var params = PlaceAttachedConditionalOrderInstruction.read(_data, i);
+      return new PlaceAttachedConditionalOrderIxData(discriminator, params);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += params.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + params.l();
+    }
+  }
+
   public static final Discriminator PLACE_LIMIT_ORDER_DISCRIMINATOR = toDiscriminator(108, 176, 33, 186, 146, 229, 1, 197);
 
   /// Places a limit order; the unfilled portion rests on the orderbook.
@@ -551,6 +908,94 @@ public final class ExtPhoenixProgram {
     @Override
     public int l() {
       return 8 + packet.l();
+    }
+  }
+
+  public static final Discriminator PLACE_LIMIT_ORDER_WITH_CONDITIONALS_DISCRIMINATOR = toDiscriminator(95, 45, 68, 168, 232, 218, 210, 92);
+
+  /// Places a limit order and attaches one or two trigger legs to it in one CPI.
+  ///
+  public static List<AccountMeta> placeLimitOrderWithConditionalsKeys(final SolanaAccounts solanaAccounts,
+                                                                      final PublicKey glamStateKey,
+                                                                      final PublicKey glamVaultKey,
+                                                                      final PublicKey glamSignerKey,
+                                                                      final PublicKey integrationAuthorityKey,
+                                                                      final PublicKey cpiProgramKey,
+                                                                      final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram())
+    );
+  }
+
+  /// Places a limit order and attaches one or two trigger legs to it in one CPI.
+  ///
+  public static Instruction placeLimitOrderWithConditionals(final AccountMeta invokedExtPhoenixProgramMeta,
+                                                            final SolanaAccounts solanaAccounts,
+                                                            final PublicKey glamStateKey,
+                                                            final PublicKey glamVaultKey,
+                                                            final PublicKey glamSignerKey,
+                                                            final PublicKey integrationAuthorityKey,
+                                                            final PublicKey cpiProgramKey,
+                                                            final PublicKey glamProtocolProgramKey,
+                                                            final PlaceLimitOrderWithConditionalsInstruction params) {
+    final var keys = placeLimitOrderWithConditionalsKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey
+    );
+    return placeLimitOrderWithConditionals(invokedExtPhoenixProgramMeta, keys, params);
+  }
+
+  /// Places a limit order and attaches one or two trigger legs to it in one CPI.
+  ///
+  public static Instruction placeLimitOrderWithConditionals(final AccountMeta invokedExtPhoenixProgramMeta,
+                                                            final List<AccountMeta> keys,
+                                                            final PlaceLimitOrderWithConditionalsInstruction params) {
+    final byte[] _data = new byte[8 + params.l()];
+    int i = PLACE_LIMIT_ORDER_WITH_CONDITIONALS_DISCRIMINATOR.write(_data, 0);
+    params.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
+  }
+
+  public record PlaceLimitOrderWithConditionalsIxData(Discriminator discriminator, PlaceLimitOrderWithConditionalsInstruction params) implements SerDe {
+
+    public static PlaceLimitOrderWithConditionalsIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int PARAMS_OFFSET = 8;
+
+    public static PlaceLimitOrderWithConditionalsIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var params = PlaceLimitOrderWithConditionalsInstruction.read(_data, i);
+      return new PlaceLimitOrderWithConditionalsIxData(discriminator, params);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += params.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + params.l();
     }
   }
 
@@ -727,6 +1172,188 @@ public final class ExtPhoenixProgram {
     @Override
     public int l() {
       return 8 + packet.l();
+    }
+  }
+
+  public static final Discriminator PLACE_MULTI_LIMIT_ORDER_V_2_DISCRIMINATOR = toDiscriminator(64, 111, 40, 210, 2, 177, 38, 178);
+
+  /// Places multiple post-only limit orders in one CPI, each with its own slide and
+  /// reduce-only flags, optionally as a scale-order set.
+  ///
+  public static List<AccountMeta> placeMultiLimitOrderV2Keys(final SolanaAccounts solanaAccounts,
+                                                             final PublicKey glamStateKey,
+                                                             final PublicKey glamVaultKey,
+                                                             final PublicKey glamSignerKey,
+                                                             final PublicKey integrationAuthorityKey,
+                                                             final PublicKey cpiProgramKey,
+                                                             final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram())
+    );
+  }
+
+  /// Places multiple post-only limit orders in one CPI, each with its own slide and
+  /// reduce-only flags, optionally as a scale-order set.
+  ///
+  public static Instruction placeMultiLimitOrderV2(final AccountMeta invokedExtPhoenixProgramMeta,
+                                                   final SolanaAccounts solanaAccounts,
+                                                   final PublicKey glamStateKey,
+                                                   final PublicKey glamVaultKey,
+                                                   final PublicKey glamSignerKey,
+                                                   final PublicKey integrationAuthorityKey,
+                                                   final PublicKey cpiProgramKey,
+                                                   final PublicKey glamProtocolProgramKey,
+                                                   final MultipleOrderPacketV2 packet) {
+    final var keys = placeMultiLimitOrderV2Keys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey
+    );
+    return placeMultiLimitOrderV2(invokedExtPhoenixProgramMeta, keys, packet);
+  }
+
+  /// Places multiple post-only limit orders in one CPI, each with its own slide and
+  /// reduce-only flags, optionally as a scale-order set.
+  ///
+  public static Instruction placeMultiLimitOrderV2(final AccountMeta invokedExtPhoenixProgramMeta,
+                                                   final List<AccountMeta> keys,
+                                                   final MultipleOrderPacketV2 packet) {
+    final byte[] _data = new byte[8 + packet.l()];
+    int i = PLACE_MULTI_LIMIT_ORDER_V_2_DISCRIMINATOR.write(_data, 0);
+    packet.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
+  }
+
+  public record PlaceMultiLimitOrderV2IxData(Discriminator discriminator, MultipleOrderPacketV2 packet) implements SerDe {
+
+    public static PlaceMultiLimitOrderV2IxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int PACKET_OFFSET = 8;
+
+    public static PlaceMultiLimitOrderV2IxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var packet = MultipleOrderPacketV2.read(_data, i);
+      return new PlaceMultiLimitOrderV2IxData(discriminator, packet);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += packet.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + packet.l();
+    }
+  }
+
+  public static final Discriminator PLACE_POSITION_CONDITIONAL_ORDER_DISCRIMINATOR = toDiscriminator(65, 108, 83, 129, 76, 193, 92, 143);
+
+  /// Places a position conditional order: one or two trigger legs on the orderbook's market,
+  /// each within the policy's trigger band, sized in base lots or as a percent of the position.
+  ///
+  public static List<AccountMeta> placePositionConditionalOrderKeys(final SolanaAccounts solanaAccounts,
+                                                                    final PublicKey glamStateKey,
+                                                                    final PublicKey glamVaultKey,
+                                                                    final PublicKey glamSignerKey,
+                                                                    final PublicKey integrationAuthorityKey,
+                                                                    final PublicKey cpiProgramKey,
+                                                                    final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram())
+    );
+  }
+
+  /// Places a position conditional order: one or two trigger legs on the orderbook's market,
+  /// each within the policy's trigger band, sized in base lots or as a percent of the position.
+  ///
+  public static Instruction placePositionConditionalOrder(final AccountMeta invokedExtPhoenixProgramMeta,
+                                                          final SolanaAccounts solanaAccounts,
+                                                          final PublicKey glamStateKey,
+                                                          final PublicKey glamVaultKey,
+                                                          final PublicKey glamSignerKey,
+                                                          final PublicKey integrationAuthorityKey,
+                                                          final PublicKey cpiProgramKey,
+                                                          final PublicKey glamProtocolProgramKey,
+                                                          final PlacePositionConditionalOrderInstruction params) {
+    final var keys = placePositionConditionalOrderKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey
+    );
+    return placePositionConditionalOrder(invokedExtPhoenixProgramMeta, keys, params);
+  }
+
+  /// Places a position conditional order: one or two trigger legs on the orderbook's market,
+  /// each within the policy's trigger band, sized in base lots or as a percent of the position.
+  ///
+  public static Instruction placePositionConditionalOrder(final AccountMeta invokedExtPhoenixProgramMeta,
+                                                          final List<AccountMeta> keys,
+                                                          final PlacePositionConditionalOrderInstruction params) {
+    final byte[] _data = new byte[8 + params.l()];
+    int i = PLACE_POSITION_CONDITIONAL_ORDER_DISCRIMINATOR.write(_data, 0);
+    params.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
+  }
+
+  public record PlacePositionConditionalOrderIxData(Discriminator discriminator, PlacePositionConditionalOrderInstruction params) implements SerDe {
+
+    public static PlacePositionConditionalOrderIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int PARAMS_OFFSET = 8;
+
+    public static PlacePositionConditionalOrderIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var params = PlacePositionConditionalOrderInstruction.read(_data, i);
+      return new PlacePositionConditionalOrderIxData(discriminator, params);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += params.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + params.l();
     }
   }
 
@@ -1127,8 +1754,7 @@ public final class ExtPhoenixProgram {
                                                             final PublicKey glamSignerKey,
                                                             final PublicKey integrationAuthorityKey,
                                                             final PublicKey cpiProgramKey,
-                                                            final PublicKey glamProtocolProgramKey,
-                                                            final TransferCollateralChildToParentInstruction params) {
+                                                            final PublicKey glamProtocolProgramKey) {
     final var keys = transferCollateralChildToParentKeys(
       solanaAccounts,
       glamStateKey,
@@ -1138,24 +1764,76 @@ public final class ExtPhoenixProgram {
       cpiProgramKey,
       glamProtocolProgramKey
     );
-    return transferCollateralChildToParent(invokedExtPhoenixProgramMeta, keys, params);
+    return transferCollateralChildToParent(invokedExtPhoenixProgramMeta, keys);
   }
 
   /// Transfers collateral from a child subaccount back to its parent trader account.
   ///
   public static Instruction transferCollateralChildToParent(final AccountMeta invokedExtPhoenixProgramMeta,
-                                                            final List<AccountMeta> keys,
-                                                            final TransferCollateralChildToParentInstruction params) {
+                                                            final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, TRANSFER_COLLATERAL_CHILD_TO_PARENT_DISCRIMINATOR);
+  }
+
+  public static final Discriminator TRANSFER_NATIVE_SOL_DISCRIMINATOR = toDiscriminator(204, 65, 217, 206, 56, 180, 74, 252);
+
+  /// Transfers native SOL collateral between two of the vault's traders.
+  ///
+  public static List<AccountMeta> transferNativeSolKeys(final SolanaAccounts solanaAccounts,
+                                                        final PublicKey glamStateKey,
+                                                        final PublicKey glamVaultKey,
+                                                        final PublicKey glamSignerKey,
+                                                        final PublicKey integrationAuthorityKey,
+                                                        final PublicKey cpiProgramKey,
+                                                        final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram())
+    );
+  }
+
+  /// Transfers native SOL collateral between two of the vault's traders.
+  ///
+  public static Instruction transferNativeSol(final AccountMeta invokedExtPhoenixProgramMeta,
+                                              final SolanaAccounts solanaAccounts,
+                                              final PublicKey glamStateKey,
+                                              final PublicKey glamVaultKey,
+                                              final PublicKey glamSignerKey,
+                                              final PublicKey integrationAuthorityKey,
+                                              final PublicKey cpiProgramKey,
+                                              final PublicKey glamProtocolProgramKey,
+                                              final TransferNativeSolInstruction params) {
+    final var keys = transferNativeSolKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey
+    );
+    return transferNativeSol(invokedExtPhoenixProgramMeta, keys, params);
+  }
+
+  /// Transfers native SOL collateral between two of the vault's traders.
+  ///
+  public static Instruction transferNativeSol(final AccountMeta invokedExtPhoenixProgramMeta,
+                                              final List<AccountMeta> keys,
+                                              final TransferNativeSolInstruction params) {
     final byte[] _data = new byte[8 + params.l()];
-    int i = TRANSFER_COLLATERAL_CHILD_TO_PARENT_DISCRIMINATOR.write(_data, 0);
+    int i = TRANSFER_NATIVE_SOL_DISCRIMINATOR.write(_data, 0);
     params.write(_data, i);
 
     return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
   }
 
-  public record TransferCollateralChildToParentIxData(Discriminator discriminator, TransferCollateralChildToParentInstruction params) implements SerDe {
+  public record TransferNativeSolIxData(Discriminator discriminator, TransferNativeSolInstruction params) implements SerDe {
 
-    public static TransferCollateralChildToParentIxData read(final Instruction instruction) {
+    public static TransferNativeSolIxData read(final Instruction instruction) {
       return read(instruction.copyData(), 0);
     }
 
@@ -1163,14 +1841,14 @@ public final class ExtPhoenixProgram {
 
     public static final int PARAMS_OFFSET = 8;
 
-    public static TransferCollateralChildToParentIxData read(final byte[] _data, final int _offset) {
+    public static TransferNativeSolIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var params = TransferCollateralChildToParentInstruction.read(_data, i);
-      return new TransferCollateralChildToParentIxData(discriminator, params);
+      final var params = TransferNativeSolInstruction.read(_data, i);
+      return new TransferNativeSolIxData(discriminator, params);
     }
 
     @Override
@@ -1184,6 +1862,57 @@ public final class ExtPhoenixProgram {
     public int l() {
       return BYTES;
     }
+  }
+
+  public static final Discriminator TRANSFER_NATIVE_SOL_FROM_CHILD_TO_PARENT_DISCRIMINATOR = toDiscriminator(90, 175, 49, 106, 54, 115, 8, 185);
+
+  /// Sweeps a flat child trader's native SOL collateral to its parent.
+  ///
+  public static List<AccountMeta> transferNativeSolFromChildToParentKeys(final SolanaAccounts solanaAccounts,
+                                                                         final PublicKey glamStateKey,
+                                                                         final PublicKey glamVaultKey,
+                                                                         final PublicKey glamSignerKey,
+                                                                         final PublicKey integrationAuthorityKey,
+                                                                         final PublicKey cpiProgramKey,
+                                                                         final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram())
+    );
+  }
+
+  /// Sweeps a flat child trader's native SOL collateral to its parent.
+  ///
+  public static Instruction transferNativeSolFromChildToParent(final AccountMeta invokedExtPhoenixProgramMeta,
+                                                               final SolanaAccounts solanaAccounts,
+                                                               final PublicKey glamStateKey,
+                                                               final PublicKey glamVaultKey,
+                                                               final PublicKey glamSignerKey,
+                                                               final PublicKey integrationAuthorityKey,
+                                                               final PublicKey cpiProgramKey,
+                                                               final PublicKey glamProtocolProgramKey) {
+    final var keys = transferNativeSolFromChildToParentKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey
+    );
+    return transferNativeSolFromChildToParent(invokedExtPhoenixProgramMeta, keys);
+  }
+
+  /// Sweeps a flat child trader's native SOL collateral to its parent.
+  ///
+  public static Instruction transferNativeSolFromChildToParent(final AccountMeta invokedExtPhoenixProgramMeta,
+                                                               final List<AccountMeta> keys) {
+    return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, TRANSFER_NATIVE_SOL_FROM_CHILD_TO_PARENT_DISCRIMINATOR);
   }
 
   public static final Discriminator UPDATE_TRADER_STATE_DISCRIMINATOR = toDiscriminator(249, 139, 82, 44, 126, 66, 133, 220);
@@ -1440,6 +2169,94 @@ public final class ExtPhoenixProgram {
     @Override
     public int l() {
       return BYTES;
+    }
+  }
+
+  public static final Discriminator WITHDRAW_NATIVE_SOL_DISCRIMINATOR = toDiscriminator(201, 104, 187, 105, 80, 204, 84, 138);
+
+  /// Withdraws native SOL collateral, or uncounted excess lamports, from a trader to the vault.
+  ///
+  public static List<AccountMeta> withdrawNativeSolKeys(final SolanaAccounts solanaAccounts,
+                                                        final PublicKey glamStateKey,
+                                                        final PublicKey glamVaultKey,
+                                                        final PublicKey glamSignerKey,
+                                                        final PublicKey integrationAuthorityKey,
+                                                        final PublicKey cpiProgramKey,
+                                                        final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWrite(glamVaultKey),
+      createWritableSigner(glamSignerKey),
+      createRead(integrationAuthorityKey),
+      createRead(cpiProgramKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram())
+    );
+  }
+
+  /// Withdraws native SOL collateral, or uncounted excess lamports, from a trader to the vault.
+  ///
+  public static Instruction withdrawNativeSol(final AccountMeta invokedExtPhoenixProgramMeta,
+                                              final SolanaAccounts solanaAccounts,
+                                              final PublicKey glamStateKey,
+                                              final PublicKey glamVaultKey,
+                                              final PublicKey glamSignerKey,
+                                              final PublicKey integrationAuthorityKey,
+                                              final PublicKey cpiProgramKey,
+                                              final PublicKey glamProtocolProgramKey,
+                                              final WithdrawNativeSolAction action) {
+    final var keys = withdrawNativeSolKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamVaultKey,
+      glamSignerKey,
+      integrationAuthorityKey,
+      cpiProgramKey,
+      glamProtocolProgramKey
+    );
+    return withdrawNativeSol(invokedExtPhoenixProgramMeta, keys, action);
+  }
+
+  /// Withdraws native SOL collateral, or uncounted excess lamports, from a trader to the vault.
+  ///
+  public static Instruction withdrawNativeSol(final AccountMeta invokedExtPhoenixProgramMeta,
+                                              final List<AccountMeta> keys,
+                                              final WithdrawNativeSolAction action) {
+    final byte[] _data = new byte[8 + action.l()];
+    int i = WITHDRAW_NATIVE_SOL_DISCRIMINATOR.write(_data, 0);
+    action.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtPhoenixProgramMeta, keys, _data);
+  }
+
+  public record WithdrawNativeSolIxData(Discriminator discriminator, WithdrawNativeSolAction action) implements SerDe {
+
+    public static WithdrawNativeSolIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int ACTION_OFFSET = 8;
+
+    public static WithdrawNativeSolIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var action = WithdrawNativeSolAction.read(_data, i);
+      return new WithdrawNativeSolIxData(discriminator, action);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      i += action.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + action.l();
     }
   }
 

@@ -3,19 +3,22 @@ package systems.glam.sdk.idl.programs.glam.staging.phoenix.gen.types;
 
 import software.sava.idl.clients.core.gen.SerDe;
 
-import static software.sava.core.encoding.ByteUtil.getInt64LE;
-import static software.sava.core.encoding.ByteUtil.putInt64LE;
+import static software.sava.core.encoding.ByteUtil.getInt32LE;
+import static software.sava.core.encoding.ByteUtil.putInt32LE;
 
-/// @param maxPositions: u64
+/// @param maxPositions: u32
+/// @param traderPreferenceBits: u32
 /// @param traderPdaIndex: u8
 /// @param traderSubaccountIndex: u8
 public record RegisterTraderParams(long maxPositions,
+                                   long traderPreferenceBits,
                                    int traderPdaIndex,
                                    int traderSubaccountIndex) implements SerDe {
 
   public static final int BYTES = 10;
 
   public static final int MAX_POSITIONS_OFFSET = 0;
+  public static final int TRADER_PREFERENCE_BITS_OFFSET = 4;
   public static final int TRADER_PDA_INDEX_OFFSET = 8;
   public static final int TRADER_SUBACCOUNT_INDEX_OFFSET = 9;
 
@@ -24,19 +27,26 @@ public record RegisterTraderParams(long maxPositions,
       return null;
     }
     int i = _offset;
-    final var maxPositions = getInt64LE(_data, i);
-    i += 8;
+    final var maxPositions = Integer.toUnsignedLong(getInt32LE(_data, i));
+    i += 4;
+    final var traderPreferenceBits = Integer.toUnsignedLong(getInt32LE(_data, i));
+    i += 4;
     final var traderPdaIndex = _data[i] & 0xFF;
     ++i;
     final var traderSubaccountIndex = _data[i] & 0xFF;
-    return new RegisterTraderParams(maxPositions, traderPdaIndex, traderSubaccountIndex);
+    return new RegisterTraderParams(maxPositions,
+                                    traderPreferenceBits,
+                                    traderPdaIndex,
+                                    traderSubaccountIndex);
   }
 
   @Override
   public int write(final byte[] _data, final int _offset) {
     int i = _offset;
-    putInt64LE(_data, i, maxPositions);
-    i += 8;
+    putInt32LE(_data, i, (int) maxPositions);
+    i += 4;
+    putInt32LE(_data, i, (int) traderPreferenceBits);
+    i += 4;
     _data[i] = (byte) traderPdaIndex;
     ++i;
     _data[i] = (byte) traderSubaccountIndex;

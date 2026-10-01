@@ -7,6 +7,22 @@ nobody took. The standing disagreements live beside this file, at its name with 
 before the extension. Ordered by program and channel, and carrying no timestamp, so
 consecutive runs are worth diffing against each other.
 
-== Movement (0) ==
+== Movement (5) ==
 
-Nothing moved since the last generation.
+GLAM Staging Orca: the metadata IDL at xuV58p3UoHjVGQGzkA3kuRoaBLZVnaKv8NM9LM5rfrh moved since the last generation, 1ea018a3a35e8484ef09485bf6850a4e09eb2a5e79fb573ded5a6cdb88d4c7f5 -> 33699b1f0309fac2cb4405d83185603344127c561fe69d26d962df79982d1fef: instructions ~1
+  instructions changed (1): close_position_with_token_extensions
+
+GLAM Staging Orca: the program was redeployed at slot 452088285, up from 448894934; the stored program image changed: 759504 payload bytes, was 759504 — review required
+
+GLAM Staging Orca: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_orca-staging.json moved since the last generation, d548bf91ee717747e5cf7b7ae6a9e2dbccf90bc7d5ca56014ba1fe8cfc420410 -> df322b3ca80e40a6120074019abe4bcebd29da66d0802535a72cfa56eaa1c504: instructions ~1
+  instructions changed (1): close_position_with_token_extensions
+
+GLAM Staging Phoenix: the metadata IDL at 22diim3gWRQ6xWUCRydriSAY1MwAzuNA5FbQHXpu4VS1 moved since the last generation, ff0714782e81ebdada4ac70b12bd9073bd5b0e3198faa2b2e4778be2d1aefd01 -> 0ce27a8950c4a40472c4619781249c010ed99a551429e028447354bdf2e4fe55: instructions +10 ~1, types +12 -1 ~2, errors +5
+  instructions added (10): cancel_all_plus_conditional, cancel_conditional_order, deposit_native_sol, place_attached_conditional_order, place_limit_order_with_conditionals, place_multi_limit_order_v2, place_position_conditional_order, transfer_native_sol, transfer_native_sol_from_child_to_parent, withdraw_native_sol
+  instructions changed (1): transfer_collateral_child_to_parent
+  types added (12): CancelConditionalOrderInstruction, CondensedOrderFlags, CondensedOrderV2, Direction, MultipleOrderPacketV2, PlaceAttachedConditionalOrderInstruction, PlaceLimitOrderWithConditionalsInstruction, PlacePositionConditionalOrderInstruction, StopLossOrderKind, TransferNativeSolInstruction, TriggerOrderParams, WithdrawNativeSolAction
+  types removed (1): TransferCollateralChildToParentInstruction
+  types changed (2): every one type changed
+  errors added (5): ConditionalExecutionPriceRequired, ConditionalOrdersDisabled, NativeSolDepositNotAccounted, NativeSolNotConserved, TraderPreferenceBitsNotAdmitted
+
+GLAM Staging Phoenix: the program was redeployed at slot 452111266, up from 448888020; the stored program image changed: 549272 payload bytes, was 521096 — review required

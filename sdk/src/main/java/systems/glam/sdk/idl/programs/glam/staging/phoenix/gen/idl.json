@@ -107,6 +107,213 @@
       "args": []
     },
     {
+      "name": "cancel_all_plus_conditional",
+      "docs": [
+        "Cancels every resting order and every conditional order of the trader on the market."
+      ],
+      "discriminator": [
+        142,
+        173,
+        238,
+        126,
+        79,
+        19,
+        53,
+        103
+      ],
+      "accounts": [
+        {
+          "name": "glam_state",
+          "writable": true
+        },
+        {
+          "name": "glam_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "glam_state"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "glam_protocol_program"
+            }
+          }
+        },
+        {
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  116,
+                  101,
+                  103,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "cpi_program",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih"
+        },
+        {
+          "name": "glam_protocol_program",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "cancel_conditional_order",
+      "docs": [
+        "Cancels one or both legs of a conditional order by its index in the trader's collection."
+      ],
+      "discriminator": [
+        82,
+        104,
+        25,
+        51,
+        248,
+        54,
+        66,
+        184
+      ],
+      "accounts": [
+        {
+          "name": "glam_state",
+          "writable": true
+        },
+        {
+          "name": "glam_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "glam_state"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "glam_protocol_program"
+            }
+          }
+        },
+        {
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  116,
+                  101,
+                  103,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "cpi_program",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih"
+        },
+        {
+          "name": "glam_protocol_program",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "CancelConditionalOrderInstruction"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "cancel_orders_by_id",
       "docs": [
         "Cancels specific resting orders by their order IDs."
@@ -564,6 +771,239 @@
       ]
     },
     {
+      "name": "deposit_native_sol",
+      "docs": [
+        "Deposits `lamports` of the vault's SOL into a trader as native SOL collateral: capacity",
+        "for the entry (rent from the signer), the transfer from the vault, then the sync that",
+        "accounts it; the deposit must be accounted in full."
+      ],
+      "discriminator": [
+        16,
+        147,
+        179,
+        138,
+        225,
+        77,
+        137,
+        35
+      ],
+      "accounts": [
+        {
+          "name": "glam_state",
+          "writable": true
+        },
+        {
+          "name": "glam_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "glam_state"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "glam_protocol_program"
+            }
+          }
+        },
+        {
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  116,
+                  101,
+                  103,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "cpi_program",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih"
+        },
+        {
+          "name": "glam_protocol_program",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "log_authority"
+        },
+        {
+          "name": "global_config",
+          "writable": true
+        },
+        {
+          "name": "trader_account",
+          "writable": true
+        },
+        {
+          "name": "global_trader_index",
+          "writable": true
+        },
+        {
+          "name": "active_trader_buffer",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "lamports",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "place_attached_conditional_order",
+      "docs": [
+        "Attaches one or two trigger legs to a resting limit order on the orderbook's market."
+      ],
+      "discriminator": [
+        43,
+        117,
+        136,
+        128,
+        72,
+        150,
+        101,
+        122
+      ],
+      "accounts": [
+        {
+          "name": "glam_state",
+          "writable": true
+        },
+        {
+          "name": "glam_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "glam_state"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "glam_protocol_program"
+            }
+          }
+        },
+        {
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  116,
+                  101,
+                  103,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "cpi_program",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih"
+        },
+        {
+          "name": "glam_protocol_program",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "PlaceAttachedConditionalOrderInstruction"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "place_limit_order",
       "docs": [
         "Places a limit order; the unfilled portion rests on the orderbook."
@@ -666,6 +1106,114 @@
           "type": {
             "defined": {
               "name": "OrderPacket"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "place_limit_order_with_conditionals",
+      "docs": [
+        "Places a limit order and attaches one or two trigger legs to it in one CPI."
+      ],
+      "discriminator": [
+        95,
+        45,
+        68,
+        168,
+        232,
+        218,
+        210,
+        92
+      ],
+      "accounts": [
+        {
+          "name": "glam_state",
+          "writable": true
+        },
+        {
+          "name": "glam_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "glam_state"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "glam_protocol_program"
+            }
+          }
+        },
+        {
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  116,
+                  101,
+                  103,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "cpi_program",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih"
+        },
+        {
+          "name": "glam_protocol_program",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "PlaceLimitOrderWithConditionalsInstruction"
             }
           }
         }
@@ -882,6 +1430,224 @@
           "type": {
             "defined": {
               "name": "MultipleOrderPacket"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "place_multi_limit_order_v2",
+      "docs": [
+        "Places multiple post-only limit orders in one CPI, each with its own slide and",
+        "reduce-only flags, optionally as a scale-order set."
+      ],
+      "discriminator": [
+        64,
+        111,
+        40,
+        210,
+        2,
+        177,
+        38,
+        178
+      ],
+      "accounts": [
+        {
+          "name": "glam_state",
+          "writable": true
+        },
+        {
+          "name": "glam_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "glam_state"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "glam_protocol_program"
+            }
+          }
+        },
+        {
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  116,
+                  101,
+                  103,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "cpi_program",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih"
+        },
+        {
+          "name": "glam_protocol_program",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "packet",
+          "type": {
+            "defined": {
+              "name": "MultipleOrderPacketV2"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "place_position_conditional_order",
+      "docs": [
+        "Places a position conditional order: one or two trigger legs on the orderbook's market,",
+        "each within the policy's trigger band, sized in base lots or as a percent of the position."
+      ],
+      "discriminator": [
+        65,
+        108,
+        83,
+        129,
+        76,
+        193,
+        92,
+        143
+      ],
+      "accounts": [
+        {
+          "name": "glam_state",
+          "writable": true
+        },
+        {
+          "name": "glam_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "glam_state"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "glam_protocol_program"
+            }
+          }
+        },
+        {
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  116,
+                  101,
+                  103,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "cpi_program",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih"
+        },
+        {
+          "name": "glam_protocol_program",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "PlacePositionConditionalOrderInstruction"
             }
           }
         }
@@ -1536,16 +2302,214 @@
           "address": "11111111111111111111111111111111"
         }
       ],
+      "args": []
+    },
+    {
+      "name": "transfer_native_sol",
+      "docs": [
+        "Transfers native SOL collateral between two of the vault's traders."
+      ],
+      "discriminator": [
+        204,
+        65,
+        217,
+        206,
+        56,
+        180,
+        74,
+        252
+      ],
+      "accounts": [
+        {
+          "name": "glam_state",
+          "writable": true
+        },
+        {
+          "name": "glam_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "glam_state"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "glam_protocol_program"
+            }
+          }
+        },
+        {
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  116,
+                  101,
+                  103,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "cpi_program",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih"
+        },
+        {
+          "name": "glam_protocol_program",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
       "args": [
         {
           "name": "params",
           "type": {
             "defined": {
-              "name": "TransferCollateralChildToParentInstruction"
+              "name": "TransferNativeSolInstruction"
             }
           }
         }
       ]
+    },
+    {
+      "name": "transfer_native_sol_from_child_to_parent",
+      "docs": [
+        "Sweeps a flat child trader's native SOL collateral to its parent."
+      ],
+      "discriminator": [
+        90,
+        175,
+        49,
+        106,
+        54,
+        115,
+        8,
+        185
+      ],
+      "accounts": [
+        {
+          "name": "glam_state",
+          "writable": true
+        },
+        {
+          "name": "glam_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "glam_state"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "glam_protocol_program"
+            }
+          }
+        },
+        {
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  116,
+                  101,
+                  103,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "cpi_program",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih"
+        },
+        {
+          "name": "glam_protocol_program",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
     },
     {
       "name": "update_trader_state",
@@ -1886,6 +2850,114 @@
           }
         }
       ]
+    },
+    {
+      "name": "withdraw_native_sol",
+      "docs": [
+        "Withdraws native SOL collateral, or uncounted excess lamports, from a trader to the vault."
+      ],
+      "discriminator": [
+        201,
+        104,
+        187,
+        105,
+        80,
+        204,
+        84,
+        138
+      ],
+      "accounts": [
+        {
+          "name": "glam_state",
+          "writable": true
+        },
+        {
+          "name": "glam_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "glam_state"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "glam_protocol_program"
+            }
+          }
+        },
+        {
+          "name": "glam_signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "integration_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  116,
+                  101,
+                  103,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "cpi_program",
+          "address": "EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih"
+        },
+        {
+          "name": "glam_protocol_program",
+          "address": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "action",
+          "type": {
+            "defined": {
+              "name": "WithdrawNativeSolAction"
+            }
+          }
+        }
+      ]
     }
   ],
   "errors": [
@@ -2038,6 +3110,31 @@
       "code": 6029,
       "name": "OrderTypeNotAllowed",
       "msg": "Phoenix order type is not allowed by policy"
+    },
+    {
+      "code": 6030,
+      "name": "TraderPreferenceBitsNotAdmitted",
+      "msg": "Trader preference bits are not admitted by this program, and no trader was registered. Register the trader with zero preference bits."
+    },
+    {
+      "code": 6031,
+      "name": "ConditionalOrdersDisabled",
+      "msg": "Conditional orders are disabled by Phoenix policy: max_price_deviation_bps is 0"
+    },
+    {
+      "code": 6032,
+      "name": "ConditionalExecutionPriceRequired",
+      "msg": "A conditional order leg needs an explicit nonzero execution price"
+    },
+    {
+      "code": 6033,
+      "name": "NativeSolDepositNotAccounted",
+      "msg": "The deposited native SOL was not accounted as collateral in full"
+    },
+    {
+      "code": 6034,
+      "name": "NativeSolNotConserved",
+      "msg": "Native SOL lamports or accounted collateral did not move as the instruction requires"
     }
   ],
   "types": [
@@ -2109,6 +3206,26 @@
           {
             "name": "inner",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CancelConditionalOrderInstruction",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "index",
+            "type": "u8"
+          },
+          {
+            "name": "disable_first",
+            "type": "bool"
+          },
+          {
+            "name": "disable_second",
+            "type": "bool"
           }
         ]
       }
@@ -2188,6 +3305,46 @@
       }
     },
     {
+      "name": "CondensedOrderFlags",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "flags",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CondensedOrderV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "price_in_ticks",
+            "type": "u64"
+          },
+          {
+            "name": "size_in_base_lots",
+            "type": "u64"
+          },
+          {
+            "name": "last_valid_slot",
+            "type": "u64"
+          },
+          {
+            "name": "flags",
+            "type": {
+              "defined": {
+                "name": "CondensedOrderFlags"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "CreatedModel",
       "type": {
         "kind": "struct",
@@ -2258,6 +3415,20 @@
           {
             "name": "amount",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Direction",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "GreaterThan"
+          },
+          {
+            "name": "LessThan"
           }
         ]
       }
@@ -2778,6 +3949,49 @@
       }
     },
     {
+      "name": "MultipleOrderPacketV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bids",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "CondensedOrderV2"
+                }
+              }
+            }
+          },
+          {
+            "name": "asks",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "CondensedOrderV2"
+                }
+              }
+            }
+          },
+          {
+            "name": "client_order_id",
+            "type": {
+              "option": {
+                "array": [
+                  "u8",
+                  16
+                ]
+              }
+            }
+          },
+          {
+            "name": "scale_set_id",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
       "name": "NodePointer",
       "type": {
         "kind": "struct",
@@ -3256,8 +4470,10 @@
           {
             "name": "max_price_deviation_bps",
             "docs": [
-              "Maximum allowed deviation in basis points. Retained in policy state for",
-              "future enforcement; currently not checked by order placement."
+              "The band a conditional order's execution price may sit from its trigger",
+              "price, in basis points of the trigger, checked on the three conditional",
+              "placements; 0 disables conditional orders. Not an oracle deviation check",
+              "on resting orders."
             ],
             "type": "u16"
           },
@@ -3268,6 +4484,130 @@
               "future enforcement; currently not checked by order placement."
             ],
             "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlaceAttachedConditionalOrderInstruction",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": {
+              "defined": {
+                "name": "FIFOOrderId"
+              }
+            }
+          },
+          {
+            "name": "asset_id",
+            "type": "u32"
+          },
+          {
+            "name": "greater_trigger_order",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "TriggerOrderParams"
+                }
+              }
+            }
+          },
+          {
+            "name": "less_trigger_order",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "TriggerOrderParams"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlaceLimitOrderWithConditionalsInstruction",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_packet",
+            "type": {
+              "defined": {
+                "name": "OrderPacket"
+              }
+            }
+          },
+          {
+            "name": "slot",
+            "type": "u64"
+          },
+          {
+            "name": "greater_trigger_order",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "TriggerOrderParams"
+                }
+              }
+            }
+          },
+          {
+            "name": "less_trigger_order",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "TriggerOrderParams"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlacePositionConditionalOrderInstruction",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "asset_id",
+            "type": "u32"
+          },
+          {
+            "name": "greater_trigger_order",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "TriggerOrderParams"
+                }
+              }
+            }
+          },
+          {
+            "name": "less_trigger_order",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "TriggerOrderParams"
+                }
+              }
+            }
+          },
+          {
+            "name": "size_base_lots",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "size_percent",
+            "type": {
+              "option": "u8"
+            }
           }
         ]
       }
@@ -3384,7 +4724,11 @@
         "fields": [
           {
             "name": "max_positions",
-            "type": "u64"
+            "type": "u32"
+          },
+          {
+            "name": "trader_preference_bits",
+            "type": "u32"
           },
           {
             "name": "trader_pda_index",
@@ -3561,6 +4905,20 @@
       }
     },
     {
+      "name": "StopLossOrderKind",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "IOC"
+          },
+          {
+            "name": "Limit"
+          }
+        ]
+      }
+    },
+    {
       "name": "Ticks",
       "type": {
         "kind": "struct",
@@ -3587,7 +4945,7 @@
       }
     },
     {
-      "name": "TransferCollateralChildToParentInstruction",
+      "name": "TransferCollateralInstruction",
       "type": {
         "kind": "struct",
         "fields": [
@@ -3599,12 +4957,52 @@
       }
     },
     {
-      "name": "TransferCollateralInstruction",
+      "name": "TransferNativeSolInstruction",
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TriggerOrderParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "trigger_direction",
+            "type": {
+              "defined": {
+                "name": "Direction"
+              }
+            }
+          },
+          {
+            "name": "trade_side",
+            "type": {
+              "defined": {
+                "name": "Side"
+              }
+            }
+          },
+          {
+            "name": "order_kind",
+            "type": {
+              "defined": {
+                "name": "StopLossOrderKind"
+              }
+            }
+          },
+          {
+            "name": "trigger_price",
+            "type": "u64"
+          },
+          {
+            "name": "execution_price",
             "type": "u64"
           }
         ]
@@ -3632,6 +5030,35 @@
           {
             "name": "amount",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WithdrawNativeSolAction",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "AllExcess"
+          },
+          {
+            "name": "WithExcess",
+            "fields": [
+              {
+                "name": "amount",
+                "type": "u64"
+              }
+            ]
+          },
+          {
+            "name": "WithoutExcess",
+            "fields": [
+              {
+                "name": "amount",
+                "type": "u64"
+              }
+            ]
           }
         ]
       }

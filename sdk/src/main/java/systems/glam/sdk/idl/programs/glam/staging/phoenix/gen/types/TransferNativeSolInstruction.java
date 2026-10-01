@@ -7,18 +7,18 @@ import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
 
 /// @param amount: u64
-public record TransferCollateralChildToParentInstruction(long amount) implements SerDe {
+public record TransferNativeSolInstruction(long amount) implements SerDe {
 
   public static final int BYTES = 8;
 
   public static final int AMOUNT_OFFSET = 0;
 
-  public static TransferCollateralChildToParentInstruction read(final byte[] _data, final int _offset) {
+  public static TransferNativeSolInstruction read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
     final var amount = getInt64LE(_data, _offset);
-    return new TransferCollateralChildToParentInstruction(amount);
+    return new TransferNativeSolInstruction(amount);
   }
 
   @Override

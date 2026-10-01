@@ -21,8 +21,10 @@ import static software.sava.core.encoding.ByteUtil.putInt32LE;
 /// @param requireReduceOnlyOrders When `true`, every order must have the reduce-only flag set; orders
 ///                                without it are rejected with `ReduceOnlyRequired`. Use this to lock the
 ///                                vault into pure position-unwinding mode.
-/// @param maxPriceDeviationBps: u16 Maximum allowed deviation in basis points. Retained in policy state for
-///                             future enforcement; currently not checked by order placement.
+/// @param maxPriceDeviationBps: u16 The band a conditional order's execution price may sit from its trigger
+///                             price, in basis points of the trigger, checked on the three conditional
+///                             placements; 0 disables conditional orders. Not an oracle deviation check
+///                             on resting orders.
 /// @param maxReferencePriceAgeSecs: u32 Maximum reference price age in seconds. Retained in policy state for
 ///                                 future enforcement; currently not checked by order placement.
 public record PhoenixPolicy(PublicKey[] marketsAllowlist,
