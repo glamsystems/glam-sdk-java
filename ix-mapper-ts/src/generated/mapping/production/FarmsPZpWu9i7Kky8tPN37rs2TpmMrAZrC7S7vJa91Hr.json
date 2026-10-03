@@ -4,7 +4,7 @@
   "program_id": "FarmsPZpWu9i7Kky8tPN37rs2TpmMrAZrC7S7vJa91Hr",
   "proxy_program_id": "G1NTkDEUR3pkEqGCKZtmtmVzCUEdYa86pezHkwYbLyde",
   "provenance": {
-    "generator": "idl-src-gen@e29276e2d5750a60473913ea2e94d14d63d8d818",
+    "generator": "idl-src-gen@0d4b1aac56ea7fabbef891f5382ff6326a1b7df9",
     "source_idl": "glam managed anchor_v1/idls/external/kamino_farms (revision 649915b9c497, idl d8ac1c6584e5)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/ext_kamino (revision c0b702e858e3, idl c57168bbe1f3)",
     "config_revision": 1

@@ -4,7 +4,7 @@
   "program_id": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
   "proxy_program_id": "G1NTsQ36mjPe89HtPYqxKsjY5HmYsDR6CbD2gd2U2pta",
   "provenance": {
-    "generator": "idl-src-gen@e29276e2d5750a60473913ea2e94d14d63d8d818",
+    "generator": "idl-src-gen@0d4b1aac56ea7fabbef891f5382ff6326a1b7df9",
     "source_idl": "glam managed anchor_v1/idls/external/spl_token (revision 3626047321fa, idl 33add106ed36)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/ext_spl (revision 0cc2c7ed4ef6, idl 5ebe2d5d43c5)",
     "config_revision": 1

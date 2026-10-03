@@ -4,7 +4,7 @@
   "program_id": "MarBmsSgKXdrN1egZf5sqe1TMai9K1rChYNDJgjq7aD",
   "proxy_program_id": "gstgmvM2o7h7GcScvXymH1oFgWskukWWxRHC1UJJ9FJ",
   "provenance": {
-    "generator": "idl-src-gen@e29276e2d5750a60473913ea2e94d14d63d8d818",
+    "generator": "idl-src-gen@0d4b1aac56ea7fabbef891f5382ff6326a1b7df9",
     "source_idl": "glam managed anchor_v1/idls/external/marinade_finance (revision e72652d71c74, idl 7da9024f4b6c)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/ext_marinade_staging (revision 112c005abab2, idl 6852b226ed68)",
     "config_revision": 1

@@ -4,7 +4,7 @@
   "program_id": "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD",
   "proxy_program_id": "gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq",
   "provenance": {
-    "generator": "idl-src-gen@e29276e2d5750a60473913ea2e94d14d63d8d818",
+    "generator": "idl-src-gen@0d4b1aac56ea7fabbef891f5382ff6326a1b7df9",
     "source_idl": "glam managed anchor_v1/idls/external/kamino_lending (revision 670fb38d6e10, idl 548daab3b893)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/ext_kamino_staging (revision 1ddb1b5644e6, idl 83125650142b)",
     "config_revision": 1
