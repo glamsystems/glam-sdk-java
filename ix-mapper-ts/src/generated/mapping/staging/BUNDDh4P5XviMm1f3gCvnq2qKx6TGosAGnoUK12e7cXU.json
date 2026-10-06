@@ -4,7 +4,7 @@
   "program_id": "BUNDDh4P5XviMm1f3gCvnq2qKx6TGosAGnoUK12e7cXU",
   "proxy_program_id": "gstgNyHgtURH7iuMn19GQczzv6Wc9fhPV2WDySZVyKx",
   "provenance": {
-    "generator": "idl-src-gen@0d4b1aac56ea7fabbef891f5382ff6326a1b7df9",
+    "generator": "idl-src-gen@7c831ee6c4732a5ee4151346ae6590485919558c",
     "source_idl": "glam managed anchor_v1/idls/external/ntbundle (revision fa1bf207f95e, idl 175030974bb8)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/ext_neutral_staging (revision d51a425cad5a, idl 29118d73ec15)",
     "config_revision": 1

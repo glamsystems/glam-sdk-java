@@ -4,7 +4,7 @@
   "program_id": "1oopBoJG58DgkUVKkEzKgyG9dvRmpgeEm1AVjoHkF78",
   "proxy_program_id": "gstgL6y4uWjsfM3Qjs5euoTDmEcXoUjqx8rkYJhYngG",
   "provenance": {
-    "generator": "idl-src-gen@0d4b1aac56ea7fabbef891f5382ff6326a1b7df9",
+    "generator": "idl-src-gen@7c831ee6c4732a5ee4151346ae6590485919558c",
     "source_idl": "glam managed anchor_v1/idls/external/loopscale (revision bdd5dde55d50, idl 0f36211402c6)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/ext_loopscale_staging (revision e8808e5c2c7c, idl 18270b2bc1ea)",
     "config_revision": 1

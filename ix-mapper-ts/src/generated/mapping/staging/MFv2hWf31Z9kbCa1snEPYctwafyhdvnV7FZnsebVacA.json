@@ -4,7 +4,7 @@
   "program_id": "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA",
   "proxy_program_id": "gstgMghFitRBz2GXKwgpMd7L1JXd1sg59q2v5Y83vSY",
   "provenance": {
-    "generator": "idl-src-gen@0d4b1aac56ea7fabbef891f5382ff6326a1b7df9",
+    "generator": "idl-src-gen@7c831ee6c4732a5ee4151346ae6590485919558c",
     "source_idl": "glam managed anchor_v1/idls/external/marginfi (revision ad35a97f6a80, idl 494f94a4b865)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/ext_marginfi_staging (revision aced07cb2784, idl 926684f449b0)",
     "config_revision": 1

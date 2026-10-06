@@ -4,7 +4,7 @@
   "program_id": "EMBERpYNE6ehWmXymZZS2skiFmCa9V5dp14e1iduM5qy",
   "proxy_program_id": "gstgPL7r9aYedDDsXNtLpr4atYtNvY7zubAWWstqS3L",
   "provenance": {
-    "generator": "idl-src-gen@0d4b1aac56ea7fabbef891f5382ff6326a1b7df9",
+    "generator": "idl-src-gen@7c831ee6c4732a5ee4151346ae6590485919558c",
     "source_idl": "glam managed anchor_v1/idls/external/ember (revision d81b79f21b82, idl 66de90bc15e5)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/ext_phoenix_staging (revision d5e93d5ce0aa, idl a6e825dd564c)",
     "config_revision": 1
