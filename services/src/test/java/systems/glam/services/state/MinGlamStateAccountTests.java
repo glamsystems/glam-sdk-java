@@ -14,6 +14,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Comparator;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -440,6 +441,38 @@ final class MinGlamStateAccountTests {
         STATE_ACCOUNT_KEY, new Context(slot, null), false, 0,
         GlamAccounts.MAIN_NET.protocolProgram(), BigInteger.ZERO, 0, data
     );
+  }
+
+  /// An update reparses a changed external-positions section and must hand it back sorted, as
+  /// the parse does: equality and hashing read the array in that order. The changed set is
+  /// written in descending order so the reparse has something to sort, and the parse of the
+  /// same bytes is the oracle.
+  @Test
+  void anUpdateSortsAChangedExternalPositionsSectionLikeTheParse() {
+    final byte[] data = fixtureData();
+    final var witness = MinGlamStateAccount.createRecord(accountInfo(100L, data));
+    final var positions = witness.externalPositions().clone();
+    assertTrue(positions.length >= 2, "the fixture must carry two external positions");
+    positions[0] = PublicKey.fromBase58Encoded("11111111111111111111111111111111");
+    Arrays.sort(positions, Comparator.reverseOrder());
+    final var ascending = positions.clone();
+    Arrays.sort(ascending);
+    assertFalse(Arrays.equals(ascending, positions), "the written order must need sorting");
+
+    final byte[] update = data.clone();
+    int offset = MinGlamStateAccountMalformedTests.externalPositionsCountOffset(update) + Integer.BYTES;
+    for (final var position : positions) {
+      System.arraycopy(position.toByteArray(), 0, update, offset, PublicKey.PUBLIC_KEY_LENGTH);
+      offset += PublicKey.PUBLIC_KEY_LENGTH;
+    }
+
+    final var changed = witness.createIfChanged(accountInfo(101L, update));
+    assertNotNull(changed);
+    assertArrayEquals(
+        MinGlamStateAccount.createRecord(accountInfo(101L, update)).externalPositions(),
+        changed.externalPositions()
+    );
+    assertArrayEquals(ascending, changed.externalPositions());
   }
 
   /// createIfChanged reparses only the sections whose bytes moved and reuses

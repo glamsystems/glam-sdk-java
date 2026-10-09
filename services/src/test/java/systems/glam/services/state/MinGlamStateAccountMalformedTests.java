@@ -230,7 +230,7 @@ final class MinGlamStateAccountMalformedTests {
     return integrationsCountOffset(data) + SerDeUtil.lenVector(4, stateAccount.integrationAcls());
   }
 
-  private static int externalPositionsCountOffset(final byte[] data) {
+  static int externalPositionsCountOffset(final byte[] data) {
     final var stateAccount = StateAccount.read(data, 0);
     return delegatesCountOffset(data) + SerDeUtil.lenVector(4, stateAccount.delegateAcls());
   }
