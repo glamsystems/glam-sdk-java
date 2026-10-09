@@ -15,10 +15,9 @@
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_exponent-staging.json",
-      "hash": "6bb72ce01356bc26f6bf9e4033f50eecd33be29dff40f976b692e972dd4f0853",
-      "matchesDeployed": false,
-      "file": "vcs.json",
-      "verbatim": "vcs.json"
+      "hash": "e21f5d879c2cc202118cd1a108a09c0f812e9fbc477b941438c3d038a213b2e1",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
     }
   }
 }

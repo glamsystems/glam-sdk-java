@@ -15,10 +15,9 @@
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_marinade-staging.json",
-      "hash": "6352519ef66bbdc6c7dcffb28a95c19bbea38e0f899de0b72a613b782fd6dc71",
-      "matchesDeployed": false,
-      "file": "vcs.json",
-      "verbatim": "vcs.json"
+      "hash": "552c4231973fe6e2a30d5b4b7967d6fa108481ed233921642b66831a4dcc7c2c",
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
     }
   }
 }

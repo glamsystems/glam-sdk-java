@@ -8,7 +8,7 @@ its members and changes only when that membership does, while the volatile count
 versions stay on the console summaries and the movement log. Ordered by program and channel,
 and carrying no timestamp.
 
-== Next gap (17) ==
+== Next gap (15) ==
 
 GLAM Config: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_config.json differs from the deployed idl.json
   instructions added (2): deprecate_asset_meta, update_fee_authority
@@ -19,6 +19,7 @@ GLAM Config: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_config.
   errors changed (2): InvalidGlobalConfig, InvalidParameters
 
 GLAM Marinade: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_marinade.json differs from the deployed idl.json
+  accounts removed (1): StateAccount
   types changed (2): AccountType, EngineFieldName
 
 GLAM Mint: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_mint.json differs from the deployed idl.json
@@ -37,9 +38,6 @@ GLAM Protocol: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_proto
 GLAM Staging Bridge: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_bridge-staging.json differs from the deployed idl.json
   accounts added (1): StateAccount
 
-GLAM Staging Exponent: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_exponent-staging.json differs from the deployed idl.json
-  accounts added (1): StateAccount
-
 GLAM Staging Jupiter: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_jupiter-staging.json differs from the deployed idl.json
   instructions removed (2): price_jupiter_borrow_positions, price_jupiter_earn_positions
   accounts added (1): StateAccount
@@ -50,9 +48,6 @@ GLAM Staging Loopscale: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/e
 
 GLAM Staging MarginFi: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_marginfi-staging.json differs from the deployed idl.json
   instructions removed (1): price_marginfi_accounts
-  accounts added (1): StateAccount
-
-GLAM Staging Marinade: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_marinade-staging.json differs from the deployed idl.json
   accounts added (1): StateAccount
 
 GLAM Staging Mint: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_mint-staging.json differs from the deployed idl.json
@@ -83,4 +78,4 @@ GLAM Staging Registered Positions: the vcs IDL at github:glamsystems/glam-sdk-ts
   accounts added (1): StateAccount
 
 GLAM Staging Stake Pool: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_stake_pool-staging.json differs from the deployed idl.json
-  accounts added (1): StateAccount
+  errors added (1): MinimumOutputNotMet

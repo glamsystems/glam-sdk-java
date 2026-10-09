@@ -7,10 +7,8 @@ import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.core.gen.SerDe;
-import software.sava.idl.clients.core.gen.SerDeUtil;
 
 import java.util.List;
-import java.util.OptionalLong;
 
 import static software.sava.core.accounts.meta.AccountMeta.createRead;
 import static software.sava.core.accounts.meta.AccountMeta.createWritableSigner;
@@ -22,22 +20,23 @@ import static software.sava.core.programs.Discriminator.toDiscriminator;
 
 public final class ExtStakePoolProgram {
 
-  public static final Discriminator DEPOSIT_SOL_DISCRIMINATOR = toDiscriminator(108, 81, 78, 117, 125, 155, 56, 200);
+  public static final Discriminator DEPOSIT_SOL_WITH_SLIPPAGE_DISCRIMINATOR = toDiscriminator(183, 44, 178, 14, 3, 63, 244, 231);
 
-  public static List<AccountMeta> depositSolKeys(final SolanaAccounts solanaAccounts,
-                                                 final PublicKey glamStateKey,
-                                                 final PublicKey glamVaultKey,
-                                                 final PublicKey glamSignerKey,
-                                                 final PublicKey integrationAuthorityKey,
-                                                 final PublicKey cpiProgramKey,
-                                                 final PublicKey glamProtocolProgramKey,
-                                                 final PublicKey stakePoolKey,
-                                                 final PublicKey stakePoolWithdrawAuthorityKey,
-                                                 final PublicKey reserveStakeKey,
-                                                 final PublicKey poolTokensToKey,
-                                                 final PublicKey feeAccountKey,
-                                                 final PublicKey poolMintKey,
-                                                 final PublicKey tokenProgramKey) {
+  public static List<AccountMeta> depositSolWithSlippageKeys(final SolanaAccounts solanaAccounts,
+                                                             final PublicKey glamStateKey,
+                                                             final PublicKey glamVaultKey,
+                                                             final PublicKey glamSignerKey,
+                                                             final PublicKey integrationAuthorityKey,
+                                                             final PublicKey cpiProgramKey,
+                                                             final PublicKey glamProtocolProgramKey,
+                                                             final PublicKey stakePoolKey,
+                                                             final PublicKey stakePoolWithdrawAuthorityKey,
+                                                             final PublicKey reserveStakeKey,
+                                                             final PublicKey destinationPoolAccountKey,
+                                                             final PublicKey managerFeeAccountKey,
+                                                             final PublicKey referralPoolAccountKey,
+                                                             final PublicKey poolMintKey,
+                                                             final PublicKey tokenProgramKey) {
     return List.of(
       createWrite(glamStateKey),
       createWrite(glamVaultKey),
@@ -49,33 +48,35 @@ public final class ExtStakePoolProgram {
       createWrite(stakePoolKey),
       createRead(stakePoolWithdrawAuthorityKey),
       createWrite(reserveStakeKey),
-      createWrite(poolTokensToKey),
-      createWrite(feeAccountKey),
+      createWrite(destinationPoolAccountKey),
+      createWrite(managerFeeAccountKey),
+      createWrite(referralPoolAccountKey),
       createWrite(poolMintKey),
       createRead(tokenProgramKey)
     );
   }
 
   /// @param lamportsIn: u64
-  /// @param minimumPoolTokensOut: Option<u64>
-  public static Instruction depositSol(final AccountMeta invokedExtStakePoolProgramMeta,
-                                       final SolanaAccounts solanaAccounts,
-                                       final PublicKey glamStateKey,
-                                       final PublicKey glamVaultKey,
-                                       final PublicKey glamSignerKey,
-                                       final PublicKey integrationAuthorityKey,
-                                       final PublicKey cpiProgramKey,
-                                       final PublicKey glamProtocolProgramKey,
-                                       final PublicKey stakePoolKey,
-                                       final PublicKey stakePoolWithdrawAuthorityKey,
-                                       final PublicKey reserveStakeKey,
-                                       final PublicKey poolTokensToKey,
-                                       final PublicKey feeAccountKey,
-                                       final PublicKey poolMintKey,
-                                       final PublicKey tokenProgramKey,
-                                       final long lamportsIn,
-                                       final OptionalLong minimumPoolTokensOut) {
-    final var keys = depositSolKeys(
+  /// @param minimumPoolTokensOut: u64
+  public static Instruction depositSolWithSlippage(final AccountMeta invokedExtStakePoolProgramMeta,
+                                                   final SolanaAccounts solanaAccounts,
+                                                   final PublicKey glamStateKey,
+                                                   final PublicKey glamVaultKey,
+                                                   final PublicKey glamSignerKey,
+                                                   final PublicKey integrationAuthorityKey,
+                                                   final PublicKey cpiProgramKey,
+                                                   final PublicKey glamProtocolProgramKey,
+                                                   final PublicKey stakePoolKey,
+                                                   final PublicKey stakePoolWithdrawAuthorityKey,
+                                                   final PublicKey reserveStakeKey,
+                                                   final PublicKey destinationPoolAccountKey,
+                                                   final PublicKey managerFeeAccountKey,
+                                                   final PublicKey referralPoolAccountKey,
+                                                   final PublicKey poolMintKey,
+                                                   final PublicKey tokenProgramKey,
+                                                   final long lamportsIn,
+                                                   final long minimumPoolTokensOut) {
+    final var keys = depositSolWithSlippageKeys(
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -86,44 +87,44 @@ public final class ExtStakePoolProgram {
       stakePoolKey,
       stakePoolWithdrawAuthorityKey,
       reserveStakeKey,
-      poolTokensToKey,
-      feeAccountKey,
+      destinationPoolAccountKey,
+      managerFeeAccountKey,
+      referralPoolAccountKey,
       poolMintKey,
       tokenProgramKey
     );
-    return depositSol(invokedExtStakePoolProgramMeta, keys, lamportsIn, minimumPoolTokensOut);
+    return depositSolWithSlippage(invokedExtStakePoolProgramMeta, keys, lamportsIn, minimumPoolTokensOut);
   }
 
   /// @param lamportsIn: u64
-  /// @param minimumPoolTokensOut: Option<u64>
-  public static Instruction depositSol(final AccountMeta invokedExtStakePoolProgramMeta,
-                                       final List<AccountMeta> keys,
-                                       final long lamportsIn,
-                                       final OptionalLong minimumPoolTokensOut) {
-    final byte[] _data = new byte[
-    16
-    + (minimumPoolTokensOut == null || minimumPoolTokensOut.isEmpty() ? 1 : 9)
-    ];
-    int i = DEPOSIT_SOL_DISCRIMINATOR.write(_data, 0);
+  /// @param minimumPoolTokensOut: u64
+  public static Instruction depositSolWithSlippage(final AccountMeta invokedExtStakePoolProgramMeta,
+                                                   final List<AccountMeta> keys,
+                                                   final long lamportsIn,
+                                                   final long minimumPoolTokensOut) {
+    final byte[] _data = new byte[24];
+    int i = DEPOSIT_SOL_WITH_SLIPPAGE_DISCRIMINATOR.write(_data, 0);
     putInt64LE(_data, i, lamportsIn);
     i += 8;
-    SerDeUtil.writeOptional(1, minimumPoolTokensOut, _data, i);
+    putInt64LE(_data, i, minimumPoolTokensOut);
 
     return Instruction.createInstruction(invokedExtStakePoolProgramMeta, keys, _data);
   }
 
   /// @param lamportsIn: u64
-  /// @param minimumPoolTokensOut: Option<u64>
-  public record DepositSolIxData(Discriminator discriminator, long lamportsIn, OptionalLong minimumPoolTokensOut) implements SerDe {
+  /// @param minimumPoolTokensOut: u64
+  public record DepositSolWithSlippageIxData(Discriminator discriminator, long lamportsIn, long minimumPoolTokensOut) implements SerDe {
 
-    public static DepositSolIxData read(final Instruction instruction) {
+    public static DepositSolWithSlippageIxData read(final Instruction instruction) {
       return read(instruction.copyData(), 0);
     }
 
-    public static final int LAMPORTS_IN_OFFSET = 8;
-    public static final int MINIMUM_POOL_TOKENS_OUT_OFFSET = 17;
+    public static final int BYTES = 24;
 
-    public static DepositSolIxData read(final byte[] _data, final int _offset) {
+    public static final int LAMPORTS_IN_OFFSET = 8;
+    public static final int MINIMUM_POOL_TOKENS_OUT_OFFSET = 16;
+
+    public static DepositSolWithSlippageIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
@@ -131,14 +132,8 @@ public final class ExtStakePoolProgram {
       int i = _offset + discriminator.length();
       final var lamportsIn = getInt64LE(_data, i);
       i += 8;
-      final OptionalLong minimumPoolTokensOut;
-      if (SerDeUtil.isAbsent(1, _data, i)) {
-        minimumPoolTokensOut = OptionalLong.empty();
-      } else {
-        ++i;
-        minimumPoolTokensOut = OptionalLong.of(getInt64LE(_data, i));
-      }
-      return new DepositSolIxData(discriminator, lamportsIn, minimumPoolTokensOut);
+      final var minimumPoolTokensOut = getInt64LE(_data, i);
+      return new DepositSolWithSlippageIxData(discriminator, lamportsIn, minimumPoolTokensOut);
     }
 
     @Override
@@ -146,36 +141,38 @@ public final class ExtStakePoolProgram {
       int i = _offset + discriminator.write(_data, _offset);
       putInt64LE(_data, i, lamportsIn);
       i += 8;
-      i += SerDeUtil.writeOptional(1, minimumPoolTokensOut, _data, i);
+      putInt64LE(_data, i, minimumPoolTokensOut);
+      i += 8;
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + 8 + (minimumPoolTokensOut == null || minimumPoolTokensOut.isEmpty() ? 1 : (1 + 8));
+      return BYTES;
     }
   }
 
-  public static final Discriminator DEPOSIT_STAKE_DISCRIMINATOR = toDiscriminator(160, 167, 9, 220, 74, 243, 228, 43);
+  public static final Discriminator DEPOSIT_STAKE_WITH_SLIPPAGE_DISCRIMINATOR = toDiscriminator(62, 201, 43, 176, 84, 126, 81, 46);
 
-  public static List<AccountMeta> depositStakeKeys(final SolanaAccounts solanaAccounts,
-                                                   final PublicKey glamStateKey,
-                                                   final PublicKey glamVaultKey,
-                                                   final PublicKey glamSignerKey,
-                                                   final PublicKey integrationAuthorityKey,
-                                                   final PublicKey cpiProgramKey,
-                                                   final PublicKey glamProtocolProgramKey,
-                                                   final PublicKey stakePoolKey,
-                                                   final PublicKey validatorListKey,
-                                                   final PublicKey stakePoolDepositAuthorityKey,
-                                                   final PublicKey stakePoolWithdrawAuthorityKey,
-                                                   final PublicKey depositStakeKey,
-                                                   final PublicKey validatorStakeAccountKey,
-                                                   final PublicKey reserveStakeAccountKey,
-                                                   final PublicKey poolTokensToKey,
-                                                   final PublicKey feeAccountKey,
-                                                   final PublicKey poolMintKey,
-                                                   final PublicKey tokenProgramKey) {
+  public static List<AccountMeta> depositStakeWithSlippageKeys(final SolanaAccounts solanaAccounts,
+                                                               final PublicKey glamStateKey,
+                                                               final PublicKey glamVaultKey,
+                                                               final PublicKey glamSignerKey,
+                                                               final PublicKey integrationAuthorityKey,
+                                                               final PublicKey cpiProgramKey,
+                                                               final PublicKey glamProtocolProgramKey,
+                                                               final PublicKey stakePoolKey,
+                                                               final PublicKey validatorListKey,
+                                                               final PublicKey depositAuthorityKey,
+                                                               final PublicKey stakePoolWithdrawAuthorityKey,
+                                                               final PublicKey depositStakeAccountKey,
+                                                               final PublicKey validatorStakeAccountKey,
+                                                               final PublicKey reserveStakeKey,
+                                                               final PublicKey destinationPoolAccountKey,
+                                                               final PublicKey managerFeeAccountKey,
+                                                               final PublicKey referralPoolAccountKey,
+                                                               final PublicKey poolMintKey,
+                                                               final PublicKey tokenProgramKey) {
     return List.of(
       createWrite(glamStateKey),
       createWrite(glamVaultKey),
@@ -186,13 +183,14 @@ public final class ExtStakePoolProgram {
       createRead(solanaAccounts.systemProgram()),
       createWrite(stakePoolKey),
       createWrite(validatorListKey),
-      createRead(stakePoolDepositAuthorityKey),
+      createRead(depositAuthorityKey),
       createRead(stakePoolWithdrawAuthorityKey),
-      createWrite(depositStakeKey),
+      createWrite(depositStakeAccountKey),
       createWrite(validatorStakeAccountKey),
-      createWrite(reserveStakeAccountKey),
-      createWrite(poolTokensToKey),
-      createWrite(feeAccountKey),
+      createWrite(reserveStakeKey),
+      createWrite(destinationPoolAccountKey),
+      createWrite(managerFeeAccountKey),
+      createWrite(referralPoolAccountKey),
       createWrite(poolMintKey),
       createRead(solanaAccounts.clockSysVar()),
       createRead(solanaAccounts.stakeHistorySysVar()),
@@ -201,28 +199,29 @@ public final class ExtStakePoolProgram {
     );
   }
 
-  /// @param minimumPoolTokensOut: Option<u64>
-  public static Instruction depositStake(final AccountMeta invokedExtStakePoolProgramMeta,
-                                         final SolanaAccounts solanaAccounts,
-                                         final PublicKey glamStateKey,
-                                         final PublicKey glamVaultKey,
-                                         final PublicKey glamSignerKey,
-                                         final PublicKey integrationAuthorityKey,
-                                         final PublicKey cpiProgramKey,
-                                         final PublicKey glamProtocolProgramKey,
-                                         final PublicKey stakePoolKey,
-                                         final PublicKey validatorListKey,
-                                         final PublicKey stakePoolDepositAuthorityKey,
-                                         final PublicKey stakePoolWithdrawAuthorityKey,
-                                         final PublicKey depositStakeKey,
-                                         final PublicKey validatorStakeAccountKey,
-                                         final PublicKey reserveStakeAccountKey,
-                                         final PublicKey poolTokensToKey,
-                                         final PublicKey feeAccountKey,
-                                         final PublicKey poolMintKey,
-                                         final PublicKey tokenProgramKey,
-                                         final OptionalLong minimumPoolTokensOut) {
-    final var keys = depositStakeKeys(
+  /// @param minimumPoolTokensOut: u64
+  public static Instruction depositStakeWithSlippage(final AccountMeta invokedExtStakePoolProgramMeta,
+                                                     final SolanaAccounts solanaAccounts,
+                                                     final PublicKey glamStateKey,
+                                                     final PublicKey glamVaultKey,
+                                                     final PublicKey glamSignerKey,
+                                                     final PublicKey integrationAuthorityKey,
+                                                     final PublicKey cpiProgramKey,
+                                                     final PublicKey glamProtocolProgramKey,
+                                                     final PublicKey stakePoolKey,
+                                                     final PublicKey validatorListKey,
+                                                     final PublicKey depositAuthorityKey,
+                                                     final PublicKey stakePoolWithdrawAuthorityKey,
+                                                     final PublicKey depositStakeAccountKey,
+                                                     final PublicKey validatorStakeAccountKey,
+                                                     final PublicKey reserveStakeKey,
+                                                     final PublicKey destinationPoolAccountKey,
+                                                     final PublicKey managerFeeAccountKey,
+                                                     final PublicKey referralPoolAccountKey,
+                                                     final PublicKey poolMintKey,
+                                                     final PublicKey tokenProgramKey,
+                                                     final long minimumPoolTokensOut) {
+    final var keys = depositStakeWithSlippageKeys(
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -232,87 +231,83 @@ public final class ExtStakePoolProgram {
       glamProtocolProgramKey,
       stakePoolKey,
       validatorListKey,
-      stakePoolDepositAuthorityKey,
+      depositAuthorityKey,
       stakePoolWithdrawAuthorityKey,
-      depositStakeKey,
+      depositStakeAccountKey,
       validatorStakeAccountKey,
-      reserveStakeAccountKey,
-      poolTokensToKey,
-      feeAccountKey,
+      reserveStakeKey,
+      destinationPoolAccountKey,
+      managerFeeAccountKey,
+      referralPoolAccountKey,
       poolMintKey,
       tokenProgramKey
     );
-    return depositStake(invokedExtStakePoolProgramMeta, keys, minimumPoolTokensOut);
+    return depositStakeWithSlippage(invokedExtStakePoolProgramMeta, keys, minimumPoolTokensOut);
   }
 
-  /// @param minimumPoolTokensOut: Option<u64>
-  public static Instruction depositStake(final AccountMeta invokedExtStakePoolProgramMeta,
-                                         final List<AccountMeta> keys,
-                                         final OptionalLong minimumPoolTokensOut) {
-    final byte[] _data = new byte[
-    8
-    + (minimumPoolTokensOut == null || minimumPoolTokensOut.isEmpty() ? 1 : 9)
-    ];
-    int i = DEPOSIT_STAKE_DISCRIMINATOR.write(_data, 0);
-    SerDeUtil.writeOptional(1, minimumPoolTokensOut, _data, i);
+  /// @param minimumPoolTokensOut: u64
+  public static Instruction depositStakeWithSlippage(final AccountMeta invokedExtStakePoolProgramMeta,
+                                                     final List<AccountMeta> keys,
+                                                     final long minimumPoolTokensOut) {
+    final byte[] _data = new byte[16];
+    int i = DEPOSIT_STAKE_WITH_SLIPPAGE_DISCRIMINATOR.write(_data, 0);
+    putInt64LE(_data, i, minimumPoolTokensOut);
 
     return Instruction.createInstruction(invokedExtStakePoolProgramMeta, keys, _data);
   }
 
-  /// @param minimumPoolTokensOut: Option<u64>
-  public record DepositStakeIxData(Discriminator discriminator, OptionalLong minimumPoolTokensOut) implements SerDe {
+  /// @param minimumPoolTokensOut: u64
+  public record DepositStakeWithSlippageIxData(Discriminator discriminator, long minimumPoolTokensOut) implements SerDe {
 
-    public static DepositStakeIxData read(final Instruction instruction) {
+    public static DepositStakeWithSlippageIxData read(final Instruction instruction) {
       return read(instruction.copyData(), 0);
     }
 
-    public static final int MINIMUM_POOL_TOKENS_OUT_OFFSET = 9;
+    public static final int BYTES = 16;
 
-    public static DepositStakeIxData read(final byte[] _data, final int _offset) {
+    public static final int MINIMUM_POOL_TOKENS_OUT_OFFSET = 8;
+
+    public static DepositStakeWithSlippageIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final OptionalLong minimumPoolTokensOut;
-      if (SerDeUtil.isAbsent(1, _data, i)) {
-        minimumPoolTokensOut = OptionalLong.empty();
-      } else {
-        ++i;
-        minimumPoolTokensOut = OptionalLong.of(getInt64LE(_data, i));
-      }
-      return new DepositStakeIxData(discriminator, minimumPoolTokensOut);
+      final var minimumPoolTokensOut = getInt64LE(_data, i);
+      return new DepositStakeWithSlippageIxData(discriminator, minimumPoolTokensOut);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += SerDeUtil.writeOptional(1, minimumPoolTokensOut, _data, i);
+      putInt64LE(_data, i, minimumPoolTokensOut);
+      i += 8;
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + (minimumPoolTokensOut == null || minimumPoolTokensOut.isEmpty() ? 1 : (1 + 8));
+      return BYTES;
     }
   }
 
-  public static final Discriminator WITHDRAW_SOL_DISCRIMINATOR = toDiscriminator(145, 131, 74, 136, 65, 137, 42, 38);
+  public static final Discriminator WITHDRAW_SOL_WITH_SLIPPAGE_DISCRIMINATOR = toDiscriminator(75, 134, 131, 4, 227, 55, 242, 84);
 
-  public static List<AccountMeta> withdrawSolKeys(final SolanaAccounts solanaAccounts,
-                                                  final PublicKey glamStateKey,
-                                                  final PublicKey glamVaultKey,
-                                                  final PublicKey glamSignerKey,
-                                                  final PublicKey integrationAuthorityKey,
-                                                  final PublicKey cpiProgramKey,
-                                                  final PublicKey glamProtocolProgramKey,
-                                                  final PublicKey stakePoolKey,
-                                                  final PublicKey stakePoolWithdrawAuthorityKey,
-                                                  final PublicKey poolTokensFromKey,
-                                                  final PublicKey reserveStakeKey,
-                                                  final PublicKey feeAccountKey,
-                                                  final PublicKey poolMintKey,
-                                                  final PublicKey tokenProgramKey) {
+  public static List<AccountMeta> withdrawSolWithSlippageKeys(final SolanaAccounts solanaAccounts,
+                                                              final PublicKey glamStateKey,
+                                                              final PublicKey glamVaultKey,
+                                                              final PublicKey glamSignerKey,
+                                                              final PublicKey integrationAuthorityKey,
+                                                              final PublicKey cpiProgramKey,
+                                                              final PublicKey glamProtocolProgramKey,
+                                                              final PublicKey stakePoolKey,
+                                                              final PublicKey stakePoolWithdrawAuthorityKey,
+                                                              final PublicKey sourcePoolAccountKey,
+                                                              final PublicKey reserveStakeKey,
+                                                              final PublicKey destinationSystemAccountKey,
+                                                              final PublicKey managerFeeAccountKey,
+                                                              final PublicKey poolMintKey,
+                                                              final PublicKey tokenProgramKey) {
     return List.of(
       createWrite(glamStateKey),
       createWrite(glamVaultKey),
@@ -323,9 +318,10 @@ public final class ExtStakePoolProgram {
       createRead(solanaAccounts.systemProgram()),
       createWrite(stakePoolKey),
       createRead(stakePoolWithdrawAuthorityKey),
-      createWrite(poolTokensFromKey),
+      createWrite(sourcePoolAccountKey),
       createWrite(reserveStakeKey),
-      createWrite(feeAccountKey),
+      createWrite(destinationSystemAccountKey),
+      createWrite(managerFeeAccountKey),
       createWrite(poolMintKey),
       createRead(solanaAccounts.clockSysVar()),
       createRead(solanaAccounts.stakeHistorySysVar()),
@@ -335,25 +331,26 @@ public final class ExtStakePoolProgram {
   }
 
   /// @param poolTokensIn: u64
-  /// @param minimumLamportsOut: Option<u64>
-  public static Instruction withdrawSol(final AccountMeta invokedExtStakePoolProgramMeta,
-                                        final SolanaAccounts solanaAccounts,
-                                        final PublicKey glamStateKey,
-                                        final PublicKey glamVaultKey,
-                                        final PublicKey glamSignerKey,
-                                        final PublicKey integrationAuthorityKey,
-                                        final PublicKey cpiProgramKey,
-                                        final PublicKey glamProtocolProgramKey,
-                                        final PublicKey stakePoolKey,
-                                        final PublicKey stakePoolWithdrawAuthorityKey,
-                                        final PublicKey poolTokensFromKey,
-                                        final PublicKey reserveStakeKey,
-                                        final PublicKey feeAccountKey,
-                                        final PublicKey poolMintKey,
-                                        final PublicKey tokenProgramKey,
-                                        final long poolTokensIn,
-                                        final OptionalLong minimumLamportsOut) {
-    final var keys = withdrawSolKeys(
+  /// @param minimumLamportsOut: u64
+  public static Instruction withdrawSolWithSlippage(final AccountMeta invokedExtStakePoolProgramMeta,
+                                                    final SolanaAccounts solanaAccounts,
+                                                    final PublicKey glamStateKey,
+                                                    final PublicKey glamVaultKey,
+                                                    final PublicKey glamSignerKey,
+                                                    final PublicKey integrationAuthorityKey,
+                                                    final PublicKey cpiProgramKey,
+                                                    final PublicKey glamProtocolProgramKey,
+                                                    final PublicKey stakePoolKey,
+                                                    final PublicKey stakePoolWithdrawAuthorityKey,
+                                                    final PublicKey sourcePoolAccountKey,
+                                                    final PublicKey reserveStakeKey,
+                                                    final PublicKey destinationSystemAccountKey,
+                                                    final PublicKey managerFeeAccountKey,
+                                                    final PublicKey poolMintKey,
+                                                    final PublicKey tokenProgramKey,
+                                                    final long poolTokensIn,
+                                                    final long minimumLamportsOut) {
+    final var keys = withdrawSolWithSlippageKeys(
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -363,45 +360,45 @@ public final class ExtStakePoolProgram {
       glamProtocolProgramKey,
       stakePoolKey,
       stakePoolWithdrawAuthorityKey,
-      poolTokensFromKey,
+      sourcePoolAccountKey,
       reserveStakeKey,
-      feeAccountKey,
+      destinationSystemAccountKey,
+      managerFeeAccountKey,
       poolMintKey,
       tokenProgramKey
     );
-    return withdrawSol(invokedExtStakePoolProgramMeta, keys, poolTokensIn, minimumLamportsOut);
+    return withdrawSolWithSlippage(invokedExtStakePoolProgramMeta, keys, poolTokensIn, minimumLamportsOut);
   }
 
   /// @param poolTokensIn: u64
-  /// @param minimumLamportsOut: Option<u64>
-  public static Instruction withdrawSol(final AccountMeta invokedExtStakePoolProgramMeta,
-                                        final List<AccountMeta> keys,
-                                        final long poolTokensIn,
-                                        final OptionalLong minimumLamportsOut) {
-    final byte[] _data = new byte[
-    16
-    + (minimumLamportsOut == null || minimumLamportsOut.isEmpty() ? 1 : 9)
-    ];
-    int i = WITHDRAW_SOL_DISCRIMINATOR.write(_data, 0);
+  /// @param minimumLamportsOut: u64
+  public static Instruction withdrawSolWithSlippage(final AccountMeta invokedExtStakePoolProgramMeta,
+                                                    final List<AccountMeta> keys,
+                                                    final long poolTokensIn,
+                                                    final long minimumLamportsOut) {
+    final byte[] _data = new byte[24];
+    int i = WITHDRAW_SOL_WITH_SLIPPAGE_DISCRIMINATOR.write(_data, 0);
     putInt64LE(_data, i, poolTokensIn);
     i += 8;
-    SerDeUtil.writeOptional(1, minimumLamportsOut, _data, i);
+    putInt64LE(_data, i, minimumLamportsOut);
 
     return Instruction.createInstruction(invokedExtStakePoolProgramMeta, keys, _data);
   }
 
   /// @param poolTokensIn: u64
-  /// @param minimumLamportsOut: Option<u64>
-  public record WithdrawSolIxData(Discriminator discriminator, long poolTokensIn, OptionalLong minimumLamportsOut) implements SerDe {
+  /// @param minimumLamportsOut: u64
+  public record WithdrawSolWithSlippageIxData(Discriminator discriminator, long poolTokensIn, long minimumLamportsOut) implements SerDe {
 
-    public static WithdrawSolIxData read(final Instruction instruction) {
+    public static WithdrawSolWithSlippageIxData read(final Instruction instruction) {
       return read(instruction.copyData(), 0);
     }
 
-    public static final int POOL_TOKENS_IN_OFFSET = 8;
-    public static final int MINIMUM_LAMPORTS_OUT_OFFSET = 17;
+    public static final int BYTES = 24;
 
-    public static WithdrawSolIxData read(final byte[] _data, final int _offset) {
+    public static final int POOL_TOKENS_IN_OFFSET = 8;
+    public static final int MINIMUM_LAMPORTS_OUT_OFFSET = 16;
+
+    public static WithdrawSolWithSlippageIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
@@ -409,14 +406,8 @@ public final class ExtStakePoolProgram {
       int i = _offset + discriminator.length();
       final var poolTokensIn = getInt64LE(_data, i);
       i += 8;
-      final OptionalLong minimumLamportsOut;
-      if (SerDeUtil.isAbsent(1, _data, i)) {
-        minimumLamportsOut = OptionalLong.empty();
-      } else {
-        ++i;
-        minimumLamportsOut = OptionalLong.of(getInt64LE(_data, i));
-      }
-      return new WithdrawSolIxData(discriminator, poolTokensIn, minimumLamportsOut);
+      final var minimumLamportsOut = getInt64LE(_data, i);
+      return new WithdrawSolWithSlippageIxData(discriminator, poolTokensIn, minimumLamportsOut);
     }
 
     @Override
@@ -424,34 +415,36 @@ public final class ExtStakePoolProgram {
       int i = _offset + discriminator.write(_data, _offset);
       putInt64LE(_data, i, poolTokensIn);
       i += 8;
-      i += SerDeUtil.writeOptional(1, minimumLamportsOut, _data, i);
+      putInt64LE(_data, i, minimumLamportsOut);
+      i += 8;
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + 8 + (minimumLamportsOut == null || minimumLamportsOut.isEmpty() ? 1 : (1 + 8));
+      return BYTES;
     }
   }
 
-  public static final Discriminator WITHDRAW_STAKE_DISCRIMINATOR = toDiscriminator(153, 8, 22, 138, 105, 176, 87, 66);
+  public static final Discriminator WITHDRAW_STAKE_WITH_SLIPPAGE_DISCRIMINATOR = toDiscriminator(146, 251, 51, 49, 110, 80, 27, 0);
 
-  public static List<AccountMeta> withdrawStakeKeys(final SolanaAccounts solanaAccounts,
-                                                    final PublicKey glamStateKey,
-                                                    final PublicKey glamVaultKey,
-                                                    final PublicKey glamSignerKey,
-                                                    final PublicKey integrationAuthorityKey,
-                                                    final PublicKey cpiProgramKey,
-                                                    final PublicKey glamProtocolProgramKey,
-                                                    final PublicKey stakePoolKey,
-                                                    final PublicKey validatorListKey,
-                                                    final PublicKey stakePoolWithdrawAuthorityKey,
-                                                    final PublicKey validatorStakeAccountKey,
-                                                    final PublicKey stakeKey,
-                                                    final PublicKey poolTokensFromKey,
-                                                    final PublicKey feeAccountKey,
-                                                    final PublicKey poolMintKey,
-                                                    final PublicKey tokenProgramKey) {
+  public static List<AccountMeta> withdrawStakeWithSlippageKeys(final SolanaAccounts solanaAccounts,
+                                                                final PublicKey glamStateKey,
+                                                                final PublicKey glamVaultKey,
+                                                                final PublicKey glamSignerKey,
+                                                                final PublicKey integrationAuthorityKey,
+                                                                final PublicKey cpiProgramKey,
+                                                                final PublicKey glamProtocolProgramKey,
+                                                                final PublicKey stakePoolKey,
+                                                                final PublicKey validatorListKey,
+                                                                final PublicKey stakePoolWithdrawAuthorityKey,
+                                                                final PublicKey splitStakeSourceKey,
+                                                                final PublicKey destinationStakeAccountKey,
+                                                                final PublicKey destinationStakeAuthorityKey,
+                                                                final PublicKey sourcePoolAccountKey,
+                                                                final PublicKey managerFeeAccountKey,
+                                                                final PublicKey poolMintKey,
+                                                                final PublicKey tokenProgramKey) {
     return List.of(
       createWrite(glamStateKey),
       createWrite(glamVaultKey),
@@ -463,10 +456,11 @@ public final class ExtStakePoolProgram {
       createWrite(stakePoolKey),
       createWrite(validatorListKey),
       createRead(stakePoolWithdrawAuthorityKey),
-      createWrite(validatorStakeAccountKey),
-      createWrite(stakeKey),
-      createWrite(poolTokensFromKey),
-      createWrite(feeAccountKey),
+      createWrite(splitStakeSourceKey),
+      createWrite(destinationStakeAccountKey),
+      createRead(destinationStakeAuthorityKey),
+      createWrite(sourcePoolAccountKey),
+      createWrite(managerFeeAccountKey),
       createWrite(poolMintKey),
       createRead(solanaAccounts.clockSysVar()),
       createRead(tokenProgramKey),
@@ -475,27 +469,28 @@ public final class ExtStakePoolProgram {
   }
 
   /// @param poolTokensIn: u64
-  /// @param minimumLamportsOut: Option<u64>
-  public static Instruction withdrawStake(final AccountMeta invokedExtStakePoolProgramMeta,
-                                          final SolanaAccounts solanaAccounts,
-                                          final PublicKey glamStateKey,
-                                          final PublicKey glamVaultKey,
-                                          final PublicKey glamSignerKey,
-                                          final PublicKey integrationAuthorityKey,
-                                          final PublicKey cpiProgramKey,
-                                          final PublicKey glamProtocolProgramKey,
-                                          final PublicKey stakePoolKey,
-                                          final PublicKey validatorListKey,
-                                          final PublicKey stakePoolWithdrawAuthorityKey,
-                                          final PublicKey validatorStakeAccountKey,
-                                          final PublicKey stakeKey,
-                                          final PublicKey poolTokensFromKey,
-                                          final PublicKey feeAccountKey,
-                                          final PublicKey poolMintKey,
-                                          final PublicKey tokenProgramKey,
-                                          final long poolTokensIn,
-                                          final OptionalLong minimumLamportsOut) {
-    final var keys = withdrawStakeKeys(
+  /// @param minimumLamportsOut: u64
+  public static Instruction withdrawStakeWithSlippage(final AccountMeta invokedExtStakePoolProgramMeta,
+                                                      final SolanaAccounts solanaAccounts,
+                                                      final PublicKey glamStateKey,
+                                                      final PublicKey glamVaultKey,
+                                                      final PublicKey glamSignerKey,
+                                                      final PublicKey integrationAuthorityKey,
+                                                      final PublicKey cpiProgramKey,
+                                                      final PublicKey glamProtocolProgramKey,
+                                                      final PublicKey stakePoolKey,
+                                                      final PublicKey validatorListKey,
+                                                      final PublicKey stakePoolWithdrawAuthorityKey,
+                                                      final PublicKey splitStakeSourceKey,
+                                                      final PublicKey destinationStakeAccountKey,
+                                                      final PublicKey destinationStakeAuthorityKey,
+                                                      final PublicKey sourcePoolAccountKey,
+                                                      final PublicKey managerFeeAccountKey,
+                                                      final PublicKey poolMintKey,
+                                                      final PublicKey tokenProgramKey,
+                                                      final long poolTokensIn,
+                                                      final long minimumLamportsOut) {
+    final var keys = withdrawStakeWithSlippageKeys(
       solanaAccounts,
       glamStateKey,
       glamVaultKey,
@@ -506,46 +501,46 @@ public final class ExtStakePoolProgram {
       stakePoolKey,
       validatorListKey,
       stakePoolWithdrawAuthorityKey,
-      validatorStakeAccountKey,
-      stakeKey,
-      poolTokensFromKey,
-      feeAccountKey,
+      splitStakeSourceKey,
+      destinationStakeAccountKey,
+      destinationStakeAuthorityKey,
+      sourcePoolAccountKey,
+      managerFeeAccountKey,
       poolMintKey,
       tokenProgramKey
     );
-    return withdrawStake(invokedExtStakePoolProgramMeta, keys, poolTokensIn, minimumLamportsOut);
+    return withdrawStakeWithSlippage(invokedExtStakePoolProgramMeta, keys, poolTokensIn, minimumLamportsOut);
   }
 
   /// @param poolTokensIn: u64
-  /// @param minimumLamportsOut: Option<u64>
-  public static Instruction withdrawStake(final AccountMeta invokedExtStakePoolProgramMeta,
-                                          final List<AccountMeta> keys,
-                                          final long poolTokensIn,
-                                          final OptionalLong minimumLamportsOut) {
-    final byte[] _data = new byte[
-    16
-    + (minimumLamportsOut == null || minimumLamportsOut.isEmpty() ? 1 : 9)
-    ];
-    int i = WITHDRAW_STAKE_DISCRIMINATOR.write(_data, 0);
+  /// @param minimumLamportsOut: u64
+  public static Instruction withdrawStakeWithSlippage(final AccountMeta invokedExtStakePoolProgramMeta,
+                                                      final List<AccountMeta> keys,
+                                                      final long poolTokensIn,
+                                                      final long minimumLamportsOut) {
+    final byte[] _data = new byte[24];
+    int i = WITHDRAW_STAKE_WITH_SLIPPAGE_DISCRIMINATOR.write(_data, 0);
     putInt64LE(_data, i, poolTokensIn);
     i += 8;
-    SerDeUtil.writeOptional(1, minimumLamportsOut, _data, i);
+    putInt64LE(_data, i, minimumLamportsOut);
 
     return Instruction.createInstruction(invokedExtStakePoolProgramMeta, keys, _data);
   }
 
   /// @param poolTokensIn: u64
-  /// @param minimumLamportsOut: Option<u64>
-  public record WithdrawStakeIxData(Discriminator discriminator, long poolTokensIn, OptionalLong minimumLamportsOut) implements SerDe {
+  /// @param minimumLamportsOut: u64
+  public record WithdrawStakeWithSlippageIxData(Discriminator discriminator, long poolTokensIn, long minimumLamportsOut) implements SerDe {
 
-    public static WithdrawStakeIxData read(final Instruction instruction) {
+    public static WithdrawStakeWithSlippageIxData read(final Instruction instruction) {
       return read(instruction.copyData(), 0);
     }
 
-    public static final int POOL_TOKENS_IN_OFFSET = 8;
-    public static final int MINIMUM_LAMPORTS_OUT_OFFSET = 17;
+    public static final int BYTES = 24;
 
-    public static WithdrawStakeIxData read(final byte[] _data, final int _offset) {
+    public static final int POOL_TOKENS_IN_OFFSET = 8;
+    public static final int MINIMUM_LAMPORTS_OUT_OFFSET = 16;
+
+    public static WithdrawStakeWithSlippageIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
@@ -553,14 +548,8 @@ public final class ExtStakePoolProgram {
       int i = _offset + discriminator.length();
       final var poolTokensIn = getInt64LE(_data, i);
       i += 8;
-      final OptionalLong minimumLamportsOut;
-      if (SerDeUtil.isAbsent(1, _data, i)) {
-        minimumLamportsOut = OptionalLong.empty();
-      } else {
-        ++i;
-        minimumLamportsOut = OptionalLong.of(getInt64LE(_data, i));
-      }
-      return new WithdrawStakeIxData(discriminator, poolTokensIn, minimumLamportsOut);
+      final var minimumLamportsOut = getInt64LE(_data, i);
+      return new WithdrawStakeWithSlippageIxData(discriminator, poolTokensIn, minimumLamportsOut);
     }
 
     @Override
@@ -568,13 +557,14 @@ public final class ExtStakePoolProgram {
       int i = _offset + discriminator.write(_data, _offset);
       putInt64LE(_data, i, poolTokensIn);
       i += 8;
-      i += SerDeUtil.writeOptional(1, minimumLamportsOut, _data, i);
+      putInt64LE(_data, i, minimumLamportsOut);
+      i += 8;
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + 8 + (minimumLamportsOut == null || minimumLamportsOut.isEmpty() ? 1 : (1 + 8));
+      return BYTES;
     }
   }
 

@@ -15,7 +15,7 @@
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_marinade.json",
-      "hash": "933007d642e12a1d92a2748131a223420fe2ed093b8e88cc51b058fbab2412e8",
+      "hash": "0541650ac59b4a1c23986533ae3883e2ca8c67b7b18d3de41514d0365812468e",
       "matchesDeployed": false,
       "file": "vcs.json",
       "verbatim": "vcs.json"

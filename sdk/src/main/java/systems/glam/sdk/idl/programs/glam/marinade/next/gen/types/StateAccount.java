@@ -2,29 +2,20 @@
 package systems.glam.sdk.idl.programs.glam.marinade.next.gen.types;
 
 import software.sava.core.accounts.PublicKey;
-import software.sava.core.programs.Discriminator;
-import software.sava.core.rpc.Filter;
 import software.sava.idl.clients.core.gen.SerDe;
 import software.sava.idl.clients.core.gen.SerDeUtil;
-import software.sava.rpc.json.http.response.AccountInfo;
-
-import java.util.function.BiFunction;
 
 import static software.sava.core.accounts.PublicKey.readPubKey;
 import static software.sava.core.encoding.ByteUtil.getInt32LE;
 import static software.sava.core.encoding.ByteUtil.getInt64LE;
 import static software.sava.core.encoding.ByteUtil.putInt32LE;
 import static software.sava.core.encoding.ByteUtil.putInt64LE;
-import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
-import static software.sava.core.programs.Discriminator.toDiscriminator;
 
 /// @param baseAssetDecimals: u8
 /// @param baseAssetTokenProgram: u8
 /// @param timelockDuration: u32
 /// @param timelockExpiresAt: u64
-public record StateAccount(PublicKey _address,
-                           Discriminator discriminator,
-                           AccountType accountType,
+public record StateAccount(AccountType accountType,
                            boolean enabled,
                            PublicKey vault,
                            PublicKey owner,
@@ -46,106 +37,26 @@ public record StateAccount(PublicKey _address,
 
   public static final int PORTFOLIO_MANAGER_NAME_LEN = 32;
   public static final int NAME_LEN = 32;
-  public static final Discriminator DISCRIMINATOR = toDiscriminator(142, 247, 54, 95, 85, 133, 249, 103);
-  public static final Filter DISCRIMINATOR_FILTER = Filter.createMemCompFilter(0, DISCRIMINATOR.data());
-
-  public static final int ACCOUNT_TYPE_OFFSET = 8;
-  public static final int ENABLED_OFFSET = 9;
-  public static final int VAULT_OFFSET = 10;
-  public static final int OWNER_OFFSET = 42;
-  public static final int PORTFOLIO_MANAGER_NAME_OFFSET = 74;
-  public static final int CREATED_OFFSET = 106;
-  public static final int BASE_ASSET_MINT_OFFSET = 154;
-  public static final int BASE_ASSET_DECIMALS_OFFSET = 186;
-  public static final int BASE_ASSET_TOKEN_PROGRAM_OFFSET = 187;
-  public static final int NAME_OFFSET = 188;
-  public static final int TIMELOCK_DURATION_OFFSET = 220;
-  public static final int TIMELOCK_EXPIRES_AT_OFFSET = 224;
-  public static final int MINT_OFFSET = 232;
-  public static final int ASSETS_OFFSET = 264;
-
-  public static Filter createAccountTypeFilter(final AccountType accountType) {
-    return Filter.createMemCompFilter(ACCOUNT_TYPE_OFFSET, accountType.write());
-  }
-
-  public static Filter createEnabledFilter(final boolean enabled) {
-    return Filter.createMemCompFilter(ENABLED_OFFSET, new byte[]{(byte) (enabled ? 1 : 0)});
-  }
-
-  public static Filter createVaultFilter(final PublicKey vault) {
-    return Filter.createMemCompFilter(VAULT_OFFSET, vault);
-  }
-
-  public static Filter createOwnerFilter(final PublicKey owner) {
-    return Filter.createMemCompFilter(OWNER_OFFSET, owner);
-  }
-
-  public static Filter createCreatedFilter(final CreatedModel created) {
-    return Filter.createMemCompFilter(CREATED_OFFSET, created.write());
-  }
-
-  public static Filter createBaseAssetMintFilter(final PublicKey baseAssetMint) {
-    return Filter.createMemCompFilter(BASE_ASSET_MINT_OFFSET, baseAssetMint);
-  }
-
-  public static Filter createBaseAssetDecimalsFilter(final int baseAssetDecimals) {
-    return Filter.createMemCompFilter(BASE_ASSET_DECIMALS_OFFSET, new byte[]{(byte) baseAssetDecimals});
-  }
-
-  public static Filter createBaseAssetTokenProgramFilter(final int baseAssetTokenProgram) {
-    return Filter.createMemCompFilter(BASE_ASSET_TOKEN_PROGRAM_OFFSET, new byte[]{(byte) baseAssetTokenProgram});
-  }
-
-  public static Filter createTimelockDurationFilter(final long timelockDuration) {
-    final byte[] _data = new byte[4];
-    putInt32LE(_data, 0, (int) timelockDuration);
-    return Filter.createMemCompFilter(TIMELOCK_DURATION_OFFSET, _data);
-  }
-
-  public static Filter createTimelockExpiresAtFilter(final long timelockExpiresAt) {
-    final byte[] _data = new byte[8];
-    putInt64LE(_data, 0, timelockExpiresAt);
-    return Filter.createMemCompFilter(TIMELOCK_EXPIRES_AT_OFFSET, _data);
-  }
-
-  public static Filter createMintFilter(final PublicKey mint) {
-    return Filter.createMemCompFilter(MINT_OFFSET, mint);
-  }
+  public static final int ACCOUNT_TYPE_OFFSET = 0;
+  public static final int ENABLED_OFFSET = 1;
+  public static final int VAULT_OFFSET = 2;
+  public static final int OWNER_OFFSET = 34;
+  public static final int PORTFOLIO_MANAGER_NAME_OFFSET = 66;
+  public static final int CREATED_OFFSET = 98;
+  public static final int BASE_ASSET_MINT_OFFSET = 146;
+  public static final int BASE_ASSET_DECIMALS_OFFSET = 178;
+  public static final int BASE_ASSET_TOKEN_PROGRAM_OFFSET = 179;
+  public static final int NAME_OFFSET = 180;
+  public static final int TIMELOCK_DURATION_OFFSET = 212;
+  public static final int TIMELOCK_EXPIRES_AT_OFFSET = 216;
+  public static final int MINT_OFFSET = 224;
+  public static final int ASSETS_OFFSET = 256;
 
   public static StateAccount read(final byte[] _data, final int _offset) {
-    return read(null, _data, _offset);
-  }
-
-  public static StateAccount read(final AccountInfo<byte[]> accountInfo) {
-    return readChecked(accountInfo.pubKey(), accountInfo.data(), 0);
-  }
-
-  public static StateAccount read(final PublicKey _address, final byte[] _data) {
-    return read(_address, _data, 0);
-  }
-
-  public static StateAccount readChecked(final PublicKey _address, final byte[] _data) {
-    return readChecked(_address, _data, 0);
-  }
-
-  public static StateAccount readChecked(final PublicKey _address, final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
       return null;
     }
-    if (!DISCRIMINATOR.equals(_data, _offset)) {
-      throw new IllegalArgumentException("Not a StateAccount account.");
-    }
-    return read(_address, _data, _offset);
-  }
-
-  public static final BiFunction<PublicKey, byte[], StateAccount> FACTORY = StateAccount::readChecked;
-
-  public static StateAccount read(final PublicKey _address, final byte[] _data, final int _offset) {
-    if (_data == null || _data.length == 0) {
-      return null;
-    }
-    final var discriminator = createAnchorDiscriminator(_data, _offset);
-    int i = _offset + discriminator.length();
+    int i = _offset;
     final var accountType = AccountType.read(_data, i);
     i += 1;
     final var enabled = _data[i] == 1;
@@ -183,9 +94,7 @@ public record StateAccount(PublicKey _address,
     final var pricedProtocols = SerDeUtil.readVector(4, PricedProtocol.class, PricedProtocol::read, _data, i);
     i += SerDeUtil.lenVector(4, pricedProtocols);
     final var params = SerDeUtil.readMultiDimensionVector(4, EngineField.class, EngineField::read, _data, i);
-    return new StateAccount(_address,
-                            discriminator,
-                            accountType,
+    return new StateAccount(accountType,
                             enabled,
                             vault,
                             owner,
@@ -208,7 +117,7 @@ public record StateAccount(PublicKey _address,
 
   @Override
   public int write(final byte[] _data, final int _offset) {
-    int i = _offset + discriminator.write(_data, _offset);
+    int i = _offset;
     i += accountType.write(_data, i);
     _data[i] = (byte) (enabled ? 1 : 0);
     ++i;
@@ -242,7 +151,7 @@ public record StateAccount(PublicKey _address,
 
   @Override
   public int l() {
-    return 8 + accountType.l()
+    return accountType.l()
          + 1
          + 32
          + 32
