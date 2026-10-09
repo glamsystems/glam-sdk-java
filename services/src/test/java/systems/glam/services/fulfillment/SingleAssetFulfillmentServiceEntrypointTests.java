@@ -10,15 +10,17 @@ import systems.glam.sdk.StateAccountClient;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintConstants;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.types.*;
 import systems.glam.services.tests.LogCapture;
+import systems.glam.services.tests.Workers;
 
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.*;
 
 final class SingleAssetFulfillmentServiceEntrypointTests {
@@ -109,6 +111,25 @@ final class SingleAssetFulfillmentServiceEntrypointTests {
     }
   }
 
+  /// A call budget for the connection-check stub. The monitor loop checks once per 3 s pacing
+  /// sleep, so this test sees a single call. A loop that lost its sleep would spin on the stub,
+  /// where nothing is interruptible, so past the budget the stub throws: that ends the loop
+  /// instead of leaving it spinning into the next test or the next mutant.
+  private static final int CONNECTION_CHECK_BUDGET = 10;
+
+  /// Returns once the monitor loop parks in its pacing sleep. run() takes no timed wait
+  /// before that sleep, so the runner's first TIMED_WAITING is the sleep itself.
+  private static void awaitPacingSleep(final Thread runner, final AtomicInteger connectionChecks) throws InterruptedException {
+    final long deadline = System.nanoTime() + MILLISECONDS.toNanos(Workers.FIXTURE_DEADLINE_MILLIS);
+    while (runner.getState() != Thread.State.TIMED_WAITING) {
+      assertTrue(runner.isAlive(),
+          () -> "the monitor loop ended without pausing, after " + connectionChecks.get() + " connection checks");
+      assertTrue(System.nanoTime() < deadline, "the monitor loop never paused between connection checks");
+      //noinspection BusyWait
+      Thread.sleep(1L);
+    }
+  }
+
   @Test
   void runExecutesTheServicesAndMonitorsTheConnectionUntilInterrupted() throws InterruptedException {
     final var connectionChecks = new AtomicInteger();
@@ -118,7 +139,9 @@ final class SingleAssetFulfillmentServiceEntrypointTests {
         new Class<?>[]{WebSocketManager.class},
         (proxy, method, args) -> switch (method.getName()) {
           case "checkConnection" -> {
-            connectionChecks.incrementAndGet();
+            if (connectionChecks.incrementAndGet() > CONNECTION_CHECK_BUDGET) {
+              throw new IllegalStateException("the monitor loop is spinning on checkConnection");
+            }
             yield null;
           }
           case "close" -> {
@@ -178,21 +201,35 @@ final class SingleAssetFulfillmentServiceEntrypointTests {
     assertSame(txMonitorService, entrypoint.txMonitorService());
     assertSame(fulfillmentService, entrypoint.fulfillmentService());
 
-    final var runner = new Thread(entrypoint::run);
+    // an exception escaping run() is recorded rather than printed: an unmutated run ends on
+    // the interrupt and lets none escape
+    final var escaped = new AtomicReference<Throwable>();
+    final var runner = new Thread(entrypoint::run, "fulfillment-entrypoint");
+    runner.setUncaughtExceptionHandler((thread, ex) -> escaped.set(ex));
     runner.start();
-    assertTrue(epochServiceRan.await(5, SECONDS), "the epoch service was never executed");
-    assertTrue(monitorRan.await(1, SECONDS), "the transaction monitor was never started on the entrypoint's executor");
-    assertTrue(fulfillmentServiceRan.await(5, SECONDS), "the fulfillment service was never executed");
+    try {
+      assertTrue(epochServiceRan.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS),
+          "the epoch service was never executed");
+      assertTrue(monitorRan.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS),
+          "the transaction monitor was never started on the entrypoint's executor");
+      assertTrue(fulfillmentServiceRan.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS),
+          "the fulfillment service was never executed");
 
-    Thread.sleep(250L);
-    final int checks = connectionChecks.get();
-    assertTrue(checks >= 1, "the connection was never checked");
-    // the loop paces itself: without the sleep this would be in the thousands
-    assertTrue(checks < 10, () -> "the monitor loop is spinning: " + checks + " checks in 250ms");
+      // the loop paces itself: one connection check, then its sleep. Without the check it
+      // parks having checked nothing; without the sleep it spins into the stub's budget
+      awaitPacingSleep(runner, connectionChecks);
+      assertEquals(1, connectionChecks.get(), "the monitor loop must check the connection once, then pause");
 
-    runner.interrupt();
-    assertTrue(closed.await(5, SECONDS), "the websocket manager was not closed on exit");
-    runner.join(1_000L);
-    assertFalse(runner.isAlive());
+      runner.interrupt();
+      Workers.joinWithin(runner, "the monitor loop must exit on interrupt");
+      // the runner has terminated, so its finally has run
+      assertEquals(0L, closed.getCount(), "the websocket manager was not closed on exit");
+      // the interrupt ended the first pause, so no second check ever ran
+      assertEquals(1, connectionChecks.get(), "the interrupt must end the loop inside its first pause");
+      assertNull(escaped.get(), "run() must end on the interrupt, not on an exception");
+    } finally {
+      runner.interrupt();
+      runner.join(Workers.FIXTURE_DEADLINE_MILLIS);
+    }
   }
 }

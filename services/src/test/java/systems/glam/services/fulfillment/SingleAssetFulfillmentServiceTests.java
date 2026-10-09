@@ -21,6 +21,7 @@ import systems.glam.services.execution.InstructionProcessor;
 import systems.glam.services.fulfillment.accounting.RedemptionSummary;
 import systems.glam.services.mints.MintContext;
 import systems.glam.services.tests.LogCapture;
+import systems.glam.services.tests.Workers;
 
 import java.util.*;
 
@@ -586,36 +587,115 @@ final class SingleAssetFulfillmentServiceTests {
   }
 
   // --- awaitChange / wakeUp -------------------------------------------------
+  //
+  // A wake-up is read off the condition queue, not off the clock. wakeUp() signals under
+  // the service lock, and signalAll moves every waiter off the state-change condition
+  // before it returns; hasWaiters reads that queue under the same lock. So straight after
+  // an update, a lost wake-up (the waiter still on the queue) and a spurious one (the queue
+  // empty) both read synchronously, with no wait for the waiter thread to run. Every
+  // remaining wait is bounded by Workers.FIXTURE_DEADLINE_MILLIS, well inside the mutation
+  // watchdog's budget, and every waiter is interrupted and joined in a finally.
 
-  private static Thread waiter(final BaseFulfillmentService service, final long delayNanos) throws InterruptedException {
+  /// Starts a thread in [BaseFulfillmentService#awaitChange(long)]. It is a daemon so that a
+  /// mutant which strands it in an uninterruptible lock acquire cannot hold the JVM open.
+  private static Thread startWaiter(final BaseFulfillmentService service, final long delayNanos) {
     final var thread = new Thread(() -> {
       try {
         service.awaitChange(delayNanos);
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
       }
-    });
+    }, "fulfillment-waiter");
+    thread.setDaemon(true);
     thread.start();
-    final long deadline = System.nanoTime() + SECONDS.toNanos(1);
-    while (thread.getState() != Thread.State.TIMED_WAITING) {
+    return thread;
+  }
+
+  /// Returns once the waiter is parked on the state-change condition. awaitChange takes no
+  /// timed wait before that park, so its first TIMED_WAITING is the park itself.
+  private static void awaitParked(final BaseFulfillmentService service, final Thread waiter) throws InterruptedException {
+    final long deadline = System.nanoTime() + MILLISECONDS.toNanos(Workers.FIXTURE_DEADLINE_MILLIS);
+    while (waiter.getState() != Thread.State.TIMED_WAITING) {
+      assertTrue(waiter.isAlive(), "the waiter left awaitChange before parking");
       assertTrue(System.nanoTime() < deadline, "waiter never parked");
       //noinspection BusyWait
       Thread.sleep(1L);
     }
-    return thread;
+    assertTrue(hasWaiters(service), "the parked waiter is not on the state-change condition");
   }
 
-  private static void assertWakes(final Thread thread) throws InterruptedException {
-    thread.join(2_000L);
-    assertFalse(thread.isAlive(), "expected the waiter to be woken");
+  /// Whether a thread waits on the state-change condition, read under the service lock. The
+  /// acquire is bounded: a just-woken waiter holds the lock through its minimum-delay top-up,
+  /// and one that left awaitChange without releasing it must fail here, not hang the test.
+  private static boolean hasWaiters(final BaseFulfillmentService service) throws InterruptedException {
+    assertTrue(
+        service.lock.tryLock(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS),
+        "the service lock was never released"
+    );
+    try {
+      return service.lock.hasWaiters(service.stateChange);
+    } finally {
+      service.lock.unlock();
+    }
   }
 
-  private static void assertStillWaiting(final BaseFulfillmentService service, final Thread thread) throws InterruptedException {
-    Thread.sleep(50L);
-    assertTrue(thread.isAlive(), "expected the waiter to stay parked");
-    service.wakeUp();
-    thread.join(2_000L);
-    assertFalse(thread.isAlive());
+  /// The thread that just called accept or wakeUp must hold no part of the service lock.
+  private static void assertCallerReleasedTheLock(final BaseFulfillmentService service) {
+    assertFalse(service.lock.isHeldByCurrentThread(), "the caller still holds the service lock");
+  }
+
+  /// A woken waiter must leave awaitChange, and once it has, nobody holds the lock.
+  private static void assertLeftAwaitChange(final BaseFulfillmentService service, final Thread waiter) throws InterruptedException {
+    Workers.joinWithin(waiter, "the woken waiter never left awaitChange");
+    assertFalse(service.lock.isLocked(), "awaitChange returned without releasing the service lock");
+  }
+
+  /// Ends the waiter whatever the step's outcome, so no thread outlives its step. A hold that a
+  /// mutated wakeUp() leaked to this thread is released first: a signalled waiter must
+  /// re-acquire the lock to leave awaitChange, and that re-acquire ignores interrupts.
+  private static void stop(final BaseFulfillmentService service, final Thread waiter) throws InterruptedException {
+    while (service.lock.isHeldByCurrentThread()) {
+      service.lock.unlock();
+    }
+    waiter.interrupt();
+    waiter.join(Workers.FIXTURE_DEADLINE_MILLIS);
+  }
+
+  /// The update must wake a thread parked in awaitChange.
+  private static void assertWakes(final SingleAssetFulfillmentService service,
+                                  final AccountInfo<byte[]> update) throws InterruptedException {
+    // a hold leaked by an earlier update would keep the waiter from ever parking
+    assertCallerReleasedTheLock(service);
+    final var waiter = startWaiter(service, SECONDS.toNanos(30L));
+    try {
+      awaitParked(service, waiter);
+      service.accept(update);
+      assertCallerReleasedTheLock(service);
+      assertFalse(hasWaiters(service), "expected the waiter to be woken");
+      assertLeftAwaitChange(service, waiter);
+    } finally {
+      stop(service, waiter);
+    }
+  }
+
+  /// The update must leave a thread parked in awaitChange, where a direct wakeUp() still
+  /// reaches it.
+  private static void assertStillWaiting(final SingleAssetFulfillmentService service,
+                                         final AccountInfo<byte[]> update) throws InterruptedException {
+    assertCallerReleasedTheLock(service);
+    final var waiter = startWaiter(service, SECONDS.toNanos(30L));
+    try {
+      awaitParked(service, waiter);
+      service.accept(update);
+      assertCallerReleasedTheLock(service);
+      assertTrue(hasWaiters(service), "expected the waiter to stay parked");
+      service.wakeUp();
+      assertCallerReleasedTheLock(service);
+      assertFalse(hasWaiters(service), "wakeUp() must wake the parked waiter");
+      assertLeftAwaitChange(service, waiter);
+    } finally {
+      stop(service, waiter);
+    }
   }
 
   @Test
@@ -638,12 +718,20 @@ final class SingleAssetFulfillmentServiceTests {
 
     // a mid-wait wake still sleeps out the minimum, and only the minimum:
     // the top-up is minimum-minus-slept, not minimum-plus-slept
-    final var floor = harness(NoticePeriodType.Hard, TimeUnit.Second, 100L, false, 300, 10_000);
+    final var floor = harness(NoticePeriodType.Hard, TimeUnit.Second, 100L, false, 300, 10_000).service;
     start = System.nanoTime();
-    final var thread = waiter(floor.service, SECONDS.toNanos(10L));
-    Thread.sleep(150L);
-    floor.service.wakeUp();
-    assertWakes(thread);
+    final var waiter = startWaiter(floor, SECONDS.toNanos(10L));
+    try {
+      awaitParked(floor, waiter);
+      // where the wake lands inside the wait is the property under test, not a synchronisation
+      Thread.sleep(150L);
+      floor.wakeUp();
+      assertCallerReleasedTheLock(floor);
+      assertFalse(hasWaiters(floor), "expected the waiter to be woken");
+      assertLeftAwaitChange(floor, waiter);
+    } finally {
+      stop(floor, waiter);
+    }
     elapsedMillis = (System.nanoTime() - start) / 1_000_000L;
     assertTrue(elapsedMillis >= 280, "slept only " + elapsedMillis + "ms");
     assertTrue(elapsedMillis < 520, "the wake-up was lost or over-slept: " + elapsedMillis + "ms");
@@ -666,24 +754,16 @@ final class SingleAssetFulfillmentServiceTests {
 
     try (final var logs = LogCapture.attach(LOGGER_NAME)) {
       // first sighting of outstanding shares
-      var thread = waiter(service, SECONDS.toNanos(30L));
-      service.accept(queueAccount(10L, pending(1, 100L, 9_000L)));
-      assertWakes(thread);
+      assertWakes(service, queueAccount(10L, pending(1, 100L, 9_000L)));
 
       // a stale slot is ignored
-      thread = waiter(service, SECONDS.toNanos(30L));
-      service.accept(queueAccount(10L, pending(1, 150L, 9_000L)));
-      assertStillWaiting(service, thread);
+      assertStillWaiting(service, queueAccount(10L, pending(1, 150L, 9_000L)));
 
       // a newer slot with the same outstanding shares is quiet
-      thread = waiter(service, SECONDS.toNanos(30L));
-      service.accept(queueAccount(11L, pending(2, 100L, 9_100L)));
-      assertStillWaiting(service, thread);
+      assertStillWaiting(service, queueAccount(11L, pending(2, 100L, 9_100L)));
 
       // a newer slot with different outstanding shares wakes
-      thread = waiter(service, SECONDS.toNanos(30L));
-      service.accept(queueAccount(12L, pending(1, 150L, 9_000L)));
-      assertWakes(thread);
+      assertWakes(service, queueAccount(12L, pending(1, 150L, 9_000L)));
 
       // none of the above may have logged a processing failure
       assertEquals(List.of(), logs.messages());
@@ -697,35 +777,23 @@ final class SingleAssetFulfillmentServiceTests {
 
     try (final var logs = LogCapture.attach(LOGGER_NAME)) {
       // no summary yet: a deposit alone does not wake
-      var thread = waiter(service, SECONDS.toNanos(30L));
-      service.accept(ataAccount(harness, 20L, 5L));
-      assertStillWaiting(service, thread);
+      assertStillWaiting(service, ataAccount(harness, 20L, 5L));
 
       // outstanding shares recorded, then a balance increase wakes
       service.accept(queueAccount(10L, pending(1, 100L, 9_000L)));
-      thread = waiter(service, SECONDS.toNanos(30L));
-      service.accept(ataAccount(harness, 21L, 9L));
-      assertWakes(thread);
+      assertWakes(service, ataAccount(harness, 21L, 9L));
 
       // no increase: quiet
-      thread = waiter(service, SECONDS.toNanos(30L));
-      service.accept(ataAccount(harness, 22L, 9L));
-      assertStillWaiting(service, thread);
+      assertStillWaiting(service, ataAccount(harness, 22L, 9L));
 
       // the same slot: quiet even with a bigger amount
-      thread = waiter(service, SECONDS.toNanos(30L));
-      service.accept(ataAccount(harness, 22L, 50L));
-      assertStillWaiting(service, thread);
+      assertStillWaiting(service, ataAccount(harness, 22L, 50L));
 
       // a stale slot: quiet even with a bigger amount
-      thread = waiter(service, SECONDS.toNanos(30L));
-      service.accept(ataAccount(harness, 21L, 50L));
-      assertStillWaiting(service, thread);
+      assertStillWaiting(service, ataAccount(harness, 21L, 50L));
 
       // another mint's token account is ignored
-      thread = waiter(service, SECONDS.toNanos(30L));
-      service.accept(account(harness.ataKey, 23L, SOLANA.tokenProgram(), tokenAccountData(MINT_PDA, 100L)));
-      assertStillWaiting(service, thread);
+      assertStillWaiting(service, account(harness.ataKey, 23L, SOLANA.tokenProgram(), tokenAccountData(MINT_PDA, 100L)));
 
       assertEquals(List.of(), logs.messages());
     }
@@ -736,9 +804,7 @@ final class SingleAssetFulfillmentServiceTests {
     final var harness = harness(NoticePeriodType.Hard, TimeUnit.Second, 100L, false, 5, 30_000);
     final var service = harness.service;
     service.accept(queueAccount(10L, pending(1, 100L, 9_000L)));
-    final var thread = waiter(service, SECONDS.toNanos(30L));
-    service.accept(ataAccount(harness, 20L, 5L));
-    assertWakes(thread);
+    assertWakes(service, ataAccount(harness, 20L, 5L));
   }
 
   @Test
@@ -747,13 +813,8 @@ final class SingleAssetFulfillmentServiceTests {
     final var service = harness.service;
     service.accept(queueAccount(5L)); // an empty queue: zero outstanding shares
 
-    var thread = waiter(service, SECONDS.toNanos(30L));
-    service.accept(ataAccount(harness, 6L, 3L));
-    assertStillWaiting(service, thread);
-
-    thread = waiter(service, SECONDS.toNanos(30L));
-    service.accept(ataAccount(harness, 7L, 9L));
-    assertStillWaiting(service, thread);
+    assertStillWaiting(service, ataAccount(harness, 6L, 3L));
+    assertStillWaiting(service, ataAccount(harness, 7L, 9L));
   }
 
   @Test
@@ -766,25 +827,17 @@ final class SingleAssetFulfillmentServiceTests {
 
     try (final var logs = LogCapture.attach(LOGGER_NAME)) {
       // token-account bytes owned by the mint program: not a queue update
-      var thread = waiter(service, SECONDS.toNanos(30L));
-      service.accept(account(harness.ataKey, 30L, GLAM.mintProgram(), tokenAccountData(BASE_ASSET_MINT, 99L)));
-      assertStillWaiting(service, thread);
+      assertStillWaiting(service, account(harness.ataKey, 30L, GLAM.mintProgram(), tokenAccountData(BASE_ASSET_MINT, 99L)));
 
       // queue bytes owned by the token program: not a queue update either
-      thread = waiter(service, SECONDS.toNanos(30L));
-      service.accept(account(REQUEST_QUEUE_KEY, 31L, SOLANA.tokenProgram(), queueData(pending(1, 500L, 9_000L))));
-      assertStillWaiting(service, thread);
+      assertStillWaiting(service, account(REQUEST_QUEUE_KEY, 31L, SOLANA.tokenProgram(), queueData(pending(1, 500L, 9_000L))));
 
       // an oversized account whose head looks like the base asset ATA is not one
-      thread = waiter(service, SECONDS.toNanos(30L));
-      service.accept(account(harness.ataKey, 32L, SOLANA.tokenProgram(),
+      assertStillWaiting(service, account(harness.ataKey, 32L, SOLANA.tokenProgram(),
           Arrays.copyOf(tokenAccountData(BASE_ASSET_MINT, 99L), 200)));
-      assertStillWaiting(service, thread);
 
       // the right shape under the wrong owner is ignored
-      thread = waiter(service, SECONDS.toNanos(30L));
-      service.accept(account(harness.ataKey, 33L, SOLANA.systemProgram(), tokenAccountData(BASE_ASSET_MINT, 99L)));
-      assertStillWaiting(service, thread);
+      assertStillWaiting(service, account(harness.ataKey, 33L, SOLANA.systemProgram(), tokenAccountData(BASE_ASSET_MINT, 99L)));
 
       assertEquals(List.of(), logs.messages());
     }

@@ -6,15 +6,19 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.encoding.ByteUtil;
+import systems.glam.services.io.KeyedFlatFile;
+import systems.glam.services.io.KeyedFlatFileTestProbe;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Semaphore;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.*;
+import static systems.glam.services.tests.Workers.FIXTURE_DEADLINE_MILLIS;
 
 final class MintCacheImplTest {
 
@@ -113,10 +117,13 @@ final class MintCacheImplTest {
   void testConcurrentAccess(@TempDir final Path tempDir) throws Exception {
     final int numConcurrentWrites = 128;
     final var cacheFile = tempDir.resolve("mint_cache.dat");
-    try (final var cache = MintCache.createCache(SOLANA_ACCOUNTS, cacheFile);
-         final var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-
-      final var latch = new CountDownLatch(numConcurrentWrites);
+    // built as MintCache.createCache builds it for a new file, with the flat file kept in
+    // reach: the writers must be able to see, and hand back, a lock that setGet leaves held
+    final var flatFile = KeyedFlatFile.<MintContext>createFlatFile(MintContext.BYTES, cacheFile);
+    final var cache = new MintCacheImpl(new ConcurrentHashMap<>(), flatFile);
+    final var executor = Executors.newVirtualThreadPerTaskExecutor();
+    try {
+      final var finished = new Semaphore(0);
       final var errors = new ArrayList<Throwable>();
 
       for (int t = 0; t < numConcurrentWrites; t++) {
@@ -146,25 +153,47 @@ final class MintCacheImplTest {
               errors.add(e);
             }
           } finally {
-            latch.countDown();
+            // A writer that returns still holding the file's lock has leaked it, and every
+            // other writer parks behind it in lock(), which takes no timeout and ignores
+            // interrupts: nothing could end them, and the executor could never terminate.
+            // Only the holder can release it, so it records the leak and hands the lock back.
+            if (KeyedFlatFileTestProbe.releaseHeldLock(flatFile)) {
+              synchronized (errors) {
+                errors.add(new AssertionError("setGet returned holding the cache file's lock"));
+              }
+            }
+            finished.release();
           }
         });
       }
 
-      // 2s, not 5s: this fixture's deadline must expire inside PIT's watchdog
-      // budget (timeoutConst 1500ms + 2x this test's runtime, ~2.8s here) or a
-      // mutant that stalls these writers is reported TIMED_OUT instead of
-      // failing this assertion, and the ratchet cannot see a weakened assertion
-      // behind a timeout. The real work is ~600ms, so 2s is ~3x headroom while
-      // staying under the budget. Raise it only together with timeoutConst.
-      assertTrue(latch.await(2, TimeUnit.SECONDS));
+      // The appends queue on the file's lock and each is forced to disk, so the whole batch
+      // can outlast one fixture deadline (~600ms here). A stall cannot: it is a gap in which
+      // no writer finishes, so the deadline bounds each step rather than the batch.
+      for (int done = 0; done < numConcurrentWrites; ++done) {
+        final int finishedSoFar = done;
+        assertTrue(finished.tryAcquire(FIXTURE_DEADLINE_MILLIS, MILLISECONDS),
+            () -> "no writer finished inside the deadline after " + finishedSoFar + " of " + numConcurrentWrites);
+      }
+      executor.shutdown();
+      assertTrue(executor.awaitTermination(FIXTURE_DEADLINE_MILLIS, MILLISECONDS), "a writer outlived its task");
 
       if (!errors.isEmpty()) {
         errors.getFirst().printStackTrace();
         fail("Concurrent access test failed with " + errors.size() + " errors");
       }
 
+      assertFalse(KeyedFlatFileTestProbe.isLocked(flatFile), "the cache file's lock is still held");
       assertEquals(34L * numConcurrentWrites, Files.size(cacheFile));
+    } finally {
+      executor.shutdownNow();
+      executor.awaitTermination(FIXTURE_DEADLINE_MILLIS, MILLISECONDS);
+      // close() takes the file's lock with no timeout: a lock still held here may never be
+      // released, so the file is closed only when it is free (an assertion above has
+      // already failed otherwise)
+      if (!KeyedFlatFileTestProbe.isLocked(flatFile)) {
+        cache.close();
+      }
     }
   }
 

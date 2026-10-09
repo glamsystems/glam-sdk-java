@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.*;
@@ -49,13 +50,25 @@ import static org.junit.jupiter.api.Assertions.*;
 /// JVM), the fetch delay sits at its one millisecond floor, and the fake
 /// interrupts the thread on its final batch so run() exits through its
 /// InterruptedException path -- the pending interrupt makes that sleep throw
-/// immediately rather than wait.
+/// immediately rather than wait. The `direct*` tests assemble batches through
+/// createBatch() without running the loop at all. What only a second thread can
+/// show -- the heartbeat's idle ticks, a reactive park and the signal that ends it,
+/// a poller idling between cycles, the reactive minimum delay -- runs the loop on a
+/// worker observed through ticks, latches, the lock and the worker's thread state:
+/// every wait there is bounded by [Workers#FIXTURE_DEADLINE_MILLIS], inside the
+/// mutation watchdog's budget, and every worker is interrupted and joined on the
+/// way out.
 final class AccountFetcherTests {
 
   /// An idle window that cannot lapse inside any fixture deadline: with it, the only
   /// way out of a reactive park is the queue signal (or a tick's interrupt), so a lost
   /// signal or a missing tick fails the join instead of being masked by the next window.
   private static final long NEVER_LAPSES_NANOS = TimeUnit.HOURS.toNanos(1);
+
+  /// The idle polling passes the quiet-poller test counts before it checks that none
+  /// of them fetched: a free-running loop fetches (or fails) on the first pass after
+  /// its sleep, so a few passes show it, and counting them leaves nothing to wait out.
+  private static final int QUIET_POLLING_PASSES = 3;
 
   private static final class TestClock implements NanoClock {
 
@@ -402,7 +415,7 @@ final class AccountFetcherTests {
       } finally {
         fetcher.lock.unlock();
       }
-      Workers.joinWithin(worker, "the queued batch must wake the runner, which then exits on the fake's interrupt");
+      assertExitsWithin(worker, "the queued batch must wake the runner, which then exits on the fake's interrupt");
 
       // the wake-up that found work is not an idle window, and the fake's interrupt
       // makes the next cycle's minimum delay throw before it can tick: no new ticks
@@ -411,7 +424,7 @@ final class AccountFetcherTests {
       assertEquals(idleTicks, ticks.get());
       assertFalse(fetcher.lock.isLocked());
     } finally {
-      worker.interrupt();
+      stop(worker);
     }
   }
 
@@ -1003,14 +1016,35 @@ final class AccountFetcherTests {
     assertTrue(estimate <= after - 30, () -> "estimate " + estimate + " vs after " + after);
   }
 
-  private static void awaitTrue(final String what, final java.util.function.BooleanSupplier condition) throws InterruptedException {
-    for (int i = 0; i < 5_000; ++i) {
-      if (condition.getAsBoolean()) {
-        return;
+  /// Waits for a state no synchronous reader exposes -- a worker's thread state -- by
+  /// polling it for at most [Workers#FIXTURE_DEADLINE_MILLIS], inside the mutation
+  /// watchdog's budget: a worker that never gets there fails the test rather than
+  /// racing the watchdog.
+  private static void awaitWithin(final String what, final BooleanSupplier condition) {
+    final long deadline = System.nanoTime() + MILLISECONDS.toNanos(Workers.FIXTURE_DEADLINE_MILLIS);
+    while (!condition.getAsBoolean()) {
+      if (System.nanoTime() - deadline >= 0) {
+        fail("timed out awaiting " + what);
       }
-      Thread.sleep(1);
+      Thread.yield();
     }
-    fail("timed out awaiting " + what);
+  }
+
+  /// [Workers#joinWithin] without its own interrupt-and-join, for a test that waits on
+  /// its worker before this join and so stops it in a `finally` ([#stop]): that cleanup
+  /// is then the only one on every path, and a worker that ignores its interrupt costs
+  /// the test one more deadline instead of two.
+  private static void assertExitsWithin(final Thread worker, final String expectation) throws InterruptedException {
+    worker.join(Workers.FIXTURE_DEADLINE_MILLIS);
+    assertFalse(worker.isAlive(), expectation);
+  }
+
+  /// The `finally` of every worker test that waits on its worker before joining it: the
+  /// worker is interrupted and joined within the fixture deadline on every path, so one
+  /// an earlier assertion left running does not leak into the next test or mutant.
+  private static void stop(final Thread worker) throws InterruptedException {
+    worker.interrupt();
+    worker.join(Workers.FIXTURE_DEADLINE_MILLIS);
   }
 
   @Test
@@ -1027,14 +1061,16 @@ final class AccountFetcherTests {
       worker.start();
       try {
         // a reactive fetcher parks on the condition; it must not busy-spin -- a
-        // timed park, since an idle fetcher re-arms its window to keep its heartbeat ticking
-        awaitTrue("the reactive fetcher parked", () -> worker.getState() == Thread.State.TIMED_WAITING);
+        // timed park, since an idle fetcher re-arms its window to keep its heartbeat
+        // ticking. Nothing else in an idle reactive cycle waits on time, so this state
+        // is the park, and a worker that never reaches it fails inside the deadline
+        awaitWithin("the reactive fetcher parked", () -> worker.getState() == Thread.State.TIMED_WAITING);
 
         // queueing must signal the parked fetcher awake
         fetcher.queue(List.of(present), consumer);
-        Workers.joinWithin(worker, "the queue signal never woke the reactive fetcher");
+        assertExitsWithin(worker, "the queue signal never woke the reactive fetcher");
       } finally {
-        worker.interrupt();
+        stop(worker);
       }
       assertFalse(
           log.messages().stream().anyMatch(m -> m != null && m.contains("Unexpected error fetching accounts")),
@@ -1053,7 +1089,15 @@ final class AccountFetcherTests {
     final var late = key(2);
     rpc.universe.put(always, account(always, 42L, new byte[]{1}));
     rpc.universe.put(late, account(late, 43L, new byte[]{2}));
-    final var fetcher = createFetcher(rpc, Set.of(always));
+    // each polling sleep ends in a tick, taken on the loop thread that also records the
+    // RPC calls: a tick after the first fetch is one pass that found the queue empty, so
+    // the quiet period is counted in passes rather than waited out on the clock
+    final var quietPasses = new CountDownLatch(QUIET_POLLING_PASSES);
+    final var fetcher = createFetcher(rpc, Set.of(always), () -> {
+      if (rpc.calls.size() == 1) {
+        quietPasses.countDown();
+      }
+    });
     final var consumer = new RecordingConsumer();
     final var lateConsumer = new RecordingConsumer();
 
@@ -1066,19 +1110,18 @@ final class AccountFetcherTests {
         // a fresh key: a subset of the always-fetch set would ride the current
         // batch instead of queueing, and would not wake the poller
         fetcher.queue(List.of(fresh), consumer);
-        awaitTrue("the first batch was fetched", () -> rpc.calls.size() == 1);
 
         // an empty queue means waiting, not free-running cycles of the
         // always-fetch keys
-        Thread.sleep(60);
+        assertTrue(quietPasses.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS),
+            "the first batch was never fetched, or the poller stopped polling after it");
         assertEquals(1, rpc.calls.size(), "the poller cycled on an empty queue");
 
         // late work is picked up by the polling sleep, no signal involved
         fetcher.queue(List.of(late), lateConsumer);
-        worker.join(5_000);
-        assertFalse(worker.isAlive(), "the poller never picked up late work");
+        assertExitsWithin(worker, "the poller never picked up late work");
       } finally {
-        worker.interrupt();
+        stop(worker);
       }
       assertFalse(
           log.messages().stream().anyMatch(m -> m != null && m.contains("Unexpected error fetching accounts")),
@@ -1457,6 +1500,90 @@ final class AccountFetcherTests {
     assertFalse(fetcher.lock.isLocked());
   }
 
+  /// `count` distinct keys numbered from `firstId`, in order.
+  private static List<PublicKey> keyRange(final int firstId, final int count) {
+    final var keys = new ArrayList<PublicKey>(count);
+    for (int i = 0; i < count; ++i) {
+      keys.add(key(firstId + i));
+    }
+    return keys;
+  }
+
+  // priorityQueue, priorityQueueUnique and queueBatchable return normally whether or
+  // not they queued anything, so the four tests below read a lost submission straight
+  // from batch assembly; driven through run() alone it shows only as a loop waiting for
+  // a batch that never comes.
+
+  @Test
+  void directPriorityCallbackBatchesJumpTheQueue() {
+    final var rpc = new RecordingRpc();
+    final var fetcher = (AccountFetcherImpl) createFetcher(rpc, Set.of());
+    final var waitingKeys = keyRange(1_000, SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS);
+    final var urgent = key(1);
+    fetcher.queue(waitingKeys, new RecordingConsumer());
+    fetcher.priorityQueue(List.of(urgent), new RecordingConsumer());
+
+    // the priority batch is assembled first, and the full batch queued ahead of it
+    // cannot share its request
+    assertEquals(List.of(urgent), fetcher.createBatch());
+    assertEquals(1, fetcher.currentBatchSize());
+    fetcher.clearBatch();
+    assertEquals(Set.copyOf(waitingKeys), Set.copyOf(fetcher.createBatch()));
+    assertFalse(fetcher.lock.isLocked());
+  }
+
+  @Test
+  void directPriorityUniqueBatchesJumpTheQueueOncePerConsumer() {
+    final var rpc = new RecordingRpc();
+    final var fetcher = (AccountFetcherImpl) createFetcher(rpc, Set.of());
+    final var waitingKeys = keyRange(1_000, SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS);
+    final var urgent = key(1);
+    final var consumer = new RecordingConsumer();
+    fetcher.queue(waitingKeys, new RecordingConsumer());
+    fetcher.priorityQueueUnique(List.of(urgent), consumer);
+    // still pending: the same consumer's next unique request is refused, not queued
+    // ahead of the first
+    fetcher.priorityQueueUnique(List.of(key(2)), consumer);
+
+    assertEquals(List.of(urgent), fetcher.createBatch());
+    assertEquals(1, fetcher.currentBatchSize());
+    fetcher.clearBatch();
+    assertEquals(Set.copyOf(waitingKeys), Set.copyOf(fetcher.createBatch()));
+    assertFalse(fetcher.lock.isLocked());
+  }
+
+  @Test
+  void directBatchableListsChunkAtTheRpcLimit() {
+    final var rpc = new RecordingRpc();
+    final var fetcher = (AccountFetcherImpl) createFetcher(rpc, Set.of());
+    final int max = SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS;
+    final int total = (2 * max) + (max / 2);
+    final var keys = keyRange(10, total);
+    fetcher.queueBatchable(keys, new RecordingConsumer());
+
+    // one batch per chunk, in list order: two full requests, then the remainder
+    assertEquals(Set.copyOf(keys.subList(0, max)), Set.copyOf(fetcher.createBatch()));
+    fetcher.clearBatch();
+    assertEquals(Set.copyOf(keys.subList(max, 2 * max)), Set.copyOf(fetcher.createBatch()));
+    fetcher.clearBatch();
+    assertEquals(Set.copyOf(keys.subList(2 * max, total)), Set.copyOf(fetcher.createBatch()));
+    assertEquals(3, fetcher.currentBatchSize());
+    assertFalse(fetcher.lock.isLocked());
+  }
+
+  @Test
+  void directSmallBatchableListsAreQueuedWhole() {
+    final var rpc = new RecordingRpc();
+    final var fetcher = (AccountFetcherImpl) createFetcher(rpc, Set.of());
+    final var a = key(1);
+    final var b = key(2);
+    fetcher.queueBatchable(List.of(a, b), new RecordingConsumer());
+
+    assertEquals(Set.of(a, b), Set.copyOf(fetcher.createBatch()));
+    assertEquals(1, fetcher.currentBatchSize());
+    assertFalse(fetcher.lock.isLocked());
+  }
+
   @Test
   void interruptCausesAreRecognizedAcrossTheChain() {
     assertFalse(AccountFetcherImpl.causedByInterrupt(new IllegalStateException("plain")));
@@ -1571,31 +1698,44 @@ final class AccountFetcherTests {
     rpc.universe.put(first, account(first, 42L, new byte[]{1}));
     rpc.universe.put(second, account(second, 43L, new byte[]{2}));
     final var fetcher = AccountFetcher.createFetcher(Duration.ofMillis(150), true, createCaller(rpc), Set.of());
-    final var consumer = new RecordingConsumer();
+    // each delivery is timed on the loop thread, so the gap measured between the two
+    // cycles is the loop's own, whatever the test thread's scheduling
+    final long[] servedAt = new long[2];
+    final var firstServed = new CountDownLatch(1);
+    final var consumer = new RecordingConsumer() {
+      @Override
+      public void accept(final List<AccountInfo<byte[]>> accounts, final Map<PublicKey, AccountInfo<byte[]>> accountMap) {
+        servedAt[Math.min(received.size(), 1)] = System.nanoTime();
+        super.accept(accounts, accountMap);
+        firstServed.countDown();
+      }
+    };
+    // queued before the loop starts, so the first cycle runs at once instead of after a
+    // minimum delay of its own
+    fetcher.queue(List.of(first), consumer);
 
     final var worker = new Thread(fetcher::run, "account-fetcher");
     worker.start();
     try {
-      fetcher.queue(List.of(first), consumer);
-      awaitTrue("the first batch was fetched", () -> rpc.calls.size() == 1);
-      final long queuedAt = System.nanoTime();
+      assertTrue(firstServed.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS), "the first batch was never fetched");
+      // the minimum delay is the only timed wait after a served cycle: once the worker is
+      // in it, the next batch's signal arrives mid-delay and must not cut it short
+      awaitWithin("the minimum delay after the first cycle", () -> worker.getState() == Thread.State.TIMED_WAITING);
       fetcher.queue(List.of(second), consumer);
-      worker.join(10_000);
-      assertFalse(worker.isAlive(), "the second cycle never ran");
-      // a reactive fetcher still honors the minimum delay between cycles
-      final long elapsedMillis = (System.nanoTime() - queuedAt) / 1_000_000L;
-      assertTrue(elapsedMillis >= 120, () -> "second cycle ran after only " + elapsedMillis + "ms");
+      assertExitsWithin(worker, "the second cycle never ran");
     } finally {
-      worker.interrupt();
+      stop(worker);
     }
+    // a reactive fetcher still honors the minimum delay between cycles
+    final long elapsedMillis = (servedAt[1] - servedAt[0]) / 1_000_000L;
+    assertTrue(elapsedMillis >= 120, () -> "second cycle ran after only " + elapsedMillis + "ms");
     assertEquals(2, rpc.calls.size());
     assertEquals(2, consumer.received.size());
   }
 
   @Test
-  void aServedUniqueConsumerMayBeQueuedAgain() throws InterruptedException {
+  void aServedUniqueConsumerMayBeQueuedAgain() {
     final var rpc = new RecordingRpc();
-    rpc.interruptOnCall = 99;
     final var present = key(1);
     rpc.universe.put(present, account(present, 42L, new byte[]{1}));
     final var fetcher = createFetcher(rpc, Set.of());
@@ -1613,16 +1753,14 @@ final class AccountFetcherTests {
     };
     fetcher.priorityQueueUnique(List.of(present), consumer);
 
-    final var worker = new Thread(fetcher::run, "account-fetcher");
-    try {
-      worker.start();
-      awaitTrue("the re-queued unique consumer was served",
-          () -> consumer.received.size() == 2);
-    } finally {
-      worker.interrupt();
-    }
-    worker.join(5_000);
-    assertFalse(worker.isAlive());
+    // on the calling thread like its siblings: the fake interrupts on the one call this
+    // test expects, so the loop ends with the cycle that served the consumer, and a
+    // re-queue the guard refused -- or one left for a later cycle -- reads as a single
+    // delivery here, at once, instead of a worker waited on for a second
+    fetcher.run();
+
+    assertEquals(2, consumer.received.size(), "the re-queued unique consumer was not served");
     assertEquals(1, rpc.calls.size());
+    assertFalse(((AccountFetcherImpl) fetcher).lock.isLocked());
   }
 }

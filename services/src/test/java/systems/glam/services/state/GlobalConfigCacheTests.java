@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.logging.Handler;
@@ -72,7 +73,10 @@ final class GlobalConfigCacheTests {
   /// `logger.log` is invisible to every assertion.
   private static final class CapturingHandler extends Handler {
 
-    private final List<LogRecord> records = new ArrayList<>();
+    /// The run loop logs from its own thread while the test thread reads: a plain
+    /// `ArrayList` can drop or corrupt a record published concurrently, and under PIT
+    /// that reads as a mutant surviving rather than as a broken fixture.
+    private final List<LogRecord> records = new CopyOnWriteArrayList<>();
 
     @Override
     public void publish(final LogRecord record) {
@@ -1023,6 +1027,8 @@ final class GlobalConfigCacheTests {
             PublicKey.fromBase58Encoded("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"), 6, 0
         )
     ));
+    // which release their read lock on the invalidated miss as on any other
+    assertUnlocked(cache);
   }
 
   @Test
@@ -1056,6 +1062,10 @@ final class GlobalConfigCacheTests {
     assertNotNull(meta);
     assertEquals(usdc, meta.asset());
     assertSame(meta, matching.topPriorityForMintChecked(MintContext.createContext(SolanaAccounts.MAIN_NET, usdc, 6, 0)));
+    // both agreeing lookups released their read lock. A leaked hold is invisible to the
+    // answers, and the mismatch below would leak its own and then park this thread on the
+    // write lock -- a read hold cannot be upgraded -- so the leak has to fail here
+    assertUnlocked(matching);
     assertNotNull(matching.globalConfig());
 
     final var mismatched = createCache(tempDir, new MintCache() {
@@ -1683,8 +1693,11 @@ final class GlobalConfigCacheTests {
     assertUnlocked(cache);
   }
 
+  /// Bounded by the house fixture deadline, which sits inside the mutation watchdog's
+  /// budget: a condition that never comes fails here rather than racing the watchdog.
   private static void awaitTrue(final String what, final java.util.function.BooleanSupplier condition) throws InterruptedException {
-    final long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(1);
+    final long deadline = System.nanoTime()
+        + java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(Workers.FIXTURE_DEADLINE_MILLIS);
     while (!condition.getAsBoolean()) {
       assertTrue(System.nanoTime() < deadline, what);
       //noinspection BusyWait
@@ -1708,11 +1721,7 @@ final class GlobalConfigCacheTests {
     final var fetcher = scriptedFetcher(consumerQueues, new ArrayList<>(), () -> null);
     final var cache = createCache(tempDir, NULL_MINT_CACHE, fetcher, Duration.ofMillis(40));
 
-    final var runner = new Thread(cache::run);
-    runner.start();
-    awaitTrue("the poll loop refetches after the delay", () -> consumerQueues.get() >= 2);
-
-    // an invalid replacement empties the cache; the loop must notice and exit
+    // an invalid replacement, built up front: one that empties the cache once accepted
     final var globalConfig = GlobalConfig.read(globalConfigData, 0);
     final var metas = Arrays.copyOf(globalConfig.assetMetas(), globalConfig.assetMetas().length);
     final var first = metas[0];
@@ -1726,12 +1735,24 @@ final class GlobalConfigCacheTests {
         globalConfig.baseFeeBps(), globalConfig.flowFeeBps(),
         metas
     ).write();
-    cache.accept(accountInfo(cache.globalConfigUpdate().slot() + 1, GlamAccounts.MAIN_NET.configProgram(), invalid));
 
-    runner.join(1_000L);
-    assertFalse(runner.isAlive(), "the run loop must stop once the cache is invalidated");
-    assertNull(cache.globalConfig());
-    assertUnlocked(cache);
+    final var runner = new Thread(cache::run, "global-config-cache");
+    runner.start();
+    // the runner is stopped unconditionally: PIT runs many mutants in one minion JVM, and a
+    // runner a failed assertion leaves polling keeps queuing and logging into later ones
+    try {
+      awaitTrue("the poll loop refetches after the delay", () -> consumerQueues.get() >= 2);
+
+      // the invalid replacement empties the cache; the loop must notice and exit
+      cache.accept(accountInfo(cache.globalConfigUpdate().slot() + 1, GlamAccounts.MAIN_NET.configProgram(), invalid));
+
+      Workers.joinWithin(runner, "the run loop must stop once the cache is invalidated");
+      assertNull(cache.globalConfig());
+      assertUnlocked(cache);
+    } finally {
+      runner.interrupt();
+      runner.join(Workers.FIXTURE_DEADLINE_MILLIS);
+    }
   }
 
   @Test
@@ -1740,29 +1761,41 @@ final class GlobalConfigCacheTests {
     final var fetcher = scriptedFetcher(consumerQueues, new ArrayList<>(), () -> null);
     final var cache = createCache(tempDir, NULL_MINT_CACHE, fetcher, Duration.ofSeconds(30));
 
-    final var runner = new Thread(cache::run);
+    final var runner = new Thread(cache::run, "global-config-cache");
     runner.start();
-    awaitTrue("the first fetch is queued on entry", () -> consumerQueues.get() == 1);
-    Thread.sleep(100L);
-    assertEquals(1, consumerQueues.get(), "the loop must park for the fetch delay");
+    // the runner is stopped unconditionally: PIT runs many mutants in one minion JVM, and a
+    // runner a failed assertion leaves parked would outlive this test into later ones
+    try {
+      awaitTrue("the first fetch is queued on entry", () -> consumerQueues.get() == 1);
+      // each cycle clears the force flag before it parks, so a refresh forced ahead of the
+      // park is eaten by that reset: force only once the loop sits in its timed wait, the
+      // one TIMED_WAITING state it enters. The sleeps below observe; they do not order
+      awaitTrue("the loop reaches its timed park", () -> runner.getState() == Thread.State.TIMED_WAITING);
+      Thread.sleep(100L);
+      assertEquals(1, consumerQueues.get(), "the loop must park for the fetch delay");
 
-    cache.forceCacheRefresh();
-    awaitTrue("a forced refresh queues immediately", () -> consumerQueues.get() == 2);
-    // the force flag was consumed by the refetch: the loop parks again
-    Thread.sleep(150L);
-    assertEquals(2, consumerQueues.get(), "the refresh flag must reset after the fetch");
+      cache.forceCacheRefresh();
+      awaitTrue("a forced refresh queues immediately", () -> consumerQueues.get() == 2);
+      // the force flag was consumed by the refetch: the loop parks again
+      awaitTrue("the loop parks again after the forced fetch", () -> runner.getState() == Thread.State.TIMED_WAITING);
+      Thread.sleep(150L);
+      assertEquals(2, consumerQueues.get(), "the refresh flag must reset after the fetch");
 
-    cache.forceCacheRefresh();
-    awaitTrue("a second refresh pulls another fetch", () -> consumerQueues.get() == 3);
+      cache.forceCacheRefresh();
+      awaitTrue("a second refresh pulls another fetch", () -> consumerQueues.get() == 3);
 
-    runner.interrupt();
-    runner.join(1_000L);
-    assertFalse(runner.isAlive());
-    assertUnlocked(cache);
+      runner.interrupt();
+      runner.join(Workers.FIXTURE_DEADLINE_MILLIS);
+      assertFalse(runner.isAlive(), "the interrupt must end the parked loop");
+      assertUnlocked(cache);
+    } finally {
+      runner.interrupt();
+      runner.join(Workers.FIXTURE_DEADLINE_MILLIS);
+    }
   }
 
   @Test
-  void aFetcherFailureIsLoggedAndEndsTheLoop(@TempDir final Path tempDir) {
+  void aFetcherFailureIsLoggedAndEndsTheLoop(@TempDir final Path tempDir) throws InterruptedException {
     final var throwing = (systems.glam.services.rpc.AccountFetcher) java.lang.reflect.Proxy.newProxyInstance(
         systems.glam.services.rpc.AccountFetcher.class.getClassLoader(),
         new Class<?>[]{systems.glam.services.rpc.AccountFetcher.class},
@@ -1771,8 +1804,14 @@ final class GlobalConfigCacheTests {
         }
     );
     final var cache = createCache(tempDir, NULL_MINT_CACHE, throwing, Duration.ofMillis(10));
-    cache.run();
+    // on its own thread: the throwing refresh request is this loop's only exit, so a loop
+    // that stops making the request polls on its delay forever, and must fail the bounded
+    // join rather than hold the test thread until the watchdog
+    final var worker = new Thread(cache::run, "global-config-cache");
+    worker.start();
+    Workers.joinWithin(worker, "the failed refresh request must end the loop");
     assertLogged("Error queuing global config fetch");
+    assertUnlocked(cache);
   }
 
   @Test
@@ -1780,9 +1819,25 @@ final class GlobalConfigCacheTests {
     final var cache = createCache(tempDir);
     final var current = cache.globalConfigUpdate();
 
-    final long start = System.nanoTime();
-    assertSame(current, cache.awaitNewGlobalConfig(current, java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(80L)));
-    final long elapsedMillis = (System.nanoTime() - start) / 1_000_000L;
+    // on its own thread: nothing else can replace the config here, so only the wait's own
+    // budget ends this call. A wait that no longer breaks on a lapsed budget spins on it,
+    // and must fail the bounded join rather than hold the test thread until the watchdog;
+    // the join's interrupt then throws out of the spin at its next wait
+    final var timedOut = new AtomicReference<GlobalConfigUpdate>();
+    final var waitedNanos = new java.util.concurrent.atomic.AtomicLong(-1L);
+    final var timedWaiter = new Thread(() -> {
+      final long start = System.nanoTime();
+      try {
+        timedOut.set(cache.awaitNewGlobalConfig(current, java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(80L)));
+        waitedNanos.set(System.nanoTime() - start);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }, "global-config-timed-waiter");
+    timedWaiter.start();
+    Workers.joinWithin(timedWaiter, "an unchanged config must end the timed wait on its own budget");
+    assertSame(current, timedOut.get());
+    final long elapsedMillis = waitedNanos.get() / 1_000_000L;
     assertTrue(elapsedMillis >= 60L, () -> "waited only " + elapsedMillis + "ms");
     assertUnlocked(cache);
 
@@ -1793,16 +1848,22 @@ final class GlobalConfigCacheTests {
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
       }
-    });
+    }, "global-config-waiter");
     waiter.start();
-    awaitTrue("the waiter parks on the condition", () -> waiter.getState() == Thread.State.TIMED_WAITING);
+    // the waiter is stopped unconditionally: a failed assertion must not leave it parked on
+    // its 30s budget in the PIT minion that runs the next mutant
+    try {
+      awaitTrue("the waiter parks on the condition", () -> waiter.getState() == Thread.State.TIMED_WAITING);
 
-    final long newSlot = current.slot() + 3;
-    cache.accept(accountInfo(newSlot, GlamAccounts.MAIN_NET.configProgram(), withBaseFeeBumped(1)));
-    waiter.join(1_000L);
-    assertFalse(waiter.isAlive(), "the accepted replacement must wake the waiter");
-    assertNotNull(seen.get());
-    assertEquals(newSlot, seen.get().slot());
+      final long newSlot = current.slot() + 3;
+      cache.accept(accountInfo(newSlot, GlamAccounts.MAIN_NET.configProgram(), withBaseFeeBumped(1)));
+      Workers.joinWithin(waiter, "the accepted replacement must wake the waiter");
+      assertNotNull(seen.get());
+      assertEquals(newSlot, seen.get().slot());
+    } finally {
+      waiter.interrupt();
+      waiter.join(Workers.FIXTURE_DEADLINE_MILLIS);
+    }
   }
 
   private static AccountInfo<byte[]> mintAccount(final PublicKey mint, final int decimals) {
@@ -2056,7 +2117,11 @@ final class GlobalConfigCacheTests {
     probe.set(meta);
     final var mint = meta.asset();
     assertTrue(cache.hasAssetMetaForMint(mint), "the fixture mint must be configured before invalidation");
-    // the query released its read lock: the mismatch path below takes the write lock on
+    // a checked lookup whose decimals agree reads under the same read lock as the mismatch
+    // below, through the MintContext overload, which never consults the armed mint cache
+    final var agreeing = MintContext.createContext(SolanaAccounts.MAIN_NET, mint, meta.decimals(), 0);
+    assertSame(cache.assetMetaMap.get(mint)[0], cache.topPriorityForMintChecked(agreeing));
+    // both queries released their read lock: the mismatch path below takes the write lock on
     // this same thread, and a leaked read hold would park it there instead of failing here
     assertUnlocked(cache);
 

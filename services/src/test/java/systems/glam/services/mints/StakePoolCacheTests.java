@@ -12,8 +12,10 @@ import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.services.LoopHeartbeat;
 import systems.glam.services.io.FileUtils;
 import systems.glam.services.io.KeyedFlatFile;
+import systems.glam.services.io.KeyedFlatFileTestProbe;
 import systems.glam.services.tests.LogCapture;
 import systems.glam.services.tests.RecordingHeartbeat;
+import systems.glam.services.tests.Workers;
 
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -22,13 +24,18 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.*;
+import static systems.glam.services.tests.Workers.FIXTURE_DEADLINE_MILLIS;
 
 final class StakePoolCacheTests {
 
@@ -129,31 +136,83 @@ final class StakePoolCacheTests {
     );
   }
 
-  private static StakePoolCache initCache(final Path tempDir, final RpcCaller rpcCaller) {
-    return StakePoolCache.initCache(
-        Executors.newVirtualThreadPerTaskExecutor(),
-        tempDir.resolve("pools"),
-        POOLS,
-        MARINADE,
-        Duration.ofMillis(30),
-        rpcCaller
-    ).join();
+  /// Every flat file's lock must be free once an operation on the cache returns. A lock left
+  /// held is visible to no result assertion, and one leaked by a thread that has since ended
+  /// can never be released: [StakePoolCacheImpl#close] would then park in `lock()`, which takes
+  /// no timeout and ignores interrupts. Reading the lock state first fails the test instead.
+  private static void assertFlatFilesUnlocked(final StakePoolCacheImpl cache, final String expectation) {
+    cache.stakePoolFileChannelByProgram.forEach((program, flatFile) -> assertFalse(
+        KeyedFlatFileTestProbe.isLocked(flatFile),
+        () -> expectation + ": the flat file of " + program.toBase58()
+    ));
   }
 
-  private static StakePoolCache initCache(final Path tempDir,
-                                          final RpcCaller rpcCaller,
-                                          final LoopHeartbeat heartbeat) {
+  /// A started cache that closes only while none of its flat files' locks is held, so a
+  /// leaked lock fails the test, as its failure or suppressed behind the one its body
+  /// raised, rather than parking the test thread in `close()`. The files are then left open.
+  private record Started(StakePoolCacheImpl cache) implements AutoCloseable {
+
+    @Override
+    public void close() {
+      assertFlatFilesUnlocked(cache, "a lock is still held when the cache closes");
+      cache.close();
+    }
+  }
+
+  /// Waits for the start-up inside the fixture deadline, then checks it handed back every
+  /// lock. A cold start persists each fetched program through `overwriteFile` on the
+  /// start-up thread, which then ends, so a lock it leaked can never be released: the probe
+  /// fails here and the cache is never handed back for closing.
+  private static Started started(final CompletableFuture<StakePoolCache> startUp) {
+    final var cache = (StakePoolCacheImpl) assertDoesNotThrow(
+        () -> startUp.get(FIXTURE_DEADLINE_MILLIS, MILLISECONDS),
+        "the cache must start inside the fixture deadline"
+    );
+    assertFlatFilesUnlocked(cache, "the start-up must hand back every lock it took");
+    return new Started(cache);
+  }
+
+  /// The start-up's thread is done or unwinding once its future is: stop it, bounded.
+  private static void stop(final ExecutorService startUpExecutor) throws InterruptedException {
+    startUpExecutor.shutdownNow();
+    startUpExecutor.awaitTermination(FIXTURE_DEADLINE_MILLIS, MILLISECONDS);
+  }
+
+  private static Started initCache(final Path tempDir, final RpcCaller rpcCaller) throws InterruptedException {
+    final var startUpExecutor = Executors.newVirtualThreadPerTaskExecutor();
+    try {
+      return started(StakePoolCache.initCache(
+          startUpExecutor,
+          tempDir.resolve("pools"),
+          POOLS,
+          MARINADE,
+          Duration.ofMillis(30),
+          rpcCaller
+      ));
+    } finally {
+      stop(startUpExecutor);
+    }
+  }
+
+  private static Started initCache(final Path tempDir,
+                                   final RpcCaller rpcCaller,
+                                   final LoopHeartbeat heartbeat) throws InterruptedException {
     // one millisecond is the floor the poll loop accepts: the sleep between the
     // passes below is real, so keep it at the floor
-    return StakePoolCache.initCache(
-        Executors.newVirtualThreadPerTaskExecutor(),
-        tempDir.resolve("pools"),
-        POOLS,
-        MARINADE,
-        Duration.ofMillis(1),
-        rpcCaller,
-        heartbeat
-    ).join();
+    final var startUpExecutor = Executors.newVirtualThreadPerTaskExecutor();
+    try {
+      return started(StakePoolCache.initCache(
+          startUpExecutor,
+          tempDir.resolve("pools"),
+          POOLS,
+          MARINADE,
+          Duration.ofMillis(1),
+          rpcCaller,
+          heartbeat
+      ));
+    } finally {
+      stop(startUpExecutor);
+    }
   }
 
   @Test
@@ -161,7 +220,7 @@ final class StakePoolCacheTests {
     final var fetched = new ConcurrentLinkedQueue<PublicKey>();
     final var running = new AtomicBoolean(false);
     final var heartbeat = new RecordingHeartbeat();
-    try (final var cache = initCache(tempDir, rpcCaller(program -> {
+    try (final var started = initCache(tempDir, rpcCaller(program -> {
       if (running.get()) {
         fetched.add(program);
         // the second pass is the last: leave through the sleep, not the heartbeat,
@@ -176,6 +235,7 @@ final class StakePoolCacheTests {
       }
       return List.of();
     }), heartbeat)) {
+      final var cache = started.cache();
       assertEquals(0, heartbeat.ticks(), "the cold-start fetch is initialisation, not a cycle");
       running.set(true);
       cache.run();
@@ -200,7 +260,9 @@ final class StakePoolCacheTests {
 
     final var exactState = key(6);
     final var exactMint = key(7);
-    try (final var cache = initCache(tempDir, rpcCaller(program -> {
+    // the start-up persists both fetched programs through overwriteFile on its own thread,
+    // and initCache fails here if that thread kept either file's lock
+    try (final var started = initCache(tempDir, rpcCaller(program -> {
       if (program.equals(multi)) {
         // the short account is parsed around, not over; exactly the minimum is kept
         return List.of(
@@ -211,6 +273,7 @@ final class StakePoolCacheTests {
       }
       return program.equals(sanctumMulti) ? List.of(poolAccount(sanctumMulti, state2, mint2)) : List.of();
     }))) {
+      final var cache = started.cache();
       assertNotNull(cache.get(exactMint), "an account at exactly the minimum length is valid");
       final var context1 = cache.get(mint1);
       assertNotNull(context1);
@@ -254,19 +317,21 @@ final class StakePoolCacheTests {
     final var state2 = key(13);
     final var mint2 = key(14);
 
-    // the first run persists; the second must load that program from disk
+    // the first run persists, through overwriteFile on the start-up thread; the second must
+    // load that program from disk
     try (final var first = initCache(tempDir, rpcCaller(program ->
         program.equals(multi)
             ? List.of(poolAccount(multi, state1, mint1), poolAccount(multi, state2, mint2))
             : List.of()))) {
-      assertNotNull(first.get(mint1));
+      assertNotNull(first.cache().get(mint1));
     }
 
     final var fetched = new ArrayList<PublicKey>();
-    try (final var cache = initCache(tempDir, rpcCaller(program -> {
+    try (final var started = initCache(tempDir, rpcCaller(program -> {
       fetched.add(program);
       return List.of();
     }))) {
+      final var cache = started.cache();
       assertFalse(fetched.contains(multi), "the persisted program must load from disk");
       final var context1 = cache.get(mint1);
       assertNotNull(context1);
@@ -281,75 +346,83 @@ final class StakePoolCacheTests {
   @Test
   void acceptGatesOnOwnerLengthAndNovelty(@TempDir final Path tempDir) throws Exception {
     final var multi = POOLS.stakePoolProgram();
-    try (final var cache = initCache(tempDir, rpcCaller(program -> List.of()))) {
-      final var impl = (StakePoolCacheImpl) cache;
+    try (final var started = initCache(tempDir, rpcCaller(program -> List.of()))) {
+      final var cache = started.cache();
       final var filePath = FileUtils.resolveAccountPath(tempDir.resolve("pools"), multi);
 
       // a foreign owner is ignored
-      impl.accept(poolAccount(key(99), key(21), key(22)));
+      cache.accept(poolAccount(key(99), key(21), key(22)));
       assertNull(cache.get(key(22)));
 
       // short data is ignored
-      impl.accept(poolAccount(multi, key(23), key(24), StakePoolState.NEXT_EPOCH_FEE_OFFSET - 1));
+      cache.accept(poolAccount(multi, key(23), key(24), StakePoolState.NEXT_EPOCH_FEE_OFFSET - 1));
       assertNull(cache.get(key(24)));
 
-      // a new pool is indexed and appended
-      impl.accept(poolAccount(multi, key(25), key(26)));
+      // a new pool is indexed and appended, and the append hands its lock back
+      cache.accept(poolAccount(multi, key(25), key(26)));
       final var context = cache.get(key(26));
       assertNotNull(context);
       assertEquals(key(25), context.stateKey());
       assertEquals(StakePoolContext.BYTES, context.l());
       assertEquals(StakePoolContext.BYTES, Files.size(filePath));
+      assertFlatFilesUnlocked(cache, "the append must hand back its lock");
 
       // the same mint again is not re-appended, even from another state account
-      impl.accept(poolAccount(multi, key(27), key(26)));
+      cache.accept(poolAccount(multi, key(27), key(26)));
       assertSame(context, cache.get(key(26)));
       assertEquals(StakePoolContext.BYTES, Files.size(filePath));
 
       // exactly the minimum length is accepted
-      impl.accept(poolAccount(multi, key(28), key(29), StakePoolState.NEXT_EPOCH_FEE_OFFSET));
+      cache.accept(poolAccount(multi, key(28), key(29), StakePoolState.NEXT_EPOCH_FEE_OFFSET));
       assertNotNull(cache.get(key(29)));
+      assertFlatFilesUnlocked(cache, "the append must hand back its lock");
     }
   }
 
   @Test
-  void aClosedCacheRejectsNewPools(@TempDir final Path tempDir) {
+  void aClosedCacheRejectsNewPools(@TempDir final Path tempDir) throws Exception {
     final var multi = POOLS.stakePoolProgram();
-    final var cache = initCache(tempDir, rpcCaller(program -> List.of()));
-    cache.close();
-    final var impl = (StakePoolCacheImpl) cache;
+    final var started = initCache(tempDir, rpcCaller(program -> List.of()));
+    started.close();
+    final var impl = started.cache();
+    assertFlatFilesUnlocked(impl, "close must hand back the locks it took");
     assertThrows(RuntimeException.class, () -> impl.accept(poolAccount(multi, key(41), key(42))),
         "an append to a closed flat file must fail loudly");
+    assertFlatFilesUnlocked(impl, "the refused append must hand back its lock");
   }
 
   @Test
   void theRunLoopPollsEveryProgramOnTheDelay(@TempDir final Path tempDir) throws Exception {
     final var multi = POOLS.stakePoolProgram();
     final var polled = new ConcurrentHashMap<PublicKey, Integer>();
+    // each pass of the run loop polls every one of the three programs: two passes are six polls
+    final var twoPasses = new CountDownLatch(6);
     final var mint = key(32);
     final var running = new java.util.concurrent.atomic.AtomicBoolean(false);
     final var refusing = new java.util.concurrent.atomic.AtomicBoolean(false);
-    try (final var cache = initCache(tempDir, rpcCaller(program -> {
+    try (final var started = initCache(tempDir, rpcCaller(program -> {
       if (refusing.get()) {
         throw new IllegalStateException("the test is over");
       }
       polled.merge(program, 1, Integer::sum);
+      if (!running.get()) {
+        return List.of();
+      }
+      twoPasses.countDown();
       // the pool only exists once the run loop is polling: finding it proves
       // the loop routes results through accept, not that init already did
-      return running.get() && program.equals(multi) ? List.of(poolAccount(multi, key(31), mint)) : List.of();
+      return program.equals(multi) ? List.of(poolAccount(multi, key(31), mint)) : List.of();
     }))) {
+      final var cache = started.cache();
       polled.clear();
       assertNull(cache.get(mint));
       running.set(true);
       final var runner = new Thread(cache::run);
       runner.start();
       try {
-        final long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(1);
-        while (polled.size() < 3 || polled.values().stream().anyMatch(count -> count < 2)) {
-          assertTrue(System.nanoTime() < deadline, () -> "programs polled: " + polled);
-          //noinspection BusyWait
-          Thread.sleep(1L);
-        }
+        assertTrue(twoPasses.await(FIXTURE_DEADLINE_MILLIS, MILLISECONDS), () -> "programs polled: " + polled);
+        assertEquals(3, polled.size(), () -> "programs polled: " + polled);
+        assertTrue(polled.values().stream().allMatch(count -> count >= 2), () -> "programs polled: " + polled);
         // the poll results run through accept: the new pool is indexed
         assertNotNull(cache.get(mint));
         // the sleep paces the loop: watch a window, not an instant — without the
@@ -360,16 +433,18 @@ final class StakePoolCacheTests {
             () -> "the poll loop is spinning: " + polled + " after " + counted);
 
         runner.interrupt();
-        runner.join(1_000L);
-        assertFalse(runner.isAlive());
+        Workers.joinWithin(runner, "the poll loop must stop on its interrupt");
       } finally {
         // a failed assertion above must not leave the loop running into the next test, and a
         // loop without its sleep never answers the interrupt: refusing the poll ends it through
         // its failure exit
         refusing.set(true);
         runner.interrupt();
-        runner.join(1_000L);
+        runner.join(FIXTURE_DEADLINE_MILLIS);
       }
+      // accept appended the new pool on the runner, which has ended: a lock it kept can never
+      // be released, and closing the cache would park on it
+      assertFlatFilesUnlocked(cache, "the run loop's append must hand back its lock");
     }
   }
 

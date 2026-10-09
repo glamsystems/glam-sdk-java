@@ -23,7 +23,9 @@ final class StakePoolCacheImpl implements StakePoolCache, Consumer<AccountInfo<b
   private final Duration fetchDelay;
   private final RpcCaller rpcCaller;
   private final List<Filter> stakePoolFilters;
-  private final Map<PublicKey, KeyedFlatFile<StakePoolContext>> stakePoolFileChannelByProgram;
+  /// Package-private so tests can assert each file's lock is released: the cold start writes
+  /// these files on its own thread, and a lock it leaks there blocks [#close] for good.
+  final Map<PublicKey, KeyedFlatFile<StakePoolContext>> stakePoolFileChannelByProgram;
   private final Map<PublicKey, StakePoolContext> stakePoolContextByMint;
   private final LoopHeartbeat heartbeat;
 

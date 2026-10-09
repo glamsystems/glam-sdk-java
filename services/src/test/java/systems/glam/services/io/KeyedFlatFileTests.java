@@ -158,6 +158,7 @@ final class KeyedFlatFileTests {
       assertEquals(2 * ENTRY_SIZE, data.length);
       assertEquals(new Entry(1, 11), readEntry(data, 0));
       assertEquals(new Entry(2, 22), readEntry(data, 1));
+      assertUnlocked(file);
     }
   }
 

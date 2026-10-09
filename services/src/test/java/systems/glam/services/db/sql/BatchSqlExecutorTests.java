@@ -18,14 +18,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.*;
 
 /// run() executes on the test thread against proxied JDBC interfaces; the fake
 /// interrupts the thread once the last expected batch lands, so the loop exits
 /// through its InterruptedException path instead of awaiting new work.
+///
+/// The few tests that need the runner parked run it on a thread of its own instead.
+/// Every wait there is bounded by the fixture deadline, so a mutant fails an assertion
+/// well inside the mutation watchdog's budget, and every thread they start is ended by
+/// `stop` in a finally.
 final class BatchSqlExecutorTests {
 
   @Test
@@ -73,6 +81,18 @@ final class BatchSqlExecutorTests {
     int interruptOnExecution = 1;
     IntConsumer onExecution = execution -> {
     };
+    /// The threaded tests' stop switch, set only by `stop` once their assertions are
+    /// done; a calling-thread test must never set it. From then on getConnection and
+    /// executeBatch throw, so a runner that a mutant left spinning without a blocking
+    /// call -- never reading its interrupt -- leaves through run()'s RuntimeException
+    /// path instead of outliving the test and spinning on through the next mutant.
+    volatile boolean closed;
+
+    private void ensureOpen() {
+      if (closed) {
+        throw new IllegalStateException("the fixture is closed");
+      }
+    }
 
     DataSource dataSource() {
       final var preparedStatement = (PreparedStatement) Proxy.newProxyInstance(
@@ -80,6 +100,7 @@ final class BatchSqlExecutorTests {
           new Class<?>[]{PreparedStatement.class},
           (proxy, method, args) -> switch (method.getName()) {
             case "executeBatch" -> {
+              ensureOpen();
               onExecution.accept(++executions);
               if (executions >= interruptOnExecution) {
                 Thread.currentThread().interrupt();
@@ -111,6 +132,7 @@ final class BatchSqlExecutorTests {
           new Class<?>[]{DataSource.class},
           (proxy, method, args) -> switch (method.getName()) {
             case "getConnection" -> {
+              ensureOpen();
               if (++connections == failConnection) {
                 throw new SQLException("pool exhausted", "08001", 0);
               }
@@ -343,6 +365,41 @@ final class BatchSqlExecutorTests {
     );
   }
 
+  /// Joins a thread that is expected to end on its own, failing once the fixture deadline
+  /// passes. Ending a thread that did not is `stop`'s job, in the test's finally.
+  private static void assertExits(final Thread thread, final String expectation) throws InterruptedException {
+    thread.join(Workers.FIXTURE_DEADLINE_MILLIS);
+    assertFalse(thread.isAlive(), expectation);
+  }
+
+  /// Ends every thread a threaded test started, whatever a mutant left it doing, so
+  /// nothing leaks into the next test or the next mutant. An interrupt alone reaches
+  /// neither shape that never blocks: a runner spinning without a blocking call never
+  /// reads it, and a waiter whose await() was removed spins on the open batch holding the
+  /// lock, which leaves a signalled runner in an uninterruptible reacquire. So the fake is
+  /// closed first, the batch is marked complete, and any hold a mutant leaked onto the
+  /// test thread is handed back; only then is each thread interrupted, and all of them are
+  /// joined against one fixture deadline. Cleanup only: it runs after the assertions.
+  private static void stop(final FakeJdbc jdbc,
+                           final BatchSqlExecutorImpl<?> executor,
+                           final Thread... threads) throws InterruptedException {
+    jdbc.closed = true;
+    executor.batchComplete = true;
+    while (executor.lock.isHeldByCurrentThread()) {
+      executor.lock.unlock();
+    }
+    for (final var thread : threads) {
+      thread.interrupt();
+    }
+    final long deadline = System.nanoTime() + MILLISECONDS.toNanos(Workers.FIXTURE_DEADLINE_MILLIS);
+    for (final var thread : threads) {
+      final long remainingMillis = NANOSECONDS.toMillis(deadline - System.nanoTime());
+      if (remainingMillis > 0) {
+        thread.join(remainingMillis);
+      }
+    }
+  }
+
   @Test
   void theIdleWindowIsTheBatchDelayFlooredAtTheProductionFloor() {
     final var jdbc = new FakeJdbc();
@@ -367,7 +424,11 @@ final class BatchSqlExecutorTests {
 
     final var worker = new Thread(executor::run, "batch-sql-idle-runner");
     worker.start();
-    Workers.joinWithin(worker, "an idle runner must keep ticking on its window and honour the interrupt");
+    try {
+      assertExits(worker, "an idle runner must keep ticking on its window and honour the interrupt");
+    } finally {
+      stop(jdbc, executor, worker);
+    }
 
     // nothing was ever queued: every tick was an idle window, no statement ran
     assertEquals(3, heartbeat.ticks());
@@ -395,7 +456,7 @@ final class BatchSqlExecutorTests {
     try {
       assertTrue(parked.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS), "the idle runner never ticked");
       final int idleTicks;
-      executor.lock.lock();
+      assertTrue(executor.lock.tryLock(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS), "the ticking runner never released the lock");
       try {
         // holding the lock the runner is inside its timed wait, so this count is
         // stable and the item lands before that wait's own emptiness check
@@ -404,7 +465,7 @@ final class BatchSqlExecutorTests {
       } finally {
         executor.lock.unlock();
       }
-      Workers.joinWithin(worker, "the queued item must wake the runner, which then exits on the fake's interrupt");
+      assertExits(worker, "the queued item must wake the runner, which then exits on the fake's interrupt");
 
       // the wake-up that found work is not an idle window: only the drain ticked
       assertEquals(List.of("a"), prepared);
@@ -412,7 +473,7 @@ final class BatchSqlExecutorTests {
       assertEquals(idleTicks + 1, ticks.get());
       assertFalse(executor.lock.isLocked());
     } finally {
-      worker.interrupt();
+      stop(jdbc, executor, worker);
     }
   }
 
@@ -490,39 +551,41 @@ final class BatchSqlExecutorTests {
   void aSubBatchSizeItemQueuedUpFrontIsFlushed() throws InterruptedException {
     final var jdbc = new FakeJdbc();
     final var prepared = new ArrayList<String>();
-    final var executor = createExecutor(jdbc, 2, prepared);
+    final var executor = (BatchSqlExecutorImpl<String>) createExecutor(jdbc, 2, prepared);
     executor.queue("a");
 
     // fewer items than a batch at loop entry: the runner must pass through the
     // delay window and flush, not treat the non-empty queue as drained
     final var worker = new Thread(executor::run, "batch-sql-runner");
     worker.start();
-    worker.join(5_000);
-    if (worker.isAlive()) {
-      worker.interrupt();
-      worker.join(5_000);
-      fail("the runner never flushed the sub-batch-size item");
+    try {
+      assertExits(worker, "the runner never flushed the sub-batch-size item");
+    } finally {
+      stop(jdbc, executor, worker);
     }
     assertEquals(List.of("a"), prepared);
     assertEquals(1, jdbc.executions);
     assertEquals(1, jdbc.commits);
   }
 
-  private static void awaitTrue(final String what, final java.util.function.BooleanSupplier condition) throws InterruptedException {
-    for (int i = 0; i < 5_000; ++i) {
-      if (condition.getAsBoolean()) {
-        return;
-      }
-      Thread.sleep(1);
+  /// Polls for progress no synchronous reader exposes -- another thread reaching its
+  /// park -- and fails once the fixture deadline passes, so a condition that never comes
+  /// fails here, well inside the mutation watchdog's budget.
+  private static void awaitTrue(final String what, final BooleanSupplier condition) throws InterruptedException {
+    final long deadline = System.nanoTime() + MILLISECONDS.toNanos(Workers.FIXTURE_DEADLINE_MILLIS);
+    while (!condition.getAsBoolean()) {
+      assertTrue(System.nanoTime() - deadline < 0, () -> "timed out awaiting " + what);
+      //noinspection BusyWait
+      Thread.sleep(1L);
     }
-    fail("timed out awaiting " + what);
   }
 
   @Test
   void queueSignalsWakeTheRunnerAndCompletionWakesWaiters() throws InterruptedException {
     final var jdbc = new FakeJdbc();
     final var prepared = new ArrayList<String>();
-    // a long delay window: only the batch-full signal can wake the runner in time
+    // a long delay window: a lost or misrouted signal leaves the runner parked for 30s,
+    // so only the signal itself can move it in time
     final var executor = (BatchSqlExecutorImpl<String>) BatchSqlExecutor.create(
         String.class,
         jdbc.dataSource(),
@@ -536,38 +599,60 @@ final class BatchSqlExecutorTests {
         Backoff.single(MILLISECONDS, 0)
     );
 
+    final var sizeAtRelease = new AtomicInteger(-1);
+    final var waiterFailure = new AtomicReference<Throwable>();
     final var worker = new Thread(executor::run, "batch-sql-runner");
+    final var waiter = new Thread(() -> {
+      try {
+        executor.awaitBatchComplete();
+        sizeAtRelease.set(prepared.size());
+      } catch (final InterruptedException | RuntimeException e) {
+        waiterFailure.set(e);
+      }
+    }, "batch-complete-waiter");
     worker.start();
     try {
       // the runner parks awaiting the first item -- a timed park, since an idle
       // runner re-arms its window to keep its heartbeat ticking
       awaitTrue("runner parked on an empty queue",
-          () -> executor.batchComplete && worker.getState() == Thread.State.TIMED_WAITING);
+          () -> !worker.isAlive() || (executor.batchComplete && worker.getState() == Thread.State.TIMED_WAITING));
+      assertTrue(worker.isAlive(), "the runner ended before it parked on the empty queue");
 
-      // the first item must signal the start window
-      executor.queue("a");
-      awaitTrue("the start-window signal woke the runner", () -> !executor.batchComplete);
+      // while the test holds the lock, a signalled runner can only be queued to reacquire
+      // it, so each signal below is read synchronously instead of raced against the runner
+      assertTrue(executor.lock.tryLock(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS), "the parked runner kept the lock");
+      try {
+        // the first item must signal the start window
+        executor.queue("a");
+        assertTrue(executor.lock.hasQueuedThread(worker), "the first item never signalled the runner's start window");
+      } finally {
+        executor.lock.unlock();
+      }
+      // woken, the runner opens the batch and parks in its window for the batch to fill
+      awaitTrue("the runner parked in its batch window",
+          () -> !worker.isAlive() || (!executor.batchComplete && worker.getState() == Thread.State.TIMED_WAITING));
+      assertTrue(worker.isAlive(), "the woken runner flushed its lone item instead of waiting in its batch window");
 
-      // a waiter arriving while the batch is open must block until completion
-      final var sizeAtRelease = new java.util.concurrent.atomic.AtomicInteger(-1);
-      final var waiter = new Thread(() -> {
-        try {
-          executor.awaitBatchComplete();
-          sizeAtRelease.set(prepared.size());
-        } catch (final InterruptedException e) {
-          // fail via the join assert below
-        }
-      }, "batch-complete-waiter");
+      // a waiter arriving while the batch is open must block until completion: parked on
+      // the completion condition, so waiting yet not queued for the lock
       waiter.start();
-      awaitTrue("the waiter parked", () -> waiter.getState() == Thread.State.WAITING);
+      awaitTrue("the waiter parked",
+          () -> !waiter.isAlive() || (waiter.getState() == Thread.State.WAITING && !executor.lock.hasQueuedThread(waiter)));
+      assertTrue(waiter.isAlive(), () -> "the waiter left the open batch "
+          + (waiterFailure.get() == null ? "by returning" : "on " + waiterFailure.get()));
 
-      // filling the batch must signal the delay window, not wait out the 30s
-      executor.queue("b");
-      worker.join(5_000);
-      assertFalse(worker.isAlive(), "the batch-full signal never woke the runner");
+      assertTrue(executor.lock.tryLock(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS), "the parked waiter kept the lock");
+      try {
+        // filling the batch must signal the delay window, not wait out the 30s
+        executor.queue("b");
+        assertTrue(executor.lock.hasQueuedThread(worker), "filling the batch never signalled the runner's batch window");
+      } finally {
+        executor.lock.unlock();
+      }
 
-      waiter.join(5_000);
-      assertFalse(waiter.isAlive(), "completion never signalled the waiter");
+      assertExits(worker, "the signalled runner must drain its full batch and exit on the fake's interrupt");
+      assertExits(waiter, "completion never signalled the waiter");
+      assertNull(waiterFailure.get());
       // the waiter was only released once the batch had fully executed
       assertEquals(2, sizeAtRelease.get());
       assertEquals(List.of("a", "b"), prepared);
@@ -575,7 +660,7 @@ final class BatchSqlExecutorTests {
       assertEquals(1, jdbc.commits);
       assertFalse(executor.lock.isLocked());
     } finally {
-      worker.interrupt();
+      stop(jdbc, executor, worker, waiter);
     }
   }
 
