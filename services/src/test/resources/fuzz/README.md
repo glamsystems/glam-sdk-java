@@ -6,9 +6,11 @@ Inputs are raw payload bytes: the harness both decodes them as a compressed
 account file and round-trips them through the write path (see
 `AccountDataFuzz`). Seeds:
 
-- `mainnet-mappings.gz` — the checked-in mainnet Scope OracleMappings
-  snapshot's compressed file bytes (provenance: `../accounts/kamino/README.md`),
-  so the decode half starts from a real well-formed file.
+- `mainnet-mappings.gz` — the compressed file bytes of a mainnet Scope
+  OracleMappings snapshot (account `4zh6bmb7…`, fetched 2026-07-21 with
+  `getAccountInfo` from `api.mainnet-beta.solana.com`; the Kamino fixtures it
+  came from moved to vault-stat-service on 2026-08-21), so the decode half
+  starts from a real well-formed file.
 - `gzip-magic-only` — the two-byte gzip magic, pinning the truncated-header
   rejection path.
 - `empty` — the zero-length file the corrupted-file deletion tests care about.

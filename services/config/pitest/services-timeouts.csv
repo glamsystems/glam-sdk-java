@@ -1,25 +1,22 @@
 # Audited timed-out mutants: one line-less class,method,mutator key per member,
-# each carrying an admissible cause. Only cause:liveness may remain in the set —
-# the mutated path must have no path-owned finite completion guarantee. The
-# structural argument per member lives in README.md under "Timed-out mutants
-# (audited set)". Line numbers ride in comments only — drift must not churn
-# membership.
+# each carrying its cause category (sava-build HARDENING.md names the admissible
+# ones) and a short argument. Each member's structural cause belongs in
+# README.md, under its class in the timed-out mutants section. Line numbers ride
+# in comments only — drift must not churn membership.
 #
-# Reclassified 2026-08-06 against the current rule, from a history-free
-# pitestServices observation. Every member below was observed TIMED_OUT in that
-# run and is covered by a harness with no bounded failure path: the service loop
-# is driven on the calling thread and stopped only by a collaborator's interrupt,
-# so a mutant that starves the loop leaves nothing to end the wait.
+# Reclassified 2026-08-06 from a history-free pitestServices observation in which
+# every member then in the set timed out.
 #
 # 26 former members were removed: their covering fixtures carried 5s deadlines
-# that outlived PIT's watchdog budget (timeoutConst 1500ms + 2x runtime), so a
-# bounded assertion failure was being relabelled TIMED_OUT. Lowering those
-# deadlines turned them into deterministic kills — see AGENTS.md "Fixture
-# deadlines must sit inside the watchdog budget".
+# that outlived PIT's watchdog budget as then configured, so a bounded
+# assertion failure was being relabelled TIMED_OUT. Lowering those deadlines
+# turned them into deterministic kills — see the watchdog-budget paragraph in
+# AGENTS.md's GLAM-local hardening facts.
 #
-# The two leaked-unlock members below were briefly retired on a single quiet
-# observation and re-added when the next run fired them: both are KILLED <->
-# TIMED_OUT drifters, so one quiet run is not retirement evidence.
+# The leaked-unlock members, KeyedFlatFileImpl.overwriteFile and
+# GlobalConfigCacheImpl.topPriorityForMintChecked, were briefly retired on a
+# single quiet observation and re-added when the next run fired them: both drift
+# between KILLED and TIMED_OUT, so one quiet run is not retirement evidence.
 systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,RemoveConditionalMutator_EQUAL_ELSE # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
 systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,RemoveConditionalMutator_EQUAL_IF # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake
 systems.glam.services.db.sql.BatchSqlExecutorImpl,awaitBatchComplete,VoidMethodCallMutator # cause:liveness the fake jdbc interrupts only after the Nth execution; a lost signal or trapped window leaves the executor short of it and awaitBatchComplete waiters never wake

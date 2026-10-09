@@ -1,14 +1,13 @@
 # Mutation-testing baseline & triage policy — `services`
 
-`pitestServices` is this module's mutation suite; GLAM policy runs it and
-`pitestServicesVerify` before any handoff whose changed code the suite
-reaches. The suite's accepted baseline is `services-accepted.csv`, holding the
-unkilled rows (`SURVIVED` and `NO_COVERAGE`) keyed by class, method, mutator
-and status; its audited timeout set is `services-timeouts.csv`. Every row
-triaged out of debt owes its written argument here. The canonical policy is
-sava-build's `HARDENING.md`, and `hardeningHelp` is the authority on the
-installed plugin's task names; this file records what is accepted *here* and
-why.
+`pitestServices` is this module's mutation suite; the hardening block in the
+repository's `AGENTS.md` says when it is owed. The suite's accepted baseline is
+`services-accepted.csv`, holding the unkilled rows (`SURVIVED` and
+`NO_COVERAGE`) keyed by class, method, mutator and status; its audited timeout
+set is `services-timeouts.csv`. Every row triaged out of debt owes its written
+argument here. The canonical policy is sava-build's `HARDENING.md`, and
+`hardeningHelp` is the authority on the installed plugin's task names; this
+file records what is accepted *here* and why.
 
 A new unkilled mutant has exactly three legal outcomes:
 
@@ -17,10 +16,9 @@ A new unkilled mutant has exactly three legal outcomes:
 2. **Refactor** — restructure so the mutant cannot exist.
 3. **Accept it knowingly** — record the reason under "Triaged equivalent
    mutants" below, give the row a short `# <family>` label named in the
-   "Family labels" glossary, and write the record with the named task
-   (`pitestServicesBaselineUpdate` / `Union` / `Prune` / `Rebase`), never
-   by hand. Acceptance is for mutants *equivalent with respect to observable
-   behavior*, not for "hard to test".
+   "Family labels" glossary, and write the record with the writer task
+   `hardeningHelp` names for it, never by hand. Acceptance is for mutants
+   *equivalent with respect to observable behavior*, not for "hard to test".
 
 Identical rows are sibling mutants of one compound condition, not duplicates
 to tidy: never hand-dedupe the CSV, and never hand-edit record structure or
@@ -1000,7 +998,7 @@ one run and resurfaced `SURVIVED` in the next — the mutant forces
 `createDirectories` on a directory that already exists, a
 no-op, so its "kill" was load-dependent. Unioned back with a
 `# flip insurance` label; do not prune it on a run that happens to detect
-it.
+it. The row moved to vault-stat-service with the Kamino cache on 2026-08-21.
 
 ## Untriaged debt
 
@@ -1028,11 +1026,14 @@ their tests, fuzz harnesses (`scopeFeedContext`, `reserveContext`,
 `kaminoVaultContext`) and seed corpora. Their 74 accepted rows and 6 audited
 timeouts migrated verbatim into that repo's `kamino` suite
 (`config/pitest/kamino-*.csv`), family labels and arguments included; the
-dated pass sections below that argued them remain here as the historical
-record. Families whose every member moved (`in-lock race guard`,
+dated pass sections above that argued the rows, and the historical timed-out
+section below that argued the timeouts, remain here as the record. Families
+whose every member moved (`in-lock race guard`, `signalAll waiter`,
 `mutual-redundancy family`, `single-feed unobservable`, `subsumed length
-guard`, `residual sibling legs`, `capacity-hint`) stay named in the label
-registry so those sections still parse.
+guard`, `residual sibling legs`, `capacity-hint`, `flip insurance`) are argued
+in those sections as history and, for the rows that moved, in
+vault-stat-service's `config/pitest/` notes; the Family labels glossary below
+names only the families with rows here.
 
 ### 2026-09-24 — address lookup tables removed
 
@@ -1318,55 +1319,54 @@ across the runs. All are audited keys. Load flips; no record change.
 
 ### Family labels
 
-Each accepted row carries a `# <family>` label whose argument is the pass
-section above that triaged it; GLAM policy names every triaged label here in
-the same change as the label, before the next `pitestServicesVerify` or
-`pitestServicesDebt` run. The families:
+Each accepted row carries the `# <family>` label of the argument it rests on; a
+row no family argument covers is `# untriaged`. Each family has an entry here
+saying what it covers; its argument is in the section that triaged it, or in the
+paragraph its entry names. A label gets its entry here in the same change that
+writes it. The families:
 
-- `# in-lock race guard` — an optimistic read rechecked under a lock; a
-  single-threaded test cannot interleave a writer between the two.
-- `# race-guard family` — the `GlobalConfigCacheImpl` variant of the above
-  (null-state rechecks between an unlock and the write lock).
-- `# signalAll waiter` — a `signalAll`/`await` notification only a parked
-  thread could observe.
-- `# subsumed length guard` — a `data.length == X.BYTES` guard whose forced
-  direction routes to a length-safe discriminator check that rejects
-  identically (accept-path dispatch).
+- `# race-guard family` — `GlobalConfigCacheImpl`'s lock-protocol legs:
+  `topPriorityForMintChecked`'s null-state rechecks before and under the write
+  lock and its invalidation `signalAll()`, which need a concurrent invalidator
+  or a parked waiter that a single-threaded test does not have; and `run`'s
+  park-loop invalidation exit and `remainingNanos <= 0 || forceRefresh` break,
+  in-lock timing directions whose siblings are detected or timing-equivalent at
+  exactly zero nanos.
 - `# subsumed count guard` — a `count == section.length` short-circuit before
   an `Arrays.equals` over ranges computed from each side's own count.
-- `# capacity-hint` — arithmetic sizing a `HashMap`/array capacity
-  (`newHashMap(n*3)`, `highestOneBit(n) << 1`); no observable output.
-- `# residual sibling legs` — the forced-true direction of a compound
-  condition whose observable sibling has a named killing test.
-- `# mutual-redundancy family` — `ScopeFeedContext` orderings the source array
-  already maintains, so removing them is invisible through `indexes()`.
-- `# single-feed unobservable` — the `indexes()` `.sorted()` over a single
-  fixture feed: a no-op in-harness, killable with a second feed.
 - `# hashcode mixing` — `MinGlamStateAccount.hashCode` mixing arithmetic;
   every mutant preserves the equal-hash contract.
-- `# durability unobservable` — `force()`/`close()` durability calls no
-  in-process assertion can see.
+- `# durability unobservable` — `KeyedFlatFileImpl` effects no in-process
+  assertion can see: its `force()` calls and the `isOpen()`-guarded close. Four
+  `deleteEntry` rows carry the label too; they are equivalences, not durability
+  calls, argued under "Triaged equivalent mutants" below.
 - `# accepted equivalent` — `AccountFetcherImpl`/`BatchSqlExecutorImpl`
   equivalents argued in their pass sections (spurious-signal directions,
   fast-path skips, GC-hygiene `Arrays.fill`).
 - `# seamless bootstrap` — the fulfillment entrypoint's config-driven wiring
   with no injection seam; escape is a seam refactor.
-- `# flip insurance` — a load-dependent kill unioned back after it resurfaced
-  `SURVIVED`; never prune it (see the delegate-gate pass).
 
 ## Triaged equivalent mutants (accepted with reasons)
 
-Recorded inline in the dated pass sections above, as **bold family
-paragraphs** next to the work that triaged them — each names the family, the
-rows, the equivalence argument, and (where applicable) the escape that would
-make the mutants killable. The recurring families here: in-lock race guards
-(single-threaded tests cannot interleave a writer between an optimistic read
-and its locked recheck), `signalAll`/waiter notifications needing a parked
-thread to observe, fast-path count guards subsumed by later comparisons,
-absent-vs-empty-parse equivalence in config sections, null-over-null assigns,
-GC-hygiene calls, capacity-hint arithmetic, and unreachable-by-construction
-defensive guards. New acceptances continue this pattern: document in the pass
-section that does the triage, not here.
+The families in the glossary above were accepted in the passes that triaged
+them, most as **bold family paragraphs**, each naming the family, its rows, the
+argument it rests on and, where there is one, the escape that would make the
+mutants killable. Most are equivalences; `# seamless bootstrap` is accepted for
+the injection seam the entrypoint lacks, not as an equivalence. A new
+acceptance is argued here, under the `config/pitest/README.md` rule in the
+hardening block of the repository's `AGENTS.md`.
+
+**`KeyedFlatFileImpl.deleteEntry`'s fast path and last-slot boundary** (its four
+rows labeled `# durability unobservable`). Forcing past the `fileSize == 0` fast
+path maps zero bytes, runs no loop iteration and returns 0; the mutated
+`return 0` returns the same 0; and `i < lastElementOffset` forced true, or
+widened to `<=`, differs only when the matched entry is the last one, where the
+swap copies that entry onto itself before the same truncate. Each leaves the file
+and the result as the unmutated path does, for a file of whole entries. A
+trailing partial entry would break that: the forced swap would overflow the
+mapped buffer where the unmutated path truncates. `MintCacheImpl`, the only
+caller, throws when it loads a file with a partial entry; a caller that can hand
+`deleteEntry` such a file invalidates this acceptance.
 
 ## Test-lifecycle contamination, and the survivor it manufactured (2026-08-06)
 
@@ -1414,10 +1414,9 @@ never support a baseline decision.
 ## Timed-out mutants (historical 135-row snapshot; reclassified 2026-08-06)
 
 The discussion below is retained as historical evidence; it is not the current
-audited set. The authoritative current inventory is `services-timeouts.csv`
-(51 rows, all `cause:liveness`). The Kamino subsection likewise records
-pre-move evidence; its six audited timeout keys moved to `vault-stat-service`
-on 2026-08-21.
+audited set. The authoritative current inventory is `services-timeouts.csv`.
+The Kamino subsection likewise records pre-move evidence; its six audited timeout
+keys moved to `vault-stat-service` on 2026-08-21.
 
 Per HARDENING.md: a timeout-detected mutant was observed for *slowness, not
 wrongness* — the watchdog fires whatever the covering assertion says, so for

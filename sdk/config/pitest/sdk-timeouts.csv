@@ -1,7 +1,7 @@
 # Audited timed-out mutants: one line-less class,method,mutator key per member,
-# each carrying an admissible cause. Only cause:liveness may remain in the set —
-# the mutated path must have no path-owned finite completion guarantee. The
-# structural argument per member lives in README.md under "Timed-out mutants
-# (audited set)". Line numbers ride in comments only — drift must not churn
-# membership. Classified 2026-08-06 against the current rule.
+# each carrying its cause category (sava-build HARDENING.md names the admissible
+# ones) and a short argument. Each member's structural cause belongs in
+# README.md, under its class in the timed-out mutants section. Line numbers ride
+# in comments only — drift must not churn membership.
+# Classified 2026-08-06.
 # Retired 2026-09-24: all five lut.VaultTableBuilderImpl,batchTableTasks members (class deleted).

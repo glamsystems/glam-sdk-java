@@ -7,14 +7,14 @@ on:
   schedule:
     - cron: '0 */12 * * *'
   # The documented response to a warning is to pause this workflow, regenerate, review and push.
-  # Without a manual trigger the confirming run is up to eight hours away, and the channel stays
+  # Without a manual trigger the confirming run is up to one cron interval away, and the channel stays
   # quiet in the meantime — which is this job's way of saying it did not run. Being able to ask
   # for a run is what keeps that pause short enough to still mean what it says.
   workflow_dispatch:
 
 # Its own group, not build.yml's: concurrency groups are repository-wide, so sharing
 # `build-main` let an ordinary push cancel a mid-flight monitor run — swallowing the
-# heartbeat digest as a neutral "cancelled" — and let the 8-hour tick cancel a push's
+# heartbeat digest as a neutral "cancelled" — and let the scheduled tick cancel a push's
 # build. Self-supersession within the monitor is still wanted.
 concurrency:
   group: build-scheduled-${{ github.ref_name }}
@@ -69,10 +69,10 @@ jobs:
 
       # The vendored movement-evidence audit (.github/report-evidence.sh, hooks/pre-push) is a
       # byte-copy of idl-src-gen consumer/, which this job has already checked out. Diffed here
-      # as well as on push so a canonical change is caught within eight hours even when nothing
+      # as well as on push so a canonical change is caught within one cron interval even when nothing
       # is being pushed — and *after* the monitor step, so stale tooling reddens the run without
       # silencing the heartbeat digest the step above already delivered. !cancelled(): the
-      # eight-hour bound must hold precisely while the monitor step is failing, which is when a
+      # one-interval bound must hold precisely while the monitor step is failing, which is when a
       # channel that moved is re-alerting every run.
       - name: The vendored audit must match the canonical one
         if: ${{ !cancelled() && steps.srcgen.outcome == 'success' }}

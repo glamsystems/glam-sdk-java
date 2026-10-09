@@ -1,13 +1,13 @@
 # Mutation-testing baseline & triage policy — `sdk`
 
-`pitestSdk` is this module's mutation suite; GLAM policy runs it and
-`pitestSdkVerify` before any handoff whose changed code the suite reaches. The
-suite's accepted baseline is `sdk-accepted.csv`, holding the unkilled rows
-(`SURVIVED` and `NO_COVERAGE`) keyed by class, method, mutator and status; its
-audited timeout set is `sdk-timeouts.csv`. Every row triaged out of debt owes
-its written argument here. The canonical policy is sava-build's
-`HARDENING.md`, and `hardeningHelp` is the authority on the installed plugin's
-task names; this file records what is accepted *here* and why.
+`pitestSdk` is this module's mutation suite; the hardening block in the
+repository's `AGENTS.md` says when it is owed. The suite's accepted baseline is
+`sdk-accepted.csv`, holding the unkilled rows (`SURVIVED` and `NO_COVERAGE`)
+keyed by class, method, mutator and status; its audited timeout set is
+`sdk-timeouts.csv`. Every row triaged out of debt owes its written argument
+here. The canonical policy is sava-build's `HARDENING.md`, and `hardeningHelp`
+is the authority on the installed plugin's task names; this file records what
+is accepted *here* and why.
 
 A new unkilled mutant has exactly three legal outcomes:
 
@@ -16,10 +16,9 @@ A new unkilled mutant has exactly three legal outcomes:
 2. **Refactor** — restructure so the mutant cannot exist.
 3. **Accept it knowingly** — record the reason under "Triaged equivalent
    mutants" below, give the row a short `# <family>` label named in the
-   "Family labels" glossary, and write the record with the named task
-   (`pitestSdkBaselineUpdate` / `Union` / `Prune` / `Rebase`), never by
-   hand. Acceptance is for mutants *equivalent with respect to
-   observable behavior*, not for "hard to test".
+   "Family labels" glossary, and write the record with the writer task
+   `hardeningHelp` names for it, never by hand. Acceptance is for mutants
+   *equivalent with respect to observable behavior*, not for "hard to test".
 
 Identical rows are sibling mutants of one compound condition, not duplicates
 to tidy: never hand-dedupe the CSV, and never hand-edit record structure or
@@ -134,8 +133,10 @@ The 2026-07-21 pass covered the value layer (`GlamUtil`, `GlamEnv`,
 production client (`GlamAccountClient` statics, `GlamAccountClientImpl`
 instruction wiring, `StateAccountClient`/`StateAccountClientImpl`/
 `BaseStateAccountClient`). The `SURVIVED` count *rose* because previously
-uncovered code is now executed; the two triaged rows are below, the rest of
-the 24 are untriaged survivors in still-partially-covered classes.
+uncovered code is now executed; of its two triaged rows the
+`delegateHasPermissions` one was since resolved by a fix and the
+`protocolBitmask` one is argued under "Triaged equivalent mutants" below, and
+the other 22 were then untriaged survivors in partially covered classes.
 
 ## EXPERIMENTAL_NAKED_RECEIVER trial (2026-07-22)
 
@@ -150,14 +151,17 @@ All 18 new rows are `NO_COVERAGE` in classes that already carry untriaged debt
 no new survivors, so nothing here needed triage. Roughly a third of the new
 mutants were killed outright by existing tests.
 
-## Row labels (2026-07-23)
+## Family labels
 
-Baseline rows now carry the family label the acceptance belongs to
-(`# unreachable type-check arm`; `# equivalent path-suffix` until its only
-row left with `loadMappingConfigs` on 2026-09-25, see below), with the full
-argument in the pass sections above; everything else is `# untriaged` —
-triage means replacing that label with the family the row's argument belongs
-to.
+Each accepted row carries the `# <family>` label of the argument it rests on; a
+row no family argument covers is `# untriaged`, and triaging it means replacing
+that label with the family whose argument covers it. A label gets its entry here
+in the same change that writes it.
+
+- `# unreachable type-check arm` — the constant test javac emits for the
+  unconditional `int` component of `protocolBitmask`'s record pattern; argued
+  under "Triaged equivalent mutants" below, which also names the staging row
+  that carries the label without belonging to it.
 
 ## `lut` package removed (2026-09-24)
 
@@ -186,24 +190,27 @@ the ratchet was adopted, per HARDENING.md's adoption path — triage debt made
 explicit, not acceptance. Shrinking the baseline is always an improvement;
 growing it requires a reason written here.
 
-## Triaged mutants (accepted with reasons)
+## Triaged equivalent mutants (accepted with reasons)
 
-### ~~`BaseStateAccountClient.delegateHasPermissions` — `MathMutator`~~ — resolved 2026-07-21
+### `protocolBitmask` — `RemoveConditionalMutator_EQUAL_IF`
 
-The semantics question was decided: the conventional direction (every
-*required* bit must be granted, `(required & granted) != required`), with
-misses — an absent integration entry or protocol entry — returning false
-rather than throwing. The code was fixed accordingly, subset-mask tests were
-added, and the mutant is killed. No acceptance remains.
+`StateAccountClientImpl.protocolBitmask` and its staging twin
+`StagingStateAccountClientImpl.protocolBitmask` both test
+`integrationAclMap.get(..) instanceof IntegrationAcl(_, final int protocolsBitmask, _)`,
+which compiles to two conditional jumps: the `instanceof` test, false for an
+absent program's null, and a constant `iconst_1; ifeq` that javac emits for the
+unconditional `int` component pattern. The `# unreachable type-check arm` row in
+each class is that constant jump: the mutant removes a jump that is never taken,
+so it is equivalent by construction for as long as the component pattern stays
+unconditional.
 
-### `StateAccountClientImpl.protocolBitmask` — `RemoveConditionalMutator_EQUAL_IF`
-
-`integrationAclMap.get(..) instanceof IntegrationAcl(_, bitmask, _)` compiles
-to a null check plus a type check; the mutated type-check arm is unreachable
-in context because the map's values are always `IntegrationAcl` — the only
-observable branch is the null (absent program) case, which is covered. The
-staging twin (`StagingStateAccountClientImpl.protocolBitmask`) will earn the
-same acceptance when its class is covered.
+The staging class carries a second row with that label, and it is the
+`instanceof` jump: forced, an absent program reaches the record accessors and
+throws instead of returning 0. Production kills its copy with the absent-ACL
+assertion in `StateAccountClientTests`; no staging test asks about a program
+without an ACL, so that staging row is untested, not unreachable, and owes such a
+test before a prune removes it; until then `pitestSdkDebt` counts it with the
+family.
 
 ## ix-mapper mapping documents (2026-09-25)
 
@@ -421,16 +428,8 @@ fresh survivor, a capacity-hint addition in `GlamSuppliedAccounts.withKaminoRefr
 (MathMutator), refactored out; the observation after that (711 mutants, 689 detected, the
 same 22 undetected; the package's 152 all killed) added no rows.
 
-## Timed-out mutants (audited set, 2026-07-26)
+## Timed-out mutants (audited set)
 
-For a member of this set a weakened covering assertion would not show up as a
-survivor — a timeout keeps "detecting" whatever the test asserts — so each
-member carries a written cause in `sdk-timeouts.csv` and its structural
-argument here. The strict reading GLAM holds them to: the mutated path must
-have no path-owned finite completion guarantee.
-
-The set is empty. Its five members, all `cause:liveness` on the synchronous
-`lut.VaultTableBuilderImpl.batchTableTasks` chunking loop (classified
-2026-08-06), were retired on 2026-09-24 with the class (see "`lut` package
-removed (2026-09-24)" above); their structural argument is in this file's
-history.
+`sdk-timeouts.csv` lists the members and their cause categories. Each member's
+structural cause belongs here, under its class, one subsection per class;
+HARDENING.md says what an admissible cause must show.

@@ -102,10 +102,11 @@ through the Solana BOM (`solanaBOMVersion` in `gradle/sava.properties`):
 **A fix belongs in the repo that owns the code, not worked around here.** When
 a defect traces into one of the above:
 
-1. Fix it there, and follow *that* repo's process — it has the same hardening
-   ratchet. Run its module `test`, then the `pitest<Suite>` owning the file
-   (`grep` its `build.gradle.kts` to find which suite claims the class), and
-   keep its accepted baselines green.
+1. Fix it there, and follow *that* repo's process: its AGENTS.md hardening
+   block says when its mutation gate runs and which `pitest<Suite>` tasks a
+   change there owes; keep its accepted baselines green. sava-build carries no
+   mutation suite of its own; its README says how a change there is adopted
+   and released.
 2. Editing a mutated file shifts line numbers; anything beyond that pure
    drift (newly covered, unexplained, changed counts) is triage before
    refresh — same rule as here.
@@ -157,20 +158,24 @@ classes; generated `**.gen.*` code is excluded — its correctness belongs to
 idl-src-gen) and `pitestServices` (everything in `services`). Each suite's
 accepted baseline lives in the module's `config/pitest/`. The baselines were
 **seeded with the full pre-existing survivor population** — that is untriaged
-debt made explicit, not acceptance; the per-module `config/pitest/README.md`
-tracks the triage state. Fuzzing is underway — three targets, corpora replayed
-inside `check`; the two services ones are seeded from mainnet snapshots:
-`services:fuzzAccountData` (the compressed persistence format — decode +
-write/read differential; found and fixed an unbounded-decompression hang) and
-`services:fuzzMinGlamStateAccount` (the state-account walk over nested length-prefixed ACL sections, plus the
-change-detection re-walk; found a base-asset index landmine), plus
-`sdk:fuzzMappingIndex` (the embedded-mappings `index.json` parser, the one
-JSON reader the sdk owns on the mapper's startup path, seeded from the index
-the build writes). The mapping documents themselves are parsed by ix-proxy,
-whose own `fuzzMappingConfig` and `fuzzIxMapper` targets cover the parser and
-the mapper. Register new harnesses in the owning module's
-`hardening` block with both `targetClass` AND `seedCorpus` — GLAM registers no
-fuzz target without a checked-in corpus to replay.
+debt made explicit, not acceptance: a row's label is its triage state
+(`# untriaged` until a family argument covers it), `pitest<Suite>Debt` prints
+the counts, and the block below says what the per-module
+`config/pitest/README.md` holds. Every registered fuzz target replays its
+checked-in corpus inside `check`, and `:module:hardeningHelp` lists the targets
+a module registers. Among them: `services:fuzzAccountData` (the compressed
+persistence format — decode + write/read differential, seeded from a mainnet
+snapshot; found and fixed an unbounded-decompression hang),
+`services:fuzzMinGlamStateAccount` (the state-account walk over nested
+length-prefixed ACL sections, plus the change-detection re-walk, seeded from a
+mainnet snapshot; found a base-asset index landmine), and
+`sdk:fuzzMappingIndex` (the embedded-mappings `index.json` parser on the
+mapper's startup path, seeded with an index of the shape the build writes). The
+mapping documents themselves are parsed by ix-proxy, whose own
+`fuzzMappingConfig` and `fuzzIxMapper` targets cover the parser and the mapper.
+Register new harnesses in the owning module's `hardening` block with both
+`targetClass` AND `seedCorpus` — GLAM registers no fuzz target without a
+checked-in corpus to replay.
 
 The full policy is sava-build's `HARDENING.md`; the process contract for
 changes here:
@@ -253,13 +258,15 @@ here; `hardeningHelp` and `hardeningAgentTemplate` are the authorities on task
 semantics for the installed plugin version.
 
 **Ownership.** The pre-release `hardeningCertify` (or `:hardeningCertifyAll`,
-every project in one invocation) is owned by the **local release checklist**,
-not CI — CI deliberately runs only `check`, so certify locally before deciding
-to release. Certification and `fuzzAll` run from a clean
+every project in one invocation) and the `fuzzAll` campaign are owned by the
+**local release checklist**, not CI, so certify and fuzz locally before
+deciding to release. Both run from a clean
 `git worktree add --detach <path> <commit>` of the commit being released, so
-nothing outside that tree reaches them. `pitestServices` also covers `:sdk` API
-changes it calls, so a change under `sdk/` that `services` reaches owes both
-suites.
+no source input outside that tree reaches them; user-level Gradle properties
+still do, so check that `savaBuildIdentity` reports no local override and that
+no `glamMappingsDir` is set before certifying. `pitestServices` also covers
+`:sdk` API changes it calls, so a change under `sdk/` that `services` reaches
+owes both suites.
 
 **ArcMutate.** GLAM is outside the Sava ArcMutate certificate — it does not
 cover `systems.glam.*` — so both suites run open-source PIT, no `[history]`
@@ -267,13 +274,14 @@ report is available here, and no history-assisted exception ever applies to a
 GLAM result.
 
 **Mutators.** `pitestSdk` runs `STRONGER,EXPERIMENTAL_NAKED_RECEIVER`;
-`pitestServices` adds `EXPERIMENTAL_BIG_INTEGER,EXPERIMENTAL_BIG_DECIMAL`,
-which fire only there — `services` carries the money math (`BigDecimal` share
-sums, `BigInteger` liquidity totals) those mutators can express and `sdk`
-generates none. Both trials, with their measured numbers, are recorded in each
-module's `config/pitest/README.md`. `pitestServices` also sets
-`timeoutFactor = 2.0` / `timeoutConst = 1500` and was trialed at 8 threads;
-the reasoning is in `services/build.gradle.kts`.
+`pitestServices` adds `EXPERIMENTAL_BIG_INTEGER,EXPERIMENTAL_BIG_DECIMAL` for
+the money math in `services` (`BigDecimal` share sums; the `BigInteger`
+liquidity totals they were trialed on left with the Kamino cache on
+2026-08-21). The trials, with their measured numbers, are in the module
+READMEs: the naked-receiver trial in each, and the `BigInteger`/`BigDecimal`
+trial for both suites in the services README. `pitestServices` also sets its own
+`timeoutFactor` and `timeoutConst`, and was trialed at 8 threads; the values
+and the reasoning are in `services/build.gradle.kts`.
 
 **Test lifecycle.** Neither module uses `@TestInstance(PER_CLASS)` (audited
 2026-07-23), so field initializers re-run per test — still build the subject
@@ -302,33 +310,34 @@ review the resulting corpus diff, and update the corpus provenance notes in
 
 **Fuzz budget.** The pre-release campaign is
 `./gradlew --no-daemon fuzzAll -PmaxFuzzTime=300 -PmaxParallelFuzzTargets=3`:
-300 seconds per target, all three at once (chosen 2026-09-26), run from the
+300 seconds per target, three at a time (chosen 2026-09-26), run from the
 same clean detached worktree as certification.
 
 **Local instances of the generic rules.** The recording proxies here are
 `SolanaRpcClient` / `AccountFetcher` — give them return values a real assertion
 can tell from a mutated default.
 
-**Family labels.** Every `# <family>` label on an accepted row must be named in
-the owning module's `config/pitest/README.md` "Family labels" glossary; here a
-row is not triaged until that glossary entry exists.
+**Family labels.** Every `# <family>` label on an accepted row has an entry in
+the family glossary of the owning module's `config/pitest/README.md`; here a row
+is not triaged until it does.
 
-**Timeout audit.** Both suites' audited timeout sets and their `cause:*`
-classifications live in `config/pitest/<suite>-timeouts.csv`, with the
-structural argument per member under "Timed-out mutants (audited set)" in the
-owning `config/pitest/README.md`.
+**Timeout audit.** Each suite's audited timeout set and its `cause:*`
+classifications live in `config/pitest/<suite>-timeouts.csv`; each member's
+structural cause belongs in the owning `config/pitest/README.md`, under its class
+in the timed-out mutants section.
 
-**Fixture deadlines must sit inside the watchdog budget.** `pitestServices` sets
-`timeoutConst = 1500` and `timeoutFactor = 2.0`, which puts a covering test's
-PIT budget at roughly 1.6–2.8s here. A fixture that waits longer than that never
-gets to fail its own assertion. This suite carried fourteen 5s fixture deadlines
-against that budget; lowering them (1s, and 2s for `MintCacheImplTest`, which
-does ~600ms of real work across 128 virtual threads) converted watchdog
-"detections" into real kills and exposed assertions that had never actually been
-testing anything. **Before classifying any timeout, check this budget first** —
-a bounded fixture that outlives the budget is a harness defect, not liveness.
-Keep new fixture deadlines well under 1.5s, and prefer a synchronous state
-reader (`lock.getReadLockCount()`, a cache accessor) over any wait at all.
+**Fixture deadlines must sit inside the watchdog budget.** A covering test's PIT
+budget is its own duration × `timeoutFactor` + `timeoutConst` (HARDENING.md), with
+`pitestServices`' values set in `services/build.gradle.kts`. A fixture that waits
+longer than that never gets to fail its own assertion. This suite carried
+fourteen 5s fixture deadlines against a budget of roughly 1.6–2.8s at the time;
+lowering them (1s, and 2s for `MintCacheImplTest`, which did ~600ms of real work
+across 128 virtual threads) converted watchdog "detections" into real kills and
+exposed assertions that had never actually been testing anything. **Before
+classifying any timeout, check this budget first** — a bounded fixture that
+outlives the budget is a harness defect, not liveness. Keep new fixture
+deadlines well under `timeoutConst`, and prefer a synchronous state reader
+(`lock.getReadLockCount()`, a cache accessor) over any wait at all.
 
 When adding a parser, algorithm or strategy: add unit tests, put it in a
 mutation suite (the wildcard targeting already mutates new classes by default),
@@ -339,8 +348,9 @@ and add a fuzz harness if it consumes external input.
 Each generated `gen` tree carries a `sources.json` channel record: which published
 descriptions of the program exist, their content hashes, and the program's deploy
 slot and image hash. The scheduled monitor (`build-scheduled.yml`) regenerates and
-compares against these committed records every eight hours; its Slack digest is the
-redeploy signal, and the committed records are the baseline it compares against.
+compares against these committed records on that workflow's cron schedule; its
+Slack digest is the redeploy signal, and the committed records are the baseline it
+compares against.
 
 Always generate with `--report=idl-change-report.txt` (the genSrc.sh default) and
 commit **both** reports one run writes: that file, which carries the movement this
