@@ -261,6 +261,8 @@ final class GlamStagingAccountClientTests {
     // integration ACLs: kamino bitmask 3 grants lending and vaults
     assertTrue(stateClient.kaminoLendEnabled());
     assertTrue(stateClient.kaminoVaultsEnabled());
+    // a program the account grants no ACL contributes an empty bitmask rather than throwing
+    assertFalse(stateClient.integrationEnabled(SOLANA_ACCOUNTS.systemProgram(), 1));
 
     // the fixture carries a legacy drift ACL on delegate HVDx…: it must be
     // skipped, while grants for supported programs on the SAME delegate hold
