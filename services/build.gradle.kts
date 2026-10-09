@@ -7,14 +7,25 @@ testModuleInfo {
   runtimeOnly("org.junit.jupiter.engine")
 }
 
+// Git-ignored scratch programs (Integ.java and the like, run from the IDE) live in
+// src/scratch/java, as package-private classes in the package whose members they reach for.
+// The module-testing plugin patches this suite into the module once that folder exists, so
+// they compile as part of it; being neither main nor test, they are no input to a mutation
+// suite, a fuzz target or a certification, and check never runs them.
+testing {
+  suites {
+    register<JvmTestSuite>("scratch") {
+      // main() programs, not tests: nothing to discover, and an empty run fails
+      targets.configureEach { testTask.configure { enabled = false } }
+    }
+  }
+}
+
 tasks.withType<Test>().configureEach {
   systemProperty("java.util.logging.config.file", layout.projectDirectory.file("src/test/resources/logging.properties").asFile.absolutePath)
 }
 
 hardening {
-  // git-ignored scratch files: absent in CI, and their dependencies drift out
-  // of the classpath — excluding them from the tool recompiles restores parity
-  recompileExcludes = listOf("Integ.java")
   fuzz.register("accountData") {
     targetClass = "systems.glam.services.io.AccountDataFuzz"
     seedCorpus = layout.projectDirectory.dir("src/test/resources/fuzz/accountData")
@@ -49,13 +60,7 @@ hardening {
       // (ResourceUtil) that no *Test* pattern matches
       "systems.glam.services.*Test*",
       "systems.glam.services.*Fuzz*",
-      "systems.glam.services.tests.*",
-      // 'Integ.*' scratch files are git-ignored: present on a dev machine and
-      // absent in CI, so mutating them would make the baseline
-      // machine-dependent. Exact names — Integ* would also match
-      // IntegrationServiceContext.
-      "systems.glam.services.Integ",
-      "systems.glam.services.Integ\$*"
+      "systems.glam.services.tests.*"
     )
     targetTests = "systems.glam.services.*Test*"
   }
@@ -63,6 +68,8 @@ hardening {
 
 dependencyAnalysis {
   issues {
+    // the scratch suite is git-ignored local code: analysing it would make check compile it
+    ignoreSourceSet("scratch")
     onAny {
       severity("ignore")
     }

@@ -35,11 +35,8 @@ after. Any run that supports a record decision must be history-free
 One catch-all suite, `pitestServices`, targeting `systems.glam.services.*` by
 wildcard with exclusions rather than an allowlist, so a new class is mutated
 by default rather than silently skipped. Excluded: test sources sharing the
-recompiled root (including the shared helpers in `services.tests`, which no
-`*Test*` pattern matches) and the git-ignored `Integ` scratch classes —
-present on a dev machine and absent in CI, so mutating them would make the
-baseline machine-dependent. `build.gradle.kts` is the authoritative
-definition.
+recompiled root, including the shared helpers in `services.tests`, which no
+`*Test*` pattern matches. `build.gradle.kts` is the authoritative definition.
 
 ## Baseline composition
 

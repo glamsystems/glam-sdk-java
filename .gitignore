@@ -77,7 +77,9 @@
 !/services/src/**
 
 ### Re-blocked inside the unblocked trees above (last match wins) ###
-# Local integration scratch classes
+# Local scratch programs: each module's src/scratch suite, whatever the file is called,
+# and Integ.* wherever one lands
+/*/src/scratch/
 Integ.*
 # macOS Finder metadata
 .DS_Store

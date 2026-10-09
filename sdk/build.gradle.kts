@@ -9,10 +9,21 @@ testModuleInfo {
   runtimeOnly("org.junit.jupiter.engine")
 }
 
+// Git-ignored scratch programs (Integ.java and the like, run from the IDE) live in
+// src/scratch/java, as package-private classes in the package whose members they reach for.
+// The module-testing plugin patches this suite into the module once that folder exists, so
+// they compile as part of it; being neither main nor test, they are no input to a mutation
+// suite, a fuzz target or a certification, and check never runs them.
+testing {
+  suites {
+    register<JvmTestSuite>("scratch") {
+      // main() programs, not tests: nothing to discover, and an empty run fails
+      targets.configureEach { testTask.configure { enabled = false } }
+    }
+  }
+}
+
 hardening {
-  // 'Integ.java' is a git-ignored scratch file: present on a dev machine and
-  // absent in CI, and it sits in systems.glam directly, which no suite targets
-  recompileExcludes = listOf("Integ.java")
   mutation.register("sdk") {
     mutators = "STRONGER,EXPERIMENTAL_NAKED_RECEIVER"
     // catch-all by exclusion, so a new hand-written class is mutated by
@@ -131,6 +142,8 @@ tasks.withType<Test>().configureEach {
 
 dependencyAnalysis {
   issues {
+    // the scratch suite is git-ignored local code: analysing it would make check compile it
+    ignoreSourceSet("scratch")
     onAny {
       severity("ignore")
     }

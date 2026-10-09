@@ -60,10 +60,13 @@ plus service components for operating against it.
   consumer supplies no directory; the sdk tests read the same tracked set.
   `-PglamMappingsDir=<path>` points the build at a local checkout of the
   package instead, for documents that are not synced yet.
-- `Integ.*` files are git-ignored scratch — present on a dev machine, absent
-  in CI. Never make anything depend on them. Because a checkout carrying them
-  would be refused, certification and `fuzzAll` run from a clean
-  `git worktree add --detach` of the commit (see "GLAM-local hardening facts").
+- `Integ.*` files and other scratch programs are git-ignored and run from the
+  IDE: present on a dev machine, absent in CI. Never make anything depend on
+  them. In `sdk` and `services` they live in the module's `src/scratch/java`, as
+  package-private classes in the package whose package-private members they
+  reach for: a suite the module-testing plugin patches into the module, outside
+  `main` and `test`, so no mutation suite, fuzz target or certification reads
+  them and `check` never compiles them.
 
 ## Build & test
 
@@ -253,10 +256,10 @@ semantics for the installed plugin version.
 every project in one invocation) is owned by the **local release checklist**,
 not CI — CI deliberately runs only `check`, so certify locally before deciding
 to release. Certification and `fuzzAll` run from a clean
-`git worktree add --detach <path> <commit>` of the commit being released: a
-dev checkout's git-ignored `Integ.java` files would be refused. `pitestServices`
-also covers `:sdk` API changes it calls, so a change under `sdk/` that
-`services` reaches owes both suites.
+`git worktree add --detach <path> <commit>` of the commit being released, so
+nothing outside that tree reaches them. `pitestServices` also covers `:sdk` API
+changes it calls, so a change under `sdk/` that `services` reaches owes both
+suites.
 
 **ArcMutate.** GLAM is outside the Sava ArcMutate certificate — it does not
 cover `systems.glam.*` — so both suites run open-source PIT, no `[history]`
