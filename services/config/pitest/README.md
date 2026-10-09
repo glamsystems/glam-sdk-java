@@ -1336,10 +1336,16 @@ writes it. The families:
   an `Arrays.equals` over ranges computed from each side's own count.
 - `# hashcode mixing` — `MinGlamStateAccount.hashCode` mixing arithmetic;
   every mutant preserves the equal-hash contract.
-- `# durability unobservable` — `KeyedFlatFileImpl` effects no in-process
-  assertion can see: its `force()` calls and the `isOpen()`-guarded close. Four
-  `deleteEntry` rows carry the label too; they are equivalences, not durability
-  calls, argued under "Triaged equivalent mutants" below.
+- `# durability unobservable` — `KeyedFlatFileImpl`'s `force()` calls, whose
+  flush no in-process assertion can see.
+- `# empty-file fast path` — `KeyedFlatFileImpl.deleteEntry`'s `fileSize == 0`
+  early return, bypassed or returning the 0 it already returns; argued under
+  "Triaged equivalent mutants" below.
+- `# last-slot self-swap` — `KeyedFlatFileImpl.deleteEntry`'s
+  `i < lastElementOffset` swap guard, widened or forced true; argued under
+  "Triaged equivalent mutants" below.
+- `# idempotent close` — `KeyedFlatFileImpl.close`'s `isOpen()` guard forced
+  true: closing an already-closed `FileChannel` has no effect.
 - `# accepted equivalent` — `AccountFetcherImpl`/`BatchSqlExecutorImpl`
   equivalents argued in their pass sections (spurious-signal directions,
   fast-path skips, GC-hygiene `Arrays.fill`).
@@ -1356,8 +1362,8 @@ the injection seam the entrypoint lacks, not as an equivalence. A new
 acceptance is argued here, under the `config/pitest/README.md` rule in the
 hardening block of the repository's `AGENTS.md`.
 
-**`KeyedFlatFileImpl.deleteEntry`'s fast path and last-slot boundary** (its four
-rows labeled `# durability unobservable`). Forcing past the `fileSize == 0` fast
+**`KeyedFlatFileImpl.deleteEntry`'s fast path and last-slot boundary** (its rows
+labeled `# empty-file fast path` and `# last-slot self-swap`). Forcing past the `fileSize == 0` fast
 path maps zero bytes, runs no loop iteration and returns 0; the mutated
 `return 0` returns the same 0; and `i < lastElementOffset` forced true, or
 widened to `<=`, differs only when the matched entry is the last one, where the
