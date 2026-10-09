@@ -8,7 +8,6 @@ systems.glam.sdk.GlamStagingAccountClientImpl,createStateAccountClient,RemoveCon
 systems.glam.sdk.StagingStateAccountClientImpl,lambda$new$0,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 25
 systems.glam.sdk.StagingStateAccountClientImpl,lambda$new$0,VoidMethodCallMutator,SURVIVED # untriaged # line 26
 systems.glam.sdk.StagingStateAccountClientImpl,protocolBitmask,RemoveConditionalMutator_EQUAL_IF,SURVIVED # unreachable type-check arm # line 88
-systems.glam.sdk.StagingStateAccountClientImpl,protocolBitmask,RemoveConditionalMutator_EQUAL_IF,SURVIVED # unreachable type-check arm # line 88
 systems.glam.sdk.StagingStateAccountClientImpl,redeemCancellationWindow,PrimitiveReturnsMutator,NO_COVERAGE # untriaged # line 73
 systems.glam.sdk.StagingStateAccountClientImpl,redeemNoticePeriod,PrimitiveReturnsMutator,NO_COVERAGE # untriaged # line 63
 systems.glam.sdk.StagingStateAccountClientImpl,redeemSettlementPeriod,PrimitiveReturnsMutator,NO_COVERAGE # untriaged # line 68
