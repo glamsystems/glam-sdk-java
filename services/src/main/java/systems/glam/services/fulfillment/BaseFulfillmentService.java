@@ -137,8 +137,11 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
     final long maxCheckStateDelayNanos = serviceContext.maxCheckStateDelayNanos();
     lock.lock();
     try {
-      final long remainingNanos = stateChange.awaitNanos(Math.min(Math.max(delayNanos, minCheckStateDelayNanos), maxCheckStateDelayNanos));
-      final long sleptNanos = maxCheckStateDelayNanos - remainingNanos;
+      final long waitNanos = Math.min(Math.max(delayNanos, minCheckStateDelayNanos), maxCheckStateDelayNanos);
+      final long remainingNanos = stateChange.awaitNanos(waitNanos);
+      // what passed of this wait, not of the ceiling: a shorter wait woken early has slept
+      // only part of its own delay, and the floor still applies to it
+      final long sleptNanos = waitNanos - remainingNanos;
       if (sleptNanos < minCheckStateDelayNanos) {
         NANOSECONDS.sleep(minCheckStateDelayNanos - sleptNanos);
       }

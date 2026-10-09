@@ -737,6 +737,32 @@ final class SingleAssetFulfillmentServiceTests {
     assertTrue(elapsedMillis < 520, "the wake-up was lost or over-slept: " + elapsedMillis + "ms");
   }
 
+  /// The floor holds for any wait, not only the maximum: a wait shorter than the ceiling and
+  /// woken early has slept only the part of its own delay that passed. Measuring that against
+  /// the ceiling instead counted the unrequested remainder of the ceiling as slept, and the
+  /// waiter returned at the wake-up, so every websocket update during a pending soft
+  /// redemption's countdown refetched at the update rate.
+  @Test
+  void aShortWaitWokenEarlyStillSleepsOutTheFloor() throws InterruptedException {
+    final var floor = harness(NoticePeriodType.Hard, TimeUnit.Second, 100L, false, 300, 10_000).service;
+    final long start = System.nanoTime();
+    final var waiter = startWaiter(floor, SECONDS.toNanos(1L));
+    try {
+      awaitParked(floor, waiter);
+      // where the wake lands inside the wait is the property under test, not a synchronisation
+      Thread.sleep(150L);
+      floor.wakeUp();
+      assertCallerReleasedTheLock(floor);
+      assertFalse(hasWaiters(floor), "expected the waiter to be woken");
+      assertLeftAwaitChange(floor, waiter);
+    } finally {
+      stop(floor, waiter);
+    }
+    final long elapsedMillis = (System.nanoTime() - start) / 1_000_000L;
+    assertTrue(elapsedMillis >= 280, "returned at the wake-up instead of the floor: " + elapsedMillis + "ms");
+    assertTrue(elapsedMillis < 520, "the wake-up was lost or over-slept: " + elapsedMillis + "ms");
+  }
+
   // --- websocket updates ----------------------------------------------------
 
   private static AccountInfo<byte[]> queueAccount(final long slot, final PendingRequest... requests) {
