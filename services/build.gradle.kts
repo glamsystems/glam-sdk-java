@@ -41,7 +41,10 @@ hardening {
     maxLen = 16384
   }
   mutation.register("services") {
-    mutators = "STRONGER,EXPERIMENTAL_NAKED_RECEIVER,EXPERIMENTAL_BIG_INTEGER,EXPERIMENTAL_BIG_DECIMAL"
+    // EXPERIMENTAL_BIG_INTEGER left the set on 2026-10-09: its re-trial generated no mutants
+    // here, the BigInteger liquidity totals it was enabled for having moved to
+    // vault-stat-service; the trial numbers are in config/pitest/README.md
+    mutators = "STRONGER,EXPERIMENTAL_NAKED_RECEIVER,EXPERIMENTAL_BIG_DECIMAL"
     // trialed threads = 8 on 2026-07-23: 3m32s vs ~2m04s at the 4-thread
     // default, timed-out 67 -> 69. This suite is timing-heavy (await/signal
     // tests), so oversubscription inflates the very tests PIT reruns most.

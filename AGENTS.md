@@ -274,12 +274,12 @@ report is available here, and no history-assisted exception ever applies to a
 GLAM result.
 
 **Mutators.** `pitestSdk` runs `STRONGER,EXPERIMENTAL_NAKED_RECEIVER`;
-`pitestServices` adds `EXPERIMENTAL_BIG_INTEGER,EXPERIMENTAL_BIG_DECIMAL` for
-the money math in `services` (`BigDecimal` share sums; the `BigInteger`
-liquidity totals they were trialed on left with the Kamino cache on
-2026-08-21). The trials, with their measured numbers, are in the module
-READMEs: the naked-receiver trial in each, and the `BigInteger`/`BigDecimal`
-trial for both suites in the services README. `pitestServices` also sets its own
+`pitestServices` adds `EXPERIMENTAL_BIG_DECIMAL` for the `BigDecimal` share math
+in `services`; `EXPERIMENTAL_BIG_INTEGER` left the set when its 2026-10-09
+re-trial generated no mutants, the `BigInteger` liquidity totals it was enabled
+for having left with the Kamino cache. The trials, with their measured numbers,
+are in the module READMEs: the naked-receiver trial in each, and the
+`BigInteger`/`BigDecimal` trials for both suites in the services README. `pitestServices` also sets its own
 `timeoutFactor` and `timeoutConst`, and was trialed at 8 threads; the values
 and the reasoning are in `services/build.gradle.kts`.
 
