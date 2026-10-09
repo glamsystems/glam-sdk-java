@@ -75,10 +75,13 @@ public record MinGlamStateAccount(long slot,
       protocolIntegrations[j] = new ProtocolIntegration(integrationProgram, protocolsBitmask);
       final int numPolicies = SerDeUtil.val(4, data, i);
       i += 4;
+      checkCount(numPolicies, data, i);
       for (int k = 0; k < numPolicies; k++) {
         i += ProtocolPolicy.DATA_OFFSET;
-        i += SerDeUtil.val(4, data, i);
+        final int policyDataLength = SerDeUtil.val(4, data, i);
         i += 4;
+        // a negative length would hold the walk in place for the whole count
+        i += checkCount(policyDataLength, data, i);
       }
     }
     Arrays.sort(protocolIntegrations);
@@ -92,10 +95,12 @@ public record MinGlamStateAccount(long slot,
       i += IntegrationAcl.PROTOCOL_POLICIES_OFFSET;
       final int numPolicies = SerDeUtil.val(4, data, i);
       i += 4; // ProtocolPolicy
+      checkCount(numPolicies, data, i);
       for (int k = 0; k < numPolicies; ++k) {
         i += ProtocolPolicy.DATA_OFFSET;
-        i += SerDeUtil.val(4, data, i);
+        final int policyDataLength = SerDeUtil.val(4, data, i);
         i += 4;
+        i += checkCount(policyDataLength, data, i);
       }
     }
     return i;
@@ -107,11 +112,13 @@ public record MinGlamStateAccount(long slot,
       i += DelegateAcl.INTEGRATION_PERMISSIONS_OFFSET;
       final int numIntegrationPermissions = SerDeUtil.val(4, data, i);
       i += 4; // IntegrationPermissions
+      checkCount(numIntegrationPermissions, data, i);
       for (int k = 0; k < numIntegrationPermissions; ++k) {
         i += IntegrationPermissions.PROTOCOL_PERMISSIONS_OFFSET;
         final int numPermissions = SerDeUtil.val(4, data, i);
         i += 4;
-        i += numPermissions * ProtocolPermissions.BYTES;
+        // a negative or wrapping block length would hold the walk in place
+        i += checkCount(numPermissions, data, i) * ProtocolPermissions.BYTES;
       }
       i += Long.BYTES; // expiresAt
     }
@@ -125,15 +132,16 @@ public record MinGlamStateAccount(long slot,
       i += DelegateAcl.INTEGRATION_PERMISSIONS_OFFSET;
       final int numIntegrationPermissions = SerDeUtil.val(4, data, i);
       i += 4; // IntegrationPermissions
+      checkCount(numIntegrationPermissions, data, i);
       for (int k = 0; k < numIntegrationPermissions; ++k) {
         i += IntegrationPermissions.PROTOCOL_PERMISSIONS_OFFSET;
         final int numPermissions = SerDeUtil.val(4, data, i);
         i += 4;
         // the permission block is a fixed stride: advance by the whole block
-        // rather than iterating an unvalidated on-chain count, which a corrupt
-        // account could drive through billions of no-op additions. This is the
-        // same step readDelegateAcls takes for the same walk.
-        i += numPermissions * ProtocolPermissions.BYTES;
+        // rather than iterating its count, which a corrupt account could drive
+        // through billions of no-op additions. This is the same step, and the
+        // same bound, readDelegateAcls takes for the same walk.
+        i += checkCount(numPermissions, data, i) * ProtocolPermissions.BYTES;
       }
       i += Long.BYTES; // expiresAt
     }
@@ -233,14 +241,22 @@ public record MinGlamStateAccount(long slot,
       throw new IllegalStateException("Base asset changed for state account " + stateKey);
     }
 
-    final int numAssets = SerDeUtil.val(4, data, StateAccount.ASSETS_OFFSET);
+    // Each count is bounded before anything is computed from it, the way createRecord bounds the
+    // same four counts: readLen for the two vectors, checkCount for the two raw counts, each one
+    // ahead of the walk that iterates it. Read raw, a corrupt count in an update went straight
+    // into offset arithmetic, walks and array sizes: a negative one surfaced a raw
+    // NegativeArraySizeException, and a large external-positions count sized a multi-GiB array
+    // before readArray ran out of bytes.
+    final int numAssets = SerDeUtil.readLen(4, data, StateAccount.ASSETS_OFFSET);
     final int fromAssetsOffset = StateAccount.ASSETS_OFFSET + 4;
     final int oToAssetsOffset = fromAssetsOffset + (numAssets * PublicKey.PUBLIC_KEY_LENGTH);
 
+    final int numIntegrations = checkCount(SerDeUtil.val(4, data, oToAssetsOffset), data, oToAssetsOffset + 4);
     final int oToProtocolIntegrationBytes = delegateAclsOffset(data, oToAssetsOffset);
 
+    final int numDelegates = checkCount(SerDeUtil.val(4, data, oToProtocolIntegrationBytes), data, oToProtocolIntegrationBytes + 4);
     final int oToDelegatesOffset = externalPositionsOffset(data, oToProtocolIntegrationBytes);
-    final int numExternalPositions = SerDeUtil.val(4, data, oToDelegatesOffset);
+    final int numExternalPositions = SerDeUtil.readLen(4, data, oToDelegatesOffset);
     final int oFromExternalPositionOffset = oToDelegatesOffset + 4;
     final int oToExternalPositionOffset = oFromExternalPositionOffset + (numExternalPositions * PublicKey.PUBLIC_KEY_LENGTH);
 
@@ -313,7 +329,6 @@ public record MinGlamStateAccount(long slot,
     if (sameProtocolIntegrations) {
       protocolIntegrations = this.protocolIntegrations;
     } else {
-      final int numIntegrations = SerDeUtil.val(4, data, oToAssetsOffset);
       protocolIntegrations = new ProtocolIntegration[numIntegrations];
       readIntegrationAcls(data, oToAssetsOffset + 4, protocolIntegrations);
     }
@@ -322,7 +337,6 @@ public record MinGlamStateAccount(long slot,
     if (sameDelegates) {
       delegates = this.delegates;
     } else {
-      final int numDelegates = SerDeUtil.val(4, data, oToProtocolIntegrationBytes);
       delegates = new PublicKey[numDelegates];
       readDelegateAcls(data, oToProtocolIntegrationBytes + 4, delegates);
     }

@@ -33,13 +33,19 @@ notes moved with them.
 
 ## minGlamStateAccount
 
-Raw Glam state-account bytes fed to `MinGlamStateAccount.createRecord` and then
-through `createIfChanged` (`MinGlamStateAccountFuzz`). The layout is a chain of
-length-prefixed sections — assets, integration ACLs, delegate ACLs with nested
-integration- and protocol-permission blocks, external positions — and every one
-of those counts comes from the account. The change-detection path re-walks the
-same prefixes independently of the parse path, so both are driven. Crash-only:
-garbage in -> `RuntimeException` out. Seeds:
+Raw Glam state-account bytes, each driven three ways by `MinGlamStateAccountFuzz`:
+parsed by `MinGlamStateAccount.createRecord`; if it parses, offered back to its
+own record through `createIfChanged` with the same bytes at a newer slot (the
+unchanged-bytes walk); and, whatever the parse said, offered to `createIfChanged`
+as an update of the well-formed mainnet record (`mainnet-state-account` below),
+so every section the input changes is reparsed from counts the input controls.
+The layout is a chain of length-prefixed sections — assets, integration ACLs,
+delegate ACLs with nested integration- and protocol-permission blocks, external
+positions — and every one of those counts comes from the account. The
+change-detection path re-walks the same prefixes independently of the parse
+path, so both are driven. Crash-only: garbage in -> `RuntimeException` out,
+except a raw `NegativeArraySizeException`, which is an array sized by an
+unchecked count rather than a rejection. Seeds:
 
 - `mainnet-state-account` — the real mainnet state-account snapshot (the same
   bytes as `MinGlamStateAccountTests.STATE_B64`), decompressed to raw bytes.
@@ -52,6 +58,37 @@ garbage in -> `RuntimeException` out. Seeds:
   length 5` at first use — a landmine far from its cause. Now rejected at parse;
   pinned by
   `MinGlamStateAccountMalformedTests.aBaseAssetMissingFromTheAssetsVectorIsRejectedAtParse`.
+- `negative-external-positions-count` — a **finding** (2026-10-09), though not a
+  campaign's: the review of the `delegateAclsOffset` and `externalPositionsOffset`
+  `RemoveConditionalMutator_ORDER_ELSE` timeouts read it off the code. No
+  campaign could have reached it, because the harness then offered
+  `createIfChanged` only the bytes `createRecord` had just accepted, so every
+  section compared unchanged; the update drive above closes that gap.
+  `createIfChanged` sized each section it reparses from the raw count, so an
+  update whose external-positions count is -1 threw a raw
+  `NegativeArraySizeException`, and one whose count is 0x72e2ac09 would have
+  allocated about 7.2 GiB before `readArray` ran out of bytes. Now each count is
+  bounded before it is walked or allocated from, as `createRecord` bounds it, and
+  the update is refused with the exception the parse throws for the same bytes;
+  pinned by
+  `MinGlamStateAccountMalformedTests.aNegativeExternalPositionsCountIsRejectedOnUpdate`
+  and its siblings, a negative and an oversized count for each of the four
+  sections. The seed is the mainnet snapshot with only that count set to -1. A
+  large count would reproduce the finding too, but replayed under a mutant that
+  disables the bound it would allocate gigabytes inside the replay test, where
+  -1 fails in microseconds.
+- `zero-stride-policy-data-length` and `wrapping-protocol-permissions-count` — a
+  **finding** (2026-10-09), read off the code in the same review. Both walks
+  iterated each integration ACL's policy count and each delegate's
+  integration-permissions count unchecked, and advanced by a stride the account
+  controls: a policy data length of -6, or a protocol-permissions count whose
+  ten-byte block wraps an int to -36, holds the walk in place, so a large count
+  beside it would spin the walk for up to 2^31 iterations. Every nested count and
+  length is now bounded the same way in both walks; pinned by
+  `MinGlamStateAccountMalformedTests.aNegativePolicyDataLengthIsRejected`,
+  `aWrappingProtocolPermissionsCountIsRejected` and their siblings. The seeds keep
+  the snapshot's count of one beside the bad stride, so a mutant that disables
+  the bound replays one stalled step, never a spin.
 
 This target was added after two robustness defects were found here by hand
 (unvalidated counts used as array sizes; an O(n) walk over an unvalidated
