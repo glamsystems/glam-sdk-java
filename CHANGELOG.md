@@ -1,5 +1,18 @@
 # Changelog
 
+## [25.21.0](https://github.com/glamsystems/glam-sdk-java/compare/25.20.0...25.21.0) (2026-10-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* **idl:** the staging GlamProtocolProgram no longer builds stake_authorize, which the deployed staging protocol has removed.
+
+### Bug Fixes
+
+* **idl:** regenerate the staging protocol client from its corrected metadata IDL ([ac6cd24](https://github.com/glamsystems/glam-sdk-java/commit/ac6cd24895cfa98e99bec29e66c3e0a3625935a3))
+* **services:** bound every count MinGlamStateAccount walks, on update and in nested sections ([0298e91](https://github.com/glamsystems/glam-sdk-java/commit/0298e91082125a6702e708c1bed76a5aefa34816))
+* **services:** hold awaitChange's minimum-delay floor for a wait shorter than the ceiling ([10b74a4](https://github.com/glamsystems/glam-sdk-java/commit/10b74a4cf3d5d43f79f51f2af128b40357099859))
+
 ## [25.20.0](https://github.com/glamsystems/glam-sdk-java/compare/25.19.0...25.20.0) (2026-09-29)
 
 
