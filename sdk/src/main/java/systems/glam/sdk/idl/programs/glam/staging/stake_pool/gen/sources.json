@@ -1,24 +1,23 @@
 {
   "program": "gstgS4dNeT3BTEQa1aaTS2b8CsAUz1SmwQDGosHSPsw",
   "deployed": "metadata",
-  "lastDeploySlot": 453958551,
+  "lastDeploySlot": 455009748,
   "programDataState": "upgradeable",
   "programDataStateSlot": 439884391,
-  "programDataPayloadSha256": "f387bdd4965baa89b712230a583d9f01aadb79acc14992f5e9518187c254bd6c",
+  "programDataPayloadSha256": "aea879e3cd85742c6b14bee4fa31781afc93cd72cbcf9c2c724000a91418990e",
   "programDataPayloadLength": 402888,
   "channels": {
     "metadata": {
       "origin": "E7oVmXMxDj7pEXfpVtCzcZx8zUVmH8Gi2jz7kA5Xzkj9",
-      "hash": "6b32d922079ce8905b2f78370e7ad26a48aaa9863f993fe3bdbbb84a71c3b906",
+      "hash": "4ec90d4f128b5532802e72f2a556f1aed8ca8e0077ac172352fb5ea4a50bfdb5",
       "matchesDeployed": true,
       "verbatim": "idl.json"
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_stake_pool-staging.json",
       "hash": "4ec90d4f128b5532802e72f2a556f1aed8ca8e0077ac172352fb5ea4a50bfdb5",
-      "matchesDeployed": false,
-      "file": "vcs.json",
-      "verbatim": "vcs.json"
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
     }
   }
 }

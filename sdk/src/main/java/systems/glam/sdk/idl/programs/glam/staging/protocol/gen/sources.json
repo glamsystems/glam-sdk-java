@@ -1,17 +1,18 @@
 {
   "program": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
   "deployed": "metadata",
-  "lastDeploySlot": 446999833,
+  "lastDeploySlot": 455013333,
   "programDataState": "upgradeable",
   "programDataStateSlot": 439884391,
-  "programDataPayloadSha256": "a04ceae203b4cfcc01475eee7677d12fd82d1a7be07fe8fc1d40ea6ed3fc09a4",
+  "programDataPayloadSha256": "6288ac209977d8dcfdc4cca9ebd637dbd1082eb854f278793f4435b6d550ca87",
   "programDataPayloadLength": 819896,
   "channels": {
     "anchor": {
       "origin": "5UELoo8jJyAqdh3yziYoG3jpWMN9f3ab8wmmKAkP3mqx",
-      "hash": "912738dc2c40090066c08c675584a8b3c0131c5daa504315fcbdc140732b4dad",
-      "matchesDeployed": true,
-      "verbatim": "anchor.original.json"
+      "hash": "809f5ea765bb0cf140b807e69977636dca79b0a3a6a247e518dfc6f7f098b313",
+      "matchesDeployed": false,
+      "file": "anchor.json",
+      "verbatim": "anchor.json"
     },
     "metadata": {
       "origin": "SMGmM9PtEW3VtPFBgDBcnoTf128HpACNz1dxTfHeFJ1",
@@ -21,7 +22,7 @@
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/glam_protocol-staging.json",
-      "hash": "031b3aba37cd395129014036f534ffb7ead985dad4c2d210c8dccd2b23d1c56b",
+      "hash": "809f5ea765bb0cf140b807e69977636dca79b0a3a6a247e518dfc6f7f098b313",
       "matchesDeployed": false,
       "file": "vcs.json",
       "verbatim": "vcs.json"

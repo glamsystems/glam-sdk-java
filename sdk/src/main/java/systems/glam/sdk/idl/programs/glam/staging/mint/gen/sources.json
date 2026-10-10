@@ -1,24 +1,23 @@
 {
   "program": "gstgm1M39mhgnvgyScGUDRwNn5kNVSd97hTtyow1Et5",
   "deployed": "anchor",
-  "lastDeploySlot": 445467293,
+  "lastDeploySlot": 455014041,
   "programDataState": "upgradeable",
   "programDataStateSlot": 439884391,
-  "programDataPayloadSha256": "bf659977e0470010d3fba8a66806d371ea58d7877fcde7174b31750962c4a657",
+  "programDataPayloadSha256": "028bafbedc1fdfa032f7f6a5cccbe42d7e9de23a7067005b52583bc2a40811ba",
   "programDataPayloadLength": 2029536,
   "channels": {
     "anchor": {
       "origin": "28HSbEepgNUC7f5ceJ1FPacJXNiAo6ScrbXJpQj3EhHv",
-      "hash": "98bcbcf548226fc6a08d600125761b36ee88679e0795a4b9a6ec31cc17db7b41",
+      "hash": "20e980b296645cc7d9de44c6afc5c9fc483309b2a945c6d1557d12dc3f9303d8",
       "matchesDeployed": true,
       "verbatim": "idl.json"
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/glam_mint-staging.json",
       "hash": "20e980b296645cc7d9de44c6afc5c9fc483309b2a945c6d1557d12dc3f9303d8",
-      "matchesDeployed": false,
-      "file": "vcs.json",
-      "verbatim": "vcs.json"
+      "matchesDeployed": true,
+      "verbatim": "vcs.original.json"
     }
   }
 }

@@ -193,56 +193,6 @@ final class GlamStagingAccountClientImpl extends GlamAccountClientImpl implement
   }
 
   @Override
-  public Instruction priceDriftUsers(final PublicKey solUSDOracleKey,
-                                     final PublicKey baseAssetUsdOracleKey,
-                                     final int numUsers,
-                                     final boolean cpiEmitEvents) {
-    final var invoked = glamAccounts.invokedMintIntegrationProgram();
-    final var mintProgram = invoked.publicKey();
-    return GlamMintProgram.priceDriftUsers(
-        invoked,
-        glamVaultAccounts.glamStateKey(),
-        glamVaultAccounts.vaultPublicKey(),
-        feePayer.publicKey(),
-        solUSDOracleKey,
-        baseAssetUsdOracleKey,
-        glamAccounts.readMintIntegrationAuthority().publicKey(),
-        globalConfigKey,
-        invokedProtocolProgram.publicKey(),
-        cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
-        mintProgram,
-        numUsers
-    );
-  }
-
-  @Override
-  public Instruction priceDriftVaultDepositors(final PublicKey solOracleKey,
-                                               final PublicKey baseAssetUsdOracleKey,
-                                               final int numVaultDepositors,
-                                               final int numSpotMarkets,
-                                               final int numPerpMarkets,
-                                               final boolean cpiEmitEvents) {
-    final var invoked = glamAccounts.invokedMintIntegrationProgram();
-    final var mintProgram = invoked.publicKey();
-    return GlamMintProgram.priceDriftVaultDepositors(
-        invoked,
-        glamVaultAccounts.glamStateKey(),
-        glamVaultAccounts.vaultPublicKey(),
-        feePayer.publicKey(),
-        solOracleKey,
-        baseAssetUsdOracleKey,
-        glamAccounts.readMintIntegrationAuthority().publicKey(),
-        globalConfigKey,
-        invokedProtocolProgram.publicKey(),
-        cpiEmitEvents ? glamAccounts.mintEventAuthority() : mintProgram,
-        mintProgram,
-        numVaultDepositors,
-        numSpotMarkets,
-        numPerpMarkets
-    );
-  }
-
-  @Override
   public Instruction priceKaminoObligations(final PublicKey kaminoLendingProgramKey,
                                             final PublicKey solUSDOracleKey,
                                             final PublicKey baseAssetUsdOracleKey,

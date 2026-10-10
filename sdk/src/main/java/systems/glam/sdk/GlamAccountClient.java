@@ -89,32 +89,6 @@ public interface GlamAccountClient extends SPLAccountClient {
     return priceVaultTokens(solUsdOracleKey, baseAssetUsdOracleKey, aggIndexes, false);
   }
 
-  Instruction priceDriftUsers(final PublicKey solUSDOracleKey,
-                              final PublicKey baseAssetUsdOracleKey,
-                              final int numUsers,
-                              final boolean cpiEmitEvents);
-
-  default Instruction priceDriftUsers(final PublicKey solUSDOracleKey,
-                                      final PublicKey baseAssetUsdOracleKey,
-                                      final int numUsers) {
-    return priceDriftUsers(solUSDOracleKey, baseAssetUsdOracleKey, numUsers, false);
-  }
-
-  Instruction priceDriftVaultDepositors(final PublicKey solOracleKey,
-                                        final PublicKey baseAssetUsdOracleKey,
-                                        final int numVaultDepositors,
-                                        final int numSpotMarkets,
-                                        final int numPerpMarkets,
-                                        final boolean cpiEmitEvents);
-
-  default Instruction priceDriftVaultDepositors(final PublicKey solOracleKey,
-                                                final PublicKey baseAssetUsdOracleKey,
-                                                final int numVaultDepositors,
-                                                final int numSpotMarkets,
-                                                final int numPerpMarkets) {
-    return priceDriftVaultDepositors(solOracleKey, baseAssetUsdOracleKey, numVaultDepositors, numSpotMarkets, numPerpMarkets, false);
-  }
-
   Instruction priceKaminoObligations(final PublicKey kaminoLendingProgramKey,
                                      final PublicKey solUSDOracleKey,
                                      final PublicKey baseAssetUsdOracleKey,

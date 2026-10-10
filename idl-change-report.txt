@@ -7,26 +7,29 @@ nobody took. The standing disagreements live beside this file, at its name with 
 before the extension. Ordered by program and channel, and carrying no timestamp, so
 consecutive runs are worth diffing against each other.
 
-== Movement (6) ==
+== Movement (9) ==
 
-GLAM Marinade: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_marinade.json moved since the last generation, 933007d642e12a1d92a2748131a223420fe2ed093b8e88cc51b058fbab2412e8 -> 0541650ac59b4a1c23986533ae3883e2ca8c67b7b18d3de41514d0365812468e: accounts -1
-  accounts removed (1): StateAccount
+GLAM Protocol: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_protocol.json moved since the last generation, 4d88d32395fc849d63e0952a40c1bd172186f79bb83e3661e94d6aa02182cc0d -> 9495df411e74c235e51002e9269cffda9e01ed87c3e0002f122a60b3fdefa6c2: errors +5
+  errors added (5): InvalidStakeLockup, StakeAccountNotTracked, StakeMergeDestinationActivating, StakeMergeDrainsDestination, StakeSplitEmptiesSource
 
-GLAM Staging Exponent: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_exponent-staging.json moved since the last generation, 6bb72ce01356bc26f6bf9e4033f50eecd33be29dff40f976b692e972dd4f0853 -> e21f5d879c2cc202118cd1a108a09c0f812e9fbc477b941438c3d038a213b2e1: accounts -1
-  accounts removed (1): StateAccount
+GLAM Staging Marinade: the program was redeployed at slot 455009899, up from 450050395, and no IDL channel moved with it (the metadata IDL was last written at slot 442709678, before the previous deploy); the stored program image changed: 354104 payload bytes, was 354104 — review required
 
-GLAM Staging Marinade: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_marinade-staging.json moved since the last generation, 6352519ef66bbdc6c7dcffb28a95c19bbea38e0f899de0b72a613b782fd6dc71 -> 552c4231973fe6e2a30d5b4b7967d6fa108481ed233921642b66831a4dcc7c2c: accounts -1
-  accounts removed (1): StateAccount
+GLAM Staging Mint: the anchor IDL at 28HSbEepgNUC7f5ceJ1FPacJXNiAo6ScrbXJpQj3EhHv moved since the last generation, 98bcbcf548226fc6a08d600125761b36ee88679e0795a4b9a6ec31cc17db7b41 -> 20e980b296645cc7d9de44c6afc5c9fc483309b2a945c6d1557d12dc3f9303d8: instructions -2
+  instructions removed (2): price_drift_users, price_drift_vault_depositors
 
-GLAM Staging Stake Pool: the metadata IDL at E7oVmXMxDj7pEXfpVtCzcZx8zUVmH8Gi2jz7kA5Xzkj9 moved since the last generation, f4579fa81865e435a281771e830ce8f147e0fd4f18700e424a625f361b40222d -> 6b32d922079ce8905b2f78370e7ad26a48aaa9863f993fe3bdbbb84a71c3b906: instructions +4 -4, errors +7
-  instructions added (4): deposit_sol_with_slippage, deposit_stake_with_slippage, withdraw_sol_with_slippage, withdraw_stake_with_slippage
-  instructions removed (4): deposit_sol, deposit_stake, withdraw_sol, withdraw_stake
-  errors added (7): DestinationNotVault, MinimumOutputRequired, PoolMintMismatch, ReferralAccountMismatch, SolDepositAuthorityUnsupported, SolWithdrawAuthorityUnsupported, ZeroAmount
+GLAM Staging Mint: the program was redeployed at slot 455014041, up from 445467293; the stored program image changed: 2029536 payload bytes, was 2029536 — review required
 
-GLAM Staging Stake Pool: the program was redeployed at slot 453958551, up from 448905338; the stored program image changed: 402888 payload bytes, was 402888 — review required
+GLAM Staging Protocol: the anchor IDL at 5UELoo8jJyAqdh3yziYoG3jpWMN9f3ab8wmmKAkP3mqx moved since the last generation, 912738dc2c40090066c08c675584a8b3c0131c5daa504315fcbdc140732b4dad -> 809f5ea765bb0cf140b807e69977636dca79b0a3a6a247e518dfc6f7f098b313: instructions -1, errors +9
+  instructions removed (1): stake_authorize
+  errors added (9): InvalidNotifyAndSettle, InvalidObligationOwner, InvalidStakeLockup, ObligationStale, ReserveStale, StakeAccountNotTracked, StakeMergeDestinationActivating, StakeMergeDrainsDestination, StakeSplitEmptiesSource
 
-GLAM Staging Stake Pool: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_stake_pool-staging.json moved since the last generation, 39b0436161dd3855f019f625cdbda4afab33811eff0c55fdad0d05bdea0eaccd -> 4ec90d4f128b5532802e72f2a556f1aed8ca8e0077ac172352fb5ea4a50bfdb5: instructions +4 -4, accounts -1, errors +8
-  instructions added (4): deposit_sol_with_slippage, deposit_stake_with_slippage, withdraw_sol_with_slippage, withdraw_stake_with_slippage
-  instructions removed (4): deposit_sol, deposit_stake, withdraw_sol, withdraw_stake
-  accounts removed (1): StateAccount
-  errors added (8): DestinationNotVault, MinimumOutputNotMet, MinimumOutputRequired, PoolMintMismatch, ReferralAccountMismatch, SolDepositAuthorityUnsupported, SolWithdrawAuthorityUnsupported, ZeroAmount
+GLAM Staging Protocol: the program was redeployed at slot 455013333, up from 446999833; the stored program image changed: 819896 payload bytes, was 819896 — review required
+
+GLAM Staging Protocol: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_protocol-staging.json moved since the last generation, 031b3aba37cd395129014036f534ffb7ead985dad4c2d210c8dccd2b23d1c56b -> 809f5ea765bb0cf140b807e69977636dca79b0a3a6a247e518dfc6f7f098b313: instructions -1, errors +5
+  instructions removed (1): stake_authorize
+  errors added (5): InvalidStakeLockup, StakeAccountNotTracked, StakeMergeDestinationActivating, StakeMergeDrainsDestination, StakeSplitEmptiesSource
+
+GLAM Staging Stake Pool: the metadata IDL at E7oVmXMxDj7pEXfpVtCzcZx8zUVmH8Gi2jz7kA5Xzkj9 moved since the last generation, 6b32d922079ce8905b2f78370e7ad26a48aaa9863f993fe3bdbbb84a71c3b906 -> 4ec90d4f128b5532802e72f2a556f1aed8ca8e0077ac172352fb5ea4a50bfdb5: errors +1
+  errors added (1): MinimumOutputNotMet
+
+GLAM Staging Stake Pool: the program was redeployed at slot 455009748, up from 453958551; the stored program image changed: 402888 payload bytes, was 402888 — review required

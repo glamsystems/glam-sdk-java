@@ -10,7 +10,8 @@ public sealed interface ExtStakePoolError extends ProgramError permits
     ExtStakePoolError.SolWithdrawAuthorityUnsupported,
     ExtStakePoolError.ReferralAccountMismatch,
     ExtStakePoolError.DestinationNotVault,
-    ExtStakePoolError.PoolMintMismatch {
+    ExtStakePoolError.PoolMintMismatch,
+    ExtStakePoolError.MinimumOutputNotMet {
 
   static ExtStakePoolError getInstance(final int errorCode) {
     return switch (errorCode) {
@@ -21,6 +22,7 @@ public sealed interface ExtStakePoolError extends ProgramError permits
       case 6004 -> ReferralAccountMismatch.INSTANCE;
       case 6005 -> DestinationNotVault.INSTANCE;
       case 6006 -> PoolMintMismatch.INSTANCE;
+      case 6007 -> MinimumOutputNotMet.INSTANCE;
       default -> null;
     };
   }
@@ -71,6 +73,13 @@ public sealed interface ExtStakePoolError extends ProgramError permits
 
     public static final PoolMintMismatch INSTANCE = new PoolMintMismatch(
         6006, "The pool mint must be the mint the pool stores"
+    );
+  }
+
+  record MinimumOutputNotMet(int code, String msg) implements ExtStakePoolError {
+
+    public static final MinimumOutputNotMet INSTANCE = new MinimumOutputNotMet(
+        6007, "The stake lamports received are below the minimum output"
     );
   }
 }

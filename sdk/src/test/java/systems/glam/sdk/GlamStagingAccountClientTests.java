@@ -70,8 +70,6 @@ final class GlamStagingAccountClientTests {
     assertMintProgramPricing((c, cpi) -> c.priceSingleAssetVault(key(13), cpi));
     assertMintProgramPricing((c, cpi) -> c.priceStakeAccounts(solOracle, baseOracle, cpi));
     assertMintProgramPricing((c, cpi) -> c.priceVaultTokens(solOracle, baseOracle, new short[][]{{1, 2, 3, 4}}, cpi));
-    assertMintProgramPricing((c, cpi) -> c.priceDriftUsers(solOracle, baseOracle, 2, cpi));
-    assertMintProgramPricing((c, cpi) -> c.priceDriftVaultDepositors(solOracle, baseOracle, 1, 2, 3, cpi));
     assertMintProgramPricing((c, cpi) -> c.priceKaminoObligations(key(15), solOracle, baseOracle, cpi));
     assertMintProgramPricing((c, cpi) -> c.priceKaminoVaultShares(solOracle, baseOracle, 2, cpi));
     assertMintProgramPricing((c, cpi) -> c.validateAum(cpi));

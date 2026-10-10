@@ -78,7 +78,12 @@ public sealed interface GlamProtocolError extends ProgramError permits
     GlamProtocolError.InvalidNotifyAndSettle,
     GlamProtocolError.ObligationStale,
     GlamProtocolError.ReserveStale,
-    GlamProtocolError.InvalidObligationOwner {
+    GlamProtocolError.InvalidObligationOwner,
+    GlamProtocolError.InvalidStakeLockup,
+    GlamProtocolError.StakeAccountNotTracked,
+    GlamProtocolError.StakeSplitEmptiesSource,
+    GlamProtocolError.StakeMergeDestinationActivating,
+    GlamProtocolError.StakeMergeDrainsDestination {
 
   static GlamProtocolError getInstance(final int errorCode) {
     return switch (errorCode) {
@@ -157,6 +162,11 @@ public sealed interface GlamProtocolError extends ProgramError permits
       case 52007 -> ObligationStale.INSTANCE;
       case 52008 -> ReserveStale.INSTANCE;
       case 52009 -> InvalidObligationOwner.INSTANCE;
+      case 52010 -> InvalidStakeLockup.INSTANCE;
+      case 52011 -> StakeAccountNotTracked.INSTANCE;
+      case 52012 -> StakeSplitEmptiesSource.INSTANCE;
+      case 52013 -> StakeMergeDestinationActivating.INSTANCE;
+      case 52014 -> StakeMergeDrainsDestination.INSTANCE;
       default -> null;
     };
   }
@@ -683,6 +693,41 @@ public sealed interface GlamProtocolError extends ProgramError permits
 
     public static final InvalidObligationOwner INSTANCE = new InvalidObligationOwner(
         52009, "Kamino obligation is not owned by the vault"
+    );
+  }
+
+  record InvalidStakeLockup(int code, String msg) implements GlamProtocolError {
+
+    public static final InvalidStakeLockup INSTANCE = new InvalidStakeLockup(
+        52010, "Stake account has a lockup"
+    );
+  }
+
+  record StakeAccountNotTracked(int code, String msg) implements GlamProtocolError {
+
+    public static final StakeAccountNotTracked INSTANCE = new StakeAccountNotTracked(
+        52011, "Stake account is not tracked by the vault"
+    );
+  }
+
+  record StakeSplitEmptiesSource(int code, String msg) implements GlamProtocolError {
+
+    public static final StakeSplitEmptiesSource INSTANCE = new StakeSplitEmptiesSource(
+        52012, "Stake split would empty the source account"
+    );
+  }
+
+  record StakeMergeDestinationActivating(int code, String msg) implements GlamProtocolError {
+
+    public static final StakeMergeDestinationActivating INSTANCE = new StakeMergeDestinationActivating(
+        52013, "Stake merge into a destination in its activation epoch would stake the source's reserve"
+    );
+  }
+
+  record StakeMergeDrainsDestination(int code, String msg) implements GlamProtocolError {
+
+    public static final StakeMergeDrainsDestination INSTANCE = new StakeMergeDrainsDestination(
+        52014, "Stake merge would leave the destination below one reserve"
     );
   }
 }

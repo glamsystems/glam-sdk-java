@@ -266,14 +266,6 @@ final class GlamAccountClientTests {
     }
     final var kLendProgram = key(23);
     final var productionCases = List.of(
-        new Case("priceDriftUsers",
-            client.priceDriftUsers(sol, base, 3, true),
-            client.priceDriftUsers(sol, base, 3, false),
-            client.priceDriftUsers(sol, base, 3)),
-        new Case("priceDriftVaultDepositors",
-            client.priceDriftVaultDepositors(sol, base, 3, 2, 1, true),
-            client.priceDriftVaultDepositors(sol, base, 3, 2, 1, false),
-            client.priceDriftVaultDepositors(sol, base, 3, 2, 1)),
         new Case("priceKaminoObligations",
             client.priceKaminoObligations(kLendProgram, sol, base, true),
             client.priceKaminoObligations(kLendProgram, sol, base, false),
