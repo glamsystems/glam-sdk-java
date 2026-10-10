@@ -424,8 +424,11 @@ final class BatchSqlExecutorTests {
 
     final var worker = new Thread(executor::run, "batch-sql-idle-runner");
     worker.start();
+    final boolean batchComplete;
     try {
       assertExits(worker, "an idle runner must keep ticking on its window and honour the interrupt");
+      // read before stop(), which forces the flag for its own cleanup
+      batchComplete = executor.batchComplete;
     } finally {
       stop(jdbc, executor, worker);
     }
@@ -434,7 +437,7 @@ final class BatchSqlExecutorTests {
     assertEquals(3, heartbeat.ticks());
     assertEquals(0, jdbc.executions);
     assertTrue(prepared.isEmpty());
-    assertTrue(executor.batchComplete);
+    assertTrue(batchComplete, "an idle runner leaves no batch open");
     assertFalse(executor.lock.isLocked());
   }
 

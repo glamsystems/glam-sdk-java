@@ -1776,11 +1776,13 @@ final class GlobalConfigCacheTests {
 
       cache.forceCacheRefresh();
       awaitTrue("a forced refresh queues immediately", () -> consumerQueues.get() == 2);
-      // the force flag was consumed by the refetch: the loop parks again
+      // after the forced fetch the loop parks again for its full delay
       awaitTrue("the loop parks again after the forced fetch", () -> runner.getState() == Thread.State.TIMED_WAITING);
       Thread.sleep(150L);
-      assertEquals(2, consumerQueues.get(), "the refresh flag must reset after the fetch");
+      assertEquals(2, consumerQueues.get(), "the loop must park for the fetch delay after a forced fetch");
 
+      // the loop reads the force flag only after its wait, so a flag left set shows here: a
+      // stale flag makes this second refresh return without signalling the parked loop
       cache.forceCacheRefresh();
       awaitTrue("a second refresh pulls another fetch", () -> consumerQueues.get() == 3);
 
