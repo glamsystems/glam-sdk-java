@@ -594,7 +594,10 @@ final class SingleAssetFulfillmentServiceTests {
   // an update, a lost wake-up (the waiter still on the queue) and a spurious one (the queue
   // empty) both read synchronously, with no wait for the waiter thread to run. Every
   // remaining wait is bounded by Workers.FIXTURE_DEADLINE_MILLIS, well inside the mutation
-  // watchdog's budget, and every waiter is interrupted and joined in a finally.
+  // watchdog's budget, and every waiter is interrupted and joined in a finally. The floor
+  // checks are the exception: their woken waiter sleeps out the floor holding the lock, so
+  // they read the wake through a join allowed the floor on top of the deadline, and their
+  // waits outlast that join by seconds, so a lost wake-up still fails it.
 
   /// Starts a thread in [BaseFulfillmentService#awaitChange(long)]. It is a daemon so that a
   /// mutant which strands it in an uninterruptible lock acquire cannot hold the JVM open.
@@ -653,7 +656,8 @@ final class SingleAssetFulfillmentServiceTests {
   /// A woken waiter sleeps out the rest of its floor, holding the service lock, before it
   /// leaves awaitChange. The join allows that floor on top of the fixture deadline, so the
   /// woken path is bounded far above what it sleeps and the floor test's lower bound is the
-  /// one that judges it; a lost wake-up still fails here, the waiter still parked.
+  /// one that judges it. A lost wake-up fails here while the waiter's own wait outlasts the
+  /// join, which each caller's wait does by seconds.
   private static void assertLeftAwaitChangeAfterItsFloor(final BaseFulfillmentService service,
                                                          final Thread waiter,
                                                          final long floorMillis) throws InterruptedException {
@@ -746,8 +750,8 @@ final class SingleAssetFulfillmentServiceTests {
   }
 
   /// A woken wait sleeps the rest of the minimum delay: the floor less what it slept, not the
-  /// floor plus it. The arithmetic is pinned here without a clock; the threaded checks pin that
-  /// awaitChange sleeps at least the floor.
+  /// floor plus it. The arithmetic is pinned here without a clock; the threaded checks bound a
+  /// woken awaitChange's time from below, just under the floor.
   @Test
   void theFloorTopUpIsWhatTheWaitLeftOfTheMinimum() {
     final long floorNanos = MILLISECONDS.toNanos(300L);
@@ -770,7 +774,8 @@ final class SingleAssetFulfillmentServiceTests {
   void aShortWaitWokenEarlyStillSleepsOutTheFloor() throws InterruptedException {
     final var floor = harness(NoticePeriodType.Hard, TimeUnit.Second, 100L, false, 300, 10_000).service;
     final long start = System.nanoTime();
-    final var waiter = startWaiter(floor, SECONDS.toNanos(1L));
+    // shorter than the ceiling, as the property needs, and long enough to outlast the join
+    final var waiter = startWaiter(floor, SECONDS.toNanos(5L));
     try {
       awaitParked(floor, waiter);
       floor.wakeUp();
