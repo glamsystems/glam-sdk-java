@@ -879,74 +879,6 @@
       ]
     },
     {
-      "name": "stake_authorize",
-      "discriminator": [
-        127,
-        247,
-        88,
-        164,
-        201,
-        0,
-        79,
-        7
-      ],
-      "accounts": [
-        {
-          "name": "glam_state",
-          "writable": true
-        },
-        {
-          "name": "glam_vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "glam_state"
-              }
-            ]
-          }
-        },
-        {
-          "name": "glam_signer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "cpi_program",
-          "address": "Stake11111111111111111111111111111111111111"
-        },
-        {
-          "name": "stake",
-          "writable": true
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "new_authority",
-          "type": "pubkey"
-        },
-        {
-          "name": "staker_or_withdrawer",
-          "type": "u32"
-        }
-      ]
-    },
-    {
       "name": "stake_deactivate",
       "discriminator": [
         224,
@@ -2090,6 +2022,51 @@
       "code": 52005,
       "name": "UnsupportedOracleSource",
       "msg": "Oracle source not supported in this context"
+    },
+    {
+      "code": 52006,
+      "name": "InvalidNotifyAndSettle",
+      "msg": "Notify-and-settle period exceeds the maximum"
+    },
+    {
+      "code": 52007,
+      "name": "ObligationStale",
+      "msg": "Kamino obligation is stale or its price status is incomplete"
+    },
+    {
+      "code": 52008,
+      "name": "ReserveStale",
+      "msg": "Kamino reserve is stale or its price status is incomplete"
+    },
+    {
+      "code": 52009,
+      "name": "InvalidObligationOwner",
+      "msg": "Kamino obligation is not owned by the vault"
+    },
+    {
+      "code": 52010,
+      "name": "InvalidStakeLockup",
+      "msg": "Stake account has a lockup"
+    },
+    {
+      "code": 52011,
+      "name": "StakeAccountNotTracked",
+      "msg": "Stake account is not tracked by the vault"
+    },
+    {
+      "code": 52012,
+      "name": "StakeSplitEmptiesSource",
+      "msg": "Stake split would empty the source account"
+    },
+    {
+      "code": 52013,
+      "name": "StakeMergeDestinationActivating",
+      "msg": "Stake merge into a destination in its activation epoch would stake the source's reserve"
+    },
+    {
+      "code": 52014,
+      "name": "StakeMergeDrainsDestination",
+      "msg": "Stake merge would leave the destination below one reserve"
     }
   ],
   "types": [

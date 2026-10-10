@@ -8,7 +8,7 @@ its members and changes only when that membership does, while the volatile count
 versions stay on the console summaries and the movement log. Ordered by program and channel,
 and carrying no timestamp.
 
-== Next gap (14) ==
+== Next gap (12) ==
 
 GLAM Config: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_config.json differs from the deployed idl.json
   instructions added (2): deprecate_asset_meta, update_fee_authority
@@ -66,14 +66,6 @@ GLAM Staging Phoenix: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext
   types removed (12): CancelConditionalOrderInstruction, CondensedOrderFlags, CondensedOrderV2, Direction, MultipleOrderPacketV2, PlaceAttachedConditionalOrderInstruction, PlaceLimitOrderWithConditionalsInstruction, PlacePositionConditionalOrderInstruction, StopLossOrderKind, TransferNativeSolInstruction, TriggerOrderParams, WithdrawNativeSolAction
   types changed (2): PhoenixPolicy, RegisterTraderParams
   errors removed (5): ConditionalExecutionPriceRequired, ConditionalOrdersDisabled, NativeSolDepositNotAccounted, NativeSolNotConserved, TraderPreferenceBitsNotAdmitted
-
-GLAM Staging Protocol: the anchor IDL at 5UELoo8jJyAqdh3yziYoG3jpWMN9f3ab8wmmKAkP3mqx differs from the deployed idl.json
-  instructions removed (1): stake_authorize
-  errors added (9): InvalidNotifyAndSettle, InvalidObligationOwner, InvalidStakeLockup, ObligationStale, ReserveStale, StakeAccountNotTracked, StakeMergeDestinationActivating, StakeMergeDrainsDestination, StakeSplitEmptiesSource
-
-GLAM Staging Protocol: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_protocol-staging.json differs from the deployed idl.json
-  instructions removed (1): stake_authorize
-  errors added (9): InvalidNotifyAndSettle, InvalidObligationOwner, InvalidStakeLockup, ObligationStale, ReserveStale, StakeAccountNotTracked, StakeMergeDestinationActivating, StakeMergeDrainsDestination, StakeSplitEmptiesSource
 
 GLAM Staging Registered Positions: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_rpi-staging.json differs from the deployed idl.json
   instructions removed (1): price_registered_positions

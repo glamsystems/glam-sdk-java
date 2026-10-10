@@ -10,22 +10,20 @@
     "anchor": {
       "origin": "5UELoo8jJyAqdh3yziYoG3jpWMN9f3ab8wmmKAkP3mqx",
       "hash": "809f5ea765bb0cf140b807e69977636dca79b0a3a6a247e518dfc6f7f098b313",
-      "matchesDeployed": false,
-      "file": "anchor.json",
-      "verbatim": "anchor.json"
+      "matchesDeployed": true,
+      "verbatim": "anchor.original.json"
     },
     "metadata": {
       "origin": "SMGmM9PtEW3VtPFBgDBcnoTf128HpACNz1dxTfHeFJ1",
-      "hash": "912738dc2c40090066c08c675584a8b3c0131c5daa504315fcbdc140732b4dad",
+      "hash": "809f5ea765bb0cf140b807e69977636dca79b0a3a6a247e518dfc6f7f098b313",
       "matchesDeployed": true,
       "verbatim": "idl.json"
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/glam_protocol-staging.json",
       "hash": "809f5ea765bb0cf140b807e69977636dca79b0a3a6a247e518dfc6f7f098b313",
-      "matchesDeployed": false,
-      "file": "vcs.json",
-      "verbatim": "vcs.json"
+      "matchesDeployed": true,
+      "verbatim": "idl.json"
     }
   }
 }

@@ -74,7 +74,16 @@ public sealed interface GlamProtocolError extends ProgramError permits
     GlamProtocolError.AmountTooBig,
     GlamProtocolError.LockUp,
     GlamProtocolError.PolicyNotSet,
-    GlamProtocolError.UnsupportedOracleSource {
+    GlamProtocolError.UnsupportedOracleSource,
+    GlamProtocolError.InvalidNotifyAndSettle,
+    GlamProtocolError.ObligationStale,
+    GlamProtocolError.ReserveStale,
+    GlamProtocolError.InvalidObligationOwner,
+    GlamProtocolError.InvalidStakeLockup,
+    GlamProtocolError.StakeAccountNotTracked,
+    GlamProtocolError.StakeSplitEmptiesSource,
+    GlamProtocolError.StakeMergeDestinationActivating,
+    GlamProtocolError.StakeMergeDrainsDestination {
 
   static GlamProtocolError getInstance(final int errorCode) {
     return switch (errorCode) {
@@ -149,6 +158,15 @@ public sealed interface GlamProtocolError extends ProgramError permits
       case 52003 -> LockUp.INSTANCE;
       case 52004 -> PolicyNotSet.INSTANCE;
       case 52005 -> UnsupportedOracleSource.INSTANCE;
+      case 52006 -> InvalidNotifyAndSettle.INSTANCE;
+      case 52007 -> ObligationStale.INSTANCE;
+      case 52008 -> ReserveStale.INSTANCE;
+      case 52009 -> InvalidObligationOwner.INSTANCE;
+      case 52010 -> InvalidStakeLockup.INSTANCE;
+      case 52011 -> StakeAccountNotTracked.INSTANCE;
+      case 52012 -> StakeSplitEmptiesSource.INSTANCE;
+      case 52013 -> StakeMergeDestinationActivating.INSTANCE;
+      case 52014 -> StakeMergeDrainsDestination.INSTANCE;
       default -> null;
     };
   }
@@ -647,6 +665,69 @@ public sealed interface GlamProtocolError extends ProgramError permits
 
     public static final UnsupportedOracleSource INSTANCE = new UnsupportedOracleSource(
         52005, "Oracle source not supported in this context"
+    );
+  }
+
+  record InvalidNotifyAndSettle(int code, String msg) implements GlamProtocolError {
+
+    public static final InvalidNotifyAndSettle INSTANCE = new InvalidNotifyAndSettle(
+        52006, "Notify-and-settle period exceeds the maximum"
+    );
+  }
+
+  record ObligationStale(int code, String msg) implements GlamProtocolError {
+
+    public static final ObligationStale INSTANCE = new ObligationStale(
+        52007, "Kamino obligation is stale or its price status is incomplete"
+    );
+  }
+
+  record ReserveStale(int code, String msg) implements GlamProtocolError {
+
+    public static final ReserveStale INSTANCE = new ReserveStale(
+        52008, "Kamino reserve is stale or its price status is incomplete"
+    );
+  }
+
+  record InvalidObligationOwner(int code, String msg) implements GlamProtocolError {
+
+    public static final InvalidObligationOwner INSTANCE = new InvalidObligationOwner(
+        52009, "Kamino obligation is not owned by the vault"
+    );
+  }
+
+  record InvalidStakeLockup(int code, String msg) implements GlamProtocolError {
+
+    public static final InvalidStakeLockup INSTANCE = new InvalidStakeLockup(
+        52010, "Stake account has a lockup"
+    );
+  }
+
+  record StakeAccountNotTracked(int code, String msg) implements GlamProtocolError {
+
+    public static final StakeAccountNotTracked INSTANCE = new StakeAccountNotTracked(
+        52011, "Stake account is not tracked by the vault"
+    );
+  }
+
+  record StakeSplitEmptiesSource(int code, String msg) implements GlamProtocolError {
+
+    public static final StakeSplitEmptiesSource INSTANCE = new StakeSplitEmptiesSource(
+        52012, "Stake split would empty the source account"
+    );
+  }
+
+  record StakeMergeDestinationActivating(int code, String msg) implements GlamProtocolError {
+
+    public static final StakeMergeDestinationActivating INSTANCE = new StakeMergeDestinationActivating(
+        52013, "Stake merge into a destination in its activation epoch would stake the source's reserve"
+    );
+  }
+
+  record StakeMergeDrainsDestination(int code, String msg) implements GlamProtocolError {
+
+    public static final StakeMergeDrainsDestination INSTANCE = new StakeMergeDrainsDestination(
+        52014, "Stake merge would leave the destination below one reserve"
     );
   }
 }
