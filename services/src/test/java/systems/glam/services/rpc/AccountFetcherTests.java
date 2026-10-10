@@ -39,6 +39,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
@@ -392,13 +393,20 @@ final class AccountFetcherTests {
     final var present = key(1);
     rpc.universe.put(present, account(present, 1L, new byte[]{1}));
     final var ticks = new AtomicInteger();
+    final var ticksWithoutTheLock = new AtomicInteger();
     final var parked = new CountDownLatch(1);
+    final var ticking = new AtomicReference<AccountFetcherImpl>();
     // every tick is taken under the fetcher's lock, so once one lands the runner
-    // holds the lock until it re-arms its window and parks: the lock is the seam
+    // holds the lock until it re-arms its window and parks: the lock is the seam,
+    // and the heartbeat reads it at each tick
     final var fetcher = createReactiveFetcher(rpc, MILLISECONDS.toNanos(1), () -> {
+      if (!ticking.get().lock.isHeldByCurrentThread()) {
+        ticksWithoutTheLock.incrementAndGet();
+      }
       ticks.incrementAndGet();
       parked.countDown();
     });
+    ticking.set(fetcher);
     final var consumer = new RecordingConsumer();
 
     final var worker = new Thread(fetcher::run, "reactive-account-fetcher");
@@ -421,6 +429,7 @@ final class AccountFetcherTests {
       // makes the next cycle's minimum delay throw before it can tick: no new ticks
       assertEquals(1, rpc.calls.size());
       assertEquals(1, consumer.received.size());
+      assertEquals(0, ticksWithoutTheLock.get(), "a reactive fetcher ticks under the lock its producers queue through");
       assertEquals(idleTicks, ticks.get());
       assertFalse(fetcher.lock.isLocked());
     } finally {
