@@ -278,8 +278,7 @@ GLAM result.
 in `services`; `EXPERIMENTAL_BIG_INTEGER` left the set when its 2026-10-09
 re-trial generated no mutants, the `BigInteger` liquidity totals it was enabled
 for having left with the Kamino cache. The trials, with their measured numbers,
-are in the module READMEs: the naked-receiver trial in each, and the
-`BigInteger`/`BigDecimal` trials for both suites in the services README. `pitestServices` also sets its own
+are under "Mutator trials" in each module's `config/pitest/README.md`. `pitestServices` also sets its own
 `timeoutFactor` and `timeoutConst`, and was trialed at 8 threads; the values
 and the reasoning are in `services/build.gradle.kts`.
 
@@ -317,14 +316,27 @@ same clean detached worktree as certification.
 `SolanaRpcClient` / `AccountFetcher` — give them return values a real assertion
 can tell from a mutated default.
 
-**Family labels.** Every `# <family>` label on an accepted row has an entry in
-the family glossary of the owning module's `config/pitest/README.md`; here a row
-is not triaged until it does.
+**The records are a registry.** Each module's `config/pitest/README.md` holds
+what the ratchet accepts now: a bullet per family label, a cause per audited
+timeout member, the open debt by class, and the measurements behind the suite's
+mutator set. The totals the build prints are not restated there and history is
+git's (HARDENING.md's README rule, and the block above); the journal as it stood
+on 2026-10-09 is `config/pitest/HISTORY.md` beside it, kept verbatim and
+unmaintained. Two local rules keep it honest: its prose carries no dates outside
+trial measurements, writer receipts, restated policy or source line numbers; and
+a member whose recorded argument does not hold keeps its label and says so ("its
+acceptance is an open owner decision"; on an audited timeout member, "its
+admissibility an open owner decision") until the owner relabels it, retires it or
+adopts its seam.
+
+**Family labels.** Every `# <family>` label on an accepted row has its bullet
+under "Families" in the owning module's `config/pitest/README.md`; here a row is
+not triaged until it does.
 
 **Timeout audit.** Each suite's audited timeout set and its `cause:*`
 classifications live in `config/pitest/<suite>-timeouts.csv`; each member's
 structural cause belongs in the owning `config/pitest/README.md`, under its class
-in the timed-out mutants section.
+in "Timed-out mutants (audited set)".
 
 **Fixture deadlines must sit inside the watchdog budget.** A covering test's PIT
 budget is its own duration × `timeoutFactor` + `timeoutConst` (HARDENING.md), with

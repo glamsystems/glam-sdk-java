@@ -1,7 +1,4 @@
-# Audited timed-out mutants: one line-less class,method,mutator key per member,
-# each carrying its cause category (sava-build HARDENING.md names the admissible
-# ones) and a short argument. Each member's structural cause belongs in
-# README.md, under its class in the timed-out mutants section. Line numbers ride
-# in comments only — drift must not churn membership.
-# Classified 2026-08-06.
-# Retired 2026-09-24: all five lut.VaultTableBuilderImpl,batchTableTasks members (class deleted).
+# Audited timed-out mutants of the 'sdk' suite: line-less `class,method,mutator` keys, each
+# with its admissible cause category (sava-build HARDENING.md, the audited-set bullet). The
+# structural argument per member belongs in README.md, "Timed-out mutants (audited set)",
+# under its class. `# line` tags are diagnostic metadata only.

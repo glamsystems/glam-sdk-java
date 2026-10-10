@@ -1,435 +1,54 @@
-# Mutation-testing baseline & triage policy — `sdk`
+# Mutation-testing records — `sdk`
 
-`pitestSdk` is this module's mutation suite; the hardening block in the
-repository's `AGENTS.md` says when it is owed. The suite's accepted baseline is
-`sdk-accepted.csv`, holding the unkilled rows (`SURVIVED` and `NO_COVERAGE`)
-keyed by class, method, mutator and status; its audited timeout set is
-`sdk-timeouts.csv`. Every row triaged out of debt owes its written argument
-here. The canonical policy is sava-build's `HARDENING.md`, and `hardeningHelp`
-is the authority on the installed plugin's task names; this file records what
-is accepted *here* and why.
+This file registers what the mutation ratchet accepts in this module and why: the arguments behind
+each family label the accepted-baseline rows carry, the audited timeout set, the debt that is open
+and what would pay it, and the measurements behind the suite's mutator set. The rules it applies,
+from triage and relabelling to what an acceptance or a timeout cause must argue, are sava-build's
+`HARDENING.md`; the task and option surface is `hardeningHelp`; the counts are what
+`pitestSdkVerify` and `pitestSdkDebt` print. The journal this registry replaced, with every dated
+pass, is `HISTORY.md` beside it, kept verbatim and unmaintained; how prose is added here is in the
+repository's `AGENTS.md`.
 
-A new unkilled mutant has exactly three legal outcomes:
-
-1. **Kill it** — add or strengthen a test. Prefer asserting the property the
-   mutant breaks over restating the implementation.
-2. **Refactor** — restructure so the mutant cannot exist.
-3. **Accept it knowingly** — record the reason under "Triaged equivalent
-   mutants" below, give the row a short `# <family>` label named in the
-   "Family labels" glossary, and write the record with the writer task
-   `hardeningHelp` names for it, never by hand. Acceptance is for mutants
-   *equivalent with respect to observable behavior*, not for "hard to test".
-
-Identical rows are sibling mutants of one compound condition, not duplicates
-to tidy: never hand-dedupe the CSV, and never hand-edit record structure or
-provenance stamps. A row whose written argument here no longer fits the code
-it names is re-argued before it is reused or removed; anything beyond that
-(newly covered, unexplained, changed counts) is triage first, record
-after. Any run that supports a record decision must be history-free
-(`-PnoMutationHistory`).
+Rows in `sdk-accepted.csv` read `class,method,mutator,STATUS # <family> # line N`. The arguments
+below name classes, methods and branches, never source lines. Each family bullet ends with
+"Covers", the members it was argued for.
 
 ## Suite
 
-One catch-all suite, `pitestSdk`, targeting `systems.glam.sdk.*` by wildcard
-with exclusions rather than an allowlist, so a new hand-written class is
-mutated by default rather than silently skipped. Excluded: generated
-`idl.**.gen.*` code (correctness belongs to idl-src-gen; mutating the
-boilerplate would bury the hand-written signal) and test sources sharing the
-recompiled root. `build.gradle.kts` is the authoritative definition.
+The `hardening {}` block of `sdk/build.gradle.kts` is the authoritative declaration of the suite, its targets, exclusions and mutators, and of the module's fuzz target; this is the reading guide.
 
-## Baseline composition
+- `pitestSdk` mutates `systems.glam.sdk.*` by wildcard with exclusions, as HARDENING.md's "Targeting policy" asks, and selects every `systems.glam.sdk.*Test*` class as its tests; each mutant runs the selected tests that cover it. Excluded: the generated per-program trees, `systems.glam.sdk.idl.*.gen.*`, whose correctness belongs to idl-src-gen, which generates and tests the emitter; mutating that boilerplate would measure the generator's output and bury the hand-written signal, and the block records the opt-out, with that reason, through `declineExclusionAudit`. Excluded too, because the test sources share the recompiled root: `*Test*` and `*Fuzz*`, the test classes and the fuzz harness, and `systems.glam.sdk.tests.*`, the shared fixture readers no `*Test*` name matches. Those name patterns do not cover the whole test source set: `StateAccountFixture`, the staging state-account snapshot `GlamStagingAccountClientTests` reads, sits in the root package, matches none of them and is in the target set; it yields no mutants only because it holds nothing but a compile-time constant and a private constructor, so a method added to it would be mutated as production code. Besides it, what remains is the hand-written layer: `GlamAccounts` with its builder and record, `GlamVaultAccounts` with its record, `GlamEnv`, `Protocol` and `ProtocolPermissions`, `GlamUtil` and `EmbeddedMappings`; the production and staging account clients and state clients; the supplied-account resolvers under `mapping`; and the hand-written Jupiter swap client under `idl.programs.glam.jupiter`.
+- Mutators: `STRONGER,EXPERIMENTAL_NAKED_RECEIVER`, measured under "Mutator trials".
+- The block sets no `timeoutFactor` or `timeoutConst`, so the suite runs on the plugin's conventions for both, documented on sava-build's `MutationSuite.timeoutFactor`.
+- When the build is pointed at a local mapping root with `-PglamMappingsDir`, the block hands PIT's minions the same root as `-Dglam.mappings.dir`, the system property the `Test` tasks get: the jar's embedded documents were built from that root, and `EmbeddedMappingsTests.theEmbeddedSetEqualsTheDownloadedSet` compares them with it byte for byte, so a minion reading the tracked set instead would fail before any mutant ran. Without the property the minions get nothing extra.
+- `fuzzMappingIndex` drives `EmbeddedMappings.parseIndex`, the reader of the jar's `index.json` on the mapper's startup path, through `MappingIndexFuzz`, seeded from `src/test/resources/fuzz/mappingIndex`; `maxLen` leaves headroom past the index the build writes, for long names and deep nesting. The mapping documents themselves are parsed by ix-proxy, whose own fuzz targets cover them.
 
-| Date | Rows | `NO_COVERAGE` | `SURVIVED` | Killed |
-|---|---|---|---|---|
-| seeded 2026-07-21 | 627 | 614 | 13* | 22/688 (3%) |
-| 2026-07-21 | 447 | 423 | 24 | 208/688 (30%) |
-| 2026-07-21 (2nd pass) | 388 | 359 | 29 | 287/703 (40%) |
-| 2026-07-21 (3rd pass) | 340 | 305 | 35 | 338/703 (48%) |
-| 2026-07-22 | 251 | 236 | 15 | 429/703 (61%) |
-| 2026-07-23 (multiset migration) | 292 | 277 | 15 | 456/748 (60%) |
-| 2026-07-23 (vault table builder) | 221 | 191 | 30 | 527/748 (70%) |
-| 2026-07-23 (kamino lend + fetch) | 169 | 143 | 26 | 579/748 (77%) |
-| 2026-07-23 (interface defaults + proxy + pricing) | 62 | 36 | 26 | 688/750 (92%) |
-| 2026-07-23 (findings fixed, main() removed) | 38 | 13 | 25 | 690/728 (94%) |
-| 2026-09-24 (lut package removed) | 24 | 13 | 11 | 464/488 (95%) |
-| 2026-09-25 (ix-mapper mapping documents) | 22 | 12 | 10 | 454/476 (95%) |
-| 2026-09-29 (`swapChecked` row pruned) | 21 | 12 | 9 | 643/664 (96%) |
+## Mutator trials
 
-The 2026-07-23 vault-table-builder, kamino-lend + fetch and findings-fixed
-passes covered `lut.VaultTableBuilderImpl`, the vault address-lookup-table
-builder, against kamino mainnet snapshot fixtures, fixed two findings there
-(the system program could never join a table; the kamino-vault collection
-would have crashed on the state's mint accounts), and removed its untestable
-scratch `main()`. The whole `lut` package, its tests and those fixtures were
-deleted on 2026-09-24 (see "`lut` package removed (2026-09-24)" below); the
-pass notes, findings and acceptance argument are in this file's history.
+Each candidate below was trialled on this suite, and its numbers are kept even where nothing fired (sava-build's HARDENING.md, "The mutator set bounds what the ratchet can see"). Format: generated / detected by existing tests / unkilled; the `NAKED_RECEIVER` numbers are the differences between the suite's totals before and after it was enabled.
 
-The interface-defaults + proxy + pricing pass (2026-07-23, later) closed most
-remaining `NO_COVERAGE` blocks — 108 baseline rows dropped:
-
-- **`VaultTableBuilder` interface defaults + `Builder`** (the `lut` package,
-  deleted 2026-09-24).
-- **`GlamVaultAccounts`** (since removed, 2026-09-25): `loadMappingConfigs`
-  against a temp directory holding a valid config, a wrong-extension file, an
-  unreadable `.json`, and a *directory named* `nested.json` (the regular-file
-  filter is what stood between it and a crash in the parser); both
-  `createMapper` overloads. The mapping-config JSON was inlined so tests never
-  depended on the untracked `glam/` download.
-- **`proxy.CachedDynamicGlamAccountFactory`** (since removed, 2026-09-25):
-  every dynamic-account name routed through `setAccount` into a live array
-  (each slot must hold exactly the meta the name stands for), unknown/null
-  names rejected, and the cache pinned by identity across equal configs.
-- **`GlamAccountClient(+Impl)` pricing family**: the convenience overloads
-  left on glam_mint's pricers equal their no-CPI form (this family produced
-  the real dropped-oracle-keys bug), the four production `cpiEmitEvents`
-  branches swap the program slot for the mint event authority, the
-  integration pricers hosted by their ext programs (GLAM-1305) are pinned
-  account by account and against their Anchor discriminators, computed as
-  literals rather than read from generated constants,
-  staging-only methods driven through the staging client; plus
-  `createAccount`, `createAccountWithSeed`, the escrow ATA and `updateState`
-  wiring. *(2026-09-27: Loopscale, Orca, Phoenix, Marginfi, registered
-  positions and managed transfers moved to their ext programs and lost their
-  `cpiEmitEvents` overloads; Neutral and Jupiter gained ext bindings.)*
-- **`GlamJupiterProgramClient(+Impl)`**: every swap convenience overload
-  equals its fully-explicit form, program-state keys survive the
-  delegation hops *and* reach the CPI, the route's accounts ride as extra
-  accounts (a dropped `extraAccounts()` result loses the route — the
-  wrapSOL variant of this was a real bug), and the program-state variants'
-  wrap gate fires only for a wSOL input with `wrapSOL=true`.
-
-**Accepted** (row pruned with the method on 2026-09-25): `loadMappingConfigs`'s
-`.json` suffix filter, `NakedReceiverMutator` — replacing
-`getFileName().toString()` with `path.toString()` cannot change an
-`endsWith(".json")` test, because a path's string form always ends with its
-filename's string form. Equivalent by construction.
-
-The multiset migration added no new mutants: the verify's baseline comparison
-became a multiset (one row per sibling mutant of a compound condition, not one
-per unique row text), materializing previously-absorbed sibling copies. All
-fall inside already-triaged rows; baseline counts now equal the report's
-unkilled counts exactly.
-
-The 2026-07-22 pass covered `GlamStagingAccountClientImpl` /
-`StagingStateAccountClientImpl` (every staging pricing method's event-authority
-branches, staging token/fulfill routing, and state-client construction from the
-real staging fixture including the skipped drift ACL), killed the
-`GlamAccountsBuilder` setter survivors by exercising all seventeen setters from
-a `@Test` (static-initializer coverage attribution is unstable), the
-`fixCPICallerRights` no-signer loop-boundary mutants, and the wrap-condition
-operand mutants in the jupiter swap paths.
-
-The 3rd pass covered `idl.programs.glam.jupiter.*` — `fixCPICallerRights`
-(first-signer stripping), the jupiterSwapV2 CPI wiring with and without the
-quote-price check, wrap-SOL and create-ATA branches, and the swap-token-account
-maps.
-
-*the seed run reported 52 survived raw; 13 unique rows after dedup by
-`class,method,line,mutator,status` — the builder's repeated setter shapes
-collapse.
-
-The 2026-07-21 pass covered the value layer (`GlamUtil`, `GlamEnv`,
-`Protocol`, `GlamAccounts` + builder + record, `GlamVaultAccounts`) and the
-production client (`GlamAccountClient` statics, `GlamAccountClientImpl`
-instruction wiring, `StateAccountClient`/`StateAccountClientImpl`/
-`BaseStateAccountClient`). The `SURVIVED` count *rose* because previously
-uncovered code is now executed; of its two triaged rows the
-`delegateHasPermissions` one was since resolved by a fix and the
-`protocolBitmask` one is argued under "Triaged equivalent mutants" below, and
-the other 22 were then untriaged survivors in partially covered classes.
-
-## EXPERIMENTAL_NAKED_RECEIVER trial (2026-07-22)
-
-Trialled per sava-build's HARDENING.md and **kept**, since it fires here:
-
-| Suite | Mutants | Detected | New unkilled |
+| Candidate | Trialled | Result | Decision |
 |---|---|---|---|
-| `sdk` | 703 -> 748 (+45) | 429 -> 456 (+27) | 18 |
+| `EXPERIMENTAL_NAKED_RECEIVER` | 2026-07-22 | 45 / 27 / 18 | enabled |
+| `EXPERIMENTAL_BIG_INTEGER` | 2026-07-22, again 2026-10-09 | 0 each time | not enabled |
+| `EXPERIMENTAL_BIG_DECIMAL` | 2026-07-22, again 2026-10-09 | 0 each time | not enabled |
 
-All 18 new rows are `NO_COVERAGE` in classes that already carry untriaged debt
-(`VaultTableBuilderImpl`, the staging state client, `proxy`); the mutator added
-no new survivors, so nothing here needed triage. Roughly a third of the new
-mutants were killed outright by existing tests.
+`NAKED_RECEIVER` is on because it fires: it replaces a call whose return type is its receiver's type with the receiver, which `STRONGER` cannot express (HARDENING.md, "The mutator set bounds what the ratchet can see"), and here such calls include the builder's `String` setters' calls into their `PublicKey` overloads, `Instruction.extraAccount` and `extraAccounts`, and `Stream.flatMap` and `mapMulti` in the state clients' constructors. At the trial, every mutant it added that went unkilled was `NO_COVERAGE` in a class that already carried untriaged debt, and none survived under coverage, so it added rows without triage. Those numbers measure the suite of that date, which still held the since-deleted lookup-table builder and proxy factory. The `BigInteger` and `BigDecimal` mutators rewrite only arithmetic calls on those types, and no class this suite mutates references either type, so they cannot fire here, and with no such references the blind-spot scan has nothing to report; neither mutator is enabled and no `declineMutator` is recorded or owed.
 
-## Family labels
+## Families
 
-Each accepted row carries the `# <family>` label of the argument it rests on; a
-row no family argument covers is `# untriaged`, and triaging it means replacing
-that label with the family whose argument covers it. A label gets its entry here
-in the same change that writes it.
-
-- `# unreachable type-check arm` — the constant test javac emits for the
-  unconditional `int` component of `protocolBitmask`'s record pattern; argued
-  under "Triaged equivalent mutants" below, which also names the staging row
-  that carries the label without belonging to it.
-
-## `lut` package removed (2026-09-24)
-
-sava now supports v1 transactions, which need no address lookup tables, so
-the vault lookup-table builder for v0 transactions went: the whole
-`systems.glam.sdk.lut` package, `VaultTableBuilderTests`, the kamino snapshot
-fixtures under `src/test/resources/accounts/kamino/`, and the vault-table
-filters of `GlamVaultAccounts`. The fresh history-free `pitestSdk` observation
-that day (488 mutants, 464 detected, no fresh rows) left 14 accepted rows
-unmatched, and `pitestSdkBaselinePrune` removed exactly those the same day
-(baseline 38 -> 24): 13 `lut.VaultTableBuilderImpl` and 1
-`lut.VaultTableBuilder$Builder`, all `# residual sibling legs`. No other row
-carried that family, so it left the label list above; it is named here as
-history. The audited timeout set's five members, all
-`lut.VaultTableBuilderImpl,batchTableTasks` (`cause:liveness`), were retired
-from `sdk-timeouts.csv` as stale, leaving the set empty. The only other
-baseline movement was pure line drift on the `# equivalent path-suffix` row.
-
-## Untriaged debt
-
-For the current per-class ranking, run `./gradlew pitestSdkDebt` — a
-hand-maintained list here goes stale the same week it is written.
-
-The baseline was seeded with the full pre-existing survivor population when
-the ratchet was adopted, per HARDENING.md's adoption path — triage debt made
-explicit, not acceptance. Shrinking the baseline is always an improvement;
-growing it requires a reason written here.
-
-## Triaged equivalent mutants (accepted with reasons)
-
-### `protocolBitmask` — `RemoveConditionalMutator_EQUAL_IF`
-
-`StateAccountClientImpl.protocolBitmask` and its staging twin
-`StagingStateAccountClientImpl.protocolBitmask` both test
-`integrationAclMap.get(..) instanceof IntegrationAcl(_, final int protocolsBitmask, _)`,
-which compiles to two conditional jumps: the `instanceof` test, false for an
-absent program's null, and a constant `iconst_1; ifeq` that javac emits for the
-unconditional `int` component pattern. The `# unreachable type-check arm` row in
-each class is that constant jump: the mutant removes a jump that is never taken,
-so it is equivalent by construction for as long as the component pattern stays
-unconditional.
-
-The staging class carries a second row with that label, and it is the
-`instanceof` jump: forced, an absent program reaches the record accessors and
-throws instead of returning 0. Production kills its copy with the absent-ACL
-assertion in `StateAccountClientTests`; no staging test asks about a program
-without an ACL, so that staging row is untested, not unreachable, and owes such a
-test before a prune removes it; until then `pitestSdkDebt` counts it with the
-family.
-
-## ix-mapper mapping documents (2026-09-25)
-
-ix-mapper-java 25.1.0 replaced its index-map configs with the mapping
-documents ix-mapper-ts generates (`src/generated/mapping/<environment>/`),
-and with them the whole `DynamicAccount` factory API. The sdk's side shrank
-to two seams: `GlamAccounts.createMapper` builds an ix-proxy
-`InstructionMapper` from one environment's documents and refuses another
-environment's, and `GlamVaultAccounts.mappingContext()` hands the mapper a
-vault's state, vault and fee-payer keys plus the integration-authority lookup.
-Deleted: `GlamVaultAccounts.loadMappingConfigs` and both `createMapper`
-statics, the `systems.glam.sdk.proxy` package (`DynamicGlamAccountFactory`,
-`CachedDynamicGlamAccountFactory`, the five `Indexed*` records) with
-`CachedDynamicGlamAccountFactoryTests`, and the `fuzzMappingConfig` target
-with its corpus — the sdk parses no external input of its own any more;
-ix-proxy's `fuzzMappingConfig` and `fuzzIxMapper` cover the parser and the
-mapper. The passages above that argued `loadMappingConfigs` and the proxy
-factory stand as dated history.
-
-The new seams are covered by `GlamAccountsMapperTests` (mapper built from the
-system-program documents, then checked-in copies under
-`src/test/resources/mapping/`, since the tracked `ix-mapper-ts/` set (see
-"Embedded mapping documents" below); environment guard both ways, ix-proxy's own refusal of an empty document set,
-and a vault SOL transfer mapped against the generated
-`GlamProtocolProgram.systemTransfer` layout plus the document's trailing
-Token-program seat) and `GlamVaultAccountsTests.mappingContextCarriesTheVaultAndItsAuthorities`
-(every integration authority resolved through the context, unknown programs
-to null). The fresh history-free `pitestSdk` observation that day (471
-mutants, 449 detected) killed every mutant of the new code and left exactly
-two accepted rows unmatched, which `pitestSdkBaselinePrune` removed after two
-matching previews (baseline 24 -> 22): `GlamAccounts,createMapper`
-`NullReturnValsMutator` (`NO_COVERAGE`, now covered and killed) and
-`GlamVaultAccounts,lambda$loadMappingConfigs$1` `NakedReceiverMutator`
-(`# equivalent path-suffix`, the deleted `.json` suffix filter). No other row
-carried that family, so it leaves the label list above and is named here as
-history. The same write refreshed `GlamAccounts,main`'s `# line` tag
-(170 -> 206) for the methods added above it; the row itself is unchanged.
-
-## Embedded mapping documents (2026-09-25, later)
-
-The `feat/mapping-document` branch's push model was ported onto the mapper
-seam above: the ix-mapper-ts documents are tracked under `ix-mapper-ts/` (the
-GLAM monorepo's sync workflow writes that directory; until the first sync it
-holds a copy made by hand from ix-mapper-ts 16320bf, byte-identical to the
-copy ix-mapper-java tests against), `processResources` embeds both
-environments as `glam/ix-mappings/{production,staging}` beside a build-time
-`index.json`, and `EmbeddedMappings` reads the index and each document back
-out of the jar, refusing a document that declares another environment or
-proxies through a program the deployment's `GlamAccounts` do not hold.
-`GlamAccounts.createMapper()` and `GlamVaultAccounts.createMapper()` serve
-that set with no directory; the `Path` and `Collection` overloads stay for a
-local set, and `GlamEnv.ofProtocolProgram` refuses a protocol program the sdk
-does not know rather than reading it as staging. The pull model went with it:
-`downloadMappings.sh`, `syncMappings.sh`, the `downloadMappings` task and the
-fixture copies under `src/test/resources/mapping/`; `GlamAccountsMapperTests`
-now copies the tracked system-program document into its temporary set.
-
-Coverage: `EmbeddedMappingsTests` (the index names every embedded file and
-each parses; the embedded set equals the tracked set byte for byte and file
-for file; each environment holds to its own GLAM programs and the other's
-refuse it by name; a foreign proxy, a document of another environment, an
-empty set, a document that does not admit, a missing resource and every
-index-parser refusal, each by message; `createMapper()` serves the
-deployment's set; an unknown protocol program is refused),
-`EmbeddedMapperTests` (a vault SOL transfer mapped onto the protocol proxy
-in both environments with the foreign-source refusal, the Kamino and CCTP
-documents keyed and proxied as each deployment carries them, and a Phoenix
-deposit seating the vault as the trader without a signer bit — the
-`glamsystems/glam#1393` review finding, also a conformance case in
-ix-mapper-java), and the `mappingIndex` fuzz target over the index parser,
-the one JSON reader this module owns on the mapper's startup path, with its
-seeds replayed inside `check`. The fresh history-free `pitestSdk` observation
-(526 mutants, 504 detected) killed every mutant of `EmbeddedMappings` and of
-the new `GlamAccounts`, `GlamVaultAccounts` and `GlamEnv` members and added
-no rows; `pitestSdkBaselineRetag` refreshed `GlamAccounts,main`'s `# line`
-tag for the methods added above it.
-
-## Jupiter swap client (2026-09-25, GLAM-1537)
-
-Three defects in `GlamJupiterProgramClient(+Impl)`, each verified against the
-protocol handlers at production `ce797d3e` and main: every wrap-SOL prelude
-funded the vault's wSOL account through a `system_transfer` without the Token
-program remaining account the handler requires before it syncs (the standalone
-`wrapSOL` had been fixed in `a562eea`; the four swap paths had not), the
-requested-skip path passed null for `glam_config` and the three oracles although
-the handler reads the configuration to decide a limited skip and prices the
-swap when it declines one, and nothing refreshed a Kamino reserve that prices a
-role before the swap read it. The fix funds every prelude through one helper
-that appends the Token program, always names the configuration and the caller's
-oracles, and prepends one `refresh_reserves_batch` over the context's
-`KaminoReserveRefresh`es that price a role (six accounts per reserve as the
-lending program declares them, empty oracle positions carrying its address,
-price updates not skipped). Alongside: the vault's signer bit is stripped by key
-rather than by position, the context's four required keys are checked when it
-is built, and the two `createSwapTokenAccountsIdempotent` bodies are one.
-
-Coverage: `GlamJupiterProgramClientTests` pins the six transfer accounts of all
-four preludes (`accounts().get(5)` the Token program), the configuration and
-oracles under a requested skip, the refresh's program, flag and account order
-with a shared reserve listed once and an unrelated one left out, each
-configured oracle position and the batch's once-per-reserve rule directly, the
-mainnet SOL reserve snapshot (`accounts/kamino/d4A2prbA…`) decoded to its
-market, wSOL liquidity and Scope feed, a market-less reserve refused, the
-keyed signer rewrite beside the positional one on both CPIs, the refresh
-leading each of the four instruction shapes, a client built on injected Kamino
-accounts sending the refresh to that lending program, the staging deployment's
-program and configuration, and the context's refusals. Reverting only the wrap
-and skip behaviour fails four of the class's tests.
-
-A review of the change found the one thing the snapshot could not: Kamino
-spells an empty oracle position two ways, the all-zero key and its `nu111…`
-null key, which its manager writes into every unused position and roughly
-four in ten mainnet reserves carry; the lending program takes only its own
-address as none, so a refresh handing it the null key fails
-(`InvalidPythPriceAccount` and its siblings) exactly when the reserve's price
-is stale. `KaminoReserveRefresh.named` now reads both spellings as empty
-through idl-clients' `KaminoAccounts.isNullKey`, and the snapshot test writes
-the null key into the Pyth and Scope positions of the SOL reserve's bytes and
-expects the lending program's address there; that assertion fails against the
-all-zero check alone.
-
-Mutation evidence: the first history-free observation surfaced ten fresh
-survivors in the new code. Six were equivalents of the code's own making and
-were refactored out rather than accepted: a dead `slot == null` guard in
-`KaminoReserveRefresh.named` (a decoded reserve never yields null), the empty
-fast path of `kaminoReserveRefresh`, a client-side de-duplication masked by the
-batch builder's own, an idempotent signer rewrite guarded by `signer()`, and two
-capacity-hint additions. Four were missing assertions, now
-`aReserveForwardsEveryConfiguredOracleAndTheBatchListsItOnce`. The fresh
-history-free observation after that (567 mutants, 545 detected) added no rows,
-and `pitestSdkBaselineRetag` refreshed `swapChecked`'s drifted `# line` tag.
-
-Follow-up after review (2026-09-26): the positional `fixCPICallerRights` overloads,
-which stripped the first signer whatever its key, were removed in favour of the keyed
-`List` and `Instruction` forms, so nine of their mutants left the population; three tests
-were added for properties the review found unpinned (the context's defensive copy of
-`kaminoReserves`, refreshed once for distinct records sharing a reserve key, and
-input-output-SOL/USD role order with distinct reserves). The fresh observation after that
-(558 mutants, 536 detected) added no rows; `swapChecked`'s `# untriaged` row is unchanged.
-
-Follow-up (2026-09-27): the v1 `jupiter_swap` overloads (`swapChecked`, `swapUnchecked`,
-`swapUncheckedAndNoWrap` and the `swapWithProgramState*` family), which the program is to
-drop at its next audit, were removed, so only `swap(JupiterSwapContext)` builds a swap and
-it builds `jupiter_swap_v2`. The two tests that only exercised those overloads went with
-them; two of their properties moved to the v2 path. One is the wrap gate on the checked path:
-a non-wSOL input with `wrapSOL` set is not wrapped, the direction the untriaged
-`swapChecked` `RemoveConditionalMutator_EQUAL_IF` row had survived on. The other is the
-program-state keys filling the stake-pool seats. The fresh history-free observation after
-that (685 mutants, 664 detected) kills every jupiter-package mutant, so that row is now a
-prune candidate; no row was added.
-
-Follow-up (2026-09-29): that row is pruned. Both line-148 mutants of its key read KILLED, by
-`wrappingSwapPrependsTransferAndSync` and `checkedSwapCreatesTheOutputTokenAccount`, in two
-fresh full history-free previews and in `pitestSdkBaselinePrune`'s own write-boundary run
-(664 mutants, 643 detected, started at load average 7.4), the three matching observations
-the writer counts; the two certification runs of the 25.20.0 release commit `ae21fb0`, which
-do not count toward a prune, read the same. A kill, unlike a timeout, is not a load flip.
-The baseline is 21 rows.
-
-## Supplied-accounts resolvers (2026-09-26, GLAM-1447 step 4)
-
-`systems.glam.sdk.mapping` is new: `OracleDenomination` (the unit each oracle source
-prices in, transcribed from the protocol's `get_oracle_price` dispatch and the reader's
-refusal of the legacy Pyth push feeds), `RegisteredOracles` (which registration prices a
-mint, under the monorepo's one oracle-selection rule: deprecated never, lowest priority,
-then source preference with the Kamino reserve first, a same-source tie selects nothing,
-stored position decides nothing), `OrcaOracleResolver` (the oracle prefix the Orca
-liquidity handlers read: the selected registration per pool mint, the wrapped SOL oracle
-only when their denominations differ, refusal otherwise), `LoopscaleStrategyMarketResolver`
-(the market `update_strategy` checks, from the update's params or the strategy account at
-the program's offset) and `GlamSuppliedAccounts` (the ix-mapper supplier over both,
-carrying the Kamino reserves it chose, with the mint each prices, to the transaction
-builder). All five are mutated by the wildcard target. The tests' shared fixture reader
-lives in `systems.glam.sdk.tests`, which the suite excludes as a package, the services
-suite's pattern for helpers no `*Test*` name matches.
-
-Coverage: a table test over every `OracleSource` value; the selection rule's five
-outcomes (sole active, lowest priority wherever stored, source preference with the
-reserve first, a named tie, deprecated skipped and all-deprecated) each pinned by reason;
-both-USD, SOL-beside-USD and both-SOL pairs; every refusal by its message, the reason
-messages by full text and the shape and role refusals by full text or a distinguishing
-phrase; the required-but-unread SOL role, a second SOL role, an asset role after it;
-Kamino reserves reported with their mint; the stored market from the recorded strategy
-(`accounts/loopscale/13RqwWva…`), read past two collateral terms in the update, a named
-market with and without a lookup, a named market the strategy is known to store and one
-it is known not to (refused: the deployed program keeps the stored market, a fact the
-ticket's LiteSVM coverage established), no params and params naming none, a strategy not
-fetched, a fetched account that is not a strategy, the strategy read from the role's `of` and, for a
-document naming none, from its native position pinned against the generated binding; the
-five entries mapped through the mapper over the staging documents the monorepo generates
-(`supplied-accounts/staging`, copied from glamsystems/glam PR #1440 at 9ad419cca; the native
-instructions built with the managed IDL's 15 and 19 positions), the native extras after the
-prefix, the update's payer held to the GLAM signer, the `context` refusals with their
-messages, and `withKaminoRefresh` leading a build with the refresh only when a reserve was
-chosen.
-
-No fuzz target is owed: `storedMarket` is a fixed-offset read behind a length and a
-discriminator check, whose three outcomes the tests pin, and the update decode is
-idl-clients' generated reader, which belongs to that repository and whose failures the
-mapper turns into `context` refusals.
-
-Mutation evidence: the first history-free observation surfaced four fresh survivors, all
-in the new code. Two in `OrcaOracleResolver.capitalize` (NakedReceiver,
-EmptyObjectReturnVals) were refactored out: every refusal now starts with a fixed phrase
-and no message is capitalized at runtime. One `OrcaOracleResolver.priced`
-`RemoveConditional_EQUAL_ELSE` was the ChainlinkX half of the handler-refusal check,
-killed by a ChainlinkX meta; one `GlamSuppliedAccounts.apply` `RemoveConditional_EQUAL_IF`
-was the Loopscale dispatch guard, killed by an `update_strategy` request asking for a
-role the supplier does not serve. The same run mutated the tests' fixture reader, which
-matched no exclusion; it moved to the excluded `tests` package. The observation after the
-review rewrite (697 mutants, 675 detected; the baseline's 10 survivors and 12 uncovered
-mutants unchanged) added no rows, and the one after the market-change refusal (703 mutants,
-681 detected, the same 22 undetected) added none. The generated-document round surfaced one
-fresh survivor, a capacity-hint addition in `GlamSuppliedAccounts.withKaminoRefresh`
-(MathMutator), refactored out; the observation after that (711 mutants, 689 detected, the
-same 22 undetected; the package's 152 all killed) added no rows.
+- `# unreachable type-check arm` — `protocolBitmask` matches `integrationAclMap.get(integrationProgram)` against the record pattern `IntegrationAcl(_, final int protocolsBitmask, _)`. javac compiles the match to an `instanceof IntegrationAcl` test and, after reading the `int` component, a constant test (`iconst_1; ifeq`) that it emits for that unconditional primitive pattern; both jump to the `return 0` arm, and the constant one can never be taken. The accepted member is that constant test, not the type check the label's name suggests: `RemoveConditionalMutator_EQUAL_IF` removes the jump so the match arm always runs, which is the branch every input already takes, so the mutated method executes the original's instructions for every argument. No assertion can tell them apart: the jump tests a constant pushed just before it, not the program key or the map, so for every key, with an ACL or without, the bitmask returned and any exception thrown are the original's. The same key's other mutant, on the `instanceof` test, is killable and killed: forced to fall through, an absent program's null reaches the component accessors, and the pattern rethrows their `NullPointerException` as a `MatchException` where 0 was due, which the queries for a program without an ACL in `StateAccountClientTests.integrationEnabledChecksTheProgramBitmask` and `GlamStagingAccountClientTests.createStateAccountClientFromRealStagingAccount` catch. Each jump's `RemoveConditionalMutator_EQUAL_ELSE` mutant, which always jumps and answers 0 for every program, is killed by the tests that assert a granted integration, `StateAccountClientTests.createStateAccountClientFromAccountInfo` and the same staging test. Escape: none by test; reading the component through a type pattern and its accessor (`instanceof IntegrationAcl acl ? acl.protocolsBitmask() : 0`), or a javac that stops emitting the constant test, removes the mutant. Covers: `StateAccountClientImpl.protocolBitmask` and `StagingStateAccountClientImpl.protocolBitmask`, the `int` component's constant test forced true (`RemoveConditionalMutator_EQUAL_IF`).
 
 ## Timed-out mutants (audited set)
 
-`sdk-timeouts.csv` lists the members and their cause categories. Each member's
-structural cause belongs here, under its class, one subsection per class;
-HARDENING.md says what an admissible cause must show.
+`sdk-timeouts.csv` holds no members: this suite's audited timeout set is empty.
+
+## Declined and untriaged debt
+
+Nothing here is declined, and no row is argued as an equivalence: each is untriaged, and each bullet says why it is open and what pays it. By class:
+
+- `GlamAccounts.main` — a no-argument `main` on the public interface that prints `MAIN_NET_STAGING.integrationAuthorities().size()`; its row is that `println` removed (`VoidMethodCallMutator`, `NO_COVERAGE`). Nothing calls it, in the sdk or its tests, and the value it prints is already pinned by `GlamAccountsTests.stagingAccounts`. It is a scratch program in production code, which this module keeps in its git-ignored `src/scratch/java` suite; deleting it from `GlamAccounts`, or moving it there, removes the row. A test capturing its output would pin a debugging aid.
+- `GlamAccountsBuilder.createKey` and `GlamAccountsBuilder.putIfNotNull`, the guards that read a null program as absent. `createKey`'s `program == null` test forced false (`RemoveConditionalMutator_EQUAL_ELSE`) hands a null key string to `PublicKey.fromBase58Encoded`, which throws where the original answers `PublicKey.NONE`; `putIfNotNull`'s `key != null` leg forced true (`RemoveConditionalMutator_EQUAL_IF`) hands a null key to `key.equals(PublicKey.NONE)`, which throws where the original answers the invoked system program. Each guard's opposite direction, and both directions of the `PublicKey.NONE` leg, are killed (`GlamAccountsTests.integrationAuthorities`, `duplicateIntegrationProgramThrows`). The rows survive because no test passes a null to an optional integration setter: a `String` setter's null goes through `createKey`, a `PublicKey` setter stores its null as given, and only that one reaches `putIfNotNull` (an unset mint program reaches it null too, but there `create()` fails either way, the original a step later at the mint event-authority derivation). Paid by a case of `absentIntegrationsDefaultToSystemProgram` that sets one optional program to null through each overload, `bridgeIntegrationProgram((String) null)` and, on another builder, `bridgeIntegrationProgram((PublicKey) null)`, asserting for each the invoked system program and no authority, as the test asserts for an unset one: the first kills the `createKey` row, the second the `putIfNotNull` row.
+- `GlamAccountsBuilder.driftIntegrationProgram(String)` — Drift is no longer supported: the `PublicKey` overload ignores its key and returns the builder (`GlamAccountsTests.driftIntegrationProgramIsIgnored` pins that and kills its null return), and the `String` overload decodes its key and delegates to it. Nothing calls the `String` overload, so its null return (`NullReturnValsMutator`) and its delegating call replaced by the receiver (`NakedReceiverMutator`) are `NO_COVERAGE`. A case of that test through the `String` overload kills the null return on the chained `create()`; the naked-receiver mutant would then survive as an equivalence candidate, because the call it removes only returns the receiver it leaves in place, and the key is still decoded as the call's argument, so a malformed key throws alike; a label for it would be the owner's triage call. Deleting both drift setters, which configure nothing, retires both rows.
+- `StateAccountClient.createClient` and `GlamStagingAccountClientImpl.createStateAccountClient`, the production and staging builders of the delegate-permission map: each one's `!protocolPermissionsMap.isEmpty()` guard forced true (`RemoveConditionalMutator_EQUAL_IF`), which stores an integration program none of whose grants the sdk adapts (a program other than the mint, protocol, SPL and Kamino programs, or one of those granted only protocol bits that none of that program's `Protocol` entries claims) with an empty protocol map instead of leaving it out. Not an equivalence. For a lone such entry `delegateHasPermissions`, the map's only reader, answers false either way for any non-null requirement, because the empty map's protocol lookup misses as the absent entry does (a null requirement for that program, which the original never reads, makes the mutant throw); but the map's `put` replaces, so for a delegate that lists one integration program twice, an adapted grant and after it one that adapts to nothing, the mutant overwrites the adapted map with the empty one and the delegate loses that grant. Such a list can be stored: the protocol program's grant instruction keeps one entry per integration program, but `initialize_state` stores the delegate ACLs of its state model as given. The forced-false direction, which stores no grant, is killed by `StateAccountClientTests.delegatePermissions` and `GlamStagingAccountClientTests.createStateAccountClientFromRealStagingAccount`. Paid by a delegate listing the Kamino program twice, a lending grant and then only the unknown protocol bit `StateAccountClientTests.unknownDelegateProtocolBitsAreSkipped` uses, asserting that the lending grant holds: in that test for `createClient`, and for the staging builder over a staging state built in the test and written to the account image `createStateAccountClient` reads. That is the program's answer too, since its delegate checks accept any matching entry. Keep the second entry unadaptable: for two adapted entries the unmutated builder also keeps only the last, where the program accepts either, which needs its own decision before any test pins it.
+- `StagingStateAccountClientImpl`, the redeem parameters. The constructor's params scan never hands on a `NotifyAndSettle`, leaving `notifyAndSettle` null, when `lambda$new$0`'s `instanceof EngineFieldValue.NotifyAndSettle` test is forced false (`RemoveConditionalMutator_EQUAL_ELSE`) or its `downstream.accept` is removed (`VoidMethodCallMutator`); and every accessor that reads it is `NO_COVERAGE`: `redeemNoticePeriod`, `redeemSettlementPeriod` and `redeemCancellationWindow` returning 0 (`PrimitiveReturnsMutator`), and `redeemWindowInSeconds` and `softRedeem` returning true or with their comparison forced either way (`BooleanTrueReturnValsMutator`, `RemoveConditionalMutator_EQUAL_ELSE`, `RemoveConditionalMutator_EQUAL_IF`). No staging test reads a redeem parameter: `GlamStagingAccountClientTests.createStateAccountClientFromRealStagingAccount` asserts the fixture client's name, mint, base asset, assets, external positions, integration ACLs and delegate grants, and kills the scan's forced-true direction, which casts every field, but calls no redeem accessor. Production's twin of each of these mutants is killed by `StateAccountClientTests.redeemParametersComeFromNotifyAndSettle`. Paid by that test's staging twin: a staging `StateAccount` built in the test with a `TimelockDuration` field ahead of a `NotifyAndSettle` field, written to an account image and passed to `GlamStagingAccountClientImpl.createStateAccountClient`, asserting each period and both flags, then a hard-notice, slot-unit variant with both flags false. The state is built rather than taken from the staging fixture, which no test shows to carry the redeem parameters.

@@ -1,1632 +1,181 @@
-# Mutation-testing baseline & triage policy — `services`
+# Mutation-testing records — `services`
 
-`pitestServices` is this module's mutation suite; the hardening block in the
-repository's `AGENTS.md` says when it is owed. The suite's accepted baseline is
-`services-accepted.csv`, holding the unkilled rows (`SURVIVED` and
-`NO_COVERAGE`) keyed by class, method, mutator and status; its audited timeout
-set is `services-timeouts.csv`. Every row triaged out of debt owes its written
-argument here. The canonical policy is sava-build's `HARDENING.md`, and
-`hardeningHelp` is the authority on the installed plugin's task names; this
-file records what is accepted *here* and why.
+This file registers what the mutation ratchet accepts in this module and why: the arguments behind
+each family label the accepted-baseline rows carry, a cause for each audited timeout member, the
+debt that is open and what would pay it, and the measurements behind the suite's mutator set. The
+rules it applies, from triage and relabelling to what an acceptance or a timeout cause must argue,
+are sava-build's `HARDENING.md`; the task and option surface is `hardeningHelp`; the counts are what
+`pitestServicesVerify` and `pitestServicesDebt` print. The journal this registry replaced, with
+every dated pass, is `HISTORY.md` beside it, kept verbatim and unmaintained; how prose is added
+here is in the repository's `AGENTS.md`.
 
-A new unkilled mutant has exactly three legal outcomes:
+Rows in `services-accepted.csv` read `class,method,mutator,STATUS # <family> # line N`. The
+arguments below name classes, methods and branches, never source lines. Each family bullet ends
+with "Covers", the members it was argued for, and a label whose members rest on different
+mechanisms argues each mechanism on its own.
 
-1. **Kill it** — add or strengthen a test. Prefer asserting the property the
-   mutant breaks over restating the implementation.
-2. **Refactor** — restructure so the mutant cannot exist.
-3. **Accept it knowingly** — record the reason under "Triaged equivalent
-   mutants" below, give the row a short `# <family>` label named in the
-   "Family labels" glossary, and write the record with the writer task
-   `hardeningHelp` names for it, never by hand. Acceptance is for mutants
-   *equivalent with respect to observable behavior*, not for "hard to test".
-
-Identical rows are sibling mutants of one compound condition, not duplicates
-to tidy: never hand-dedupe the CSV, and never hand-edit record structure or
-provenance stamps. A row whose written argument here no longer fits the code
-it names is re-argued before it is reused or removed; anything beyond that
-(newly covered, unexplained, changed counts) is triage first, record
-after. Any run that supports a record decision must be history-free
-(`-PnoMutationHistory`).
+Where a recorded argument does not hold, the member keeps its label and its text says so, "argued
+as recorded; its acceptance is an open owner decision", followed by what the code does: a test that
+would kill the mutant, an equivalence other than the one recorded, or a latent defect in the
+unmutated code, which the owner proves with a failing regression test and fixes before any kill is
+written. On an audited timeout member, "cause:liveness as recorded, its admissibility an open owner
+decision" marks a key with a deterministic seam or call budget that exists and is unused at one or
+more of its timed-out sites, so the watchdog is not the only detection available there; where
+another site of the key has none, the member's paragraph says what is left there. Relabelling,
+retiring or adopting the seam is the owner's call.
 
 ## Suite
 
-One catch-all suite, `pitestServices`, targeting `systems.glam.services.*` by
-wildcard with exclusions rather than an allowlist, so a new class is mutated
-by default rather than silently skipped. Excluded: test sources sharing the
-recompiled root, including the shared helpers in `services.tests`, which no
-`*Test*` pattern matches. `build.gradle.kts` is the authoritative definition.
+The `hardening {}` block of `services/build.gradle.kts` is the authoritative declaration of `pitestServices`: its targets, exclusions, mutator set and timeout tuning. Comments beside `targetClasses`, the exclusions and the timeout tuning give their reasons; the mutator set's are under "Mutator trials" below. This is the reading guide.
 
-## Baseline composition
+- **Targets and exclusions.** The plugin recompiles the module's `main` and `test` source sets together into one plain classpath root, without `module-info`, and the suite's globs pick what to mutate from it. `targetClasses` is the catch-all `systems.glam.services.*`, narrowed by exclusion rather than by an allowlist, as HARDENING.md's "Targeting policy" asks. The exclusions take the test side of the root back out: `systems.glam.services.*Test*` for the test classes, `systems.glam.services.*Fuzz*` for the registered fuzz harnesses (`io.AccountDataFuzz`, `state.MinGlamStateAccountFuzz`), and `systems.glam.services.tests.*` for the shared helpers (`ResourceUtil`, `LogCapture` and the rest of that package), whose lowercase package name no `*Test*` glob matches. `targetTests` is `systems.glam.services.*Test*`: every test class is selected, and each mutant runs the selected tests that cover it; neither the fuzz harnesses nor the helpers run as tests.
+- **The scratch suite is outside it.** Its classes share the packages the target glob matches, and stay out only because the recompile reads the `main` and `test` source sets alone; where the scratch programs live and why is in `AGENTS.md`, "Module layout".
+- **Mutators.** `STRONGER`, `EXPERIMENTAL_NAKED_RECEIVER` and `EXPERIMENTAL_BIG_DECIMAL`. `STRONGER` alone can neither replace a call whose return type is its receiver's type with the receiver nor rewrite `BigDecimal` arithmetic, which is method calls rather than arithmetic opcodes; the experimental mutators make both expressible. `EXPERIMENTAL_BIG_INTEGER` is not in the set. The measurements behind each choice are under "Mutator trials".
+- **Timeouts.** `timeoutFactor = 2.0` and `timeoutConst = 1500L` (milliseconds) replace the plugin's defaults. The comment above them in the build script records the test runtimes they were sized to and the reason; what to do if `SURVIVED`-to-`TIMED_OUT` churn follows is HARDENING.md's "Tune the per-test timeout to the suite's real runtimes" bullet, under "Making the loop faster". These values also set the watchdog budget each covering test gets, which is what HARDENING.md holds an audited timeout's fixture bound to.
+- **Threads.** Not set, so the plugin's default applies; the same build-script comment records the 8-thread trial and why it was not adopted.
 
-| Date | Rows | `NO_COVERAGE` | `SURVIVED` | Killed |
-|---|---|---|---|---|
-| seeded 2026-07-21 | 1647 | 1493 | 154 | 358/2149 (16%) |
-| 2026-07-21 | 1605 | 1454 | 151 | 406/2151 (18%) |
-| 2026-07-21 (3rd pass) | 1458 | 1245 | 213 | 563/2151 (26%) |
-| 2026-07-21 (4th pass) | 1408 | 1153 | 255 | 616/2151 (28%) |
-| 2026-07-21 (5th pass) | 1370 | 1095 | 275 | 665/2151 (30%) |
-| 2026-07-21 (6th pass) | 1299 | 917 | 382 | 754/2151 (35%) |
-| 2026-07-22 | 1286 | 909 | 377 | 768/2151 (35%) |
-| 2026-07-22 (2nd) | 1265 | 909 | 356 | 789/2151 (36%) |
-| 2026-07-22 (naked receiver + recording pass) | 1311 | 1069 | 340 | 851/2260 (37%) |
-| 2026-07-22 (rw-locks + equality) | 1287 | 1049 | 329 | 882/2260 (39%) |
-| 2026-07-22 (change detection) | 1256 | 1040 | 307 | 913/2260 (40%) |
-| 2026-07-22 (config transitions) | 1245 | 1031 | 301 | 928/2260 (41%) |
-| 2026-07-22 (big-decimal trial + kamino sequences) | 1268 | 936 | 332 | 1032/2263 (45%) |
-| 2026-07-22 (scope shapes + fetcher batching) | 1129 | 928 | 264 | 1065/2262 (47%) |
-| 2026-07-22 (fetcher dispatch hardening) | 1130 | 928 | 268 | 1068/2264 (47%) |
-| 2026-07-22 (state change detector) | 1121 | 924 | 260 | 1079/2264 (47%) |
-| 2026-07-22 (config parse + global config validation) | 1082 | 908 | 240 | 1118/2266 (49%) |
-| 2026-07-22 (config sections + mint cache) | 1059 | 905 | 220 | 1141/2266 (50%) |
-| 2026-07-22 (batch sql executor) | 1033 | 893 | 203 | 1170/2266 (51%) |
-| 2026-07-22 (multi-row requeue fix) | 1032 | 893 | 202 | 1170/2267 (51%) |
-| 2026-07-23 (fetcher batching + reactive mode) | 993 | 861 | 194 | 1212/2267 (53%) |
-| 2026-07-23 (top-up loop rework) | 991 | 861 | 192 | 1215/2268 (53%) |
-| 2026-07-23 (global config init paths) | 968 | 843 | 187 | 1237/2268 (54%) |
-| 2026-07-23 (multiset migration) | 1030 | 843 | 187 | 1238/2268 (54%) |
-| 2026-07-23 (kamino cache) | 1011 | 835 | 176 | 1257/2268 (55%) |
-| 2026-07-23 (vault context + scope indexing) | 972 | 827 | 145 | 1295/2267 (57%) |
-| 2026-07-23 (kamino cache lifecycle gates) | 969 | 827 | 142 | 1298/2267 (57%) |
-| 2026-07-23 (synthetic direct-oracle feed) | 961 | 824 | 137 | 1306/2267 (57%) |
-| 2026-07-23 (init/load + format runtime) | 853 | 686 | 167 | 1414/2267 (62%) |
-| 2026-07-23 (cold start + integ tables) | 790 | 621 | 169 | 1477/2267 (65%) |
-| 2026-07-23 (instruction processor) | 738 | 564 | 174 | 1529/2267 (67%) |
-| 2026-07-23 (service context family) | 628 | 454 | 174 | 1639/2267 (72%) |
-| 2026-07-23 (fulfillment services) | 499 | 318 | 181 | 1768/2267 (77%) |
-| 2026-07-23 (cache run loops + io tails) | 330 | 131 | 199 | 1939/2269 (85%) |
-| 2026-07-23 (init paths + remaining tails) | 272 | 66 | 206 | 1996/2269 (87%) |
-| 2026-07-23 (delegate gate + init hygiene) | 255 | 57 | 198 | 2014/2269 (88%) |
+## Mutator trials
 
-The instruction-processor pass covers `InstructionProcessorImpl` against a
-scripted `InstructionService` (each call's batch recorded, the next scripted
-result returned): success drains the caller's list, size-limit failures on a
-multi-instruction batch are **dropped, never retried here** — retries below
-the send belong to the `InstructionService`, and a failed result means the
-caller re-fetches and rebuilds; that intent is now stated in the code and
-pinned by the tests, including the odd-rounds-up halving of the batch bound
-governing the *remainder* — the account-64 splitter (duplicates counted
-once; since 2026-09-25 the fee payer and each invoked program counted against
-the limit, a key already carried joining a full transaction, exactly-64
-fits), the fatal single-instruction-over-limit page, the quiet
-stale-mint-price retry against its three near-misses (wrong code,
-wrong program, non-custom error — each must page), and service failures
-logged, paged and rethrown.
+The candidates outside `STRONGER` that this suite has measured are below with their numbers, the zero-fire results included, as HARDENING.md's "The mutator set bounds what the ratchet can see" asks. The Big-arithmetic trials ran `pitestMutatorTrial -PtrialMutators=<CANDIDATE[,...]>`, which runs every suite with only the candidates, so the `sdk` column is the same invocation's result there; the 2026-07-22 Big trial took both candidates in one run, split here by the mutator that generated each mutant. Their format: generated / killed by existing tests / unkilled. The naked-receiver trial was recorded as the suite's totals before and after enabling the mutator, plus the baseline rows it added, counted while the verify still compared the baseline as a set rather than a multiset, so they count rows, not mutants. The sdk's naked-receiver trial is in the sdk registry.
 
-**Accepted (5):** record-pattern destructure sibling legs on the error
-ladder, the `subList`-vs-whole-list boundary (same view, same drain), and
-defensive forced-true directions with killed twins named by the verify.
-
-The service-context-family pass covers the three context shells directly:
-`ServiceContextImpl` (token typing across owner/length/extension-byte,
-clock parsing from synthetic sysvar bytes, the `max(minDelay, backoff)`
-sleep floor asserted by elapsed lower bounds in both directions, the
-cache-path layout and every accessor including proxied
-`NotifyClient`/`RpcCaller`/`DataSource` identities),
-`ExecutionServiceContextImpl` (epoch median via a real `Epoch` record,
-scripted `InstructionProcessor` returning true-then-false, and a proxied
-`ServiceContext` reporting a *low* fee-payer balance — the only way to
-tell the delegation from a hardcoded `false`, since the real impl
-hardcodes it), the whole `BaseServiceContext` delegation surface, and
-`IntegrationServiceContextImpl` with every collaborator a recording
-`Proxy` stub (cache lookups return sentinels asserted by identity;
-program-key accessors compared against the real `MAIN_NET` account
-constants they unwrap).
-
-The fulfillment pass covers the redemption stack end-to-end against a
-synthetic staging `StateAccount` (the `priceSingleAssetVault` instruction
-is staging-only) and a scripted `ExecutionServiceContext` whose fee-payer
-script doubles as the run-loop exit. It surfaced and fixed a **real bug**:
-`BaseFulfillmentService.executeRedemptions`'s soft-state/hard-fulfill
-branch streamed the retained instructions into `fulFillInstructions::add`
-— the immutable `List.of` *field* — instead of the local list it had just
-allocated, so every counted fulfill threw `UnsupportedOperationException`
-and killed the service loop. Covered: the run loop (missing-ATA wait,
-low-fee-payer skip, NAV pricing with `supply≠holdings` so the divide and
-both `stripTrailingZeros` calls are observable, failure backoff `1,2` then
-reset-to-`1,1`), redemption accounting (seconds/slots/no-soft maturity,
-the soft-flag conjunction including zero-share directions, all three
-`executeRedemptions` instruction shapes byte-compared, `fetchAccounts`
-refetch dropping vanished accounts), construction guards (NONE-mint and
-mismatched-mint throws), `awaitChange` clamp-and-floor by elapsed bounds
-(including a mid-wait wake proving the top-up is minimum-*minus*-slept),
-and the websocket path: queue/deposit wake matrices by parked-thread
-observation, foreign account shapes ignored without log noise, malformed
-updates logged and swallowed, and the entrypoint monitor loop (services
-executed, paced connection checks, close on interrupt).
-
-**Accepted (7):** the `awaitChange` top-up boundary and its forced-true
-twin (an equal or negative top-up is a no-op sleep — `TimeUnit.sleep`
-ignores non-positive timeouts; `ORDER_ELSE` killed), the `validateMintKey`
-null-mint leg (a null mint NPEs in `StateAccountClient` escrow-PDA
-derivation before reaching the check, so only the NONE-sentinel leg is
-reachable — both its directions killed), and four `compareAndSet` witness
-retries (the re-loop only executes when another writer interleaves between
-`get` and `compareAndExchange`; unreachable deterministically, and every
-sibling leg is detected).
-
-The init-paths pass closed the last broadly coverable surfaces:
-`IntegLookupTableCache.initCache` (since removed, 2026-09-24; warm load from
-`.dat` files with foreign files ignored, only the missing keys fetched, the
-fetched table persisted, and the does-not-exist warning raised for exactly
-the still-missing key), `ReserveContext` (both null-key spellings, the shared
-read/write meta caches served by identity through
-the refresh sequence, and all four oracle layouts of
-`refreshReserveAccounts`: scope-feed last slot, pyth first slot,
-switchboard middle slots, and the no-oracle fatal),
-`BaseDelegateServiceConfig.createServiceContext`/`createMintCache` from a
-parsed properties config (no hikari files → null datasource; `mints.bin`
-created under the cache directory), the default single-key
-`AccountFetcher` queues and the default `InstructionProcessor` overload
-(since removed, 2026-09-24), `persistGlobalConfig` and `FileUtils`
-failure branches (occupied-directory targets fail the write *and* the
-cleanup delete, both logged), `ScopeAggregateIndexes` statics,
-`globalConfigCacheFile`, `MinGlamStateAccount` and serde-length tails.
-Also fixed a test-infra trap this pass exposed: `GlobalConfigCacheTests`
-attached its capturing handler to a `java.util.logging` Logger held only
-by a local — JUL references loggers weakly, so GC could silently detach
-the handler mid-run; the logger is now pinned by a static field.
-
-**Accepted (6):** the `createServiceContext` hikari null/empty legs (both
-mean "no datasource"; the non-empty direction needs real JDBC properties
-to construct a `HikariDataSource`), the two `ReserveContext` meta-cache
-hit legs (the static caches persist
-across mutants in a shared PIT minion, so the hit path cannot be forced
-to miss deterministically; both miss directions are killed), and the
-`setScale` NakedReceiver (`setScale(decimals, DOWN).longValue()` is
-`longValue()` for every input — DOWN and long truncation both round
-toward zero).
-
-The cache-run-loops pass swept the remaining poll/init surfaces and fixed
-two more **real bugs**: `KaminoCacheImpl.persistReserve` dereferenced a null
-`reserveDataFilePath`, so an RPC-only cache (built by the pathless
-`KaminoCache.initService`) crashed its poll loop — and killed the run
-thread — on the first feed-priced reserve it accepted (a null guard now
-mirrors `deleteScopeConfiguration`'s); and `deleteScopeConfiguration`
-deleted the *uncompressed* file names while everything is persisted
-compressed, so a dropped Scope configuration resurrected from disk on the
-next start (now deletes the `.dat.gz` names, pinned by the poll test).
-Covered: the RPC-only Kamino init (feedless-reserve-only retention pinned,
-five invalid-account rejections, `listenToAll` registration), the Kamino
-poll loop end-to-end (a reserve arriving only once the loop runs — indexed,
-notified, persisted; a fetched mappings update applying an appended oracle
-entry; vanished scope accounts dropped with their compressed files, the
-whichever-is-second bare-mappings deletion warning, and the fetch list
-shrinking; write lock released on exit), listener routing (all three
-`subscribeToAll` legs by event kind, full and single-key unsubscribes),
-`refreshVaults`, the GlobalConfig run loop (delay-paced refetch, forced
-refresh consumed-and-rearmed, invalidation exit, fetcher-failure log),
-`awaitNewGlobalConfig` (timeout by elapsed bound, waiter woken by a
-replacement), the batched accept (sentinel/null/empty entries, unknown and
-already-cached mints never re-stored, the mismatched-mint invalidation
-throw), the instance `initCache`, the new-asset mint fetch (queued only
-when the mint cache lacks it), the StakePoolCache (cold start with
-exact-minimum-length boundary, warm start from flat files without
-refetching, accept gates, append-after-close rejection, pacing of the poll
-loop over a window, failure log), and the FileUtils/MinGlamStateAccount
-tails.
-
-**Accepted (20):** four `HashMap`/`ConcurrentHashMap` capacity-hint math
-mutants; the `deleteScopeConfiguration` null-path guard leg (deletion is
-only driven through disk-backed caches; the deletion direction itself is
-detected); GlobalConfig park-loop legs (`run`'s invalidation exit on a
-null update and its `remainingNanos <= 0 || forceRefresh` break,
-`forceCacheRefresh` double-check gates, `awaitNewGlobalConfig` timeout
-legs — in-lock timing directions whose siblings are detected or
-timing-equivalent at exactly zero nanos); StakePool cold-start
-overwrite/copy boundaries (`i > 0` and `copyOfRange` at exact length are
-no-op-equivalent), the redundant `containsKey` fast path ahead of
-`putIfAbsent`, and its CAS race-guard leg; and the Kamino single-chunk
-fetch exit plus rebuild-list and park-loop legs (`run`'s chunk-loop
-exit at `to == numAccounts`, its `accountsDeleted > 0` list rebuild,
-and the `numReserveChanges > 0` and `remaining <= 0` park legs — the
-chunking directions need more than `MAX_MULTIPLE_ACCOUNTS` scope
-accounts to differ, the rebuild is idempotent from the set, and the
-park directions are load-dependent).
-
-The cold-start pass built the routed-proxy harness named as the previous
-pass's escape: a `SolanaRpcClient` proxy answering `getProgramAccounts` by
-target program (vaults, reserves, configurations — each request's data slice
-and filters asserted inline) and `getAccounts` for the missing mappings.
-`initService` from an empty disk now proves: reserves fetched and routed
-(feed-priced, `NONE`-feed, and `nu11…`-sentinel-feed variants), the
-configuration fetched, parsed and persisted, the missing mappings resolved
-and persisted, and the resulting cache serving the full feed-indexed path —
-with everything on disk for the next (warm) start, which the earlier pass
-pins.
-
-**Accepted (residual legs):** capacity-hint arithmetic in the init lambda,
-and the partial-persistence fork halves (persisted configs that cover only some
-needed feeds) — the one remaining init scenario, named as the next escape if
-it ever earns a harness.
-
-The init/load pass opened the service-runtime layer: `FormatUtil` end-to-end
-(instruction/simulation/result rendering incl. the glam error-table lookup,
-its unknown-code and non-custom fallbacks, sig null/blank forms, fee
-stripping, indenting, durations, fixed-length strings), direct `AccountData`
-discriminator/length gates, and `KaminoCache.initService` warm-start from
-persistence: the synthetic feed and reserve seeded as LEGACY uncompressed
-files are migrated (content round-tripped, originals removed), corrupted
-files beside them deleted or skipped without failing the boot, the sole
-network call is the sliced+filtered vault scan (request captured and
-asserted), an invalid vault account fails the future loudly, and the
-restored cache serves the full feed-indexed path and registers itself with
-the account fetcher.
-
-**Accepted (31 rows, init/load residuals):** the warm-path halves of the
-cold/warm forks (`Files.exists`, `containsAll`, config-fetch-skipped legs)
-and the reserve-request builder's fluent chain — observable only on a COLD
-start that fetches reserves and configurations over RPC; that harness (a
-multi-request routed proxy) is the named escape. The remainder are the usual
-compound-condition sibling legs (each verify hint names the killed twin),
-capacity-hint arithmetic, and defensive forced-true directions
-(`compressIfNeeded` on an already-compressed file, constructor loop legs).
-
-Remaining coverage debt is concentrated in the fulfillment services,
-`ServiceContextImpl`, `InstructionProcessorImpl` and the entrypoints
-(~300 mutants of service wiring needing stubbed RPC/websocket harnesses) —
-run `./gradlew pitestServicesDebt` for the live ranking.
-
-The direct-oracle-feed pass built the escape the feed-map acceptances had
-named since the 6th pass: `KaminoCacheDirectFeedTests` synthesizes a second
-scope feed — a zero-filled Configuration/OracleMappings pair with real
-discriminators, direct SwitchboardOnDemand entries at chain indexes 11/12/13,
-and the real SOL Reserve re-pointed at it by byte surgery. The feed-indexed
-path is distinguishable from the raw-mappings fallback by liquidity (the
-fallback reports zero; the feed path sums reserve collateral), which makes
-the previously unobservable feed-map maintenance killable through the public
-API: new reserves indexed on arrival and served depth-first, collateral
-updates re-sourcing the by-mint entry, and structural chain moves replacing
-it. `FeedIndexes.compareTo` (deepest feed wins the cross-feed sort) is pinned
-directly.
-
-The 2026-07-23 multiset migration added no new mutants: the verify's baseline
-comparison became a multiset, materializing 62 sibling-mutant copies (same
-`class,method,line,mutator` coordinates, distinct mutants of compound
-conditions) that the old set-dedup had silently absorbed into their accepted
-twins' rows. All 62 fall inside already-triaged families — the in-lock race
-guards and the kamino null-key `createIfChanged` arms. Baseline row counts
-now equal the report's unkilled counts exactly.
-
-The dispatch-hardening change wraps every consumer callback in
-`AccountFetcherImpl` (the always-call listeners, batch and unique consumers,
-and the oversized-batch notification) in its own catch-and-log: previously a
-single throwing consumer exited `run()`'s loop and silently stopped account
-fetching for every service sharing the fetcher. A consumer's failure is now
-its own — logged as "Account consumer failed; continuing to poll" — and the
-test drives a throwing listener, batch consumer and unique consumer through
-one cycle, asserting the healthy consumer in the same batch is still served,
-the loop survives into a second cycle, and the loop-fatal log line never
-appears.
-
-The 2026-07-22 (2nd) pass killed 21 `BaseDelegateServiceConfig.parseProperties`
-survivors by pinning both directions of every optional-section presence guard:
-each section parsed with real values when present (serviceBackoff single
-strategy, formatter formats, tableCache capacity (section since removed,
-2026-09-24), rpcCallWeights, a separate sendRPC balancer, the websocket
-endpoint value), and the absent-case defaults characterized exactly —
-serviceBackoff falls back to fibonacci, tableCache to its documented defaults,
-sendRPC to the primary rpc balancer, and notificationHooks to a no-op client,
-while callWeights stays null.
-
-The 2026-07-22 pass added the `RequestQueue` serde round trip through
-`RedemptionSummary.createSummary(accountInfo, …)` (the mutation suites exclude
-generated code, so that layout boundary is pinned by test instead) and
-`AssetMetaContext.compareTo` ordering (negative priorities sort after every
-non-negative one, then by magnitude). A sweep confirmed the only main class
-outside every suite's targeting is the git-ignored `systems.glam.Integ`
-scratch file — no silent mutation blind spots.
-
-The 6th pass covered `integrations/kamino/KaminoCacheImpl` using checked-in
-mainnet snapshots (`src/test/resources/accounts/kamino/`, provenance in its
-README): the accept dispatch for all four account shapes, feed→mappings→reserve
-dependency ordering, staleness/idempotence, listeners, persistence, and vault
-state handling.
-
-~~One behavior gap pinned by the fixture: the SOL reserve's price chain heads
-with a `MostRecentOf` composite, and `ScopeFeedContext.indexes()` matches only
-direct `OracleEntry`s.~~ **Closed 2026-07-24 (composite-chain support).**
-`ScopeFeedContext.indexes()` now recurses through composite entries
-(`MostRecentOf`/`CappedMostRecentOf`, `CappedFloored`, `Conditional`,
-`MultiplicationChain`) and matches the requested oracle among a composite's
-child prices, returning that child's own scope index. Confirmed against
-`Kamino-Finance/scope` `most_recent_of.rs`: a composite reads
-`oracle_prices.prices[source_index]` from already-refreshed data, so each
-source (and cap/floor/refPrice bound) must be refreshed at its own index —
-which is exactly the index the query returns. The real mainnet SOL chain (a
-`MostRecentOfEntry` over a Chainlink at index 1 and a PythLazer at index 2)
-is now served with the reserve's real liquidity instead of falling through to
-the zero-liquidity mappings scan; pinned by `KaminoCacheTests` (real data) and
-`ScopeCompositeIndexTests` (every composite shape, over hand-built graphs).
-Accepted: the recursion's `index < visited.length` upper bound
-(`# defensive bound` — a scope index never reaches the array length, so the
-boundary is unobservable).
-
-The 5th pass extended `GlobalConfigCacheTests` into the streaming paths the
-disk-init tests never reached: `accept` transitions (unchanged/older/foreign
-data ignored; a valid newer config replaces state, persists to disk, and
-releases `awaitNewGlobalConfig` waiters; an invalid one nulls the cache and
-notifies listeners), `topPriorityForMintChecked` decimals validation against
-a mint cache (both directions), `checkAccount`, and the query helpers.
-
-The 4th pass covered `db/sql/BatchSqlExecutorImpl`: the statement-parsing and
-batch-count statics directly, and the `run()` loop against proxied JDBC
-interfaces (full batches, remainder flush, and the SQLException requeue path,
-which restores failed items in their original order before retrying). A
-`RUN_ERROR` appeared once under two-suite load and resolved to detected on a
-quiet re-run — the expected transient shape, not a result.
-
-The 3rd pass covered `rpc/AccountFetcherImpl` (driven deterministically: a
-Proxy-backed `SolanaRpcClient` serves canned batches, zero fetch delay, and
-the fake interrupts the thread on its final batch so `run()` exits) and
-`oracles/scope/ScopeFeedContext` (surfacing two real bugs: the `indexes()`
-loop double-incremented and skipped every other matching reserve, and
-`resortReserves`' replacement path returned before re-indexing by chain
-index, leaving `reservesByIndex` serving stale contexts). The `SURVIVED`
-count rose because newly covered code carries untriaged survivors — that is
-the next phase's work. That pass reported a load-dependent `TIMED_OUT`
-population (135 as of 2026-07-26 — see the historical timeout snapshot
-below for the per-row structural causes); per HARDENING.md, verify
-solo-vs-gate before trusting any flip, and union only observed flips.
-
-Triage note for `ScopeFeedContext.indexReserveByIndex`: the loop over
-`priceChainIndexes()` returns after handling the *first* index in two of its
-three branches but continues in the third — multi-hop chains (more than one
-real index before the u16-max padding) index inconsistently depending on map
-state. Current tests use single-index chains; decide the intended behavior
-before covering multi-hop chains.
-
-The 2026-07-21 pass covered `io/KeyedFlatFile` (surfacing two real bugs:
-`deleteEntry` skipped a swapped-in duplicate, and `writeEntries` never wrote
-to disk), `fulfillment/accounting` (redemption windows, unsigned share math),
-and `execution/FormatUtil`. Remaining `KeyedFlatFileImpl` survivors are
-durability calls (`force`, lock guards) — unobservable in-process; triage as
-a family when killing mutants here.
-
-## EXPERIMENTAL_NAKED_RECEIVER trial (2026-07-22)
-
-Fluent calls returning their receiver are expressions, so `VoidMethodCallMutator`
-never fires on them. Trialled per sava-build's HARDENING.md and **kept**, since
-it fires here:
-
-| Suite | Mutants | Detected | New unkilled |
+| Candidate | Measured | `services` | `sdk` |
 |---|---|---|---|
-| `services` | 2162 -> 2260 (+98) | 800 -> 832 (+32) | 65 |
+| `EXPERIMENTAL_NAKED_RECEIVER` | 2026-07-22 | mutants 2162 → 2260, detected 800 → 832; 65 new baseline rows (62 `NO_COVERAGE`, 3 `SURVIVED`) against a rise of 66 in undetected mutants | in the sdk registry |
+| `EXPERIMENTAL_BIG_DECIMAL` | 2026-07-22 | 2 / 2 / 0 | 0, cannot fire |
+| `EXPERIMENTAL_BIG_INTEGER` | 2026-07-22 | 1 / 1 / 0 | 0, cannot fire |
+| `EXPERIMENTAL_BIG_DECIMAL` | 2026-10-09 | 2 / 2 / 0 | 0, cannot fire |
+| `EXPERIMENTAL_BIG_INTEGER` | 2026-10-09 | 0, cannot fire | 0, cannot fire |
 
-Of the 65 new baseline rows, 62 are `NO_COVERAGE` in classes that already carry
-untriaged debt, and three are survivors triaged below. It immediately exposed a
-real gap: `KeyedFlatFileImpl.appendEntry` seeks to the end of the channel before
-writing, and nothing covered a *reopened* file — where the channel starts at
-position 0 and a dropped seek overwrites the first entry instead of appending.
-That is the restart path for every on-disk cache here; it now has a test.
+In force on `services`, beside `STRONGER`:
 
-### Naked-receiver survivors (accepted with reasons)
+- `EXPERIMENTAL_NAKED_RECEIVER`, because it fires here: calls that return their receiver's type, among them the `BigDecimal` scaling in `SingleAssetFulfillmentService.handleVault` and `MintContext.setScale`, are mutated by nothing else in the set.
+- `EXPERIMENTAL_BIG_DECIMAL`, for the share math. It reaches the share sums and nothing else: `RedemptionSummary.sumOutstandingShares` and `RedemptionRequest.sumOutstandingShares` reduce with `BigDecimal::add`, which it turns into `subtract`, and `RedemptionSummaryTests` kills each on an exact sum (`summaryParsesTheQueueFromAccountData` the summary's, `sumOutstandingShares` the request's). The mutator rewrites only the one-`BigDecimal`-argument `add`, `subtract`, `multiply`, `divide`, `remainder`, `min` and `max` and the unary `negate`, `plus` and `abs`, so the module's other `BigDecimal` calls that return their receiver's type are outside it: `SingleAssetFulfillmentService.handleVault`'s supply and holdings scaling (`movePointLeft`, `stripTrailingZeros`) and its NAV, a three-argument `divide` with a scale and `HALF_EVEN` followed by its own `stripTrailingZeros`; `MintContext.setScale`; `FormatUtil.formatTransactionResult`'s `stripTrailingZeros`. `EXPERIMENTAL_NAKED_RECEIVER` is what mutates those, by replacing each call with its receiver.
 
-**`ScopeFeedContext.indexes` — dropped `.sorted()`** on the `FilteredReserve`
-stream feeding its `limit(4)`. The stream sorts `FilteredReserve` by
-collateral descending, but its source `reservesByMint` is *already* maintained
-in that order: `resortReserves` sorts every mutation with
-`RESERVE_CONTEXT_BY_LIQUIDITY`, which is the same
-descending-unsigned-collateral order, and `Stream.sorted` is stable, so
-reserves contributing several matching entries keep their encounter order
-either way. Re-sorting an already-sorted source cannot change the result.
-Killing it would mean breaking the invariant the rest of the class maintains.
+Out of the set:
 
-**`KaminoCacheImpl.indexes` — dropped `.sorted()`** on the per-feed
-`FeedIndexes` stream ahead of its `findFirst()`. This one picks the
-highest-liquidity feed across *scope feeds*, so distinguishing it needs two
-feeds whose reserves cover the same mint at different depths. The fixtures
-hold a single feed (the klend one), so sorting one element is a no-op —
-**unreachable in-harness**, not equivalent. The escape is a second
-`Configuration` + `OracleMappings` snapshot (the hubble feed,
-`ScopeFeedAccounts.SCOPE_MAINNET_HUBBLE_FEED`) plus reserves pointing at it;
-add those and this becomes killable.
+- `EXPERIMENTAL_BIG_INTEGER`. The `BigInteger` arithmetic it was enabled for, the collateral totals `ScopeFeedContext.indexes` summed, left `services` with the Kamino cache, and the `BigInteger` that remains is carried rather than computed with: the fee-payer balance thresholds `BaseDelegateServiceConfig.ConfigParser` converts with `LamportDecimal.fromBigDecimal(...).toBigInteger()`, which `ServiceContextImpl` holds and renders. So the re-trial generated nothing. It is left out rather than declined: with no `BigInteger` arithmetic in the suite's classes, the blind-spot scan each run makes has nothing to warn about, and a `declineMutator` record would be reported as deletable. If `BigInteger` arithmetic returns to `services`, that scan warns with the trial command, and the trial is run again.
+- Both Big mutators on `sdk`. Its hand-written classes do no `BigDecimal` or `BigInteger` arithmetic, and the generated trees it excludes are not mutated, so neither can fire there.
 
-**`KeyedFlatFileImpl.deleteEntry` — dropped `mappedBuffer.force()`** after the
-swapped-in last entry is written over the deleted slot. Durability only: the
-swap is already visible through the same mapping and to every subsequent read
-in the process, so no in-process assertion can see whether the pages were
-flushed. Same family as the `force`/lock survivors already accepted for this
-class.
+## Families
 
-## Recording-collaborator pass (2026-07-22)
+- `# accepted equivalent` — a catch-all label, not one family: it collects unrelated arguments for `BatchSqlExecutorImpl` and `AccountFetcherImpl`, so no member's acceptance carries over to another. Each mechanism below names the members that rest on it. Where a member's recorded argument does not hold, its paragraph says so and describes what the code does instead.
 
-sava-build's HARDENING.md notes that "wire-invisible" behaviour is usually
-observable through an injected recording collaborator, and that capturing the
-log stream is the cheap alternative for trivial emissions. Applied here, this
-killed 19 survivors that had looked untestable:
-
-- **Log emissions (10).** `GlobalConfigCacheImpl` logs before every rejection
-  in `createMapChecked`, `topPriorityForMintChecked` and `checkAccount`, as do
-  `BatchSqlExecutorImpl`'s batch reports and `KaminoCacheImpl`'s unhandled
-  account branch. `systems.glam.services.tests.LogCapture` attaches a JUL
-  handler for the duration of a test, formats `{0}` patterns with their
-  parameters, and asserts the record. This pins a real contract — **a rejected
-  config, a failed batch or an unrecognised account is never silent** — rather
-  than restating the implementation. The tests previously set the logger to
-  `Level.OFF`, which is precisely why these survived.
-- **Lock release (9).** Every entry point takes a `ReentrantLock` in a
-  try/finally, and a dropped `unlock()` is invisible to any single-threaded
-  result assertion while deadlocking every other caller in production. The
-  locks in `KeyedFlatFileImpl`, `AccountFetcherImpl` and `BatchSqlExecutorImpl`
-  are now package-private (the repo's stated preference over reflection), and
-  the tests assert `!lock.isLocked()` after the operation returns. Deterministic
-  on the calling thread, with no second thread and no waiting.
-
-The `ReentrantReadWriteLock` releases in `KaminoCacheImpl` and
-`GlobalConfigCacheImpl` were then killed the same way: both classes discarded
-the parent lock and kept only the read/write views, so each now retains it
-package-private and tests assert `!lock.isWriteLocked()` and a zero read-lock
-count after each entry point, including the throwing path in
-`topPriorityForMintChecked`. Still not killable this way: `force()`/`close()`
-durability calls, which no in-process assertion can observe.
-
-`GlobalConfigCacheImpl.createMapChecked` was covered only on its *rejection*
-side; the transitions it must **accept** and report were the survivors. Tests
-now drive an oracle configuration change (priority and max age independently),
-an unchanged config that must notify nobody, a rotation of a negative-priority
-entry, and an added oracle — each asserting both the listener callback and the
-log line, because several of these notifications fire from outside the loop
-that logs them, so the listener assertion alone cannot tell whether the loop
-ran.
-
-`ReserveContext.changed` got the same treatment, and for the same reason: it
-decides what the Kamino cache propagates to listeners and whether a reserve is
-merely re-sorted or fully re-indexed, so a dropped comparison leaves downstream
-state stale rather than failing. Each of its ten compared fields now has a case
-differing in exactly that field, plus the accumulation case (changes add to the
-set rather than replacing it), the null-price-chain transitions in both
-directions, the different-reserve rejection, and the `onlyCollateralChanged`
-fast-path gate.
-
-`MinGlamStateAccount.equals` decides whether a re-fetched account is a change
-worth propagating, so a dropped comparison silently reports "unchanged" and
-listeners never fire. Each of its ten compared components now has a case
-differing in exactly that component (plus symmetry, and the deliberate
-exclusion of slot and raw data, so a no-op refresh stays equal).
-
-**`MinGlamStateAccount.hashCode` mixing arithmetic (9 mutants)** — the
-`MathMutator` rows on its nine `result = 31 * result + ...` mixing statements,
-each swapping a `31 *` for `31 /` or a `+` for a `-` in the accumulator chain.
-`hashCode`'s only contract is that equal accounts hash equally, which every
-one of these preserves, so nothing observable distinguishes them: a
-different-but-still-well-distributed mixing constant is not a defect. The two
-properties that *do* matter are asserted — equal accounts hash equally, and
-accounts differing in any compared component hash differently — and those
-killed the `return 0` mutant that the contract alone would have allowed.
-Distinguishing the rest would mean asserting exact hash values, which pins an
-implementation detail callers cannot depend on.
-
-## EXPERIMENTAL_BIG_INTEGER / EXPERIMENTAL_BIG_DECIMAL trial (2026-07-22)
-
-Trialled with `./gradlew pitestMutatorTrial -PtrialMutators=EXPERIMENTAL_BIG_INTEGER,EXPERIMENTAL_BIG_DECIMAL`
-and **kept for `services`**, which carries the money math the default
-arithmetic mutators cannot express — `BigDecimal` share sums in
-`RedemptionSummary`/`RedemptionRequest` and `BigInteger` liquidity totals in
-`ScopeFeedContext.indexes`:
-
-| Suite | Generated | Killed by existing tests | Unkilled |
-|---|---|---|---|
-| `services` | 3 (BigDecimalMutator x2, BigIntegerMutator x1) | 3 | 0 |
-| `sdk` | 0 — cannot fire | — | — |
-
-Zero baseline cost: every newly expressible mutant was already killed, which is
-what a property-asserting suite looks like. Suite total moved 2260 -> 2263
-mutants, 928 -> 931 detected. Not enabled for `sdk`, where no such arithmetic
-exists.
-
-## Kamino cache sequence pass (2026-07-22)
-
-`KaminoCacheSequenceTests` drives the cache through changed/stale/malformed
-*sequences* of the mainnet fixtures — byte-surgical variants using the
-generated offset constants (collateral, token name, each vault key) — killing
-~101 mutants across the dispatch chain, mapping/reserve/vault update gating,
-per-key vault change detection, and the mappings-scan fallback of `indexes`.
-The 24 survivors this deeper coverage newly exposed are accepted as follows:
-
-**Feed-map maintenance invisible through the cache API (`updateIfChanged`'s
-changed path — its `feedContext == null` guard and its `resortReserves` /
-`removePreviousEntry` / `indexReserveContext` calls; `reIndexReserves`'
-price-feed-match and changed-price-chains guards)** — `resortReserves`,
-`removePreviousEntry` and `indexReserveContext` maintain `ScopeFeedContext`'s
-internal by-index/by-mint maps, and the cache exposes those only through
-`indexes()`, which returns null for the fixture's SOL reserve (composite
-`MostRecentOf` chain — see the 6th-pass note). **Unreachable in-harness with
-the current fixtures**; the named escape is a reserve whose chain heads with a
-direct oracle entry (a second feed snapshot, e.g. the hubble feed), at which
-point these become killable and should be.
-
-**In-lock recheck race guards (`handleMappingChange`'s in-lock `witness ==
-null || witness.changed(accountInfo)` re-read, `updateIfChanged`'s `previous
-!= witness` retry, `handleVaultStateChange`'s `kaminoVaultContext == previous`
-recheck)** — double-checks between the optimistic read and the locked write;
-single-threaded tests cannot interleave a concurrent writer between the two.
-Deterministically forcing that interleaving is the concurrency-harness problem
-ravina's triage README documents at length; accepted with that as the named
-escape.
-
-**Slot-gate shadowed comparisons (the `vaultStateContextMap.merge` remapping
-lambda, boundary/order)** — the merge remapping picks the newer context, but
-`handleVaultStateChange`'s `Long.compareUnsigned(previous.slot(), slot) >= 0`
-early return already rejects non-newer slots before merge is reached, so the
-remapping only ever sees a strictly newer value and its `>=`-vs-`>` boundary
-cannot be observed. Defensive redundancy, equivalent in context.
-
-**Remaining per-key `createIfChanged` internals (`KaminoVaultContext`'s
-`createIfChanged` key-comparison branches and `noKeyChange`'s `previous ==
-null` arm)** — the null-transition arms (a key appearing where none was, or
-vanishing to the NULL sentinel). The fixture's keys are all present and real;
-synthesizing null-key variants means hand-building 62KB VaultState images.
-Accepted as unreachable-in-harness; escape: a fixture from a vault with an
-unset farm/lookup-table key.
-## Scope shapes + fetcher batching pass (2026-07-22)
-
-`ScopeFeedContextTests` gained the multi-reserve shapes the single-reserve
-cases could not distinguish: several reserves sharing one chain index
-(coexist, replace-within, remove-one-keep-other), removal of unknown keys
-against both single- and multi-entry arrays, collateral-ordered serving with
-in-place re-sorts, and a chainless reserve skipped by `indexes`. One mutant
-was closed by **refactor** instead: `indexReserveContext`'s leading
-`indexReserveByIndex` call became a redundant double-index when the 3rd-pass
-fix taught both `resortReserves` paths to re-index, so the call is gone and
-the mutant cannot exist.
-
-`AccountFetcherTests` gained the batching interior: empty batches dropped by
-every queueing flavour, small batchable lists queued whole, a fresh
-priority-unique consumer served, the recent-slot scan skipping null accounts,
-null contexts and zero slots without letting them overwrite a real slot, a
-callback queueing into the batch in flight (served from that same batch — one
-RPC call, shared result map), always-fetch keys restored after the cycle trim,
-and a full batch absorbing a 100%-overlapping request while deferring a
-non-overlapping one to the next cycle.
-**Count guards subsumed by range-length comparison
-(`MinGlamStateAccount.createIfChanged`'s `sameAssets` and
-`sameExternalPositions` count guards)** — `sameAssets` and
-`sameExternalPositions` each open with `count == this.section.length &&
-Arrays.equals(bytes...)`. Forcing the count operand true when the counts
-differ changes nothing: the byte ranges are computed from each side's own
-count, so `Arrays.equals` over ranges of different lengths returns false
-immediately and the flag lands false either way. The count check is a
-deliberate short-circuit that skips the byte compare — the same
-fast-path-routing family as HARDENING.md's canonical example. The nine branch
-mutants that *were* observable (per-section reuse vs reparse, the enabled
-flip, and both immutable-base-field guards) are killed by identity assertions:
-content equality cannot tell a reuse from a reparse, so the tests pin the
-array instances.
-
-## Config parse + global config validation pass (2026-07-22)
-
-`BaseDelegateServiceConfigTests` closed the section-presence guard cluster in
-`parseProperties`: an rpc-only config leaves `websocketConfig` null, present
-optional sections land on the parsed values (`defensivePolling.globalConfig`),
-and an absent `serviceBackoff` defaults to fibonacci — distinguishable from an
-empty-parsed exponential at `delay(3)` (3s vs 4s), which is what kills the
-absent-vs-empty guard pair.
-
-`GlobalConfigCacheTests` closed the `createMapChecked` rejection branches:
-cross-config decimals change (via an oracle change at the same index so the
-per-index compare flags-and-continues into the map sweep), one oracle account
-reused with a different source, a mint-cache decimals disagreement (plus its
-ERROR log), the deprecated push-source rejection log, and the same-index
-source-change log. The final per-asset `Arrays.sort` is pinned by demoting the
-existing entry in place and appending a better-priority oracle — only the sort
-can serve the appended entry first. The `MintContext` overload of
-`topPriorityForMintChecked` is pinned by identity against the `PublicKey`
-overload. This pass also surfaced and fixed a real bug: a checked lookup after
-cache invalidation dereferenced the nulled `assetMetaMap` and threw NPE;
-misses now return null until a valid config is re-accepted.
-
-**Null-state rechecks in `topPriorityForMintChecked` (the pre-lock and in-lock
-`globalConfigUpdate == null || assetMetaMap == null` EQUAL pairs) and the
-invalidation `invalidGlobalConfig.signalAll()`** — each `||` guard yields one
-killable mutant per operand (killed by the decimals-mismatch throw test) and
-one that only a concurrent invalidator between the read unlock and write lock
-could observe — the same in-lock race-guard family as the KaminoCache
-acceptances, with the same concurrency-harness escape. `signalAll` needs a
-parked waiter to observe; same family as the `accept`-path
-`invalidGlobalConfig`/`newGlobalConfig` `signalAll` acceptances.
-
-## Config sections + mint cache pass (2026-07-22)
-
-Killed the section-presence guards that only a *present* section can
-distinguish: `glamStateKey`, `minCheckStateDelay`/`maxCheckStateDelay`, a
-`signingService` built through the ServiceLoader-registered
-`MemorySignerFactory`, a `notificationHooks` webhook whose `postMsg` returns
-one pending future (the noop default returns none), a `helius` section
-building `feeProviders`, and the no-rpc parse pinning `rpcClients == null`
-(the always-parse mutant builds a balancer from an empty prefix instead).
-`FulfillmentServiceConfig` now parses fields *after* a leading `softRedeem`
-(the stop-early mutant), and its properties path pins the base sections.
-`DefensivePollingConfig`'s JSON path parses all its fields distinctly and
-throws on an unknown field (the forced-match mutant silently lands unknowns in
-the last slot). `MintCacheImpl.close` is pinned by "a closed cache refuses new
-entries", and `delete` by a two-instance case: it must not report an entry
-whose persistent record was already removed by another cache over the same
-file.
-
-**Absent-vs-empty-parse equivalents (the `parseProperties` section-presence
-pairs)** — the always-parse direction on `notificationHooks`,
-`accountFetcher` and `defensivePolling`: parsing an empty section produces the
-same value the absent path synthesizes (`NotifyClient.createClient([])`
-returns the same noop shape as `setDefaults`; the other two parsers default
-every field to exactly their `createDefault` values). No observable output
-distinguishes them.
-
-**Null-over-null assigns (`parseProperties`'
-`minCheckStateDelay`/`maxCheckStateDelay` guards; `DefensivePollingConfig`'s
-four `Parser.parseProperties` duration guards)** — `parseDuration(null)`
-returns null, so forcing the `!= null` guard merely re-assigns null over null;
-`get()`/`setDefaults` re-default nulls either way.
-
-**True-or-throw returns (`FulfillmentServiceConfig.test`'s `super.test(...)`
-fall-through)** — the base `test` either handles a field (returns true) or
-throws on unknown fields, so forcing the propagated return to true is
-indistinguishable.
-
-**Missing-key delete fast path (`MintCacheImpl.delete`'s `removed == null`
-guard)** — forcing the null-check false sends a missing key into
-`deleteEntry`, which scans, finds nothing, returns 0 and yields the same null;
-the guard only skips file I/O.
-
-## Batch SQL executor pass (2026-07-22)
-
-Killed 18 of the 25 `BatchSqlExecutorImpl` survivors. `parseTableName` bounds
-are pinned by keyword-only and name-at-end statements. The retry path is
-pinned by "an interrupt pending at the backoff sleep cancels the retry"
-(removing the sleep re-executes the failed batch before exiting), the
-attempt-count log by `Failed 1 times`, the remainder commit log by
-`1 out of 1`, and the two catch paths by "a clean interrupt exit logs no
-error" and "a runtime error is logged and ends the run without leaking".
-The signalling protocol is pinned deterministically — `batchComplete` is now
-package-private (same precedent as `lock`) so the test sequences the runner
-by state instead of sleeping: the first queued item must wake the parked
-runner, filling the batch must cut the delay window short, and a waiter in
-`awaitBatchComplete` is released only once the batch has fully executed
-(release-time size is asserted). The lost-signal mutants die as timeouts in
-those await paths — load-dependent by nature, but each also fails the
-5-second join asserts on a quiet machine.
-
-**Spurious-signal directions (`queue`'s signal gate, EQUAL_ELSE/ORDER_IF)**
-— forcing the `isEmpty || pending.size() >= batchSize` signal condition true
-adds a lock cycle and an extra signal to a runner that rechecks its guards
-on wake; no observable difference exists.
-
-**Fast-path skips (`awaitBatchComplete`'s outer `!batchComplete` check;
-`run`'s `pending.size() < batchSize` fill/wait entry — boundary/ORDER_IF)**
-— the outer `batchComplete` check only skips a lock acquisition around a
-correctly-guarded while; entering the fill/wait block with a full batch
-pending exits the delay window immediately. Both are flicker, not behavior.
-
-**Zero-remaining re-arm (`run`'s batch-delay await window, boundary)** —
-`remainingNanos > 0` vs `>= 0` differs only when a wait returns exactly 0,
-which re-arms one zero-nanos await and exits on its negative return.
-
-**Requeue gap guards — RESOLVED by fix.** The failed-batch walk used to break
-at the first unset slot, and a multi-row `StatementPreparer` (the `int`
-return contract allows it) left index gaps that silently dropped items from
-the retry. `run()` now tracks items and rows separately: `batch[]` is indexed
-densely by item, `numRows` drives the execute threshold, and the walk requeues
-every slot below `numItems` unconditionally. Pinned by a two-rows-per-item
-failure test (the whole batch retries) and a zero-rows-per-item test (the
-`numItems == batch.length` guard prevents overflow when rows never
-accumulate). The remaining `Arrays.fill` mutant (`run`'s pre-park
-`Arrays.fill(batch, null)` batch reset) is now pure GC hygiene — it releases
-references while the runner parks between cycles — and is accepted as
-unobservable.
-
-**Batch-length equality guard (`run` EQUAL_ELSE on `numRows >=
-batchSize`)** — the `||` pairing means one direction only shows when rows and
-items disagree at the boundary; the multi-row and zero-row tests pin the
-observable directions, the residual direction is a redundant re-check.
-
-**Follow-up (2026-09-16, stale requeue cursor — RESOLVED by fix):** the
-per-batch heartbeat review traced the requeue path one failure further and
-found `numItems` left standing after the walk. A retry that then failed
-before polling again (`getConnection` or `prepareStatement` throwing) walked
-the same slots a second time: a full failed batch was requeued twice and
-written twice, and a sub-batch-size remainder -- whose slots the fill/wait
-block's `Arrays.fill(batch, null)` had already cleared -- pushed a null into
-the deque, so the `NullPointerException` ended `run()` through the
-runtime-error catch and stranded everything queued. The catch now resets
-`numItems` once the batch is back in the queue. Pinned by
-`aConnectionFailureAfterARequeuedFullBatchDoesNotRequeueItAgain` (written
-exactly once after its single requeue) and
-`aConnectionFailureAfterARequeuedRemainderKeepsTheRunnerAlive` (no
-`Unexpected error`, the retry commits), each driven by the fake's
-`failConnection` ordinal. No mutator targets a local reset, so the fix adds
-no mutant; the `Arrays.fill` GC-hygiene acceptance above is now strictly
-true -- before it, the fill turned this double failure from a duplicate
-write into a dead runner.
-
-## Fetcher batching + reactive mode pass (2026-07-23)
-
-Killed ~40 `AccountFetcherImpl` survivors and fixed two real bugs the
-survivors pointed at:
-
-1. **Oversized-union starvation + always-fetch corruption.** When the first
-   queued batch plus the always-fetch set exceeded the RPC limit, the old code
-   rebuilt the shared `batch` set in place (`batch.clear()`), never dequeued
-   the batch, and never scheduled its dispatch: the consumer's future hung,
-   and `clearBatch`'s trailing trim then ran against a set whose always-fetch
-   prefix was gone — permanently dropping most always-fetch keys from later
-   cycles. The branch now builds its request key set separately, dequeues and
-   dispatches the batch, and leaves the shared base intact. Pinned by
-   `anOversizedFirstCycleServesTheBatchAndPreservesAlwaysFetch`.
-2. **Sole-oversized-batch crash.** Dropping a mutated oversized batch ran
-   `continue` straight into `iterator.next()` with nothing left, killing the
-   polling loop with `NoSuchElementException`. The drop now falls back to the
-   always-fetch base when the queue is empty. Pinned by the mutable-batch
-   tests, which also cover the previously unreached WARN path.
-
-New deterministic concurrency tests (state-sequenced, no timing guesses):
-reactive fetchers park on the condition and wake on the queue signal; polling
-fetchers wait quietly on an empty queue and pick up late work; the reactive
-minimum delay separates cycles (lower-bounded timing only, so load cannot
-flake it); a served unique consumer may re-queue (the guard clears). The slot
-timestamp estimate is pinned against an 80ms round trip. Batching interior:
-exactly-full batches are served not dropped, deferred batches don't block
-later mergeable ones, the overlap scan runs the whole queue, dropped
-oversized batches never reprocess, and a fetch failure logs
-`Unexpected error fetching accounts` without leaking.
-
-The top-up loop was subsequently reworked to a `spaceAvailable` countdown
-(dedup-aware: counted from the set size after adding the batch's keys, so
-duplicate keys in the caller's collection cannot over-reserve). The defensive
-`hasNext` guard and its accepted-equivalent mutant are gone — the over-limit
-precondition proves the iterator cannot run dry — and `currentBatchKeys`
-aliases the freshly built set directly: it never escapes or changes after the
-return, unlike `createBatchKeys`' snapshot of the shared mutable batch set.
-Every mutant of the reworked loop is killed by the existing tests.
-
-**Accepted equivalents:** `createBatch`'s `++numCallbacks` (only its
-zero/nonzero distinction is read);
-the `size == MAX` overlap fast path (the general merge loop converges
-to the same key set for both subset and non-subset neighbors); the WARN-path
-`clearBatch` in the oversized-batch drop (later paths re-derive from key
-sets and the cycle-end trim restores the base); the reactive
-`remainingAwaitNanos <= 0` re-arm and `unlock` in `delay` (`await` releases
-and restores the full hold count, masking the drift); `run`'s initial
-`queue.isEmpty()` delay check (one extra sleep tick); the in-lock
-`currentBatch.isEmpty()` reset recheck (race-guard family).
-`UniqueAccountBatchRecord.accept` stays `NO_COVERAGE`: the dispatch
-loop's `instanceof` branch always intercepts unique records, so the record's
-own delegation is unreachable by design; it must exist to satisfy the
-interface.
-
-**Follow-up (2026-08-21):** fresh certification after the Kamino/Scope move
-exposed eighteen `AccountFetcherImpl` timeout instances whose only covering
-paths entered the long-running poll loop. Direct finite batch-assembly tests
-now pin exact selection, reset, top-up, deferral, oversized-drop isolation and
-unique-claim release. Failure cleanup snapshots and clears the in-flight deque
-under its lock before failing futures and re-queuing callbacks, so its progress
-is finite and its lock/reset state is synchronously observable. Wrapped
-interrupt cause chains are cycle-safe and tested in both direct and run-loop
-paths. The result killed every new batching/failure candidate without adding a
-baseline or timeout row.
-
-This also corrects the historical WARN-path `clearBatch` equivalence above:
-when a valid neighbor follows a caller-mutated oversized batch, omitting that
-reset leaves the shared key set dirty and poisons the neighbor's assembly. The
-older statement described the narrower no-neighbor fixture; the current
-neighbor-isolation test kills the removal.
-
-**Follow-up (2026-09-16):** the loop-heartbeat seam made two of the accepted
-equivalents above observable, and their rows were pruned from two matching
-fresh history-free previews plus the prune run's own. All three ran on a
-loaded machine (load average 35-40 on 10 cores), which is acceptable here
-because each is an assertion kill that load can only turn into `TIMED_OUT`,
-never back into `SURVIVED`. `unlock` in `delay`: the reactive heartbeat
-tests join the loop thread out of `run()` and assert `lock.isLocked()` is
-false, which a leaked hold fails synchronously. `run`'s initial
-`queue.isEmpty()` delay check: its "one extra sleep tick" is now one extra
-heartbeat tick against an exact count. The `delay,VoidMethodCallMutator,
-SURVIVED` row had also come to stand in front of every
-`LoopHeartbeat::tick` removal in `delay`, which share its key, so a dropped
-tick would have matched the accepted row instead of surfacing as debt. The
-untriaged `BaseDelegateServiceConfig.createAccountFetcher` `NO_COVERAGE`
-row went with them: the heartbeat overload test drives the configured
-fetcher. `lockedQueue`'s `EQUAL_IF` (the `if (reactive)` signal guard)
-stays: killed in one preview, survived the next three -- a wanderer, not a
-removal.
-
-## Global config init paths pass (2026-07-23)
-
-`GlobalConfigCache.initCache`'s three entry conditions are now all pinned: a
-missing file goes to the RPC fetch (nested parents created, the fetched
-config persisted and re-readable, every unknown mint queued to the account
-fetcher, the map actually indexed); an empty persisted file is ignored in
-favor of the fetch; and a fetched account with a foreign owner fails the
-future with `Unexpected GlobalConfig Account`. A mint cache that already
-knows every asset suppresses the mint fetch entirely — not even an empty
-queue call. The RPC side runs through a real `RpcCaller` over a
-Proxy-backed `SolanaRpcClient` (same harness as the fetcher tests), and the
-`AccountFetcher` is a recording proxy.
-
-The interface's file-load `createMap` is pinned by a synthesized config: the
-fixture is all single-oracle assets, so the test demotes the first asset's
-meta in place, appends a better-priority oracle for the same asset,
-serializes the modified `GlobalConfig` through its generated `write`, and
-persists it with `persistGlobalConfig` — the load path must index both
-entries and serve the better priority first, which only its per-asset sort
-can do.
-
-## Kamino cache pass (2026-07-23)
-
-Fixed the test harness before the mutants: `KaminoCacheTests.createCache` had
-never created the persistence directories (production `initService` does), so
-every persist quietly failed into a WARN — the stack trace repeated in every
-PIT run, and the persistence mutants were unkillable by construction. With
-the directories in place, persistence is asserted (mappings flat, reserves
-under their market directory), the WARN path has its own broken-target test,
-and the noise is gone at its source.
-
-Killed ~20: the truncated-account guards on both dispatch paths (sub-8-byte
-data is what stands between the length checks and an out-of-bounds
-discriminator read — the existing 16-byte wrong-shape case couldn't see
-them), the null-entry skip in the list path, configuration change
-notification (the recording listener never overrode the change callbacks, so
-every change event was invisible to every test), the rekeyed-duplicate drop,
-the rekeyed-supersede teardown (`removeConfig` — a leftover registration
-must not absorb the original key's re-acceptance), the same-slot vault gate,
-and the reserves-only vault notification boundary (a fee change updates the
-context silently; only allocation changes notify).
-
-**Accepted:** `handleConfigurationChange` EQUAL_IF — the in-lock
-`putIfAbsent` double-check's converging direction, same race-guard family as
-the existing `handleMappingChange`/`updateIfChanged` acceptances; its sibling
-is killed by the rekeyed-duplicate test. The remaining KaminoCacheImpl
-survivors are the previously documented families: in-lock rechecks, the
-`signalAll`/`numReserveChanges` concurrency window in `handleMappingChange`'s
-re-index notify, `handleVaultStateChange`'s merge-remap slot comparison
-shadowed by its same-slot entry gate, the constructor's `accountsNeededSet`
-capacity-hint arithmetic, and the `indexes` fallback-scan block pending a
-second-feed fixture.
-
-## Vault context + scope indexing pass (2026-07-23)
-
-**The kamino null-key acceptance family is closed by kill, and its escape
-note was wrong.** The family was accepted as "unreachable-in-harness; escape:
-hand-building 62KB VaultState images" — but zeroing the 32-byte farm and
-lookup-table keys in the existing mainnet fixture reaches every null-arm
-directly. `KaminoVaultContextTests` now drives all four key transitions
-(null→null reused, null→set, set→null, set→swapped), every compared field
-through `createIfChanged` (value changes reuse untouched key objects by
-identity — reparse-into-equal-copies is a mutant, not a refactor), and
-reserve parsing: an independently counted stop-at-first-empty-slot oracle,
-plus a fully packed allocation table with poisoned bytes *after* the table so
-an off-by-one read cannot masquerade as the empty-slot terminator.
-
-`ScopeFeedContext`: the by-mint liquidity order is pinned directly on both
-the append and replace paths (the `indexes()` output could not see those
-sorts — its own `FilteredReserve` sort re-derives the same order, which is
-also why the `FilteredReserve.compareTo`/`sorted()` mutants are accepted
-below). Boundary chain indexes (`== PRICE_INFO_ACCOUNTS_LEN`) are skipped by
-both the indexer and remover rather than used as array positions; removing
-the last reserve forgets the mint outright (no empty array left behind) and
-a double remove is a no-op. `reIndexReserves` is pinned end-to-end: exactly
-one rewrite when one reserve's chains changed, foreign-feed and
-already-settled reserves untouched by identity, the count returned, and the
-by-index slot serving the rewritten context. That test also proved the
-`removePreviousEntry` call inside `reIndexReserves` redundant by
-construction — `withPriceChains` never touches the configuration chain ints
-that key the index maps, and both index paths replace in place — so the call
-was **refactored away** rather than its mutant accepted.
-
-**Accepted (mutual-redundancy family):** `FilteredReserve.compareTo`
-and the `indexes()` `sorted()` naked-receiver — the source by-mint
-array is maintained in the same liquidity order the stream sort would
-impose, so removing either ordering is unobservable through `indexes()`;
-the direct by-mint order tests pin the order itself. The
-`removePreviousEntry` pair — the `numReserves > 0` else-leg guards an empty
-by-index map that is never stored (emptied maps are nulled).
-`indexReserveByIndex`'s `containsKey`/`size() == 1` singleton
-in-place-replace fast paths, whose fallback copy path produces the same
-served content. `parseReserveKeys`/`createIfChanged` residual legs are the
-same short-circuit sibling family as elsewhere.
-
-## Kamino cache lifecycle gates pass (2026-07-23)
-
-Killed three: a changed configuration's teardown is now pinned by the key's
-NEXT arrival (the change path removes the old registration without replacing
-it, so a re-accept must register as NEW — a leftover stale entry would
-swallow it as unchanged); a changed reserve at the SAME slot is stale by
-identity; and null configuration/mappings persistence paths disable
-persistence quietly instead of NPE-ing per accept (the reserves path has no
-null guard and stays mandatory).
-
-**Accepted — length guards subsumed by a length-safe discriminator
-(`accept`'s dispatch chain, `acceptReserve`; 11 sibling rows):** the truncated
-(3-byte) dispatch tests proved `DISCRIMINATOR.equals(data, 0)` returns false
-on short data rather than reading out of bounds, so forcing any
-`data.length == X.BYTES` guard true routes to a discriminator check that
-rejects the account identically. The guards are pure fast-path routing —
-HARDENING.md's canonical subsumed-guard family. The remaining
-`updateIfChanged` rows (its `putIfAbsent`, its in-lock
-`witness == reserveContext` and `previous != witness` double-check guards,
-and the `feedContext == null` / `onlyCollateralChanged` feed-map maintenance
-legs) and `handleMappingChange`/`handleVaultStateChange` residues are the
-previously documented in-lock, signalling, and
-feed-map-unobservable families; the feed-map escape remains a second scope
-feed fixture whose chains head with a direct oracle entry.
-
-## Delegate gate + init hygiene pass (2026-07-23)
-
-`SingleAssetFulfillmentServiceEntrypoint.validateDelegatePermissions` was
-widened to package-private (same precedent as the package-private locks —
-`createService` offers no seam for a stub client) and its nine mutants are
-killed directly: a missing state account and an ungranted delegate are
-refused **and reported** (LogCapture pins both ERROR lines; a misconfigured
-delegate must never fail silently into a dead run loop), and the granted
-delegate passes without noise. The remaining `main`/`createService`
-`NO_COVERAGE` rows are config-driven bootstrap wiring — the config builds
-its own RPC clients, so there is no injection seam; kill requires a seam
-refactor (escape recorded here), not a cleverer test.
-
-`KaminoCache.initService` hygiene, all through real `initService` runs over
-Proxy-backed clients: corrupted mappings/reserve files are **deleted**, not
-just skipped (`Files::delete` in `loadReserves` and `loadMappings` — a file
-left in place is re-read and re-failed on every start); a stray plain file
-among the market directories is skipped; an empty cold-start reserve scan
-still creates the reserve directory (`loadReserves`'s
-`Files.notExists(reserveDataFilePath)` branch — the guard is only reachable
-when RPC returns zero reserves); a null slot in the configuration response is
-skipped, not dereferenced; a missing mappings account fails init **by
-name** (`Oracle Mappings account not found`, not an NPE downstream); and
-warm on-disk configurations covering every fetched feed suppress the
-configuration re-scan — which no-feed reserves (all-zero or nu11 sentinel)
-must not defeat (the reserve scan's two `Arrays.equals` price-feed sentinel
-checks: the mutant queues the sentinel as a real feed and forces the fetch,
-which the proxy fails loudly).
-
-**Accepted (families already documented):** the six `initService` capacity
-hints (`MathMutator` on `newHashMap(n*3)` / `highestOneBit(n) << 1`), and
-the nine residual operand legs across `initService`'s warm-configuration
-gate (`containsAll(priceFeedsNeeded) && !feedContextMap.isEmpty()`), its
-Configuration, OracleMappings and VaultState length/discriminator
-validations, and its already-indexed reserve skip — each is the
-forced-true direction of a guard whose observable sibling has a named
-killing test in the verify hint; only an input that fails one operand while
-already failing the other could distinguish them.
-
-~~**Blocked note:** the coverage pass currently requires the local
-`includeBuild("../ravina")`.~~ **Resolved:** ravina published the
-`META-INF/services` entry (kms-core ≥ 25.5.2, BOM 25.28.3); the suite runs
-green against published artifacts.
-
-**Flip insurance:** `KaminoCacheImpl.persistReserve`'s
-`Files.notExists(marketFilePath)` guard (`EQUAL_IF`) was pruned as killed in
-one run and resurfaced `SURVIVED` in the next — the mutant forces
-`createDirectories` on a directory that already exists, a
-no-op, so its "kill" was load-dependent. Unioned back with a
-`# flip insurance` label; do not prune it on a run that happens to detect
-it. The row moved to vault-stat-service with the Kamino cache on 2026-08-21.
-
-## Untriaged debt
-
-The baseline was seeded with the full pre-existing survivor population when
-the ratchet was adopted, per HARDENING.md's adoption path — **triage debt made
-explicit, not acceptance**. For the current per-class ranking, run
-`./gradlew pitestServicesDebt` — a hand-maintained list here goes stale the
-same week it is written.
-
-Shrinking the baseline is always an improvement; growing it requires a reason
-written here.
-
-Row labels: back-filled 2026-07-23 from the pass sections above — every
-`SURVIVED` row tied to a documented family carries its label, and everything
-unattributable stayed `# untriaged` — the honest default; refine labels when
-a row's family is pinned down. The untriaged rows are the real remaining
-triage debt.
-
-### 2026-08-21 — Kamino cache moved to vault-stat-service
-
-The `systems.glam.services.integrations.kamino` and
-`systems.glam.services.oracles.scope` packages (KaminoCache and its context
-types) moved to the `vault-stat-service` repo, their only consumer, along with
-their tests, fuzz harnesses (`scopeFeedContext`, `reserveContext`,
-`kaminoVaultContext`) and seed corpora. Their 74 accepted rows and 6 audited
-timeouts migrated verbatim into that repo's `kamino` suite
-(`config/pitest/kamino-*.csv`), family labels and arguments included; the
-dated pass sections above that argued the rows, and the historical timed-out
-section below that argued the timeouts, remain here as the record. Families
-whose every member moved (`in-lock race guard`, `signalAll waiter`,
-`mutual-redundancy family`, `single-feed unobservable`, `subsumed length
-guard`, `residual sibling legs`, `capacity-hint`, `flip insurance`) are argued
-in those sections as history and, for the rows that moved, in
-vault-stat-service's `config/pitest/` notes; the Family labels glossary below
-names only the families with rows here.
-
-### 2026-09-24 — address lookup tables removed
-
-Sava now supports v1 transactions, so GLAM no longer builds v0 transactions or
-keeps address lookup tables. Removed here: `integrations.IntegLookupTableCache`
-/ `IntegLookupTableCacheImpl` and their tests, the lookup-table parameters of
-`InstructionProcessor` / `InstructionProcessorImpl` (and the over-limit page's
-`numTables` field) and of `FormatUtil.formatInstructionException` (its
-three-argument overload and `"t"` field), `BaseDelegateServiceConfig`'s
-`tableCache` section and `createLookupTableCache`, and
-`DefensivePollingConfig.integTables`. Passages above that described that code
-as current, or argued its acceptances, were trimmed; dated coverage history
-stands, marked "since removed".
-
-A fresh history-free `pitestServices` observation on plugin 21.5.30 (1612
-mutants; load average 120-165 from unrelated processes) makes 15 rows prune
-candidates for the upcoming `pitestServicesBaselinePrune`. Every one is
-`# untriaged`, so no acceptance argument or family label goes with them:
-
-- `IntegLookupTableCacheImpl` — 7: `accept` `ConditionalsBoundaryMutator`,
-  `RemoveConditionalMutator_ORDER_IF` and `RemoveConditionalMutator_EQUAL_IF`;
-  `lambda$accept$0` `ConditionalsBoundaryMutator` and
-  `RemoveConditionalMutator_ORDER_ELSE`; `deleteTableFile` and `run`
-  `VoidMethodCallMutator` (`NO_COVERAGE`).
-- `IntegLookupTableCache` — 1: `lambda$initCache$0` `NakedReceiverMutator`.
-- `BaseDelegateServiceConfig$ConfigParser` — 3: `lambda$parseProperties$4`
-  `BooleanTrueReturnValsMutator` (the deleted `tableCache` prefix predicate),
-  `lambda$parseProperties$12` `BooleanTrueReturnValsMutator` (unmatched after
-  the renumbering below), and one of the six `parseProperties`
-  `RemoveConditionalMutator_EQUAL_IF` copies (the deleted `tableCache` guard).
-- `BaseDelegateServiceConfig` — 1: `createLookupTableCache`
-  `NullReturnValsMutator` (`NO_COVERAGE`).
-- `DefensivePollingConfig$Parser` — 1: one of the five `parseProperties`
-  `RemoveConditionalMutator_EQUAL_IF` copies (the deleted `integTables` guard).
-- `FormatUtil` — 1: `formatInstructionException`
-  `RemoveConditionalMutator_EQUAL_ELSE` (the lookup-table list ternary).
-- `InstructionProcessorImpl` — 1: `processInstructions`
-  `RemoveConditionalMutator_EQUAL_ELSE` (the `numTables` ternary).
-
-For the two multi-copy keys, the copy pruned carries whichever `# line` tag
-allocation leaves over, not the deleted guard's; identity is the line-less key
-multiset.
-
-The audited timeout member `IntegLookupTableCacheImpl,run,VoidMethodCallMutator`
-(`cause:liveness`) was retired from `services-timeouts.csv` with its class; its
-argument in the historical snapshot below is marked as such.
-
-Deleting the `tableCache` prefix predicate renumbered every later
-`BaseDelegateServiceConfig$ConfigParser` `lambda$parseProperties$N` down by
-one. The `accountFetcher` predicate's `BooleanTrueReturnValsMutator` survivor,
-recorded as `lambda$parseProperties$11`, is now `lambda$parseProperties$10`;
-`pitestServicesBaselineUnion` carries it over as `# untriaged`, since its old
-row carried no family label; the absent-vs-empty-parse argument above names
-the `accountFetcher` section rather than a lambda index, so the renumbering
-does not touch it. The
-`lambda$parseProperties$11` row now matches the `defensivePolling` predicate
-(formerly `$12`, also `# untriaged`), and the `$12` row is the prune candidate
-above.
-
-The prune was first attempted here and refused: two history-free previews
-matched on the 15 rows, but the writer's own write-boundary run read two
-`# accepted equivalent` rows, `AccountFetcherImpl,createBatch,IncrementsMutator`
-and `AccountFetcherImpl,run,RemoveConditionalMutator_EQUAL_IF`, as `KILLED`
-by `AccountFetcherTests.aFailedCycleFailsItsFuturesOverAndKeepsPolling`,
-which then waited on real-time deadlines. The `createBatch` increment is
-read only as zero/non-zero, so that kill could not be behavioural: a
-wandering count in that harness. It was made deterministic and the prune
-(by then 18 rows) ran on 2026-09-25; see that section below.
-
-### 2026-09-25 — ravina's v1-only send path and ix-proxy's mapping documents
-
-Ravina now builds only SIMD-0385 v1 transactions and takes no transaction
-factory, and ix-proxy maps through mapping documents. Changed here:
-`InstructionProcessor` / `InstructionProcessorImpl.processInstructions` and
-`ExecutionServiceContext.createContext` / `ExecutionServiceContextImpl` lose
-their `Function<List<Instruction>, Transaction>` parameter and
-`transactionFactory()` accessor (and with them the `Transaction.createTx`
-lambda in `BaseDelegateServiceConfig.createExecutionServiceContext`);
-`createTransactionProcessor` no longer passes ravina a null lookup-table
-cache. The account-64 splitter counts what the v1 transaction carries — the
-fee payer, each invoked program and each instruction account, once each,
-through the new `fits` helper — and reserves nothing for a ComputeBudget
-program, which rides as ConfigValues. Two paths the v1 limits make reachable
-were closed: a size refusal of the whole remaining list now ends the call
-with false and a page instead of sending an empty batch next, and one that
-cannot halve further leaves the remainder in the caller's list. The
-fulfillment entrypoint now starts ravina's transaction monitor
-(`txMonitorService.run(executor)`, a four-thread pool) beside the epoch and
-fulfillment services, which it never had; and `FormatUtil.formatTransactionResult`
-renders a size refusal whose transaction could not be built at all
-(`transaction()` null, `"size": 0`, `"tx": null`, instruction count from the
-batch). Tests: `theFeePayerAndTheProgramCountAgainstTheAccountLimit` replaces
-the compute-budget rule, plus `theFeePayerAmongTheAccountsIsCountedOnce`,
-`anInstructionAddingNoNewAccountJoinsAFullTransaction`,
-`aSizeRefusalOfTheWholeListEndsTheCall`,
-`aSizeRefusalThatCannotHalveLeavesTheRemainderToTheCaller`,
-`anEvenBatchSizeHalves`,
-`formatTransactionResultRendersASizeRefusalWithoutATransaction`, and the
-entrypoint test now awaits the monitor's start on the entrypoint's own
-executor with a 1s deadline (inside the watchdog budget, so the removed
-start is a real kill, not a timeout).
-
-Evidence: an intermediate history-free observation surfaced one fresh
-survivor of the new code, `InstructionProcessorImpl,fits`
-`RemoveConditionalMutator_EQUAL_IF` — the `accounts.add(key)` return value
-was always true once `contains` had been checked, an equivalent by
-construction — which was refactored out (the add's result is no longer read)
-rather than accepted; the test on a full transaction taking an instruction
-that adds no key pins the direction the refactor left. The fresh history-free
-`pitestServices` observation after that (plugin 21.5.30, 1627 mutants, 1466
-detected, 116 survived, 45 no_coverage, 67 timed out, solo load) added no
-fresh rows.
-
-Three more rows join the pending prune, all `# untriaged`, so the candidate
-set is now 18 and the 15-row previews recorded above are superseded (the
-plugin reset its matching when the execution inputs changed):
-
-- `BaseDelegateServiceConfig` — now 2: `createLookupTableCache` (above) and
-  `lambda$createExecutionServiceContext$0` `NullReturnValsMutator`
-  (`NO_COVERAGE`, the deleted `Transaction.createTx` lambda).
-- `InstructionProcessorImpl` — now 3: the `numTables` ternary (above),
-  `processInstructions` `MathMutator` (`NO_COVERAGE`; the even-halving shift
-  is now covered and killed by `anEvenBatchSizeHalves`), and one of the three
-  `processInstructions` `RemoveConditionalMutator_EQUAL_IF` copies (the
-  odd-halving parity check, killed by the same test; the copy pruned carries
-  whichever `# line` tag allocation leaves over — identity is the line-less
-  multiset).
-
-The line-drift advisories the edits caused (34 keys, every touched class and
-its neighbours) were refreshed with `pitestServicesBaselineRetag` (54 matched
-row line tags rewritten, all 179 rows preserved), which changes no row. The
-prune itself ran later that day, once the `AccountFetcherTests` wander was
-fixed (next section).
-
-The local review then caught a regression of the same change: the formatter
-read the batch count from the result's instruction list, which ravina keeps
-by reference and the processor had already cleared, so every report said
-zero. `InstructionProcessorImpl` now formats before it clears, and
-`theReportCountsTheBatchBeforeItIsCleared` aliases the list the way ravina
-does (the other fixtures copy it, which is why they missed it); the fresh
-history-free observation after the fix (1627 mutants, 1466 detected) added
-no rows. A retag run for the one drifted `InstructionProcessorImpl` tag was
-refused because its own observation read `AccountFetcherImpl,delay`
-`RemoveConditionalMutator_EQUAL_ELSE` as SURVIVED once — killed in every
-other run that day — the `AccountFetcherTests` wander in its other
-direction. The prune's write refreshed that tag with the rest.
-
-Timeout-quiet context: while the review workflow ran beside an earlier
-observation (load average above 100), `SingleAssetFulfillmentService.compareAndSet`
-(`RemoveConditionalMutator_EQUAL_ELSE`, `_ORDER_ELSE`) and
-`KeyedFlatFileImpl.overwriteFile` (`VoidMethodCallMutator`) each read one
-KILLED -> TIMED_OUT flip; the solo-load observation above read them KILLED
-again ("0 newly timed out, 2 no longer"). Load flips, no record change.
-
-### 2026-09-25 — the AccountFetcherTests wander, and the prune
-
-`aFailedCycleFailsItsFuturesOverAndKeepsPolling` was the one test in
-`AccountFetcherTests` that ran `run()` on its own platform thread and waited
-on real time: 250ms `get`s on the poisoned and the recovery futures, a 250ms
-join, a 1s `@Timeout`, over a fetcher sleeping 1ms per cycle. Under load the
-loop thread could lose the race, which failed the assertions (an accepted
-equivalent read as KILLED) or let a liveness member's covering test finish
-inside its budget (`AccountFetcherImpl,delay` `RemoveConditionalMutator_EQUAL_ELSE`
-read SURVIVED once). It now drives `run()` on the calling thread like its
-siblings: the recovery future is queued from the first heartbeat tick, which
-the loop reaches after `failCurrentBatches` has failed the poisoned future
-over and reset the in-flight keys (a queue from inside the poisoned call
-itself lands in the current batch through the `containsAll` fast path and is
-failed over with it, as a first attempt showed by hanging), and the fake RPC's
-interrupt on the second call ends the loop. The class runs in under half a
-second and nothing in it waits on time.
-
-The prune then ran as the process requires: two fresh full history-free
-previews with the same 18-row candidate multiset (1627 mutants, 1466 detected,
-load average 31-37), and `pitestServicesBaselinePrune`'s own write-boundary
-run, a third match. It dropped the 18 rows listed in the two sections above
-(baseline 179 -> 161) and refreshed the two `InstructionProcessorImpl`
-`RemoveConditionalMutator_EQUAL_IF` line tags the format-before-clear edit
-had moved. One preview between those was discarded as invalid evidence: a
-single `RUN_ERROR` on `GlobalConfigCacheImpl,createMapChecked`
-`RemoveConditionalMutator_EQUAL_ELSE` (load average 31 at the time); the
-clean re-run that followed is its closure, per the process. Every
-`AccountFetcherImpl` row read as recorded in all three observations.
-
-Timeout-quiet context from those runs: `SingleAssetFulfillmentService.compareAndSet`
-(`RemoveConditionalMutator_EQUAL_ELSE`), `GlobalConfigCacheImpl.topPriorityForMintChecked`
-and `MinGlamStateAccount.externalPositionsOffset` (one mutant each) and
-`BatchSqlExecutorImpl.run` (`ConditionalsBoundaryMutator`) each read one
-KILLED -> TIMED_OUT flip in one of the three runs and KILLED in the others.
-Load flips; no record change.
-
-### 2026-09-26 — the stale-price page, the stake-pool sleep mutant
-
-`InstructionProcessorImpl` now carries the mint program of the deployment it
-sends to (`mintProgram`, from the `GlamAccounts` the entrypoint serves) and
-retries a stale price on it quietly at every batch size; before, the check sat
-under the multi-instruction gate and compared against mainnet's mint program,
-so under the staging entrypoint it could never match. The tests pin a
-single-instruction stale price, the processor's own deployment, another
-deployment's mint program, the failed instruction's index (a stale price
-reported against a different instruction pages), both deployments numbering
-`PriceTooOld` alike (the processor decodes with the production table), and
-the factory and `createInstructionProcessor` wiring. No new unkilled mutant:
-the two `processInstructions` `RemoveConditionalMutator_EQUAL_IF` rows are
-still the `InstructionError` and `Custom` pattern checks. The factory tests
-kill `InstructionProcessor,createProcessor,NullReturnValsMutator` and
-`BaseDelegateServiceConfig,createInstructionProcessor,NullReturnValsMutator`,
-both `NO_COVERAGE` rows until now; they stay as unmatched evidence for the
-next prune. The edits moved 11 accepted keys (`BaseDelegateServiceConfig` and
-its `ConfigParser`, `SingleAssetFulfillmentServiceEntrypoint`, and that
-`processInstructions` pair) without changing the code under them;
-`pitestServicesBaselineRetag` refreshed their 17 line tags and kept all 161
-rows.
-
-`StakePoolCacheImpl,run,VoidMethodCallMutator` (the removed `Thread.sleep`)
-read TIMED_OUT in all three fresh history-free runs that day, two full and one
-scoped (load average 26-60), after the BOM moved ravina from 25.6.3 to 25.6.4;
-it had read KILLED before. The old kill was ravina's, not the test's. Without
-the sleep, the loop in `theRunLoopTicksOncePerPassOverEveryProgram` keeps
-polling past the interrupt the test raises, drains the fixture's capacity
-(1,000 per second, one weight per millisecond), and 25.6.3's
-`CapacityStateVal.durationUntil` then owed a 1ms wait: `CourteousBalancedCall`
-slept on the interrupted thread, the sleep threw, and the loop left through
-its failure exit. 25.6.4's `durationUntil` subtracts the time already
-accrued, so under this fixture the wait truncates to 0ms, nothing sleeps,
-nothing answers the interrupt, and the test spins into the watchdog. PIT runs
-that test first for this mutant (it is the one the later reports name), so
-`theRunLoopPollsEveryProgramOnTheDelay` never faced it; read from its code, it
-would have failed its spinning check and left its runner looping, since the
-interrupt that stops the runner came after that assertion and the mutant
-ignores it anyway. Now, in the first test, the fake RPC refuses a poll past
-the interrupt, so the loop leaves through its failure exit and the pass count
-fails; the test also clears the interrupt it raises. In the second, the
-spinning check still does the failing, and a `finally` refuses every poll and
-joins the runner so it cannot outlive the test. KILLED by the first test in a
-scoped run, and detected without a timeout in the two full runs after. No
-record change. Full runs after: `pitestServices` 1627 mutants, 1468
-detected; `pitestSdk` 713, 691 (the two new `Protocol` mutants of the
-unknown-bit fix both killed).
-
-Timeout-quiet context from those runs: `SingleAssetFulfillmentService.compareAndSet`
-(`RemoveConditionalMutator_EQUAL_ELSE`), `MinGlamStateAccount.externalPositionsOffset`
-(`RemoveConditionalMutator_ORDER_ELSE`), `BatchSqlExecutorImpl.run`
-(`ConditionalsBoundaryMutator`), and `GlobalConfigCacheImpl.run` and
-`KeyedFlatFileImpl.overwriteFile` (`VoidMethodCallMutator`) each moved between
-KILLED and TIMED_OUT across the runs. All are audited keys. Load flips; no
-record change.
-
-### 2026-09-29 — BOM 25.30.30, and the factory rows pruned
-
-The BOM moved ravina 25.6.4 to 25.6.5, idl-clients 25.19.7 to 25.19.8 and
-ix-proxy 25.1.0 to 25.1.1. The suite's reading did not move: every valid
-fresh full history-free run that day read 1626 mutants, 1467 detected, as
-`eb664c9` had before the bump, and `:hardeningCertifyAll` certified the suite
-on the 25.20.0 release commit `ae21fb0` at 1467/1626 with 70 timed out, every
-one audited.
-
-Two runs were discarded as invalid evidence, each for a single `RUN_ERROR` at
-a different coordinate: `BatchSqlExecutorImpl,run`
-`RemoveConditionalMutator_ORDER_IF` (line 130, an audited liveness key; load
-average 14 at the start) and `AccountFetcherImpl,createBatch`
-`RemoveConditionalMutator_EQUAL_ELSE` (line 350, the first certification
-attempt; load average 34 at the start, 42-51 during). Clean re-runs started
-below load average 8 are their closure, per the process.
-
-The two factory rows the section above left for the next prune are pruned:
-`InstructionProcessor,createProcessor,NullReturnValsMutator` and
-`BaseDelegateServiceConfig,createInstructionProcessor,NullReturnValsMutator`,
-now KILLED by `theFactoryServesTheDeploymentItIsGiven` and
-`theInstructionProcessorServesTheDeploymentItIsGiven`. Two fresh full
-history-free previews and `pitestServicesBaselinePrune`'s own write-boundary
-run read the same two-row candidate multiset (1467/1626 each, each started
-below load average 8). A kill, unlike a timeout, is not a load flip. The
-baseline is 159 rows, 113 unique keys.
-
-Timeout-quiet context from those runs: `GlobalConfigCacheImpl.run` and
-`GlobalConfigCacheImpl.topPriorityForMintChecked` (`VoidMethodCallMutator`),
-`SingleAssetFulfillmentService.compareAndSet`
-(`RemoveConditionalMutator_EQUAL_ELSE` and `RemoveConditionalMutator_ORDER_ELSE`)
-and `MinGlamStateAccount.externalPositionsOffset`
-(`RemoveConditionalMutator_ORDER_ELSE`) each moved between KILLED and TIMED_OUT
-across the runs. All are audited keys. Load flips; no record change.
-
-### Family labels
-
-Each accepted row carries the `# <family>` label of the argument it rests on; a
-row no family argument covers is `# untriaged`. Each family has an entry here
-saying what it covers; its argument is in the section that triaged it, or in the
-paragraph its entry names. A label gets its entry here in the same change that
-writes it. The families:
-
-- `# race-guard family` — `GlobalConfigCacheImpl`'s lock-protocol legs:
-  `topPriorityForMintChecked`'s null-state rechecks before and under the write
-  lock and its invalidation `signalAll()`, which need a concurrent invalidator
-  or a parked waiter that a single-threaded test does not have; and `run`'s
-  park-loop invalidation exit and `remainingNanos <= 0 || forceRefresh` break,
-  in-lock timing directions whose siblings are detected or timing-equivalent at
-  exactly zero nanos.
-- `# subsumed count guard` — a `count == section.length` short-circuit before
-  an `Arrays.equals` over ranges computed from each side's own count.
-- `# hashcode mixing` — `MinGlamStateAccount.hashCode` mixing arithmetic;
-  every mutant preserves the equal-hash contract.
-- `# durability unobservable` — `KeyedFlatFileImpl`'s `force()` calls, whose
-  flush no in-process assertion can see.
-- `# empty-file fast path` — `KeyedFlatFileImpl.deleteEntry`'s `fileSize == 0`
-  early return, bypassed or returning the 0 it already returns; argued under
-  "Triaged equivalent mutants" below.
-- `# last-slot self-swap` — `KeyedFlatFileImpl.deleteEntry`'s
-  `i < lastElementOffset` swap guard, widened or forced true; argued under
-  "Triaged equivalent mutants" below.
-- `# idempotent close` — `KeyedFlatFileImpl.close`'s `isOpen()` guard forced
-  true: closing an already-closed `FileChannel` has no effect.
-- `# accepted equivalent` — `AccountFetcherImpl`/`BatchSqlExecutorImpl`
-  equivalents argued in their pass sections (spurious-signal directions,
-  fast-path skips, GC-hygiene `Arrays.fill`).
-- `# seamless bootstrap` — the fulfillment entrypoint's config-driven wiring
-  with no injection seam; escape is a seam refactor.
-
-## Triaged equivalent mutants (accepted with reasons)
-
-The families in the glossary above were accepted in the passes that triaged
-them, most as **bold family paragraphs**, each naming the family, its rows, the
-argument it rests on and, where there is one, the escape that would make the
-mutants killable. Most are equivalences; `# seamless bootstrap` is accepted for
-the injection seam the entrypoint lacks, not as an equivalence. A new
-acceptance is argued here, under the `config/pitest/README.md` rule in the
-hardening block of the repository's `AGENTS.md`.
-
-**`KeyedFlatFileImpl.deleteEntry`'s fast path and last-slot boundary** (its rows
-labeled `# empty-file fast path` and `# last-slot self-swap`). Forcing past the `fileSize == 0` fast
-path maps zero bytes, runs no loop iteration and returns 0; the mutated
-`return 0` returns the same 0; and `i < lastElementOffset` forced true, or
-widened to `<=`, differs only when the matched entry is the last one, where the
-swap copies that entry onto itself before the same truncate. Each leaves the file
-and the result as the unmutated path does, for a file of whole entries. A
-trailing partial entry would break that: the forced swap would overflow the
-mapped buffer where the unmutated path truncates. `MintCacheImpl`, the only
-caller, throws when it loads a file with a partial entry; a caller that can hand
-`deleteEntry` such a file invalidates this acceptance.
-
-## Test-lifecycle contamination, and the survivor it manufactured (2026-08-06)
-
-`KaminoCacheImpl.run` `VoidMethodCallMutator` (the "Scope OracleMappings
-account has been deleted" warning) was reported `SURVIVED` and briefly
-recorded here as a PIT coverage-attribution artifact. **That conclusion
-was wrong.** The mutant is killed by
-`KaminoCachePollingTests.thePollLoopAppliesUpdatesAndDropsVanishedScopeAccounts`;
-what made it survive was the fixture leaking state between mutants.
-
-`-PisolateMutants` gives the controlled evidence. Same scope, same history-free
-run, only mutation-unit size differing:
-
-| run | mutation test units | SURVIVED |
-|---|---|---|
-| normal batched | 1 | 41 |
-| `-PisolateMutants` | 252 | **40** |
-
-Exactly one mutant flipped, and it was this one. A single mutant changing status
-purely because it stopped sharing a JVM with its neighbours is inter-mutant
-contamination by definition.
-
-The mechanism: the test started its poll thread and attached its `LogCapture`,
-then ran every assertion *before* `runner.interrupt()` and `logs.close()`. PIT
-runs many mutants in one minion JVM, so each of the ~200 mutants this test kills
-left behind a still-polling cache thread and a still-attached log handler. A
-later mutant's `assertLogged` then matched a record produced by a **previous**
-test's leaked runner, so the removed log call was invisible. `LogCapture` also
-collected records into a plain `ArrayList` while service threads published into
-it concurrently.
-
-Fixed by making the lifecycle unconditional (the runner is interrupted and
-joined in a `finally`, the capture is a try-with-resources) and by making
-`LogCapture` thread-safe (`CopyOnWriteArrayList`, idempotent `close()`). After
-the fix the ordinary batched scoped run kills it — `testsRun=1`, killed by the
-polling test — and batched now agrees with isolated at 40 survivors.
-
-**The lesson generalises beyond this row.** Any fixture that cleans up after its
-assertions rather than in a `finally` leaks into every later mutant in the same
-minion, and the symptom is a survivor that no amount of reading the code
-explains. Suspect fixture lifecycle before writing an equivalence argument, and
-use `-PisolateMutants` to confirm — it is diagnostic evidence only and must
-never support a baseline decision.
-
-## Timed-out mutants (historical 135-row snapshot; reclassified 2026-08-06)
-
-The discussion below is retained as historical evidence; it is not the current
-audited set. The authoritative current inventory is `services-timeouts.csv`.
-The Kamino subsection likewise records pre-move evidence; its six audited timeout
-keys moved to `vault-stat-service` on 2026-08-21.
-
-Per HARDENING.md: a timeout-detected mutant was observed for *slowness, not
-wrongness* — the watchdog fires whatever the covering assertion says, so for
-these rows the ratchet cannot see a weakened test. The compensating control
-is this listing: an audited set, not a count, and a **new member outside
-these families is something to look at**, not absorb. Membership churns with
-load — `KILLED <-> TIMED_OUT` drift is benign (both are *detected*), and
-`KeyedFlatFileImpl`'s member has moved between `appendEntry` and
-`overwriteFile` across runs; this snapshot's own churn was 3 newly timed out
-and 5 no longer. `SURVIVED -> TIMED_OUT` is the flip that matters; never
-refresh those out on the strength of one loaded run.
-Snapshot: the 2026-07-26 `qualityGate -PnoMutationHistory` run on plugin
-21.5.15 — 135 rows.
-
-All rows in this snapshot shared one meta-shape: mutants inside service loops and
-lock/condition protocols, where the only observable failure is a thread that
-stops making progress (or spins without it) until PIT's watchdog. Structural
-causes by class:
-
-### `db.sql.BatchSqlExecutorImpl` — 29
-
-The producer-consumer batch window. Lost signals (`run`'s
-`batchCompleteCondition.signalAll()`, `queue`'s `startWindow.signal()` and
-`batchLimit.signal()` removed) park `awaitBatchComplete` callers forever;
-inverted window gates (`run`'s `pending.size() < batchSize` refill gate, its
-`while (pending.isEmpty())` wait and its `awaitNanos` bound loop,
-`awaitBatchComplete`'s `!batchComplete` fast path and wait loop, `queue`'s
-`isEmpty || pending.size() >= batchSize` and `isEmpty` signal gates) trap a
-wait that no signal ends or turn the bounded delay window unbounded; removed
-waits (`run`'s `startWindow.await()`, `awaitBatchComplete`'s
-`batchCompleteCondition.await()`) become in-lock hot spins; a removed
-`pending.addLast` in `queue` starves the consumer the test is awaiting; the
-failure-requeue mutants (`run`'s `pending.addFirst(batch[i])` retry loop)
-drop retried items the test waits to see durably inserted. Lock-call
-removals (`awaitBatchComplete`'s `lock.lock()`) kill the waiting thread with
-`IllegalMonitorStateException` under load-dependent timing. The batch
-cursor's post-increment (`run`'s `batch[numItems++] = item` Increments,
-admitted 2026-07-28 as a `KILLED <-> TIMED_OUT` drifter) mutated to a
-decrement indexes `batch[-1]` on the second polled item; the
-`ArrayIndexOutOfBoundsException` kills the executor thread outside the
-`SQLException` requeue path, so `awaitBatchComplete` waiters never see
-`batchComplete` and only the watchdog ends the test.
-
-```
-awaitBatchComplete EQUAL_ELSE x2; EQUAL_IF; VoidMethodCall x2
-queue ConditionalsBoundary; EQUAL_ELSE; EQUAL_IF x2; ORDER_ELSE; VoidMethodCall x3
-run ConditionalsBoundary; EQUAL_ELSE x2; EQUAL_IF x2; Increments; ORDER_ELSE x5; ORDER_IF x2; VoidMethodCall x3
-```
-
-### `rpc.AccountFetcherImpl` — 36
-
-The harness drives `run()` deterministically and interrupts the thread on
-its *final* batch — so any mutant that keeps the loop from consuming batches
-in order also keeps the exit interrupt from ever firing. Starvation shapes:
-removed enqueue/`signal` or mis-routed batches (`lockedQueue`'s
-`currentBatchKeys.containsAll` overlap gate, its priority
-`addFirst`/`addLast` routing and its `newBatch.signal()`; `queue`'s
-`lockedQueue` dispatch and `validBatch` gate; `queueUnique`'s
-`pendingUniqueConsumers.add` claim gate; `priorityQueue`'s and
-`priorityQueueUnique`'s removed delegations to `queue`/`queueUnique`;
-`validBatch` forced-false; `createBatch`'s 100%-overlap
-`batch.containsAll` gate); removed loop exits (`queueBatchable`'s
-`to >= numAccounts` chunk-loop exit, and the skipped chunk submissions
-around it, starve downstream); trapped or unbounded waits in `delay` (the
-reactive `awaitNanos`/`await` loops and the non-reactive `sleep` spin);
-run-loop dispatch/reset guards (`run`'s null-batch and
-`currentBatch.isEmpty()` reset legs) that leave `currentBatch` never
-draining.
-
-```
-createBatch EQUAL_IF
-delay EQUAL_ELSE x3; EQUAL_IF x2; ORDER_ELSE; VoidMethodCall x3
-lockedQueue EQUAL_ELSE; EQUAL_IF; VoidMethodCall x3
-priorityQueue VoidMethodCall
-priorityQueueUnique VoidMethodCall
-queue EQUAL_ELSE; VoidMethodCall x3
-queueBatchable ConditionalsBoundary; ORDER_ELSE; ORDER_IF; VoidMethodCall x3
-queueUnique EQUAL_ELSE x2; VoidMethodCall
-run EQUAL_ELSE x4; VoidMethodCall
-validBatch BooleanFalseReturnVals
-```
-
-### `fulfillment.SingleAssetFulfillmentService` — 21
-
-Two shapes. (a) `accept`'s guards decide whether to `wakeUp()` the
-fulfillment thread; a suppressed wake leaves it parked in `awaitChange`
-while the test waits on fulfillment progress (`accept`'s `previousAmount`
-comparison gate on the redemption leg, and the token-account length/owner,
-mint, `compareUnsigned` and `outstandingShares().signum()` gates, including
-both `wakeUp()` calls themselves). (b) The slot-ordered CAS loops: flipping
-`witness == null` / `witness == previous` in `compareAndSet` turns a bounded
-compare-and-exchange retry into an infinite spin; the two `NullReturnVals`
-on its `BigDecimal.ZERO` and `previous.outstandingShares()` returns feed
-`accept`'s `previousAmount` gates and suppress the wake the same way.
-
-```
-accept EQUAL_ELSE x6; ORDER_ELSE x2; VoidMethodCall x2
-compareAndSet EQUAL_ELSE x6; EQUAL_IF x2; NullReturnVals x2; ORDER_ELSE
-```
-
-### `integrations.kamino.KaminoCacheImpl` — 21
-
-The cache's `run()` loop and its lock discipline. Stalled chunk progression
-(`run`'s `from + MAX` chunk arithmetic and its removed `to == numAccounts`
-exit) makes the sublist walk infinite; the polling window (`run`'s
-`awaitNanos` bound and its `numReserveChanges` change-count reset) turns
-unbounded; removed accept/update/delete calls (`run`'s `accept`,
-`updateIfChanged` and `deleteScopeConfiguration` calls, and
-`deleteScopeConfiguration`'s own `removeConfig`) or forced deletion legs
-(`deleteScopeConfiguration`'s `configurationsPath`/`mappingsPath` null
-guards — the wrong leg NPEs the cache thread) leave the test looping on
-state that will never arrive; a leaked read lock (`indexes`' removed
-`unlock` in the finally) blocks the writer; the optimistic-recheck flip
-(`updateIfChanged`'s `previous != witness` recheck) spins the retry loop
-under the write lock; the rpc supplier `NullReturnVals` (`lambda$run$0` and
-`lambda$run$1`, the `getProgramAccounts` sweep suppliers) kill the cache
-thread through the `join`.
-
-```
-deleteScopeConfiguration EQUAL_ELSE x2; VoidMethodCall
-indexes VoidMethodCall
-lambda$run$0 NullReturnVals
-lambda$run$1 NullReturnVals
-run ConditionalsBoundary; EQUAL_ELSE x3; EQUAL_IF x2; Math; ORDER_ELSE; ORDER_IF; VoidMethodCall x4
-updateIfChanged EQUAL_ELSE; EQUAL_IF
-```
-
-### `state.GlobalConfigCacheImpl` — 14
-
-The refresh window and its waiters. A removed `priorityQueue` in `run`
-never feeds `accept`, and its `globalConfigUpdate`/`assetMetaMap` null exit
-gate plus the `remainingNanos <= 0 || forceRefresh` window bound either exit
-the service early (the test then awaits updates that never come) or park it
-unbounded; `forceCacheRefresh`'s double-checked `forceRefresh` gate and its
-`invalidGlobalConfig.signal()` lose the early-break the test is waiting on;
-`accept`'s `newGlobalConfig.signalAll()` and `awaitNewGlobalConfig`'s
-elapsed-bound `awaitNanos` loop are the waiter side of the same protocol.
-`topPriorityForMintChecked`'s removed `readLock.unlock()` in the finally
-leaks the read lock: the decimals-mismatch path then parks the same
-thread on `writeLock.lock()` (a read→write upgrade is impossible on a
-`ReentrantReadWriteLock`), and every later writer parks behind the leaked
-hold (admitted 2026-07-29, first surfaced by `-PstrictTimeoutAudit` under
-gate load; a KILLED↔TIMED_OUT drifter of the leaked-unlock family).
-
-```
-accept VoidMethodCall
-awaitNewGlobalConfig EQUAL_IF; ORDER_ELSE
-forceCacheRefresh EQUAL_IF x2; VoidMethodCall x2
-run EQUAL_ELSE x2; EQUAL_IF; ORDER_IF; VoidMethodCall x2
-topPriorityForMintChecked VoidMethodCall
-```
-
-### `fulfillment.BaseFulfillmentService` — 5
-
-The await/wake protocol itself: a removed `stateChange.signalAll()` in
-`wakeUp` is a lost wake-up; removed `lock`/`unlock` pairs (`wakeUp`'s and
-`awaitChange`'s `lock.lock()`/`lock.unlock()`) either leak the lock every
-later locker blocks on or kill the service thread with
-`IllegalMonitorStateException` mid-await.
-
-```
-awaitChange VoidMethodCall x2
-wakeUp VoidMethodCall x3
-```
-
-### `state.MinGlamStateAccount` — 2
-
-The length-prefixed byte walk. `delegateAclsOffset` and
-`externalPositionsOffset` each iterate `for (j = 0; j < len; ++j)` over a count
-read from the account; `RemoveConditionalMutator_ORDER_ELSE` removes that outer
-loop's exit jump, so the walk never terminates. Both are synchronous pure
-computations reached directly from `createIfChanged` — no fixture deadline could
-fail first, no clock or budget reaches the mutated path, and the method never
-returns, so there is no synchronous state to read. The watchdog is the only
-possible detector.
-
-`delegateAclsOffset` first appeared under gate load (2026-08-06 certification,
-both suites serialized) while staying quiet on solo runs — the audited set is
-per-key, not per-load, so it is a member regardless of which load surfaces it.
-
-`createRecord`'s `Math` member and `externalPositionsOffset`'s `ORDER_IF` were
-retired after the O(1) permission-block fix: the walk no longer iterates an
-unvalidated count one constant-sized step at a time, so those paths are finite
-and now die deterministically.
-
-```
-delegateAclsOffset ORDER_ELSE
-externalPositionsOffset ORDER_ELSE
-```
-
-### Singles — 8
-
-- `ServiceContextImpl.executeTask`, `execution.BaseServiceContext.executeTask`
-  (`VoidMethodCall`) — the removed call *is* the task submission; the test
-  awaits the task's effect and only the watchdog can end that.
-- `fulfillment.SingleAssetFulfillmentServiceEntrypoint.run`
-  (`VoidMethodCall`) — the two removed `executorService.execute` calls never
-  start the epoch-info and fulfillment sub-services the test awaits; the
-  removed `Thread.sleep(3_000)` turns the `checkConnection` loop into a busy
-  spin.
-- `integrations.IntegLookupTableCacheImpl.run` (`VoidMethodCall`) —
-  removed `queueBatchable` starves the fetch loop; removed sleep spins it;
-  either way the driver never reaches its terminal interrupt. (Class since
-  removed; member retired 2026-09-24.)
-- `io.KeyedFlatFileImpl.overwriteFile` (`VoidMethodCall`) — the removed
-  call is `lock.unlock()` in the finally: the leaked lock blocks every
-  subsequent operation on the file (the "leaked unlock" shape verbatim).
+  *GC-hygiene clear.* `BatchSqlExecutorImpl.run`'s `Arrays.fill(batch, null)` at the top of the fill/wait block, removed. The fill rewrites no slot that is ever read. `numItems` is zero at the top of every loop iteration: a drain leaves its loop with it zero (a remainder is committed and reset first), and the `SQLException` catch resets it once the failed batch is back in the queue. Each drain writes `batch[numItems++]` before it advances the cursor, and the only reader of `batch`, the catch's requeue walk, reads only the slots below `numItems`, all written in that drain. Without the fill, the array keeps earlier drains' items reachable while the runner parks, until later drains overwrite those slots. Oracle: the rows prepared and committed, the requeue order and the retried items (`requeuesTheFailedBatchInOrderAndRetries`, `aFailedMultiRowBatchRequeuesEveryItem`, `aConnectionFailureAfterARequeuedRemainderKeepsTheRunnerAlive`) are identical; only the moment an item becomes collectable differs, which no deterministic assertion reads. Escape: a reader of the slots at or past `numItems`, such as a requeue walk that stops at the first empty slot instead of counting `numItems` down, or a catch that no longer resets `numItems` before the retry; either makes the fill decide whether a stale slot requeues a stale item or a null. The key's other call removals in `run` are killed, except the requeue walk's `pending.addFirst`, an audited timeout. Covers: `BatchSqlExecutorImpl.run`'s `Arrays.fill` call removed (`VoidMethodCallMutator`).
+
+  *Zero-test-only counter.* `AccountFetcherImpl.createBatch`'s `++numCallbacks` turned into a decrement. The counter's only reader is the `numCallbacks == 0` test that decides whether a batch overflowing the set is the cycle's first (dropped when oversized, otherwise served alone with an always-fetch top-up) or a later one (deferred). After the same merges, the decremented counter is the two's-complement negation of the incremented one, and a negation is zero exactly when its operand is, so the test answers the same at every step, whatever the count. Oracle: the request list and which batches are merged, dropped or deferred, in what order, all of which the zero test selects. The zero test's own directions are pinned: forced to "first", a later overflowing batch takes the first-batch path and `directAssemblyMergesWorkThatFitsBehindADeferredBatch` fails; forced to "later", an overflowing first batch is never served and `directOversizedFirstBatchTopsUpWithoutDuplicatingKeys` fails. Escape: any reader of the magnitude, such as a log of merged callbacks or a cap on callbacks per request. Covers: `AccountFetcherImpl.createBatch`'s `++numCallbacks` (`IncrementsMutator`).
+
+  *Overlap scan at a full set.* `AccountFetcherImpl.createBatch`'s `size == MAX_MULTIPLE_ACCOUNTS` test after a merge, forced false, so a set that has just reached the RPC limit stays in the general merge loop instead of entering the full-overlap scan. At a full set the general loop and the scan decide every remaining batch alike: adding a batch's keys leaves a full set within the limit exactly when it adds none, which is when the scan's `batch.containsAll` holds, so the same batches move to `currentBatch` in the same queue order and the rest stay queued. The general loop backs a batch that does not fit out with `removeTrailing` while more are queued; the last one it does not, and that batch's keys stay appended to the shared `batch` set past the first `size` entries, which are all `createBatchKeys(size)` reads, until the cycle-end `clearBatch` (or `failCurrentBatches`' reset) trims the set to its always-fetch prefix before the next assembly. That is the transient state the unmutated general loop already leaves when the last queued batch overflows a set below the limit. Oracle: the request list, `currentBatchKeys`, the in-flight batches and the queue are identical. The forced-true direction, which runs the scan below the limit and defers work that still fits, fails `directAssemblyMergesWorkThatFitsBehindADeferredBatch` and `deferredWorkIsStillMergedBehindAnOversizedMiss`; of the key's other conditionals in `createBatch`, all killed, the scan's own `containsAll` gate forced false leaves covered requests for the next cycle and fails `aFullBatchAbsorbsOverlapAndDefersTheRest` and `directFullBatchAbsorbsOnlyCoveredWork`. The merge loop's `!iterator.hasNext()` exit and the scan's do-while exit, each forced to continue past the last queued batch, make `createBatch` throw `NoSuchElementException`, which fails `directBatchResetRestoresExactlyTheAlwaysFetchBase` and `directFullBatchAbsorbsOnlyCoveredWork` respectively, but can leave a `run()`-based covering test on the calling thread failing one cycle over after another without reaching the fetch whose interrupt ends it (`deliversFetchedAndNullAccountsAndReadsTheClockSysVar` under the first, `batchableRequestsChunkAtTheRpcLimit` under the second), so those kills rest on PIT running a killing test before a hanging one. So does the oversized first batch's top-up test `batchKeys.add(...)` forced false: `spaceAvailable` never counts down, so the top-up runs the always-fetch iterator past its end and `createBatch` throws `NoSuchElementException` before the batch leaves the queue; `directOversizedFirstBatchTopsUpWithoutDuplicatingKeys` fails it, while `anOversizedFirstCycleServesTheBatchAndPreservesAlwaysFetch`, with nothing in flight to fail over, throws again every cycle and never reaches its fetch. Escape: an assembly that starts without the reset, which would read the leftover keys; `createBatchKeys` reading the whole set rather than its first `size` entries; or a general-loop fit test other than the set's growth. Covers: `AccountFetcherImpl.createBatch`'s full-set test forced false (`RemoveConditionalMutator_EQUAL_ELSE`).
+
+  *No waiter to wake.* `AccountFetcherImpl.lockedQueue`'s `if (reactive)` guard on `newBatch.signal()` forced true, so a polling fetcher signals too. Only `delay`'s reactive branch waits on `newBatch`; a polling fetcher sleeps between passes, so its condition never has a waiter and `signal()` returns without moving a thread, and every caller of `lockedQueue` (`queue` and `queueUnique`) holds the lock, so the extra signal cannot throw `IllegalMonitorStateException`. For a reactive fetcher the guard is already true. Oracle: the queue, the in-flight batches and every thread's state are the same; there is no waiter whose wake-up an assertion could see. The forced-false direction, which leaves a parked reactive fetcher asleep, fails `reactiveFetchersParkAndWakeOnQueueSignals`, whose idle window never lapses; the key's other members fail the assembly tests: the `currentBatchKeys.containsAll` ride-along test forced true sends every request to the in-flight set (`directBatchResetRestoresExactlyTheAlwaysFetchBase`; a `run()`-based covering test on the calling thread, such as `deliversFetchedAndNullAccountsAndReadsTheClockSysVar`, finds the queue always empty and polls forever, so that kill rests on PIT running a killing test before a hanging one), and the priority routing forced true reverses the queue (`directLastDeferredBatchEndsTheScan`). Escape: a polling path that waits on `newBatch`, or a caller of `lockedQueue` that does not hold the lock, where in a polling fetcher the mutant's signal would throw and the guard skips it. Covers: `AccountFetcherImpl.lockedQueue`'s reactive guard forced true (`RemoveConditionalMutator_EQUAL_IF`).
+
+  *Exact-zero return of the reactive minimum delay.* `AccountFetcherImpl.delay`'s `remainingAwaitNanos <= 0` exit from the reactive minimum-delay loop narrowed to `< 0`. The loop waits at least once and tests what `newBatch.awaitNanos` returns, the time left to the wait's deadline, so the mutant differs only when a wait returns exactly zero; it then re-arms zero-length waits, each releasing and reacquiring the lock, until one returns below zero. The minimum delay has elapsed either way, and the tick and the idle park that follow are the same. Whether a return is exactly zero is a reading of `System.nanoTime()` against that deadline: `newBatch` is the real condition of the fetcher's own lock and no clock is injected, so no fixture can produce it, and even then the extra wait's only effect is `ConditionObject.awaitNanos`'s interrupt check, which an interrupt from another thread would have to reach between the waits. Oracle: the ticks, the requests and the minimum gap between cycles (`theReactiveMinimumDelaySeparatesCycles`) are identical. Escape: an injectable condition or clock that can return exactly zero, or a loop that reads state between its waits. Covers: `AccountFetcherImpl.delay`'s minimum-delay exit at its boundary (`ConditionalsBoundaryMutator`).
+
+  *Lock-only fast paths: `awaitBatchComplete`'s outer test and `queue`'s signal gate* — argued as recorded; its acceptance is an open owner decision. `BatchSqlExecutorImpl.awaitBatchComplete`'s outer `!batchComplete` test forced true, and `BatchSqlExecutorImpl.queue`'s signal gate `isEmpty || pending.size() >= batchSize` forced into its body, by its `isEmpty` jump always taken or by its size comparison removed. The recorded argument is a skipped lock acquisition and a spurious signal to a runner that rechecks its guards, with no observable difference. Each mutant does reach the same result through the lock: the waiter takes the lock, reads the flag there and returns while it is true; the producer takes the lock on every add, and for an add that leaves the batch short it signals `batchLimit`, which a runner in its window answers by finding its guards unchanged and re-parking for the time it had left. Rows, batch boundaries and commits are unchanged. But the lock's queue tells each one apart, read the way `queueSignalsWakeTheRunnerAndCompletionWakesWaiters` already reads the signals the gate does send: with the test holding `lock`, a waiter started on a completed batch never queues for the lock unmutated and does under the mutant (`lock.hasQueuedThread(waiter)`), and with the runner parked in its batch window, queuing an item that leaves the batch short leaves `lock.hasQueuedThread(worker)` false unmutated and true under each gate mutant. Such tests pin the gates' purpose, that producers touch the lock only for the first item and for a full batch and that a completed batch releases its waiters without it; whether that non-contention is a contract is the owner's decision. The keys' killed siblings: the in-lock wait's exit test forced to keep waiting, and the start-window signal routed to the batch window, each fail `queueSignalsWakeTheRunnerAndCompletionWakesWaiters`. Covers (disputed): `BatchSqlExecutorImpl.awaitBatchComplete`'s outer test forced true (`RemoveConditionalMutator_EQUAL_IF`); `BatchSqlExecutorImpl.queue`'s signal gate, its `isEmpty` leg forced taken (`RemoveConditionalMutator_EQUAL_ELSE`) and its size comparison removed (`RemoveConditionalMutator_ORDER_IF`).
+
+  *Fill/wait entry with a full batch pending* — argued as recorded; its acceptance is an open owner decision. `BatchSqlExecutorImpl.run`'s `pending.size() < batchSize` entry test widened to `<=`, so the block also runs with exactly `batchSize` items pending, or removed, so it runs on every pass. The recorded argument: entering with a full batch pending leaves the delay window at once, flicker rather than behaviour. The window does exit at once, since its size test fails; the clear is the GC-hygiene clear above; and the lock is taken and released. But the block also executes `batchComplete = false`, the class's only write of false. The constructor sets the flag true, and the runner sets it true again only inside the block, when it finds the queue empty, so once the block has run, every later entry the mutants add, each with a full batch pending and so past the idle loop, writes false over false. On a `run()` whose queue already holds a full batch, though, the unmutated loop skips the block, and the constructor's true stands through every drain until the runner first enters it: the first drain, any pass that again finds a full batch, and the retries of a failed one. Meanwhile `awaitBatchComplete()` returns at once while a batch is executing, against the waiter protocol `queueSignalsWakeTheRunnerAndCompletionWakesWaiters` pins for a batch that opened through the block. The removed mutant holds the flag false over all of those drains; the boundary mutant only from the first pass that finds exactly `batchSize` pending onward, since before that a pass that finds more skips the block under it too and drains with the constructor's true. That is a latent defect, not an equivalence, and the owner's to prove and fix. A test that records `batchComplete` from the fake's `onExecution` hook, with exactly `batchSize` items queued before `run()`, tells them apart today; the test to write asserts false for every execution, the intended property, which fails on this code and passes once the flag is cleared before every drain. After such a fix the flag is false at every drain, unmutated and under each mutant, and what is left (the clear, and a lock acquisition before a full-batch drain, which a test holding `lock` sees as the runner queued for it before it has executed anything) puts these rows in the open question of the lock-only fast paths above. A `batchSize` of zero, which nothing rejects, also separates them: unmutated, the runner never enters the block and spins opening connections on an empty queue, where each mutant parks; any item then overflows the empty `batch` in every variant. The keys' other comparisons in `run` fail by assertion, except the window's remaining-time boundary, argued next. The window's remaining-time test removed and the requeue walk's `i >= 0` at its boundary also hang a covering test that runs `run()` on the calling thread, so whether each reads `KILLED` or `TIMED_OUT` rests on the order PIT runs its covering tests in. With the remaining-time test removed, a window that opens short of a full batch at a zero delay spins until the batch fills: `aSubBatchSizeItemQueuedUpFrontIsFlushed`, running the runner on a worker, fails it by its bounded join, while `aFailedMultiRowBatchRequeuesEveryItem` and `aConnectionFailureAfterARequeuedRemainderKeepsTheRunnerAlive` spin in that window on the test thread. With the requeue walk's `i >= 0` at its boundary, the failed batch's first item is never requeued: `requeuesTheFailedBatchInOrderAndRetries` fails it by assertion, while `aCommittedBatchResetsTheBackoffTier` and `aConnectionFailureAfterARequeuedRemainderKeepsTheRunnerAlive` lose their only item and idle forever. Covers (disputed): `BatchSqlExecutorImpl.run`'s fill/wait entry test at its boundary (`ConditionalsBoundaryMutator`) and removed (`RemoveConditionalMutator_ORDER_IF`).
+
+  *The batch window at a zero delay* — argued as recorded; its acceptance is an open owner decision. `BatchSqlExecutorImpl.run`'s `remainingNanos > 0` window test widened to `>= 0`. The recorded argument has the mutant differ only when a wait returns exactly zero. But `remainingNanos` starts at `batchDelayNanos`, which the constructor takes unfloored (it floors only the idle tick, whose comment calls a sub-floor delay a flush hint), and a zero delay is the test fixtures' default: with it the unmutated window never waits, while the mutant enters `batchLimit.awaitNanos(0)` in every window that opens short of a full batch. That wait is not inert. `ConditionObject.awaitNanos` checks the interrupt status before it waits, so with an interrupt pending when the window opens the mutant leaves `run()` through `InterruptedException` without writing the queued items, where the unmutated runner flushes them and exits at the idle wait. Killing test: a zero-delay executor with an item queued short of its batch size, run on a calling thread that is already interrupted; the unmutated runner prepares and commits the item, the mutant writes nothing. It pins that a zero delay never parks in the batch window, the flush hint the comment describes. At a positive delay the mutant differs only on an exactly-zero return, as recorded. The window's size test at its boundary fails `queueSignalsWakeTheRunnerAndCompletionWakesWaiters`, whose signalled runner would sit out the rest of its long window with a full batch. Covers (disputed): `BatchSqlExecutorImpl.run`'s batch-window remaining-time test at its boundary (`ConditionalsBoundaryMutator`).
+
+  *A batchable list at exactly the RPC limit* — argued as recorded; its acceptance is an open owner decision. `AccountFetcherImpl.queueBatchable`'s `numAccounts > MAX_MULTIPLE_ACCOUNTS` split test widened to `>=`. At exactly the limit the mutant queues `accounts.subList(0, MAX_MULTIPLE_ACCOUNTS)`, a view over the whole list, instead of the caller's list. View and list read the same keys while the caller leaves its list alone, and no existing test queues exactly the limit through `queueBatchable`. But a queued batch holds the caller's collection by reference, and a caller that changes it after queueing is a case the fetcher handles on purpose (`AccountConsumer.mutableKeysExceededMaxSize`, `createBatch`'s oversized drop, `aMutatedOversizedBatchIsDroppedAndReported`, `directAssemblyDropsAMutatedOversizedBatchButKeepsItsNeighbor`). After a structural change to an `ArrayList`, the unmutated batch reads the live list (a grown list is dropped and reported, a shrunk one served), while the mutant's view throws `ConcurrentModificationException` from `batch.addAll` in `createBatch`; that batch is never dequeued, so every later assembly that reaches it throws and `run()` fails each such cycle over. Killing test: queue exactly `MAX_MULTIPLE_ACCOUNTS` keys held in an `ArrayList` through `queueBatchable`, add a key to the list, and `createBatch()` returns the always-fetch base alone with the consumer told its batch exceeded the limit; under the mutant it throws. The key's chunk-loop exit boundary is an audited timeout. Covers (disputed): `AccountFetcherImpl.queueBatchable`'s split test at its boundary (`ConditionalsBoundaryMutator`).
+
+  *The dispatch loop's in-lock reset recheck* — argued as recorded; its acceptance is an open owner decision. `AccountFetcherImpl.run`'s `currentBatch.isEmpty()` recheck under the lock forced true, so a null poll always resets `currentBatchKeys` and leaves the dispatch loop. Its recorded reason is a race guard, not an equivalence. The recheck catches a batch that a producer on another thread adds to `currentBatch` (through `lockedQueue`'s ride-along test, because the in-flight request covers its keys) between the runner's last `pollFirst` and its taking the lock: unmutated, the runner polls again and serves it from this cycle's result; the mutant resets and strands it in `currentBatch`, where a later cycle dispatches it with that cycle's accounts, which need not hold its keys, and while nothing else is queued no later cycle comes. The interleaving stages deterministically: with the fake RPC never interrupting, a consumer of the in-flight batch blocks in `accept` until the test holds `lock`; once `lock.hasQueuedThread(worker)` shows the runner blocked at the reset, the test queues a request for a key the in-flight request covers and unlocks; at the next heartbeat tick the unmutated fetcher has served the late consumer the first consumer's map and `currentBatchSize()` is zero, while the mutant leaves it unserved with a batch still in flight. The key's other conditionals in `run` are killed; two of those kills rest on PIT running a killing test before a hanging one: the dispatch loop's null-poll test forced true and its unique-batch `instanceof` test forced true each drop a polled batch undispatched (the second through a `ClassCastException` the cycle's catch fails over), which `anExactlyFullBatchIsServedNotDropped` fails by assertion, while `futureBatchesCompleteWithTheResult`, whose `run()` ends on the fake's interrupt, then waits forever in `future.join()` on the dropped future. Covers (disputed): `AccountFetcherImpl.run`'s in-lock reset recheck forced true (`RemoveConditionalMutator_EQUAL_IF`).
+- `# durability unobservable` — a flush to the storage device removed: `KeyedFlatFileImpl`'s `fileChannel.force(false)` after `appendEntry`'s write, after each of `deleteEntry`'s truncates and after `overwriteFile`'s truncate, and `deleteEntry`'s `mappedBuffer.force()` after the swapped-in last entry is written over the deleted slot, replaced by its receiver. A flush asks the operating system to write the file's dirty pages to the device and changes nothing a read can see: the channel's writes and truncates and the mapping's stores are in the page cache when they return, and every later read, in this process or another (the channel, the mapping, `Files.readAllBytes`, `Files.size`, a second channel on the same file), is served from it, so the file's bytes and size are the same with or without the flush. What tells them apart is losing the page cache before the kernel's own writeback, a kernel crash or a power cut, which no test can stage, or a channel flush failing, which the original reports and the mutant, never making that call, cannot: `FileChannel.force` throws `IOException`, which each of these methods rethrows as `UncheckedIOException`. The mapped flush can fail too (`MappedByteBuffer.force` throws `UncheckedIOException`, which `deleteEntry` lets through), and its mutant may still report that failure at the channel's `force(false)` after the truncate, since `FileChannel.force` may or may not cover mapped changes. For the mapped buffer's flush, neither the call nor its failure is within a test's reach: `MappedByteBuffer` is sealed to the JDK's `DirectByteBuffer`, so no test can put a recording buffer in place of the one `map` returns, nor make a real mapping's flush fail on demand. Escape for it: writing the swap through the channel's positional `write` instead of the mapping, so that the `force(false)` after the truncate covers it (`FileChannel.force` guarantees only changes made through the channel's own methods) and a recording channel sees it, which removes this mutant. The channel flushes are argued as recorded; their acceptance is an open owner decision: the flush's effect is unobservable, but the call and its failure are not. `KeyedFlatFileImpl`'s package-private constructor takes the `FileChannel`, and `FileChannel` is a public abstract class with a protected constructor, so a test in `systems.glam.services.io` can build the file over a delegating channel that records each write, truncate and `force(boolean)`, and assert that each of these methods flushes after its last write or truncate before it returns; each removal then fails that assertion, the recording-collaborator kill sava-build's `HARDENING.md` describes for calls no result shows. The same channel stages the failure as well: with a `force(boolean)` that throws `IOException`, each method throws `UncheckedIOException` where its mutant returns normally, a kill that pins a contract, that a failed flush is never silent, rather than a call sequence. Killed beside them: `appendEntry`'s lock and unlock removals (`MintCacheImplTest.aClosedCacheRefusesNewEntries`, `KeyedFlatFileTests.appendPersistsEntriesInOrder`), `deleteEntry`'s (`MintCacheImplTest.aDeleteOnlyReportsTheEntryItActuallyRemovedFromDisk`, `KeyedFlatFileTests.deleteEntrySwapsLastIntoPlace`) and `overwriteFile`'s (`KeyedFlatFileTests.writeEntriesReplacesFileContents`), and `deleteEntry`'s other receiver replacements: the scan's `position` (`deleteLastEntryTruncatesWithoutSwap`), the swap's `position` calls (`deleteEntrySwapsLastIntoPlace`) and the `truncate` (`aDeleteOnlyReportsTheEntryItActuallyRemovedFromDisk`). Covers: `KeyedFlatFileImpl.appendEntry`, `deleteEntry` and `overwriteFile`, the channel's `force(false)` removed (`VoidMethodCallMutator`); `KeyedFlatFileImpl.deleteEntry`, the swap's `mappedBuffer.force()` replaced by its receiver (`NakedReceiverMutator`).
+- `# empty-file fast path` — `KeyedFlatFileImpl.deleteEntry`'s `fileSize == 0` early return, forced never to fire, or its `return 0` replaced by 0. Past the bypassed guard, an empty file reaches `map(READ_WRITE, 0, fileSize)` with `fileSize` zero, which the JDK's `FileChannelImpl`, over a channel open for reading and writing as `KeyedFlatFile.createFlatFile` opens it, answers with an empty buffer without mapping anything or growing the file (a zero-length region at position zero lies inside a zero-length file); the scan's `i < fileSize` admits no iteration, and the method returns its `numRemoved` of 0. The replaced return is the identity, answering the 0 it already answers, over any channel. Over the JDK's own read-write channel, as `createFlatFile` opens it, the count, the file (empty before and after) and the lock (released by the same `finally`) are the same either way: `KeyedFlatFileTests.deleteEntryOnEmptyFileAndMissingKey` deletes from a fresh file and `MintCacheImplTest.aDeleteOnlyReportsTheEntryItActuallyRemovedFromDisk` from one that another cache over the same path has just emptied, and both see 0. The bypassed guard is argued as recorded; its acceptance is an open owner decision, because the package-private constructor lets a test choose the channel and `FileChannelImpl.map` checks the channel's access modes before it answers a zero-length region: over an empty file opened with `FileChannel.open(path, READ)`, `deleteEntry` answers 0 unmutated and throws `NonWritableChannelException` past the bypassed guard (opened `WRITE` only, `NonReadableChannelException`), which the `IOException` catch does not take. A test asserting that such a delete answers 0, or one over a recording delegate asserting that an empty file is never mapped, kills it; whether either is a contract to pin is the owner's call. The opposite direction, every delete answering 0, is killed by `aDeleteOnlyReportsTheEntryItActuallyRemovedFromDisk`, and so are the guard key's other member, the match test `Arrays.equals(key, keyBytes)` forced never to match, and the scan's own `return numRemoved` replaced by 0. Escape: the bypass needs no change, only the channel above (over a read-write channel, work between the guard and the scan that acts on an empty file, a header read or a log, would expose it too); the replaced return has none short of the early return answering something other than 0. Covers: `KeyedFlatFileImpl.deleteEntry`, the empty-file early return forced never to fire (`RemoveConditionalMutator_EQUAL_ELSE`) and its return replaced by 0 (`PrimitiveReturnsMutator`).
+- `# hashcode mixing` — `MinGlamStateAccount.hashCode`'s mixing steps, each `result = 31 * result + h` folding in the next compared component's hash `h`, with the addition turned into a subtraction. The hash is still a function of exactly the components `equals` compares, so equal accounts hash equally (`slotAndDataAreDeliberatelyExcluded`); and because 31 is odd, multiplying by any power of it is a bijection on `int`, so two accounts that differ in a single component have hashes that differ by that component's hash difference times the same power of 31 under both, its sign flipped when the mutated step is the one that folds it in: non-zero under the mutant exactly when it is non-zero under the original. Every single-component case of `everyComparedComponentIsObserved` therefore separates the accounts under both, and the same test kills each step's `31 *` turned into `31 /` and the `return 0`. What changes is the hash values themselves and which accounts differing in several components collide, neither of which the equal-hash contract promises. Oracle: for two accounts that are equal or differ in a single component, whether their hashes are equal: equal when the accounts are, and unequal exactly where that component's own hashes differ, the same verdict under the original and every member. Escape: a caller that orders or partitions by hash values within one run would make the mixing formula a contract, and every member killable by a test that compares `hashCode()` with the formula recomputed from the components' own hashes in that run, on an account whose folded components hash to neither 0 nor `Integer.MIN_VALUE` (a zero token-program byte or base-asset index leaves that step's member equal to the original on that input); no constant golden value can serve, since the enum components, `glamEnv` and `accountType`, hash by identity, which need not repeat from one run to the next. No production class here hashes the record. Covers: `MinGlamStateAccount.hashCode` (each mixing step's addition, `MathMutator`).
+- `# idempotent close` — `KeyedFlatFileImpl.close`'s `fileChannel.isOpen()` guard forced true, so closing an already-closed file calls `FileChannel.close()` again. `close` and `isOpen` are final in `AbstractInterruptibleChannel`, which every `FileChannel` extends: `close` returns at once, under its own lock, when the `closed` flag that `isOpen` reads is set, and reaches `implCloseChannel` only on the first close. The guard repeats the test `close` already makes, so the repeated call does nothing: the channel stays closed, nothing is thrown, the file's lock is released by the same `finally`, and no channel, not even one handed in through the package-private constructor, can observe the repeat. `KeyedFlatFileTests.closeIsIdempotent` and `MintCacheImplTest.testCloseAndReopen` close a closed file again and see the same either way. Killed beside it: the guard forced false and the `close()` call removed, which leave the channel open, by `MintCacheImplTest.aClosedCacheRefusesNewEntries`; the lock and unlock removals by `closeIsIdempotent`. Escape: none while the field is a `FileChannel`; work inside the guard besides the close (a flush, a log) would make the repeat observable. Covers: `KeyedFlatFileImpl.close`, the `isOpen()` guard forced true (`RemoveConditionalMutator_EQUAL_IF`).
+- `# last-slot self-swap` — `KeyedFlatFileImpl.deleteEntry`'s swap guard `i < lastElementOffset`, widened to `<=` or forced true. The scan index is always a multiple of `entrySize` (the re-examination step takes one `entrySize` off and the loop adds it back), and `lastElementOffset` is the current size less one `entrySize`, so in a file of whole entries the index never passes `lastElementOffset`, and either mutant departs from the guard only at a match in the current last slot. There the swap reads that entry, writes it back over itself through the mapping and flushes it, steps the index back one slot and falls into the truncate, bookkeeping and count the guarded path runs; the index then lands on the new size and the scan ends as it does unmutated. The file's bytes and size and the returned count are the same: `KeyedFlatFileTests.deleteLastEntryTruncatesWithoutSwap` and `deleteEntryRemovesConsecutiveMatches` match in that slot and see the same file either way. The widened guard holds for every file: each truncate removes exactly one `entrySize`, so `lastElementOffset` keeps the original size's remainder modulo `entrySize`, and when a trailing partial entry makes that remainder non-zero the index never equals it, so `<` and `<=` never disagree. The guard forced true is argued as recorded; its acceptance is an open owner decision: it holds only for files of whole entries. With a trailing partial entry after whole ones, at least as long as the key and starting with it, and no earlier match in the scan, the scan reaches that entry's offset, which lies past `lastElementOffset`, and the forced swap tries to write a whole entry there, past the end of the file; with nothing truncated yet the mapping ends at the file's end, so it throws `BufferOverflowException`, which the method's `IOException` catch does not take, where the guarded path truncates to `lastElementOffset`, dropping the partial entry and the tail of the whole entry before it (a partial entry shorter than the key makes both paths throw `BufferUnderflowException` at the key read). `MintCacheImpl.delete` is `deleteEntry`'s only production caller, and `MintCache.createCache` refuses a file it finds with a partial trailing entry: `MintCacheImpl.loadFromFile` reads past the end of the array and throws an `IndexOutOfBoundsException`, which `createCache` does not catch. The premise that no such file reaches `deleteEntry` has a hole in a running process: the cache grows the file only through `appendEntry`, one `MintContext.BYTES` entry per call (`deleteEntry`'s swap and truncate keep whole entries whole), but `appendEntry` ignores the count `FileChannel.write` returns, and the JDK's file channel issues one native write per call, which the operating system may complete short (on a full disk, for one) without an exception; a short append left as the file's tail after whole entries, keeping the whole mint key but stopping before `MintContext.BYTES`, and then a delete of that mint, is the input that tells the forced mutant apart (a short append that is the file's only content makes both paths throw `IllegalArgumentException`, the guarded path's truncate to a negative size and the forced swap's negative position). Neither outcome there is a contract to pin, since the guarded path corrupts the entry before the partial one, so what settles the forced member is the owner's partial-entry contract (refuse the file, or drop only the partial tail), not a test written against today's behaviour. The opposite direction, the guard forced false, is killed by `deleteEntrySwapsLastIntoPlace`; the keys' other members, the scan bound `i < fileSize` widened and forced true, by `deleteEntryOnEmptyFileAndMissingKey` and `MintCacheImplTest.aDeleteOnlyReportsTheEntryItActuallyRemovedFromDisk`. Escape: for the widened guard, only a scan whose index is not a multiple of `entrySize`; for the forced guard, a trailing partial entry that holds the key reaching `deleteEntry`, from a short append, from a caller of the exported `KeyedFlatFile` writing partial data through `overwriteFile`, or from a file with a partial tail opened through the exported `createFlatFile`, which reads nothing. Covers: `KeyedFlatFileImpl.deleteEntry`, the swap guard widened (`ConditionalsBoundaryMutator`) and forced true (`RemoveConditionalMutator_ORDER_IF`).
+- `# race-guard family` — `GlobalConfigCacheImpl`'s lock protocol: `topPriorityForMintChecked`'s null-state checks in the gap between its read unlock and its write lock and again under the write lock, the `signalAll()` of its decimals invalidation, and `run`'s park-loop exits. Its members rest on different mechanisms, argued one per entry below with the members each covers: only the pre-lock entry rests on the race window the label names, and the boundary entry is a timing equivalence. On each `||` guard here javac jumps into the guarded branch on the first leg and past it on the last, so a removed jump (`_IF`) forces a first leg false and a last leg true, and an unconditional one (`_ELSE`) the reverse.
+  - Pre-lock re-check, a leg forced false: a genuine window. After the read section has found the mint's entry at mismatched decimals and released the read lock, `topPriorityForMintChecked` reads `globalConfigUpdate == null || assetMetaMap == null` with no lock held, then takes the write lock. A leg forced false leaves the other to decide, and the in-lock re-check that follows reads both fields again under the write lock and returns the same null, so the mutant can differ only by taking the write lock where the original returns at once. On one thread it never does: the read section has just seen a set map, and every writer of the two fields holds the write lock and writes them as a pair (acceptance sets both; the invalidations in `topPriorityForMintChecked` and `accept` null both), so both read set and both versions go on to take the write lock; an invalidation completed in the gap leaves both null, and both versions return. What separates them is a torn read, which this unlocked check can make because an invalidator nulls the update and then the map as separate volatile writes: for the update leg, both reads landing between the invalidator's writes; for the map leg, the invalidator's writes landing between the reads. The mutant then waits on the write lock the invalidator may still hold, and returns the same null. Oracle: the answer, the nulled fields, the listener calls and the log are the original's, and only whether the caller waits differs; no callback lies inside either window for a test to order on. The forced-true direction of each leg, which answers null to every mismatch, is killed by `topPriorityForMintCheckedValidatesDecimals`. Escape: the update and its map held behind one reference read once, which makes a torn read impossible and removes these members; short of that, a forged tear through the package-private fields, with the test thread holding the read lock: for the update leg, `globalConfigUpdate` nulled before the call; for the map leg, an `assetMetaMap` whose `get` nulls that field alone, from inside the read section, since a map nulled before the call ends the read section at its own null check. Either shows the mutant's needless write-lock request queued (`lock.hasQueuedThread`) where the original has returned. Covers: `GlobalConfigCacheImpl.topPriorityForMintChecked` (the pre-lock `globalConfigUpdate == null` leg, `RemoveConditionalMutator_EQUAL_IF`; the pre-lock `assetMetaMap == null` leg, `RemoveConditionalMutator_EQUAL_ELSE`).
+  - In-lock re-check and `run`'s invalidation exit, a leg forced false: a redundant operand. Argued as recorded; its acceptance is an open owner decision. The record offered a difference only a concurrent invalidator, or an in-lock timing direction, could show; what the code does: these checks read the fields while holding the write lock, the re-check after `writeLock.lock()` and `run`'s after `awaitNanos` has reacquired it, and every writer holds that lock and writes the pair together, while the disk and RPC paths of `GlobalConfigCache.initCache` construct with a set update. Under the lock the pair is therefore both set, both null, or, for a cold start whose fetched config `createMapChecked` rejected, a set update beside a null map, and no interleaving can tear it: a concurrent invalidation leaves the retained leg null too. The state the update leg alone decides, a null update beside a set map, has no writer; the cold-start state, which the in-lock map leg alone decides, never reaches the re-check, because the read section returns on the null map first. Each leg here is redundant under that paired-write invariant: equivalent, but not by a window. The forced-true direction of each leg is killed, by `topPriorityForMintCheckedValidatesDecimals` for the re-check and by `theInvalidationExitDoesNotTick` for `run`. Invalidating condition: a writer that sets or clears one field without the other, or a construction with a null update. Escape: a forged single-field write through the package-private fields, which production never makes: `theInvalidationExitDoesNotTick` nulling the update alone kills `run`'s member, and nulling one field while a mismatched lookup waits on the write lock behind a read lock the test thread holds makes the original answer null where the mutant invalidates and throws. Covers: `GlobalConfigCacheImpl.topPriorityForMintChecked` (the in-lock `globalConfigUpdate == null` leg, `RemoveConditionalMutator_EQUAL_IF`; the in-lock `assetMetaMap == null` leg, `RemoveConditionalMutator_EQUAL_ELSE`); `GlobalConfigCacheImpl.run` (the invalidation exit's `globalConfigUpdate == null` leg, `RemoveConditionalMutator_EQUAL_IF`).
+  - `run`'s invalidation exit, the map leg forced false: killable. Argued as recorded; its acceptance is an open owner decision. The record offered an in-lock timing direction; what the code does: the state this mutant needs, a set update beside a null map, is one `GlobalConfigCache.initCache` builds. A cold start with no persisted file whose fetched config `createMapChecked` rejects (a mint cache disagreeing on an asset's decimals, an invalid oracle source) constructs the cache with that config and the null map, and `run`, unlike the checked lookup, has no earlier return on the map to shield its exit; its in-lock twin above stays equivalent for exactly that reason. At the loop's first wake-up the original returns without a tick, the exit `theInvalidationExitDoesNotTick` requires of an invalidated cache; the mutant, seeing only the set update, breaks, ticks and queues a refresh every window. A deterministic test kills it: through `initCache` from a missing file, with an RPC fake serving the fixture config, a mint cache that answers USDC at 9 decimals, a fetcher fake that also answers the factory's `priorityQueueBatchable`, `Duration.ZERO` and `new RecordingHeartbeat(1)`, pin the precondition (update set, `assetMetaMap` null), run `cache::run` under `Workers.joinWithin`, and assert one refresh request and no tick; the mutant makes a second request and ticks once, and the heartbeat's interrupt ends it. Whether a rejected cold start should end the loop, as it does now, fail `initCache` or keep polling is the owner's call; if `initCache` stops building this state, the member joins the redundant-operand entry. Covers: `GlobalConfigCacheImpl.run` (the invalidation exit's `assetMetaMap == null` leg, `RemoveConditionalMutator_EQUAL_ELSE`).
+  - The decimals invalidation's `signalAll()` removed: killable. Argued as recorded; its acceptance is an open owner decision. The record offered a wake-up only a parked waiter, which a single-threaded test lacks, could see; what the code does: that waiter is the run loop, which waits out every fetch window parked on `invalidGlobalConfig`. Without the call the fields are still nulled, the ERROR logged, `onInvalidDecimals` called and the `IllegalStateException` thrown, but a runner parked when a checked lookup invalidates the cache is not woken: it sleeps out the rest of its `fetchDelay` (unless a forced refresh wakes it first) before its invalidation check returns, where the original's signal sends it to that check at once. That is not equivalent, and the test class already parks a runner and sequences on its `TIMED_WAITING` state (`forceCacheRefreshPullsTheNextFetchForward`). The signal can be read synchronously: park a runner on a long fetch delay, take the write lock on the test thread (a write-lock holder may take the read lock the lookup needs), make a mismatched `topPriorityForMintChecked(MintContext)` throw, and assert `lock.hasQueuedThread(runner)`, which the signal makes true by moving the runner onto the lock's queue and the mutant leaves false; then unlock, join the runner with `Workers.joinWithin`, and interrupt it in a `finally`. The key's other removed calls (the lock and unlock calls, the log, the listener call) are killed by `topPriorityForMintCheckedValidatesDecimals`. Covers: `GlobalConfigCacheImpl.topPriorityForMintChecked` (the invalidation `signalAll()`, `VoidMethodCallMutator`).
+  - `run`'s window break at its boundary: timing-equivalent. `remainingNanos <= 0` narrowed to `< 0` differs only on a wait that returns exactly zero. AQS's `awaitNanos` returns its deadline less a `System.nanoTime()` read taken after it has reacquired the lock, so a zero is a clock coincidence, likeliest at a zero `fetchDelay`, that no test can arrange: the cache makes its condition from its own lock and has no clock to inject. On that return the mutant enters one more wait with no time left, which releases and retakes the write lock and returns at once, and it breaks at the first negative remainder; the window, the tick and the next refresh request are the original's. Only what lands inside that extra wait could tell: an interrupt there ends the loop before the tick and refresh request the original makes before its next wait throws, and an invalidation there ends it without them, where the original, already past its wait, notices only after the next full window. The never-break direction (`RemoveConditionalMutator_ORDER_IF`) is killed by `theInvalidationExitDoesNotTick`. Escape: a seam under the wait, a supplied condition or clock, that can return exactly zero and count the waits. Covers: `GlobalConfigCacheImpl.run` (the lapsed-window test, `ConditionalsBoundaryMutator`).
+  - `run`'s window break forced on every return: equivalent for another reason. The lapsed-window leg forced true and the `forceRefresh` leg forced true are the same program: the loop breaks after every return from its wait that passes the invalidation check. Argued as recorded; its acceptance is an open owner decision. The record offered in-lock timing directions whose siblings are detected; what the code does: the mutants differ from the original only on a return with time left, `forceRefresh` false and both fields set, and with a single runner no such return is reachable. AQS's `awaitNanos` returns early only once a signal has moved its node to the lock's queue: a spurious unpark parks it again, and an interrupt throws or, when a signal won the race, returns with the interrupt re-asserted. The condition's signallers are `forceCacheRefresh`, which sets `forceRefresh` in the same write-lock hold, and the invalidations in `topPriorityForMintChecked` and `accept`, which null both fields first; only `run` clears the flag, at the top of a cycle before it parks. Every early return therefore already breaks, or returns at the invalidation check, in the original. The `forceRefresh` leg forced false is killed by `forceCacheRefreshPullsTheNextFetchForward`, and the lapsed-window leg forced false by `theInvalidationExitDoesNotTick`. Invalidating condition: a signaller that signals without setting the flag or invalidating; a second `run` thread on one cache, whose cycle start can clear the flag between another runner's signal and its check; a condition that surfaces spurious wake-ups; AQS's out-of-memory path, where `awaitNanos` returns its timeout less `OOME_COND_WAIT_DELAY` without a signal. Escape: a forged transition, a mismatched checked lookup invalidating the cache under a write lock the test thread holds and both package-private fields restored before the release, wakes the runner with time left on a valid cache, where the original parks again and the mutants break, tick and queue a refresh. Covers: `GlobalConfigCacheImpl.run` (the `remainingNanos <= 0` leg forced true, `RemoveConditionalMutator_ORDER_ELSE`; the `forceRefresh` leg forced true, `RemoveConditionalMutator_EQUAL_IF`).
+- `# seamless bootstrap` — not an equivalence: `NO_COVERAGE` rows in `SingleAssetFulfillmentServiceEntrypoint`'s startup path, the package-private `main` and the private `createService` it calls, which no test executes. Tests reach only what lies downstream of them: the record's `run()`, driven over stubs by `runExecutesTheServicesAndMonitorsTheConnectionUntilInterrupted`, and `validateDelegatePermissions`, package-private for `delegatePermissionsAreValidatedAndMissesAreNeverSilent`. The missing seam is the configuration: `main` builds its own virtual-thread executor and both `HttpClient`s and hands them to `createService`, which loads its `FulfillmentServiceConfig` from the file `ServiceConfigUtil.configFilePath` resolves (the system property `<module name>.config`, which is `null.config` on PIT's class path, where the class's module is unnamed; else `config.json` in the working directory) and builds every collaborator from it, the `RpcCaller` over the configured endpoints through `main`'s client among them. Per member: everything in `createService` past the state-and-mint fetch (the fetched-accounts null filter `accountInfo != null` and the delegate gate `!validateDelegatePermissions(...)`, each forced either way, the removed `webSocketManager.checkConnection()` and `fulfillmentService.subscribe(webSocketManager.webSocket())`, and the null return) runs only once `accountsNeededFuture.join()` answers, and that fetch is a courteous call that ravina retries until a configured endpoint answers, so getting past it takes an RPC endpoint answering over the network, which the repository's tests never use, and so does the base-asset fetch after the gate, whose `join` the subscription and the return come after (the websocket needs only a configured endpoint: `checkConnection` starts a connection attempt that `createService` never waits on, and `accountSubscribe` only registers the subscription, which the socket sends once it opens); the RPC lambdas, `getAccounts` for the state and mint keys and `getAccountInfo` for the base-asset mint, returning null run only inside those calls, against a configured client; `main`'s `service != null` test, either way, and its `service.run()` call are reached only when `createService` returns, after all of that; `main`'s `DRY_RUN` test forced false and the `DRY RUN ENABLED` warning it guards depend on `DRY_RUN`, a `static final` read once, when the class initialises, from the `<module name>.dry_run` system property (`null.dry_run` on PIT's class path), which no test JVM sets (`dryRunDefaultsOff` pins it false), so the warning is unreachable here and, once a test calls `main`, the forced-false test is the identity; `main`'s `HttpClient.Builder.executor(taskExecutor)` replaced by its receiver builds a client that goes only to the config parser, for the RPC, send, fee-provider and notification-hook clients it builds, and nothing a test reaches reads which executor it runs on, so a test calling `main` covers it without killing it. The remaining members are argued as recorded; their acceptance is an open owner decision, because a test reaches them today without a seam. `main`'s ERROR record for a startup failure and its `DRY_RUN` test forced true: with `<module name>.config` naming a missing file, `configFilePath` throws `IllegalStateException`, `main` closes its executor and clients and logs "Unexpected service failure." at ERROR with that exception, and nothing touches the network; a `LogCapture` test asserting that record and no other kills the removed record, and the forced-true test, whose mutant adds the `DRY RUN ENABLED` warning. `createService`'s initialization INFO record and the `substring(2)` calls that strip `Duration.toString`'s `PT` from the check-state delays it prints: they run after the config loads and the signer answers and before any RPC call. A config with a `MemorySignerFactory` signing service (as `BaseDelegateServiceConfigTests.aSigningServiceSectionIsParsed` configures one), a formatter and no `rpc` section, at the path `<module name>.config` names, reaches them without a socket, and the run then fails at once: its `RpcCaller` holds no balancer (`anAbsentRpcSectionLeavesTheBalancerUnbuilt`), the first courteous call throws `NullPointerException` on the executor, and the fetch's `join` throws it wrapped in a `CompletionException`, which `main` logs in its ERROR record. Asserting the INFO record's `at most every 15S and at least every 5M` (the default delays, matched with the word before each, since `PT15S` contains `15S`) kills the removed record and either `substring`. Escape for the rest: split `createService` at the load, an overload taking the loaded `FulfillmentServiceConfig` with the executor and the websocket client, leaving `configFilePath` and `loadConfig` in the private wrapper. `FulfillmentServiceConfig` is a public record over the `DelegateServiceConfig` interface, so a test can hand it a stub config whose signing service answers locally, whose `rpcCaller()` is an `RpcCaller` over a load balancer of a `Proxy`-backed `SolanaRpcClient` answering `getAccounts` and `getAccountInfo` from accounts the test builds (the balancer shape `SingleAssetFulfillmentServiceTests` builds, extended to `getAccountInfo`: its stub answers only `getAccounts`, from account bytes it synthesizes) or from staging fixtures added for it (`createService` builds on `GlamAccounts.MAIN_NET_STAGING`, and the module's checked-in state snapshot is a production one), and whose factories return recording stubs, a `WebSocketManager` that counts `checkConnection` and answers `webSocket()` with a recording websocket among them. Each member is then an assertion: a null slot in the fetched accounts for the forced-true filter; the state never found, so the gate refuses, for the forced-false one; a granted and an ungranted delegate for the gate either way (the entrypoint returned, or null with nothing subscribed); the recorded connection check and subscription; the returned entrypoint carrying the stubs' services for the null return; and each lambda's null return, which ravina's balanced call hands back as a null answer that the wiring then dereferences, where the stubs' answer builds the entrypoint. `main` needs its body to take the factory it now calls as `createService`, so a test can hand it one answering null (the forced-true `service != null` test then calls `run()` on null and ends in the ERROR record) or an entrypoint built from stubs whose `WebSocketManager` throws from `checkConnection` (the original starts the stubs' services, leaves `run()` on that exception once the pool's close has awaited them, and logs it in its ERROR record, while the forced-false test and the removed `run()` return with nothing started and nothing logged, so the test needs no thread of its own and no interrupt); the dry-run members need `DRY_RUN` to be a value `main` is given; the executor binding needs the client built where a test can read `HttpClient.executor()`. Covers: `SingleAssetFulfillmentServiceEntrypoint.main`, the `DRY_RUN` test and the `service != null` test, each forced either way (`RemoveConditionalMutator_EQUAL_ELSE`, `RemoveConditionalMutator_EQUAL_IF`), the dry-run warning, the `service.run()` call and the startup-failure ERROR record removed (`VoidMethodCallMutator`), and the HTTP client's `executor(taskExecutor)` replaced by its receiver (`NakedReceiverMutator`); `SingleAssetFulfillmentServiceEntrypoint.createService`, the fetched-accounts null filter and the delegate gate, each forced either way (`RemoveConditionalMutator_EQUAL_ELSE`, `RemoveConditionalMutator_EQUAL_IF`), the initialization INFO record, the connection check and the fulfillment subscription removed (`VoidMethodCallMutator`), the entrypoint returned as null (`NullReturnValsMutator`), and the `substring(2)` on each check-state delay, the minimum's and the maximum's, replaced by its receiver (`NakedReceiverMutator`); `lambda$createService$0` and `lambda$createService$1`, the `getAccounts` and `getAccountInfo` calls returning null (`NullReturnValsMutator`).
+- `# subsumed count guard` — `MinGlamStateAccount.createIfChanged`'s `count == this.<section>.length` short-circuit ahead of the `Arrays.equals` that compares the witness's section bytes with the update's, over ranges each side computes from its own count, forced true so the comparison always runs. `Arrays.equals(byte[], int, int, byte[], int, int)` range-checks both ranges before it compares their lengths, and only then answers false for unequal lengths, so the short-circuit is subsumed wherever both ranges are known to lie inside their arrays and each spans exactly its own count of keys, which fails only where a count times the key width wraps an `int`. The witness's range always does both, since its own parse or update already read or compared those bytes; the update's is argued per section.
+  - Assets: subsumed for every update shorter than 128 MiB, killable beyond. Argued as recorded; its acceptance is an open owner decision. The record offered that ranges computed from differing counts differ in length, which `Arrays.equals` answers false; what the code does: the update's range ends at `oToAssetsOffset`, where the integrations count is read before the comparison, so an update whose assets run past its end has already failed that read in both versions. `readLen` bounds the count only by the bytes after its prefix, so in an update shorter than 128 MiB the count times the key width either fits an `int` or wraps to a negative end, which fails that same read. There, with differing counts the comparison answers the false the short-circuit would, and the update takes the same re-parse; with equal counts the code is the same. Every account Solana can hold is shorter (account data is capped at 10 MiB). An update longer than 128 MiB can carry the witness's assets count raised by 2^27, whose range wraps to end exactly where the witness's does: the witness's bytes, padded to that length and carrying that count, compare equal on every section, so the mutant reports the update unchanged, while the original re-parses the assets at that count, allocating an array that long, and refuses the update with `PublicKey.readPubKey`'s `IndexOutOfBoundsException` when the keys run out, the refusal `createRecord` gives the same bytes. A deterministic test kills it on a heap that holds that re-parse; the alternative is accepting it on the account-size cap, a premise about the inputs rather than the code. Oracle below that size: `sameAssets`, and every record or refusal built on it, are the original's. The `Arrays.equals` leg forced true is killed by `aBaseAssetMissingFromAChangedAssetsVectorIsRejectedOnUpdate`, and each leg forced false by `createIfChangedReusesUnchangedSectionsByIdentity`. Escape below that size: moving the integrations-count read after the comparison lets an assets range that runs past the end reach `Arrays.equals`, where the mutant fails the range check ahead of the original's own refusal. Covers: `MinGlamStateAccount.createIfChanged` (the assets-count short-circuit, `RemoveConditionalMutator_EQUAL_IF`).
+  - External positions: killable. Argued as recorded; its acceptance is an open owner decision. What the code does: `numExternalPositions` comes from `SerDeUtil.readLen`, which bounds a count by the bytes left after its prefix, as if each element took one byte rather than a key's width, and nothing reads at `oToExternalPositionOffset` before the comparison. For an update whose count differs from the witness's and passes `readLen` but whose keys run past the end of the account, the original sets `sameExternalPositions` false and refuses the update in `SerDeUtil.readArray` with `PublicKey.readPubKey`'s `IndexOutOfBoundsException`, the refusal `createRecord` gives the same bytes; the mutant fails first in `Arrays.equals`' range check, with an `ArrayIndexOutOfBoundsException` and another message. That parity is what `assertRefusedOnUpdateAsAtParse` pins for counts refused at the prefix, and a case of it at the largest count `readLen` accepts kills the mutant: the external-positions prefix set to the bytes remaining after it, and the update's exception class and message compared with the parse's, without the helper's `Length prefix` check, which this count passes. The test forced false, which never reuses the section, is killed by `createIfChangedReusesUnchangedSectionsByIdentity`. Covers: `MinGlamStateAccount.createIfChanged` (the external-positions-count short-circuit, `RemoveConditionalMutator_EQUAL_IF`).
+
+## Timed-out mutants (audited set)
+
+Each member of `services-timeouts.csv`, under its class: the mutated path, why it never completes, which covering test is left waiting and whether its bound can fail first, and the key's finite siblings. A key's cause is key-level: where two of its sites time out, one cause covers both or the paragraph says that two mechanisms share the key.
+
+### `db.sql.BatchSqlExecutorImpl`
+
+`run()` repeats one cycle: with fewer than a batch pending it takes the lock, parks in its idle wait while nothing is pending (`startWindow.awaitNanos`, re-armed every `idleTickNanos`, ticking the heartbeat whenever the wait returns with nothing pending: a lapsed window, a spurious wake-up, or a signal whose item an earlier drain already took), then in its batch window (`batchLimit.awaitNanos`, until a batch is pending or `batchDelayNanos` runs out); it drains on a fresh connection, committing each full batch and, once the poll comes back empty, the remainder; a failed batch goes back onto the front of the deque and is retried after a `Thread.sleep` backoff. `queue()` appends its item and signals the start window if the queue was empty, the batch window once a batch is pending. In these fixtures only those waits and that sleep read an interrupt: the fake's JDBC calls do not. Most `BatchSqlExecutorTests` call `run()` on the test thread with a zero batch delay and a zero backoff, so the idle window is the 100 ms `IDLE_TICK_FLOOR_NANOS` and the batch window never waits; `FakeJdbc` interrupts that thread from its `interruptOnExecution`th `executeBatch` on, and nothing else bounds these tests. `anIdleRunnerTicksOncePerLapsedWindow`, `workArrivingWhileParkedTicksOnlyForItsDrain`, `aSubBatchSizeItemQueuedUpFrontIsFlushed` and `queueSignalsWakeTheRunnerAndCompletionWakesWaiters` run it on a thread of their own, bound every wait by `Workers.FIXTURE_DEADLINE_MILLIS` (500 ms; the runner's own windows there are `createIdleExecutor`'s 1 ms ones in the idle tests, the calling-thread ones in `aSubBatchSizeItemQueuedUpFrontIsFlushed`, and a 30 s batch delay, beyond any watchdog budget, in `queueSignalsWakeTheRunnerAndCompletionWakesWaiters`, so that only a signal moves it), and end the runner in `stop`, which closes the fake first so that a runner that never blocks leaves through `run()`'s `RuntimeException` path. PIT's watchdog gives each covering test its own coverage-phase duration × `timeoutFactor` + `timeoutConst` (2.0 and 1500 ms in `services/build.gradle.kts`), never less than 1.5 s. On a member's mutant a threaded test fails by assertion one fixture deadline into the first wait whose condition never comes, and `stop`'s joins add at most one more, so the failure lands inside the budget unless load stretches the waits ahead of it; a calling-thread test has no bound that could fail first. PIT runs a mutant's covering tests in a priority order it derives from the coverage phase, in which each test's recorded time and the blocks it covers both count, and stops at the first that fails or times out, so each member below reads `TIMED_OUT` because a calling-thread test that hangs is ordered ahead of every test that would kill it, an order that load can change through the recorded times.
+
+- `queue` `VoidMethodCallMutator` — cause:liveness as recorded, its admissibility an open owner decision: removing `pending.addLast(item)` drops every item before it reaches the deque. `queue` still signals the start window, because the queue it tests is always empty, so a parked runner wakes, finds nothing pending, ticks as for a lapsed window and parks again. The runner itself stays live, keeping its interrupt-reading idle wait and its ticks; what never completes is the dropped work, and with it the harness's only exit. A calling-thread test queues before it calls `run()`, which finds nothing pending and re-arms its 100 ms idle window over and over: the `executeBatch` that would raise the fake's interrupt never runs, so the test thread waits until the watchdog ends the minion, `anUnexpectedRuntimeErrorIsLoggedAndEndsTheRun` included, whose throwing data source is never reached. The threaded tests fail it by their bounds: the runner never exits for `assertExits`, and in `queueSignalsWakeTheRunnerAndCompletionWakesWaiters` it never opens a batch. A deterministic seam exists and is unused: each lapsed idle window ticks the fixture's heartbeat, and `RecordingHeartbeat(n)` interrupts the ticking thread from its nth tick on (`anIdleRunnerTicksOncePerLapsedWindow` uses it), but the calling-thread tests pass `RecordingHeartbeat()`, whose threshold of `Integer.MAX_VALUE` ticks no watchdog budget comes near, or `LoopHeartbeat.NONE`, which never interrupts. Bounded one tick above what each test expects, a count no unmutated calling-thread test reaches (any idle wait an unmutated run reaches finds its interrupt already pending and throws before the tick), the tick that reaches the bound would interrupt the runner, the re-armed idle wait would throw, `run()` would return, and the test's assertions on what it prepared, executed or logged would fail. So the watchdog is not the only detection available; until every calling-thread covering test carries the bound, whether the member reads `TIMED_OUT` depends on which test PIT runs first. The key's other removed calls are finite, and the test named beside each kills it: the `lock()` (`anUnexpectedRuntimeErrorIsLoggedAndEndsTheRun`), the start-window and batch-window `signal()`s (`queueSignalsWakeTheRunnerAndCompletionWakesWaiters`) and the `unlock()` (`aSingleCommittedBatchTicksOnce`).
+- `run` `RemoveConditionalMutator_EQUAL_ELSE` — cause:liveness as recorded, its admissibility an open owner decision: at each of the key's timed-out sites the runner never gets back to a wait once its work is done, so once the last expected batch has committed and raised the fake's interrupt, the runner spins past it on the test thread. The idle wait's `pending.isEmpty()` loop test forced false means the runner never parks while nothing is pending: each pass clears `batchComplete` and nothing sets it again or signals `batchCompleteCondition`, so every later `awaitBatchComplete` caller waits for good, and with nothing pending the runner runs straight through a batch window, which a zero `batchDelay` skips, a connection and an empty poll, round and round (a positive delay would at least make each pass wait out a window, which reads an interrupt). The drain's `item == null` test forced false removes the drain's only exit: the empty poll's null is stored as an item and handed to the preparer, and the drain executes and commits batches of nulls with no exit of its own; on the test thread PIT's watchdog ends it, the fixture's own limits lying far beyond its budget (the fake's `int` counters reach a value that throws only after they wrap round, and the heap fills by one `prepared` entry per null). A preparer that dereferences its item ends `run()` on the `NullPointerException` instead, as does the requeue of a failed batch holding a null, which `ConcurrentLinkedDeque` refuses. Each is a production liveness loss. Every calling-thread test that ends on a commit, `executesAFullBatchAndCommits` and `aSingleCommittedBatchTicksOnce` among them, spins in `run()` until the watchdog, except that `aConnectionFailureAfterARequeuedRemainderKeepsTheRunnerAlive` fails the drain site by assertion: its failed batch holds the null, whose requeue ends `run()` before the failure is logged. The tests whose interrupt lands in the backoff sleep (`aCycleCutShortInItsBackoffDoesNotTick`, `interruptionDuringBackoffCancelsTheRetry`) cover only the drain site and pass it, and the threaded tests fail each site by their bounds. Deterministic seams exist and are unused: the idle-wait spin calls nothing test-supplied but the fake's connection, statement and close methods, whose `connections` count reaches the `failConnection` value that would throw only after the `int` wraps round, far beyond any watchdog budget, and a ceiling that throws an `Error`, which `run()` does not catch, once calls pass what the test drives would end it on the test thread; the null drain hands every null to the test's preparer, and a preparer that asserts a non-null item, or an `executeBatch` ceiling of the same kind, would end it the same way. The key's other forced-false tests are finite, and the test named beside each kills it: the idle tick's `pending.isEmpty()` guard (`anIdleRunnerTicksOncePerLapsedWindow`) and the batch-full test `numItems == batch.length` (`zeroRowItemsStillFlushWithoutOverflowingTheBatch`).
+- `run` `RemoveConditionalMutator_EQUAL_IF` — cause:liveness as recorded, its admissibility an open owner decision: two mechanisms share the key. The drain's `item == null` test forced true sends every polled item down the empty-poll branch, which, with nothing yet in `batch[]`, leaves the drain without executing, so each item is consumed unwritten: the runner spends a pass, with its connection and poll, on each pending item and then idles. It stays live, keeping its interrupt-reading idle wait and its ticks; what never completes is the dropped work, and with it the harness's only exit. No batch ever executes, so the fake's interrupt never comes and every calling-thread covering test waits in `run()` on the 100 ms idle window until the watchdog, the backoff-sleep tests included, since no batch ever fails. The threaded tests fail it by their bounds. The unused seam there is `queue`'s: a heartbeat bounded one tick above what each calling-thread test expects would end the idle loop and fail the test's counts. The idle wait's `pending.isEmpty()` loop test forced true is the other mechanism: the runner never leaves its idle wait, so nothing pending is ever drained and, with work pending, it no longer ticks, though the wait still reads an interrupt: a production liveness loss. `aFailedMultiRowBatchRequeuesEveryItem` and `aConnectionFailureAfterARequeuedRemainderKeepsTheRunnerAlive`, the calling-thread tests that reach the fill/wait block with fewer than a batch pending and no interrupt yet raised, wait there on the 100 ms window until the watchdog, and the loop ticks nothing and calls nothing a test supplies, so neither a bounded heartbeat nor a call ceiling reaches them; the other calling-thread covering tests reach the idle wait only with their interrupt pending and pass. `aSubBatchSizeItemQueuedUpFrontIsFlushed`, `workArrivingWhileParkedTicksOnlyForItsDrain` and `queueSignalsWakeTheRunnerAndCompletionWakesWaiters` fail it by their bounds, so that site reads `KILLED` only while PIT runs one of them ahead of both hanging tests; the key is line-less, so a `TIMED_OUT` there is absorbed by this member, which is why its cause names that site too. That site's escape is a bound on the pair itself: run on a thread of its own behind `assertExits`, as `aSubBatchSizeItemQueuedUpFrontIsFlushed` is, each would fail its join inside the budget. The same pair hangs on the test thread under the batch window's `remainingNanos > 0` forced true (`run` `RemoveConditionalMutator_ORDER_IF`, not a member), where the window spins on a non-positive `awaitNanos` with a sub-batch pending: only `aSubBatchSizeItemQueuedUpFrontIsFlushed` kills that site, a run that orders either of the pair ahead of it reports the key as a timeout outside the audited set, and the same bound settles it. The key's other forced-true tests are finite, and the test named beside each kills it: the idle tick's guard (`workArrivingWhileParkedTicksOnlyForItsDrain`) and `numItems == batch.length` (`aSingleCommittedBatchTicksOnce`).
+- `run` `RemoveConditionalMutator_ORDER_ELSE` — cause:liveness as recorded, its admissibility an open owner decision: two mechanisms share the key. At the fill/wait gate, `pending.size() < batchSize` forced false, the runner never takes the lock, parks or holds a batch window: `batchComplete` keeps its initial true, so `awaitBatchComplete` never waits, items are flushed as polled, and with nothing pending the runner spins through `getConnection`, `prepareStatement` and an empty poll, in which nothing of its own reads an interrupt, so in production only a failure's backoff sleep, or a data source that reacts to the interrupt, could stop it: a production liveness loss. Every calling-thread test that ends on a commit spins there in `run()`, its interrupt pending, until the watchdog; the backoff-sleep tests and `anUnexpectedRuntimeErrorIsLoggedAndEndsTheRun` pass, and the threaded tests fail it by their bounds. At the requeue loop, `i >= 0` forced false, a failed batch is never pushed back: its items are dropped, the failure is still logged, and the runner backs off, ticks and idles in its interrupt-reading idle wait, so what never completes is the dropped work, and with it the harness's only exit. The calling-thread failure tests whose interrupt is due on a later execution (`requeuesTheFailedBatchInOrderAndRetries`, `aFailedBatchStillTicksAfterItsBackoff`, `aCommittedBatchResetsTheBackoffTier`, `aConnectionFailureAfterARequeuedFullBatchDoesNotRequeueItAgain`, `aConnectionFailureAfterARequeuedRemainderKeepsTheRunnerAlive`) wait in `run()` on the 100 ms idle window until the watchdog; `aFailedMultiRowBatchRequeuesEveryItem` would kill it by assertion, its remaining item's execution raising the interrupt with the retried pair missing from `prepared`, and the backoff-sleep tests pass. The drain's remainder test `numItems > 0`, forced false, is a further site of the dropped-batch shape: the empty poll leaves the drain without flushing a sub-batch remainder, which is discarded unexecuted, so `flushesTheRemainderAsAFinalSubBatch`, `aDrainTicksOncePerCommittedBatch`, `zeroRowItemsStillFlushWithoutOverflowingTheBatch` and `aConnectionFailureAfterARequeuedRemainderKeepsTheRunnerAlive` idle in `run()` the same way, while `aSubBatchSizeItemQueuedUpFrontIsFlushed` fails its bounded join and `aFailedMultiRowBatchRequeuesEveryItem` its execution count. Which of those PIT runs first decides that site's status, and load can move the order through the recorded times; the key is line-less, so a `TIMED_OUT` there is absorbed by this member, which is why the requeue's cause is written to cover it. Deterministic seams exist and are unused: a `getConnection` ceiling that throws an `Error` ends the gate's spin on the test thread, and a heartbeat bounded one tick above the expected count ends the idle loop a dropped batch or remainder leaves. The key's other forced tests are finite, and the test named beside each kills it: the batch window's `pending.size() < batchSize` and `remainingNanos > 0` (`queueSignalsWakeTheRunnerAndCompletionWakesWaiters`), and `numRows >= batchSize`, whose jump into the flush is the one always taken, so every item commits as a batch of its own (`aSingleCommittedBatchTicksOnce`).
+- `run` `VoidMethodCallMutator` — cause:liveness as recorded, its admissibility an open owner decision: removing the requeue's `pending.addFirst(batch[i])` drops a failed batch exactly as the requeue loop's forced-false test does: the loop still walks `batch[]` but puts nothing back, the failure is logged, and the runner backs off, ticks and idles in its interrupt-reading idle wait, so what never completes is the dropped work, and with it the harness's only exit. The calling-thread failure tests whose interrupt is due on a later execution wait in `run()` on the 100 ms idle window until the watchdog, `aFailedMultiRowBatchRequeuesEveryItem` would kill it by assertion, and the backoff-sleep tests pass. The unused seam is the bounded heartbeat. The key's other removed calls are finite, and the test named beside each kills it: the `lock()` and the idle tick (`anIdleRunnerTicksOncePerLapsedWindow`), the `signalAll()` (`queueSignalsWakeTheRunnerAndCompletionWakesWaiters`), the `unlock()` and the full batch's commit and tick (`aSingleCommittedBatchTicksOnce`), its log (`executesAFullBatchAndCommits`), the remainder's commit (`aSubBatchSizeItemQueuedUpFrontIsFlushed`), log (`flushesTheRemainderAsAFinalSubBatch`) and tick (`aDrainTicksOncePerCommittedBatch`), the failure's log and tick (`aConnectionFailureAfterARequeuedFullBatchDoesNotRequeueItAgain`), the backoff sleep (`aCycleCutShortInItsBackoffDoesNotTick`) and the unexpected-error log (`anUnexpectedRuntimeErrorIsLoggedAndEndsTheRun`); `Arrays.fill`'s clearing of `batch[]` survives and is an accepted row.
+
+### `rpc.AccountFetcherImpl`
+
+`run()` is the fetch loop. Each cycle assembles a batch from the queue (`createBatch`), fetches it through the `RpcCaller`, hands it to every listener, drains `currentBatch`, the in-flight batches, until a null poll finds that deque empty under the lock, clears the batch, and waits in `delay`: a polling fetcher sleeps its fetch delay and ticks the heartbeat, and repeats while the queue is empty; a reactive one awaits its minimum delay, ticks, and parks while the queue is empty. `queueBatchable` cuts a long list into `SolanaRpcClient.MAX_MULTIPLE_ACCOUNTS` chunks on the caller's thread. Most `AccountFetcherTests` call `run()` on the test thread at the 1 ms polling floor: `RecordingRpc`, a `Proxy` `SolanaRpcClient` that `courteousGet` calls on that same thread, serves canned accounts and interrupts the thread from its `interruptOnCall`-th `getAccounts` call on, so the next `delay`'s sleep or park throws `InterruptedException`, the exit these tests rely on (the other, a failed cycle whose cause chain holds an `InterruptedException`, restores the interrupt and returns from the cycle's catch), and nothing bounds those calls. The tests that need a second thread run the loop on a worker (the idle ones end it through `RecordingHeartbeat`'s interrupt at its Nth tick), bound every latch wait, thread-state poll and join by `Workers.FIXTURE_DEADLINE_MILLIS` (500 ms), though not their own acquisitions of the fetcher's `lock`, direct or through `queue`, and stop the worker with an interrupt and one more bounded join, and `anOversizedDropReleasesTheUniquePendingClaim` runs under a 1 s separate-thread `@Timeout`; one such bound sits inside PIT's allowance, which `timeoutFactor 2.0` and `timeoutConst 1500` in `services/build.gradle.kts` set at twice the covering test's own duration plus 1.5 s. Every member below hangs a covering test that calls `run()`, or `queueBatchable`, on the test thread, where nothing bounds the call; a test named below as first is the first of the tests it is named among in PIT's order for that mutant, a priority order PIT derives from the coverage phase, in which each test's recorded time and the blocks it covers both count, and which load can change through the recorded times.
+
+- `delay` `RemoveConditionalMutator_EQUAL_ELSE` — cause:liveness as recorded, its admissibility an open owner decision: the polling arm's `while (queue.isEmpty())` made unconditional. javac compiles that do-while test as a backward jump taken while the queue is empty, and the mutant always takes it, so the polling delay never returns: it sleeps a fetch delay and ticks, over and over, and `run()` never assembles another batch; only an interrupt ends it, at the next sleep. While the queue stays empty that is the loop the original runs, so the idle polling tests pass. A polling test that drives a second cycle on the test thread hangs: `aPollingCycleTicksOnceAfterItsSleep`, the first of them PIT runs, calls `run()` with no bound and relies on the interrupt the fake raises at its second `getAccounts` call, which the mutated delay never lets happen; its `RecordingHeartbeat()` keeps the default ceiling of `Integer.MAX_VALUE` ticks, which no run reaches before the watchdog. A call budget exists and is unused: the mutated loop ticks the fixture's heartbeat on every pass, and `RecordingHeartbeat(int)` with a ceiling one past the ticks the test expects interrupts the loop's thread at that tick, so the next sleep throws, `run()` returns after one fetch, and the test's fetch count fails. Most of the others run with `LoopHeartbeat.NONE`; `aFailedCycleContainedByTheLoopStillTicks` keeps the default `RecordingHeartbeat()` too, and `aFailedCycleFailsItsFuturesOverAndKeepsPolling` passes a lambda that queues its recovery future at the first tick and never interrupts. Each needs such a tick ceiling before the kill stops depending on PIT's test order: the worker test `aPollingFetcherWaitsQuietlyThenServesLateWork`, whose heartbeat lambda counts its quiet passes, already fails the mutant by assertion inside its fixture deadline and stops its worker at the next sleep, so the mutant reads killed whenever PIT reaches that test first. The key's other sites are finite. The `reactive` test sent to the polling arm is killed only through a race (`workArrivingWhileAReactiveFetcherIsParkedTicksOnlyForItsCycle`): the polling arm ticks without taking the fetcher's `lock`, so the test's read of the tick count under that lock no longer freezes it, and the test's tick-count equality fails only when the worker ticks again between that read and the emptiness check that finds the queued work. Every reactive tick is taken under `lock`, so a heartbeat that records `lock.isHeldByCurrentThread()` at each tick would kill it deterministically. The reactive idle loop's `queue.isEmpty()` test (`reactiveFetchersParkAndWakeOnQueueSignals`) and the idle tick's `queue.isEmpty()` re-check (`anIdleReactiveFetcherTicksOncePerLapsedWindow`) are killed.
+- `queueBatchable` `ConditionalsBoundaryMutator` — cause:liveness as recorded, its admissibility an open owner decision: the chunk loop's exit, `to >= numAccounts`, narrowed to `to > numAccounts`, which never holds because `to` is capped at `numAccounts`. Every chunk is queued as before; then `from` and `to` each sit at `numAccounts`, and every further pass takes the empty view `subList(numAccounts, numAccounts)`, which `validBatch` drops without queuing or locking anything. The spin runs on the caller's thread inside `queueBatchable` itself, after every chunk is queued and before any batch is assembled or fetched, and nothing in it observes an interrupt: `oversizedBatchesAreRejected`, the first covering test, never returns from the `queueBatchable` call inside its `assertDoesNotThrow`, and nothing bounds that call. A call budget exists and is unused: the loop calls `subList` on the caller's list on every pass, and the unmutated loop never asks it for an empty range, so a test list whose `subList` throws an `AssertionError` for one fails each covering test at the mutant's first pass past the last chunk. A direct test without `run()` is no escape: `directBatchableListsChunkAtTheRpcLimit` is one, and it spins inside the call the same way. The key's other site, the chunking test `numAccounts > MAX_MULTIPLE_ACCOUNTS` widened to `>=`, is finite and survives; its row carries `# accepted equivalent`, an argument the Families section disputes (*A batchable list at exactly the RPC limit*: a caller's structural change to an `ArrayList` of exactly the limit, after queueing it through `queueBatchable`, tells the mutant's view from the list).
+- `queueBatchable` `RemoveConditionalMutator_ORDER_ELSE` — cause:liveness as recorded, its admissibility an open owner decision: the same exit test forced false, so the chunk loop never returns, for every list longer than the limit. The spin, its thread, the covering test left in it (`oversizedBatchesAreRejected`, unbounded) and the unused budget are those of the boundary mutant above: a test list that refuses an empty `subList` range fails each covering test at the mutant's first pass past the last chunk. The key's other site, the chunking test forced false, is finite: the whole list goes to `queue`, whose `validBatch` throws, and `oversizedBatchesAreRejected`'s `assertDoesNotThrow` kills it.
+- `run` `RemoveConditionalMutator_EQUAL_ELSE` — cause:liveness as recorded, its admissibility an open owner decision: the drain loop over `currentBatch` loses its only exit, a null `pollFirst()` followed, under the lock, by a `currentBatch.isEmpty()` that resets the in-flight keys and breaks. That is one cause for each of the key's timed-out sites, which each force one of those tests false. With the null test forced false, the null takes the dispatch arms: it matches no `UniqueAccountBatchRecord`, so `dispatch(null, …)` throws a `NullPointerException` that `dispatch`'s own catch logs as a consumer failure, and the loop polls again. With the reset test forced false, the loop takes and releases the lock and polls again. Either way, once the in-flight batches are served the loop never reaches `clearBatch` or `delay`, and nothing in it reads the interrupt the fake raised during the cycle's fetch: `pollFirst`, `ReentrantLock.lock()` and the logging catch all ignore it. `anExactlyFullBatchIsServedNotDropped`, the first covering test, calls `run()` on the test thread with no bound and relies on that interrupt to end it. Both spins tick no heartbeat (the tick sits in `delay`) and make no RPC call, so neither a heartbeat ceiling nor a call budget on the fake can end them. At the null-test site a deterministic seam exists and is unused: every pass logs its consumer failure at `ERROR` on the `AccountFetcher` logger, the logger the fetcher tests attach `LogCapture` to, and `java.util.logging` passes each record to that logger's handlers without catching what they throw, so a test handler that throws an `AssertionError` once the records pass what the test provokes (none, in `anExactlyFullBatchIsServedNotDropped`) would carry it out of `dispatch` and past the cycle's `RuntimeException` catch, ending `run()` on the test thread with a failure. So the watchdog is not the only detection available there; until every calling-thread covering test carries such a handler, whether that site reads `TIMED_OUT` depends on which test PIT runs first. The reset-test site's spin calls nothing a test hands the fetcher and logs nothing, so no seam reaches it: the worker tests' bounded joins and `anOversizedDropReleasesTheUniquePendingClaim`'s `@Timeout` would fail it by assertion only by leaving a thread spinning that no interrupt stops, so the watchdog ending the minion is also the containment, and that site keeps the key in the audited set whatever the owner decides for the other. The key's other sites are finite and killed: the initial `queue.isEmpty()` delay check (`reactiveFetchersParkAndWakeOnQueueSignals`), the clock-sysvar test (`anExactlyFullBatchIsServedNotDropped`), the recent-slot scan's null-account, null-context and zero-slot tests (`recentSlotFallsBackToAccountContexts`), the `UniqueAccountBatchRecord` match (`aServedUniqueConsumerMayBeQueuedAgain`) and the interrupt-cause test in the cycle's catch (`wrappedInterruptFailsTheCycleAndStopsBeforeRetrying`).
+- `run` `VoidMethodCallMutator` — cause:liveness as recorded, its admissibility an open owner decision: the `delay` call that ends each cycle, removed. Cycles then run back to back, and once the queue is empty `createBatch`'s first `iterator.next()` throws `NoSuchElementException`; the cycle's catch fails the empty in-flight set over, finds no interrupt in the cause, logs the failure and loops into the next `createBatch`. `delay`'s sleep and park were the only calls that read the interrupt the fake raises on its final call, so the spin never sees it. `anExactlyFullBatchIsServedNotDropped`, the first covering test, calls `run()` on the test thread with no bound and relies on that interrupt to end it. As with the drain loop's exit, the spin ticks no heartbeat and makes no RPC call (`createBatch` throws before the fetch), so neither a heartbeat ceiling nor a call budget on the fake reaches it, and a bounded join on a worker would leave a thread spinning that no interrupt stops. A deterministic seam exists and is unused, the same as at the drain loop's null-test site: every pass logs the cycle's failure at `ERROR` on the `AccountFetcher` logger, where a handler the test attaches receives it (`interruptedFailedCycleFailsItsFutureBeforeStopping` kills the removal of this log call through `LogCapture`), and a test handler that throws an `AssertionError` once those records pass what the test provokes (none, in `anExactlyFullBatchIsServedNotDropped`) would carry it out of the catch and out of `run()`, failing the test on its own thread. So the watchdog is not the only detection available; until every calling-thread covering test carries such a handler, whether the member reads `TIMED_OUT` depends on which test PIT runs first. The key's other removed calls are finite and killed: the initial `delay` (`reactiveFetchersParkAndWakeOnQueueSignals`), the listener dispatch (`listenToAllReceivesEveryBatchUntilStopped`), the drain's `lock()` (`aMutatedOversizedBatchIsDroppedAndReported`) and `unlock()` (`aReactiveFetcherTicksAfterItsMinimumDelayThenParksForWork`), the unique and plain batch dispatches (`uniqueConsumersAreNotDoubleQueued`, `anExactlyFullBatchIsServedNotDropped`), `clearBatch` (`aPollingCycleTicksOnceAfterItsSleep`), `failCurrentBatches` and the failure log (`interruptedFailedCycleFailsItsFutureBeforeStopping`), and the interrupt restore (`wrappedInterruptFailsTheCycleAndStopsBeforeRetrying`).
+
+### `fulfillment.SingleAssetFulfillmentService`
+
+`accept` takes the websocket's updates to the redemption request queue and to the vault's base-asset token account. It records the newest `RedemptionSummary` or `TokenBalance` by slot through `compareAndSet`, an `AtomicReference` compare-and-exchange retry loop in each overload, and calls `wakeUp` when the outstanding shares change, or when a deposit lands while shares are outstanding, to release the fulfillment thread from `BaseFulfillmentService.awaitChange`; that thread's `handleVault` records the same values through the same overloads on every pass that finds the base-asset token account (`run` skips `handleVault` while the fee payer's balance is low). The websocket tests in `SingleAssetFulfillmentServiceTests` call `accept` on the test thread while a daemon waiter, started by `assertWakes` or `assertStillWaiting`, parks in `awaitChange` with a 30 s wait. Each wait around an update is bounded by `Workers.FIXTURE_DEADLINE_MILLIS` (500 ms): the poll for the waiter's park, the `tryLock` that reads the condition queue, and the joins that end the waiter; one such deadline sits inside PIT's allowance of twice the covering test's duration plus 1.5 s. The `accept` call itself carries no bound. The run-loop tests call `run()` on the test thread with a 30 ms ceiling per wait and end it through the scripted fee-payer check, which throws once its script runs dry; nothing bounds them either.
+
+- `compareAndSet` `RemoveConditionalMutator_EQUAL_IF` — cause:liveness: the `previous == null` test forced true, one cause for the site in each overload. The loop then always takes its null arm, whose `compareAndExchange(null, …)` cannot succeed once the reference holds a value, and the non-null witness the failed exchange returns sends it back into the same arm. The first update of each kind finds the reference empty and is stored as before; every later one spins on the calling thread, one volatile compare-and-exchange per pass, with no allocation, no wait and no call that observes an interrupt or reaches anything a test supplies (the update's slot is read before the loop). `aRequestQueueUpdateWakesOnAnOutstandingChange` spins in the `RedemptionSummary` overload at its second queue update, and `aDepositWithNothingOutstandingStaysQuiet` in the `TokenBalance` overload at its second deposit, each inside the unbounded `accept` call with its waiter parked behind it; `aFailedFulfillmentBacksOffWithAGrowingCount` spins in `run()` at its second `handleVault` pass, while the single-pass run-loop tests pass. A worker making the call under a bounded join would fail by assertion but leave a thread spinning in the minion that no interrupt stops, so the watchdog ending the minion is also the containment. The key's other sites, each overload's `witness == null` and `witness == previous` tests forced true, are finite and survive, recorded untriaged: on one thread the exchange each follows always succeeds, so only a writer between the `get` and the exchange can tell them apart.
+
+## Declined and untriaged debt
+
+Nothing here is declined, and no row is accepted for a reason: each `# untriaged` row is open debt. By class, what is unkilled, why it is open, and the test or seam that would pay it; where a row turns out to be equivalent on reading, the bullet says so, and labelling it is the owner's call.
+
+- `BaseDelegateService` — `glamAccountClient()`, `key()`, `vaultKey()` and `stateAccount(Map)` returning null, on lines no test executes. Its subclasses in this module, `BaseFulfillmentService` and `SingleAssetFulfillmentService`, read the `glamAccountClient` field directly and call none of them. `glamAccountClient()`, `key()` and `vaultKey()` have their callers downstream (vault-stat-service's valuation manager extends the class and keys its state by `key()`), outside this suite; `stateAccount(Map)` has none, in this repository or in vault-stat-service, whose valuation manager reads `accountsNeededMap.get(key())` itself. Escape: a test in the class's own package over a minimal subclass on a real `GlamAccountClient`, built the way `SingleAssetFulfillmentServiceTests` builds its own, asserting that `glamAccountClient()` answers the client it was given, that `key()` and `vaultKey()` answer its vault accounts' `glamStateKey()` and `vaultPublicKey()`, and that `stateAccount(map)` parses the account the map holds under `key()`; or, for `stateAccount(Map)` alone, the method dropped if no subclass needs it (the owner's call, since it is API of a public abstract class), which takes its mutant with it.
+- `AccountFetcherConfig$Parser` — the JSON `test`'s `reactive` match forced true (its `fetchDelay` match is killed): every field but `fetchDelay` is read as `reactive` instead of failing with "Unknown AccountFetcherConfig field", so a misspelled field silently sets the flag. It survives because no `AccountFetcherConfigTests` case sends an unknown field. Escape: the case `DefensivePollingConfigTests.anIntegTablesFieldIsAnError` makes for its own parser, here with an unknown field carrying a boolean, which the mutant reads without complaint, asserting that the `IllegalStateException` names the field. `parseProperties`' `fetchDelay != null` guard forced true only assigns `parseDuration`'s null over the null of the fresh parser `parseConfig` builds for its single call, which `get()` then defaults; it waits on a family argument or on the guard's removal, which removes the mutant.
+- `BaseDelegateServiceConfig$ConfigParser` — `parseProperties`' presence guards for the `notificationHooks`, `accountFetcher` and `defensivePolling` sections forced true, and their prefix predicates answering true (the `notificationHooks` predicate is `lambda$parseProperties$3`, the `accountFetcher` one `lambda$parseProperties$10` and the `defensivePolling` one `lambda$parseProperties$11`), which makes the `anyMatch` true whenever any property is set: an absent section is parsed anyway. For no keys each section parser builds what `setDefaults` supplies: `WebHookConfig.parseConfigs` finds no hook, and `NotifyClient.createClient` with no clients is the no-op shape `setDefaults` builds, each answering the shared `List.of()`; `AccountFetcherConfig.parseConfig` and `DefensivePollingConfig.parseConfig` build records equal to `createDefault()` and `createDefaultConfig()`. The `minCheckStateDelay` and `maxCheckStateDelay` guards forced true assign `parseDuration(null)`, which is null, over the field's initial null, and `setDefaults` defaults it. Every caller parses a fresh parser once, so no test of that shape tells any of these apart; a parser that parses more than once would see a configured section or delay replaced by its default. Owner's call: a family argument scoped to a parser parsed once, or, if parsing once is the contract, the guards dropped. Separately, `lambda$setDefaults$0`, the default notify client's answer replaced with `Collections.emptyList()`, is on a line no test executes: `testPropertiesOptionalSectionsAbsent` asserts that the default client exists and never posts through it. Covering it kills it only through an assertion on an answer this module never reads (every production `postMsg` call in this module discards it): both answers are equal empty lists, which differ in identity and class, in null queries (`contains(null)` and `indexOf(null)` throw `NullPointerException` on `List.of()` and answer `false` and `-1` on the other), and in mutators that would change nothing (`clear()` and `sort` throw `UnsupportedOperationException` on `List.of()` and return quietly on the other). Escape: a test that posts through the default client, after which the row needs an argument rather than a kill; or the default built by `NotifyClient.createClient` with no clients, which takes the lambda out of this class and builds the absent `notificationHooks` default through the very call the forced parse makes.
+- `BaseDelegateServiceConfig` — the factories `createWebSocketManager`, `createTransactionProcessor`, `createTxMonitorService`, `createEpochInfoService` and `createExecutionServiceContext` returning null, on lines no test executes. Their only caller in this module is `SingleAssetFulfillmentServiceEntrypoint.createService`, the `# seamless bootstrap` wiring that loads its configuration from a file and connects, but each factory can be called on a parsed configuration, as `theInstructionProcessorServesTheDeploymentItIsGiven` calls `createInstructionProcessor` over refusing stand-ins, and none of the products connects or starts anything at construction. Escape: a test of that kind for each factory, asserting what reaches the product: the transaction processor's `feePayer()` (the service key), `formatter()` and `callWeights()` (from parsed `formatter` and `rpcCallWeights` sections) and `webSocketManager()` (the one handed in); the epoch service's `defaultMillisPerSlot()` from a parsed `epochService` section (without one the configuration is null, and the factory dereferences it); a monitor from a parsed `txMonitor` section, asserted non-null, since `TxMonitorService` exposes none of its configuration; the execution context's delegation to the service context, epoch service and processor it is handed, which also pays `ExecutionServiceContext.createContext`; and a websocket manager, which creates no websocket before its first `checkConnection`. `lambda$createWebSocketManager$0`, the loop that hands each new websocket to every registered consumer, with its `accept` removed, is unexecuted too and needs more than a call: the manager runs it only while creating a websocket, which it then connects, so a test that reaches it through the manager leads to a connection attempt (a consumer that throws stops it, but the mutant removes exactly that call). Escape: the fan-out as a package-private static method answering the consumer, tested with a stub `SolanaRpcWebsocket` and recording consumers that each receive it. `createServiceContext`'s datasource guard, `hikariPropertiesFiles == null || hikariPropertiesFiles.isEmpty()`: the null test forced onto the no-datasource branch and the emptiness test forced true each build no datasource for a non-empty list, and the null test removed sends a null list on to `isEmpty()`. The emptiness test forced false is killed: it builds a `HikariDataSource` from no properties, which HikariCP's validation refuses, in `theConfigBuildsTheServiceContextAndMintCache`. The others survive because no test hands the factory a hikari file, and because `createBaseConfig` replaces a missing list with an empty one, so a null list reaches the guard only through the record's public constructor. Escape: a test with a hikari properties file whose pool starts without a database (a stub `dataSourceClassName` from the test sources, with a negative `initializationFailTimeout`, which skips HikariCP's initial connection), asserting that a `HikariDataSource` comes back and closing it; and a record built with a null list, asserting no datasource where the mutant throws `NullPointerException`.
+- `DefensivePollingConfig$Parser` — `parseProperties`' duration guards (`globalConfig`, `glamStateAccounts`, `stakePools`, `kaminoScope`) forced true, each only assigning `parseDuration`'s null over the null of the fresh parser `parseConfig` builds for its single call, which `get()` then defaults; they wait on a family argument or on the guards' removal, which removes the mutants.
+- `ExecutionServiceContext` — `createContext` returning null, on a line no test executes: `ExecutionServiceContextTests` builds `ExecutionServiceContextImpl` with `new`, and the factory's only caller, `BaseDelegateServiceConfig.createExecutionServiceContext`, is itself untested. Escape: build the context in `theContextDelegatesToItsCollaborators` through `createContext`, or through a parsed configuration's `createExecutionServiceContext`, which pays that row too.
+- `FormatUtil` — `formatTransactionResult`. The `error != null` test forced true renders a success in the error form (with `"logs"`, `"tx"` and `"error": "null"`), and every assertion of `successfulResultsFormatTheFeeAndSig` holds of that form too: it looks for the compute budget, price, signature, instruction count, size and leading space, all of which the error form carries. Escape: assert the success block whole, or that it carries no `"error"` or `"logs"` field. The protocol-error lookup skipped (the `EQUAL_ELSE` copies at the `IxError.Custom(final long errorCode)` pattern, its type test and its binding test each forced onto the raw branch): every instruction error renders `error.toString()` in place of the protocol table's message. `aGlamInstructionErrorNamesTheProtocolError`'s only check on the error text is that the lowercased block contains "signer" (its other assertions, the `"failedIx"` block, its `"index": 0` and the simulation's log line, hold either way), and the block always does: its `"programId"` renders the failed instruction's `AccountMeta` whole, and that `toString()` is a JSON object with a `"signer"` field. Escape: assert the message itself, `"error": "Signer is not authorized"` for the fixture's code. The surviving `EQUAL_IF` copies at the `TransactionError.InstructionError(final int index, ...)` and `IxError.Custom(final long errorCode)` patterns are not their type tests, which are killed (with a type test removed, the expired and generic errors of `unknownErrorsFallBackToTheirToString` fail their casts): javac compiles the primitive bindings `int index` and `long errorCode` to an `iconst_1`/`ifeq` that never jumps, and removing a jump that is never taken changes nothing, so no test can kill them. Owner's call: a family argument, or a type pattern with accessor calls in place of each record pattern, which javac compiles without the constant test. The fee's `stripTrailingZeros()` replaced by its receiver: `LamportDecimal.toBigDecimal` already ends in `stripTrailingZeros()`, so the extra strip changes neither value nor scale and the rendered fee is the same string. Owner's call: a family argument, invalidated by a sava-core conversion that stops stripping, or the redundant call dropped, with a fee assertion so that such a change would still show.
+- `InstructionProcessorImpl` — `processInstructions`. The surviving `EQUAL_IF` copies at the `TransactionError.InstructionError(final int index, final IxError ixError)` and `IxError.Custom(final long errorId)` patterns are the same never-taken `iconst_1`/`ifeq` that javac emits for the primitive bindings `int index` and `long errorId`; the `instanceof` tests at those patterns are the killed siblings, and the escape is the one given for `FormatUtil`. The batch bound's boundary, `batchSize < instructions.size()` widened to `<=`: at equality, which every first pass meets, the batch is `instructions.subList(0, size)` instead of `instructions` itself. The view holds the same elements, `clear()` through it empties the caller's list as clearing the list does, and ravina's `TransactionResult` keeps its own copy of the batch, so only the identity of the list handed to `InstructionService` differs, which no test asserts. Owner's call: a family argument, or the slice taken unconditionally (`instructions.subList(0, Math.min(batchSize, instructions.size()))`), which leaves no conditional to mutate.
+- `BaseFulfillmentService` — `awaitChange`'s floor top-up, `sleptNanos < minCheckStateDelayNanos`. Widened to `<=`, it adds only `sleptNanos == minCheckStateDelayNanos`, where the extra call is `NANOSECONDS.sleep(0)`, which `TimeUnit.sleep` returns from without sleeping or checking the interrupt flag; this row waits on a family argument. Forced true, it adds every `sleptNanos >= minCheckStateDelayNanos`, where the extra call's argument, `floorTopUpNanos`'s `minCheckStateDelayNanos - sleptNanos`, is zero or negative, the same no-op, only while that subtraction does not overflow. It can overflow only for a negative floor: a floor of `Long.MIN_VALUE`, after any wait that lets time pass, wraps it to a large positive argument, and the mutant then sleeps for centuries where the original returns. `ExecutionServiceContext` is an interface, and the test's `ScriptedContext` answers whatever floor it is built with, so this row is killable. Escape: a waiter started through `startWaiter` on a `harness` built with a floor of `Long.MIN_VALUE` milliseconds (which `MILLISECONDS.toNanos` saturates to `Long.MIN_VALUE` nanoseconds) and a short ceiling, joined with `Workers.joinWithin`: the original returns after its one wait, and the mutant is still asleep at the fixture deadline. Or the floor clamped at zero in `awaitChange`, after which `floorTopUpNanos`'s subtraction cannot overflow and this row is the same no-op as the boundary row, waiting on the same family argument. The direction that skips the top-up is killed by `aShortWaitWokenEarlyStillSleepsOutTheFloor`, and the ceiling-length segment of `awaitChangeClampsTheDelayAndEnforcesTheFloor` would catch it too: each wakes its waiter at once and bounds the elapsed time from below only, which a scheduling delay cannot break; the top-up's own arithmetic is pinned without a clock by `theFloorTopUpIsWhatTheWaitLeftOfTheMinimum`. `run`'s `Thread.currentThread().interrupt()` in the `InterruptedException` catch removed, on a line no test executes: every test that runs the loop ends it with a `RuntimeException` (the scripted context's `StopRun`), which the `Throwable` catch logs. Escape: a script whose `feePayerBalanceLow` interrupts the calling thread and answers true, so `awaitChange`'s `awaitNanos` throws at once; assert that `run()` returns with the thread still interrupted (`Thread.interrupted()`, which also clears the flag) and without the "Unexpected service failure." warning.
+- `FulfillmentService` — `validateMintKey`'s `vaultMintKey == null` test removed: a null mint reaches `vaultMintKey.equals(PublicKey.NONE)` and throws `NullPointerException` in place of the "Must be a tokenized vault" `IllegalStateException`. The guard's other mutants are killed; this one survives because every test client comes from `StateAccountClient.createClient`, which derives the escrow PDA from the mint and so cannot hold a null one. `createSingleAssetService` takes the `StateAccountClient` interface, though, so the null leg is reachable. Escape: a `Proxy` over the test's `stateClient(...)` that answers `mint()` with null, asserting the `IllegalStateException` and its message; or, if a client without a mint is not a case the factory owes an answer, the null leg dropped.
+- `SingleAssetFulfillmentService` — `compareAndSet`, each overload: the lost-exchange tests after `compareAndExchange` (`witness == null` after installing over an empty reference, `witness == previous` after installing over an older value) forced true. The same key carries the audited timeout member, the `previous == null` test forced true, which spins; these rows are the survivors beside it. On one thread the exchange always wins, so the forced branch is the one taken anyway. Under contention the mutant reports success for an exchange that lost: it answers `BigDecimal.ZERO` or `0`, or the older value's outstanding shares or amount, while the other writer's value stays installed, even when it is older than the value this call was installing, and `accept` makes its wake decision from that answer. A race guard, not an equivalence, and the window holds no call a test can hook: between the read and the exchange there is only the slot comparison on `RedemptionSummary` and `TokenBalance`, which are records, and the references are private and built by the constructor, so only another thread writing at that instant reaches the branch. Escape: each loop rewritten as `getAndUpdate` with a newer-slot function and its answer derived from the previous value returned, which moves the retry into the JDK, outside the suite, while the wake tests already distinguish the answers (installed over nothing, installed over an older slot, refused as not newer); or an owner decision that extends this suite's race-guard argument to these rows.
+- `FulfillmentServiceConfig$Parser` — `test`'s delegated `return super.test(...)` forced true. `ConfigParser.test` answers true for every field it handles and throws on any other, never false, so the forced value is the one returned; it waits on a family argument, which a base parser able to answer false would invalidate.
+- `FulfillmentServiceConfig` — `loadConfig` returning null, on a line no test executes: `FulfillmentServiceConfigTests` drives `Parser` directly over JSON and properties, and `loadConfig`'s only caller is the entrypoint's `createService`. Escape: a JSON file written to a `@TempDir` and loaded through `loadConfig`, asserting a parsed value (`softRedeem` false), with a missing file's `UncheckedIOException` beside it.
+- `IntegrationServiceContext` — `createContext` and the `readClockSysVar` default, each returning null, on lines no test executes: `IntegrationServiceContextTests` builds `IntegrationServiceContextImpl` with `new` and never asks it for the clock, and `createContext`'s caller is downstream (vault-stat-service's entrypoint). Escape: build the context in `everyAccessorAndDelegationRoutesToItsCollaborator` through `createContext`, whose identity assertions then fail on a null, and assert that `readClockSysVar()` answers the clock sysvar of the service context's `SolanaAccounts`, as `ServiceContextTests` asserts for the service context.
+- `AccountData` — `isAccount(Discriminator)` with its answer replaced by `true` and by `false` (`BooleanTrueReturnValsMutator`, `BooleanFalseReturnValsMutator`, `NO_COVERAGE`). No test calls the discriminator-only overload (`AccountDataTests` pins `isAccountExact`, `isAccountAtLeast` and the no-argument `isAccount`), and nothing in this repository or in vault-stat-service calls it either. Paid by a case beside `exactRequiresTheLengthAndTheDiscriminator` that expects `true` for the right discriminator and `false` for a wrong one, or by deleting the unused overload, which takes its rows with it.
+- `FileUtils` — `compressIfNeeded`'s `path.getFileName()` replaced by `path` (`NakedReceiverMutator`), so the `.gz` suffix test reads the whole path's string. That string ends with the file name and `.gz` holds no separator, so the test answers the same for every path that has a file name; only a root tells them apart, where the unmutated method throws `NullPointerException` before writing and the mutant writes the compressed copy and then fails to delete the root. Its callers, vault-stat-service's Kamino cache loaders (nothing in this repository calls it outside `FileUtilsTests`), pass files they have just listed and read. Equivalent over every input a caller produces, so a killing test would have to pin the root's `NullPointerException`, an accident rather than a contract. Paid by testing the suffix on `path.toString()`, which removes the call, or by an owner-argued label that a caller able to pass a path without a file name invalidates.
+- `AssetMetaContextRecord` — by cause:
+  - `compareTo`'s ternary for a negative `this.priority`, `oPriority < 0 ? Integer.compare(-this.priority, -oPriority) : 1`, widened to `oPriority <= 0` (`ConditionalsBoundaryMutator`) or forced to the comparison (`RemoveConditionalMutator_ORDER_IF`). A negated negative priority is positive and compares above any non-positive `-oPriority`, which is the `1` the unmutated ternary returns, so the mutants differ only at `Integer.MIN_VALUE`, whose negation overflows to itself; `negativePrioritiesSortAfterEveryNonNegative` probes `-1` only. No parsed priority reaches this branch: `AssetMeta.priority` is a `u8` that the generated reader widens to `0..255`, so negative priorities exist only in hand-built records. At `Integer.MIN_VALUE` the comparison among negatives also misorders, sorting it first where its magnitude puts it last. Paid by a `MIN_VALUE` case that sorts it after zero and after a positive priority (passes today and kills each mutant) and after `-1` (fails today), then `Integer.compare(oPriority, this.priority)` for the whole negative branch, which answers its cases without negating and leaves these mutants no conditional to act on.
+  - `toJson` replaced by `""` (`EmptyObjectReturnValsMutator`): in this module the rendering feeds only `GlobalConfigCacheImpl`'s log messages, the `IllegalStateException` that `topPriorityForMintChecked` throws on a decimals mismatch, and an assertion message in `GlobalConfigCacheTests`, and every log and exception-message assertion matches the event's name, never the entry rendered beside it. Downstream, vault-stat-service serves the rendering (`GlobalConfigQueryHandler`'s response, `GlobalConfigNotificationServiceImpl`'s incident details), where an empty one would show. Paid by an `AssetMetaContextTests` case pinning the rendered fields, an `assertLogged` fragment carrying an entry's asset key, or `batchedAccountsRouteTheConfigAndMissingMints` asserting that the decimals-mismatch exception it catches names the wrapped-SOL asset key.
+- `MintCacheImpl` — `delete`'s `removed == null` return forced never to return (`RemoveConditionalMutator_EQUAL_ELSE`): a mint this cache's map does not hold then reaches `KeyedFlatFile.deleteEntry`, which ignores its `removed` argument and deletes every record carrying the key, and `delete` still answers `null`. A cache's map is loaded from its file and `setGet` and `delete` change map and file together, so, short of a `setGet` or a second `delete` racing a `delete` of the same mint (the delete that misses the map can reach `deleteEntry` first and take the record, and the delete that removed the mint from the map then answers `null`), or an earlier `deleteEntry` that failed after its map removal (the mutant deletes the record the unmutated cache leaves on disk to reload), the mutant changes something only when a second `MintCacheImpl` over the same file has appended a mint this one never loaded, which it then deletes, or when the cache is closed: `deleteEntry`'s `fileChannel.size()` then throws on the closed channel, so a closed cache's `null` for a mint it does not hold becomes an `UncheckedIOException`. `aDeleteOnlyReportsTheEntryItActuallyRemovedFromDisk` opens its second cache after the first has written the mint, so the deleting cache holds it, and no test deletes from a closed cache. Paid by opening each cache before the write: after `cacheA.setGet(mint)`, `cacheB.delete(mint)` answers `null`, and `cacheA.delete(mint)` must still answer the context (or a cache reopened over the file must still load the mint), which the mutant's deletion turns into `null`. A closed cache would pay it more simply once the owner settles which answer is the contract: `aClosedCacheRefusesNewEntries` makes a closed cache's `setGet` fail loudly, and a closed cache's `delete` of a mint it holds already throws, so asserting the quiet `null` may pin an accident.
+- `MintContext` — by cause:
+  - `setScale`'s `setScale(decimals, DOWN)` replaced by its receiver (`NakedReceiverMutator`): for a non-negative scale, truncating toward zero to `decimals` places keeps the integer part that `longValue()` keeps, so the mutant returns the same `long` whenever the rescale completes. A negative scale, which rounds to a multiple of a power of ten, tells them apart, but a mint's decimals are a `u8`, read from the mint account or back from the cache file; otherwise only an amount at the edge of `BigDecimal`'s range does, one whose rescale cannot be computed: the change to `decimals` places overflows `int` (`new BigDecimal("1E+2147483647")`), or dropping the digits needs a power of ten beyond `BigInteger`'s range (`new BigDecimal("1E-1000000000")`). There `setScale` throws `ArithmeticException` and the mutant answers `0`. Killable on a valid mint only by pinning that exception, an accident rather than a contract. The method answers whole units (`MintCacheImplTest.mintContextScalesAmountsDownToRawUnits` asserts the integer part) where its test's name speaks of raw units, and nothing in this repository or vault-stat-service calls it. Paid by the owner's call on the method: deleting it removes the row; if raw units were meant, a failing regression test and then `movePointRight(decimals)` make its receiver mutant observable.
+  - `write`'s `return BYTES` replaced by `0` (`PrimitiveReturnsMutator`): no caller reads the count (`KeyedFlatFileImpl.appendEntry` and `writeEntries` advance by the flat file's entry size) and no test reads it. Paid by a `MintContextTests` case asserting that `write` at an offset reports `BYTES` and lays down the mint, decimals and program id where `MintCacheImpl.loadFromFile` reads them back.
+- `StakePoolCache` — `initCache`'s cold-start persist (`lambda$initCache$0`): the `i > 0` write guard and the `i < flatFileData.length` trim guard, each widened (`ConditionalsBoundaryMutator`) or forced true (`RemoveConditionalMutator_ORDER_IF`). Read against the code they are equivalent while each program's flat file has a single writer: the branch runs only for a program whose flat file read back empty, before the cache is handed to anyone, so overwriting that file with nothing leaves it as empty as it was read, and trimming the array to its own length copies the same bytes. A second writer over the same directory (another cache, in this process or another) that persisted records between the read and the guard would lose them to the empty overwrite the write guard's mutants make, as it loses them to the unmutated overwrite whenever this cache kept a context; the trim guard's mutants write the same bytes either way. `aColdStartFetchesParsesSkipsShortAccountsAndPersists` drives every direction (a program with a short account skipped, one with none, one with nothing fetched), and each mutant leaves the files as asserted. Paid by handing the kept contexts to `KeyedFlatFile.writeEntries`, which sizes the array itself and leaves no guard to mutate (it empties the file when nothing was kept, as the write guard's mutants do), or by an owner-argued label that a second writer over one directory invalidates.
+- `StakePoolCacheImpl` — `accept`'s novelty gates:
+  - The `containsKey` return forced never to return (`RemoveConditionalMutator_EQUAL_ELSE`): `putIfAbsent` then finds the stored context and nothing is appended, the same outcome, since the cache never removes a mint; equivalent on reading, a fast path ahead of the `putIfAbsent`.
+  - `putIfAbsent(...) == null` forced true (`RemoveConditionalMutator_EQUAL_IF`): it appends even when `putIfAbsent` found a context, which happens when another `accept` for the same mint lands between the `containsKey` miss and the `putIfAbsent` (the websocket subscription and the poll loop's parallel stream deliver concurrently), and the program's flat file then carries a duplicate record. No test puts a writer in that window. Paid deterministically through the package-private constructor, which takes the mint map and the flat files: a map whose `containsKey` installs a competing context before answering `false`, and a counting `KeyedFlatFile` stub, with `accept` expected to append nothing.
+- `AccountFetcher` — by cause:
+  - `isNull`'s sentinel test `accountInfo == NULL_ACCOUNT_INFO` forced never to match (`RemoveConditionalMutator_EQUAL_IF`): the sentinel then reaches the data-length test, and `NULL_ACCOUNT_INFO` carries a zero-length array, so it still answers `true`; equivalent on reading, while the null and length operands' mutants are killed. Paid by dropping the identity operand, which the length test already answers, or by an owner-argued label.
+  - The single-key defaults `priorityQueue(PublicKey, AccountConsumer)` and `queue(PublicKey, AccountConsumer)`, each with its delegation removed (`VoidMethodCallMutator`, `NO_COVERAGE`): `AccountFetcherTests` queues collections only, and the fetchers `GlobalConfigCacheTests` hands `GlobalConfigCacheImpl`, whose `run` is the production caller of the single-key `priorityQueue`, are `java.lang.reflect.Proxy` instances, which hand a default method to their handler instead of running its body. Paid by the direct batch-assembly harness: call each default on an `AccountFetcherImpl` and read the key back from `createBatch()`, the priority one behind a full waiting batch, as `directPriorityCallbackBatchesJumpTheQueue` does for the collection overload.
+- `AccountFetcherImpl` — lines no test executes (`VoidMethodCallMutator`, `NO_COVERAGE`):
+  - `priorityQueueBatchable`'s call to `queueBatchable(true, …)` removed: the `direct*` tests cover `priorityQueue`, `priorityQueueUnique` and `queueBatchable` but not this entry point, and its callers in this repository (`GlobalConfigCache.initCache`, `GlobalConfigCacheImpl.accept`; vault-stat-service's `KaminoCacheImpl` calls it too) are tested against proxy fetchers. Paid by a `direct*` case that queues a full batch, then a key through `priorityQueueBatchable`, and expects `createBatch()` to answer that key first; the removal leaves only the waiting batch.
+  - `createBatch`'s ERROR record for an oversized batch whose owner throws from `mutableKeysExceededMaxSize` removed: every oversized-batch test's owner records the call and returns, and the catch swallows the exception, so the record is that failure's only trace. Paid by a throwing owner in the shape of `directAssemblyDropsAMutatedOversizedBatchButKeepsItsNeighbor`, with a `LogCapture` on the `AccountFetcher` logger asserting the ERROR record, which arrives as `SEVERE` (`assertLogged(Level.SEVERE, "Account consumer failed handling an oversized batch")`; `LogCapture` exposes no record's throwable, so pinning that needs an accessor added to it), and the neighbour still assembled.
+  - `UniqueAccountBatchRecord.accept`'s forward to its consumer removed: `run()`'s dispatch loop matches a unique record by pattern, releases the pending claim and dispatches to the record's consumer directly, so nothing calls the record's own `accept`, which exists because `AccountBatch` extends `AccountConsumer`; the record is private, so no test reaches it without reflection. Paid by a refactor that dispatches the matched record itself (`dispatch(accountBatch, …)`, whose `accept` forwards to the same consumer), after which `uniqueConsumersAreNotDoubleQueued` and `aFreshPriorityUniqueConsumerIsServed` cover the forward and kill its removal.
+- `GlobalConfigCache` — `createMap`'s per-asset sort guard `assetMetas.length > 1`, widened (`ConditionalsBoundaryMutator`) or forced true (`RemoveConditionalMutator_ORDER_IF`): a mint's array is never empty, and sorting a one-element array compares nothing and changes nothing, so the map is the same; equivalent on reading, while the sort itself is pinned by `aFileLoadedConfigSortsMultipleOraclesPerAsset`. Paid by sorting unconditionally, which removes the guard, or by an owner-argued label.
+- `GlobalConfigCacheImpl` — by cause:
+  - `getByIndex`'s `readLock.unlock()` removed (`VoidMethodCallMutator`): `testInitCacheFromDisk` asserts the answers and never the lock, and a leaked read hold blocks only a later writer, which that test never starts. Paid by `assertUnlocked(cache)` after its `getByIndex` calls.
+  - `accept(AccountInfo)` against an invalidation. The pre-lock `globalConfigUpdate == null` return forced never to return (`RemoveConditionalMutator_EQUAL_ELSE`) dereferences the null update and throws `NullPointerException` where the unmutated method returns quietly; updates keep arriving after an invalidation (the websocket subscription outlives the run loop), but no test delivers one. Paid by `acceptInvalidNewerConfigInvalidatesTheCache` accepting another valid newer update after the invalidation and asserting that it returns and the cache stays invalidated. The in-lock re-check's `globalConfigUpdate == null` operand forced to fall through (`RemoveConditionalMutator_EQUAL_IF`) throws the same exception for an invalidation that lands between the pre-lock read and the write lock; single-threaded, the pre-lock check has already returned. Paid deterministically on a second thread through the package-private `lock`: the test thread holds the write lock, a worker delivers a valid newer update and queues on it (`lock.hasQueuedThread(worker)`), the test thread invalidates the cache through a decimals-mismatched `topPriorityForMintChecked(MintContext)` (the write lock is re-entrant) and releases; the unmutated worker returns, the mutant's throws.
+  - The invalidation's `invalidGlobalConfig.signalAll()` in `accept` removed (`VoidMethodCallMutator`): a parked run loop then learns of the invalidation only when its fetch delay lapses, and `theRunLoopRefetchesOnTheDelayAndStopsWhenInvalidated` uses a delay shorter than its join's fixture deadline, so the lapse ends the loop in time either way. Paid by parking the loop on a fetch delay far beyond the fixture deadline, as `forceCacheRefreshPullsTheNextFetchForward` does, and invalidating through `accept` once it sits in its timed park, with the test thread holding the write lock: the signal moves the parked loop onto the lock queue (`lock.hasQueuedThread(runner)`, read synchronously before the release), the mutant leaves it on the condition; after the release the unmutated loop exits within `Workers.joinWithin`.
+  - `accept`'s unchanged-data returns, each forced never to return (`RemoveConditionalMutator_EQUAL_ELSE`). Past the pre-lock fast path, the in-lock re-check returns for the same data, so the cache ends the same unless another update is installed while the delivering thread waits for the write lock: the mutant's re-check then finds different data and installs the delivered update at its newer slot over the intervening one, which the unmutated fast path had dropped. The second-thread harness above reaches that deterministically. Holding the write lock, the test thread lets a worker deliver the cache's current data at a newer slot: the unmutated worker returns, the mutant's queues on the lock (`lock.hasQueuedThread(worker)`). The test thread then re-entrantly accepts a valid change at a slot between the cache's and the worker's, and releases: the unmutated cache ends on that change, the mutant's on the worker's update. That assertion pins the slot-blind drop `acceptIgnoresUnchangedOlderAndForeignAccounts` states (identical data: no update regardless of slot), which here leaves the cache on an update older than the one it dropped, so the fast path is paid by that harness if the owner makes the drop the contract, or, if the owner calls it a stale-config defect, by a failing regression test first. The in-lock re-check's equal-data operand and the slot check's equal-data operand cover each other: under one write-lock hold the slot check compares against the very update the re-check just compared, so its operand is never true where the re-check did not return, and the re-check's is true only when a concurrent `accept` installed the same data first: for a delivery `checkAccount` accepts, the slot check's operand then returns, but for one it refuses (a foreign owner, since equal bytes carry the discriminator) the mutant reaches `checkAccount` and logs its `Unexpected GlobalConfig Account` WARNING where the original's re-check returns quietly. The slot check's operand is equivalent; the re-check's differs only by that WARNING, which the second-thread harness reaches deterministically with a foreign-owned worker queued behind an install of the same bytes, so a no-WARNING assertion would kill it if the owner makes that log's absence a contract. Paid by dropping the slot check's never-true operand, after which the re-check's mutant dies under the second-thread harness above (holding the write lock, the test thread accepts the worker's data at an older slot; the unmutated worker then returns, the mutant's installs a duplicate update at its own slot).
+  - `forceCacheRefresh`'s double-checked flag, each check forced never to return (`RemoveConditionalMutator_EQUAL_ELSE`). Without the in-lock check the flag is set again and `invalidGlobalConfig` signalled again, which changes nothing the run loop sees: the loop clears the flag under the lock before every park and leaves its wait on a set flag, so while the flag is set no waiter is parked for the extra signal to wake. Without the pre-lock check a caller decides under the write lock instead of at the volatile read: arriving while the flag is still set, it waits for the lock rather than returning, and if the loop, already out of its wait, takes the lock first, clears the flag and parks, the caller finds the flag clear, sets it again and wakes the loop for an extra refresh. Each outcome is what an unmutated caller arriving a moment later gets, so the mutant is timing-equivalent: a test holding the read lock tells it apart (the caller queues where the unmutated one returns; with the loop released from a proxy fetcher's `priorityQueue` onto the write-lock queue ahead of the caller, an extra `priorityQueue` call follows), but only by pinning which legal timing a caller gets. Equivalent on reading for the in-lock check while the cache has one run loop; paid by an owner-argued label, or for the pre-lock check by such a test if the owner makes it a contract that a request finding a refresh pending is folded into it.
+  - `awaitNewGlobalConfig`'s `remainingNanos <= 0` exit. Narrowed to `< 0` (`ConditionalsBoundaryMutator`), a wait that returns exactly zero re-arms a zero-nanos await that returns at once, and the same update comes back unless a writer slips into that await's release of the lock, when the mutant returns the newer update the caller is waiting for: timing-equivalent, with nothing deterministic to pay it but a label. Forced to exit after the first wake-up (`RemoveConditionalMutator_ORDER_IF`), it matches the unmutated loop in every reachable execution: JDK 25's `ConditionObject.awaitNanos` re-parks after a spurious unpark and returns before its deadline only when signalled (its out-of-memory path aside), and `newGlobalConfig` is signalled only after a new update is installed, which the loop condition exits on anyway. Only a signal without a change, forged through a widened `newGlobalConfig`, tells them apart, so the debt is a missing label (invalidated by a signaller that signals without installing an update) unless the owner wants that seam.
+  - `createMapChecked`: the distinct-oracle map's capacity hint `assetMetaContexts.length << 2` shifted right (`MathMutator`) only sizes the initial table of a map read through `put`'s return and never iterated; the per-asset sort-and-decimals guard `assetMetas.length > 1`, widened or forced true (`ConditionalsBoundaryMutator`, `RemoveConditionalMutator_ORDER_IF`), sorts a one-element array to no effect and runs its decimals loop for no iteration. Equivalent on reading; paid by dropping the hint and the guard, or by an owner-argued label.
+- `MinGlamStateAccount` — by cause:
+  - `createRecord`'s `enabled` read (`data[ENABLED_OFFSET] == 1`) forced true (`RemoveConditionalMutator_EQUAL_IF`): no test parses a disabled account through `createRecord`, or through `deserialize`, which calls it; the disabled flip in `createIfChangedReusesUnchangedSectionsByIdentity` goes through `createIfChanged`'s own read, whose mutant is killed. The mutant would hand vault-stat-service an enabled record for a disabled vault on its first sighting and on a warm start alike. Paid by `createRecord` over the fixture with its enabled byte cleared, asserting `disabled()`.
+  - `disabled()` answering `true` for an enabled account (`BooleanTrueReturnValsMutator`, and the negation's jump removed, `RemoveConditionalMutator_EQUAL_IF`): the only `disabled()` assertion is on the disabled record in `createIfChangedReusesUnchangedSectionsByIdentity`, and nothing asks an enabled record, although vault-stat-service's valuation manager gates on the answer. Paid by `assertFalse(minStateAccount.disabled())` on the enabled fixture in that test.
+  - `equals`' record-pattern bindings of the primitive components `enabled`, `baseAssetIndex`, `baseAssetDecimals` and `baseAssetTokenProgram`, each with its jump removed (`RemoveConditionalMutator_EQUAL_IF`): javac guards each unconditional primitive binding with a constant `iconst_1`/`ifeq` that never jumps (visible with `javap -c` on `MinGlamStateAccount.equals`), so removing the jump leaves the executed path unchanged; equivalent by construction. Paid by comparing through the components (`o instanceof MinGlamStateAccount that && accountType == that.accountType && …`), which emits no such guard, or by an owner-argued label.
+  - `readIntegrationAcls`' `Arrays.sort(protocolIntegrations)` removed (`VoidMethodCallMutator`): `createRecord` and `createIfChanged`'s reparse share the method, so every test comparing one parse with another reads the same order either way, and none compares the order with an oracle of its own. The mainnet fixture's integration ACLs are not in key order on chain, so the sort does reorder them, and `equals` and `hashCode` read the array in order. Paid by asserting that `createRecord(fixture).protocolIntegrations()` comes back in ascending integration-program order, as `anUpdateSortsAChangedExternalPositionsSectionLikeTheParse` does for the external-positions twin, with an oracle that compares the `integrationProgram()` keys themselves (adjacent `PublicKey.compareTo`, or a copy sorted by `Comparator.comparing(ProtocolIntegration::integrationProgram)`); that assertion also kills `ProtocolIntegration.compareTo`'s row, which an oracle sorting `ProtocolIntegration` records through their own `compareTo` could not, since that mutant leaves such a copy in on-chain order too.
+- `ProtocolIntegration` — `compareTo` answering `0` (`PrimitiveReturnsMutator`) turns `readIntegrationAcls`' sort into a stable no-op that keeps the on-chain order: the same order no test checks, paid by the same ascending-order assertion on `createRecord`'s `protocolIntegrations()`, provided its oracle orders the `integrationProgram()` keys directly rather than through this `compareTo`.
