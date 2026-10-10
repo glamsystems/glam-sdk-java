@@ -650,6 +650,18 @@ final class SingleAssetFulfillmentServiceTests {
     assertFalse(service.lock.isLocked(), "awaitChange returned without releasing the service lock");
   }
 
+  /// A woken waiter sleeps out the rest of its floor, holding the service lock, before it
+  /// leaves awaitChange. The join allows that floor on top of the fixture deadline, so the
+  /// woken path is bounded far above what it sleeps and the floor test's lower bound is the
+  /// one that judges it; a lost wake-up still fails here, the waiter still parked.
+  private static void assertLeftAwaitChangeAfterItsFloor(final BaseFulfillmentService service,
+                                                         final Thread waiter,
+                                                         final long floorMillis) throws InterruptedException {
+    waiter.join(floorMillis + Workers.FIXTURE_DEADLINE_MILLIS);
+    assertFalse(waiter.isAlive(), "the woken waiter never left awaitChange");
+    assertFalse(service.lock.isLocked(), "awaitChange returned without releasing the service lock");
+  }
+
   /// Ends the waiter whatever the step's outcome, so no thread outlives its step. A hold that a
   /// mutated wakeUp() leaked to this thread is released first: a signalled waiter must
   /// re-acquire the lock to leave awaitChange, and that re-acquire ignores interrupts.
@@ -725,8 +737,7 @@ final class SingleAssetFulfillmentServiceTests {
       awaitParked(floor, waiter);
       floor.wakeUp();
       assertCallerReleasedTheLock(floor);
-      assertFalse(hasWaiters(floor), "expected the waiter to be woken");
-      assertLeftAwaitChange(floor, waiter);
+      assertLeftAwaitChangeAfterItsFloor(floor, waiter, 300L);
     } finally {
       stop(floor, waiter);
     }
@@ -735,8 +746,8 @@ final class SingleAssetFulfillmentServiceTests {
   }
 
   /// A woken wait sleeps the rest of the minimum delay: the floor less what it slept, not the
-  /// floor plus it. Pinned without a clock; the threaded checks around it only bound the time
-  /// from below.
+  /// floor plus it. The arithmetic is pinned here without a clock; the threaded checks pin that
+  /// awaitChange sleeps at least the floor.
   @Test
   void theFloorTopUpIsWhatTheWaitLeftOfTheMinimum() {
     final long floorNanos = MILLISECONDS.toNanos(300L);
@@ -753,8 +764,8 @@ final class SingleAssetFulfillmentServiceTests {
   /// woken early has slept only the part of its own delay that passed. Measuring that against
   /// the ceiling instead counted the unrequested remainder of the ceiling as slept, and the
   /// waiter returned at the wake-up, so every websocket update during a pending soft
-  /// redemption's countdown refetched at the update rate. Only a lower bound is asserted: a
-  /// scheduling delay can stretch the call, never shorten a sleep.
+  /// redemption's countdown refetched at the update rate. A lower bound judges it, which a
+  /// scheduling delay cannot break: a delay can stretch the call, never shorten a sleep.
   @Test
   void aShortWaitWokenEarlyStillSleepsOutTheFloor() throws InterruptedException {
     final var floor = harness(NoticePeriodType.Hard, TimeUnit.Second, 100L, false, 300, 10_000).service;
@@ -764,8 +775,7 @@ final class SingleAssetFulfillmentServiceTests {
       awaitParked(floor, waiter);
       floor.wakeUp();
       assertCallerReleasedTheLock(floor);
-      assertFalse(hasWaiters(floor), "expected the waiter to be woken");
-      assertLeftAwaitChange(floor, waiter);
+      assertLeftAwaitChangeAfterItsFloor(floor, waiter, 300L);
     } finally {
       stop(floor, waiter);
     }
