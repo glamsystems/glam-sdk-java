@@ -143,11 +143,17 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
       // only part of its own delay, and the floor still applies to it
       final long sleptNanos = waitNanos - remainingNanos;
       if (sleptNanos < minCheckStateDelayNanos) {
-        NANOSECONDS.sleep(minCheckStateDelayNanos - sleptNanos);
+        NANOSECONDS.sleep(floorTopUpNanos(sleptNanos, minCheckStateDelayNanos));
       }
     } finally {
       lock.unlock();
     }
+  }
+
+  /// The rest of the minimum delay a wait that slept `sleptNanos` short of it still owes: the
+  /// floor less what passed, not the floor plus it.
+  static long floorTopUpNanos(final long sleptNanos, final long minCheckStateDelayNanos) {
+    return minCheckStateDelayNanos - sleptNanos;
   }
 
   protected final void awaitChange() throws InterruptedException {

@@ -716,15 +716,13 @@ final class SingleAssetFulfillmentServiceTests {
     assertTrue(elapsedMillis >= 70, "slept only " + elapsedMillis + "ms");
     assertTrue(elapsedMillis < 5_000, "the cap did not apply: " + elapsedMillis + "ms");
 
-    // a mid-wait wake still sleeps out the minimum, and only the minimum:
-    // the top-up is minimum-minus-slept, not minimum-plus-slept
+    // a wait at the ceiling woken at once still sleeps out the minimum; how much of it a
+    // woken wait owes is pinned without a clock by theFloorTopUpIsWhatTheWaitLeftOfTheMinimum
     final var floor = harness(NoticePeriodType.Hard, TimeUnit.Second, 100L, false, 300, 10_000).service;
     start = System.nanoTime();
     final var waiter = startWaiter(floor, SECONDS.toNanos(10L));
     try {
       awaitParked(floor, waiter);
-      // where the wake lands inside the wait is the property under test, not a synchronisation
-      Thread.sleep(150L);
       floor.wakeUp();
       assertCallerReleasedTheLock(floor);
       assertFalse(hasWaiters(floor), "expected the waiter to be woken");
@@ -734,14 +732,29 @@ final class SingleAssetFulfillmentServiceTests {
     }
     elapsedMillis = (System.nanoTime() - start) / 1_000_000L;
     assertTrue(elapsedMillis >= 280, "slept only " + elapsedMillis + "ms");
-    assertTrue(elapsedMillis < 520, "the wake-up was lost or over-slept: " + elapsedMillis + "ms");
+  }
+
+  /// A woken wait sleeps the rest of the minimum delay: the floor less what it slept, not the
+  /// floor plus it. Pinned without a clock; the threaded checks around it only bound the time
+  /// from below.
+  @Test
+  void theFloorTopUpIsWhatTheWaitLeftOfTheMinimum() {
+    final long floorNanos = MILLISECONDS.toNanos(300L);
+    assertEquals(
+        MILLISECONDS.toNanos(150L),
+        BaseFulfillmentService.floorTopUpNanos(MILLISECONDS.toNanos(150L), floorNanos),
+        "woken 150 ms in, the waiter owes the floor's other 150 ms"
+    );
+    assertEquals(floorNanos, BaseFulfillmentService.floorTopUpNanos(0L, floorNanos));
+    assertEquals(1L, BaseFulfillmentService.floorTopUpNanos(floorNanos - 1L, floorNanos));
   }
 
   /// The floor holds for any wait, not only the maximum: a wait shorter than the ceiling and
   /// woken early has slept only the part of its own delay that passed. Measuring that against
   /// the ceiling instead counted the unrequested remainder of the ceiling as slept, and the
   /// waiter returned at the wake-up, so every websocket update during a pending soft
-  /// redemption's countdown refetched at the update rate.
+  /// redemption's countdown refetched at the update rate. Only a lower bound is asserted: a
+  /// scheduling delay can stretch the call, never shorten a sleep.
   @Test
   void aShortWaitWokenEarlyStillSleepsOutTheFloor() throws InterruptedException {
     final var floor = harness(NoticePeriodType.Hard, TimeUnit.Second, 100L, false, 300, 10_000).service;
@@ -749,8 +762,6 @@ final class SingleAssetFulfillmentServiceTests {
     final var waiter = startWaiter(floor, SECONDS.toNanos(1L));
     try {
       awaitParked(floor, waiter);
-      // where the wake lands inside the wait is the property under test, not a synchronisation
-      Thread.sleep(150L);
       floor.wakeUp();
       assertCallerReleasedTheLock(floor);
       assertFalse(hasWaiters(floor), "expected the waiter to be woken");
@@ -760,7 +771,6 @@ final class SingleAssetFulfillmentServiceTests {
     }
     final long elapsedMillis = (System.nanoTime() - start) / 1_000_000L;
     assertTrue(elapsedMillis >= 280, "returned at the wake-up instead of the floor: " + elapsedMillis + "ms");
-    assertTrue(elapsedMillis < 520, "the wake-up was lost or over-slept: " + elapsedMillis + "ms");
   }
 
   // --- websocket updates ----------------------------------------------------
