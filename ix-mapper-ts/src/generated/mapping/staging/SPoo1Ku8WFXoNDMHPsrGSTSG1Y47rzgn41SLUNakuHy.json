@@ -4,7 +4,7 @@
   "program_id": "SPoo1Ku8WFXoNDMHPsrGSTSG1Y47rzgn41SLUNakuHy",
   "proxy_program_id": "gstgS4dNeT3BTEQa1aaTS2b8CsAUz1SmwQDGosHSPsw",
   "provenance": {
-    "generator": "idl-src-gen@b25128bce37162eea1887f68f6e28ddfa008ac85",
+    "generator": "idl-src-gen@6765bd8b9837e3c1af0a4d7e6465751fbf29a3a7",
     "source_idl": "glam managed anchor_v1/idls/external/spl_stake_pool (idl 0645221b78ca)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/ext_stake_pool_staging (idl f9b65ec7fd28)",
     "config_revision": 1
