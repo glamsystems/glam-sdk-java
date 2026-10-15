@@ -6,85 +6,15 @@
   "provenance": {
     "generator": "idl-src-gen@6765bd8b9837e3c1af0a4d7e6465751fbf29a3a7",
     "source_idl": "glam managed anchor_v1/idls/external/stake (idl de27febd3fdb)",
-    "proxy_idl": "glam managed anchor_v1/idls/glam/glam_protocol_staging (idl 874250cef4d0)",
+    "proxy_idl": "glam managed anchor_v1/idls/glam/glam_protocol_staging (idl 907a7a20ec81)",
     "config_revision": 1
   },
   "instructions": [
     {
       "name": "authorize",
       "discriminator": [1, 0, 0, 0],
-      "disposition": "map",
-      "handler": {
-        "name": "stake_authorize",
-        "discriminator": [127, 247, 88, 164, 201, 0, 79, 7]
-      },
-      "source_accounts": [
-        {
-          "name": "stake",
-          "writable": true,
-          "signer": false
-        },
-        {
-          "name": "authority",
-          "writable": false,
-          "signer": true,
-          "expect": "glam_vault"
-        },
-        {
-          "name": "lockup_authority",
-          "writable": false,
-          "signer": true,
-          "optional": "omitted",
-          "expect": "glam_vault"
-        }
-      ],
-      "destination_accounts": [
-        {
-          "index": 0,
-          "kind": "dynamic",
-          "name": "glam_state",
-          "writable": true,
-          "signer": false
-        },
-        {
-          "index": 1,
-          "kind": "dynamic",
-          "name": "glam_vault",
-          "writable": true,
-          "signer": false
-        },
-        {
-          "index": 2,
-          "kind": "dynamic",
-          "name": "glam_signer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "index": 3,
-          "kind": "static",
-          "address": "Stake11111111111111111111111111111111111111",
-          "writable": false,
-          "signer": false
-        },
-        {
-          "index": 4,
-          "kind": "source",
-          "source": 0,
-          "writable": true,
-          "signer": false
-        },
-        {
-          "index": 5,
-          "kind": "static",
-          "address": "SysvarC1ock11111111111111111111111111111111",
-          "writable": false,
-          "signer": false
-        }
-      ],
-      "remaining_accounts": {
-        "kind": "any"
-      }
+      "disposition": "unsupported",
+      "reason": "no GLAM handler proxies this instruction"
     },
     {
       "name": "authorize_checked",

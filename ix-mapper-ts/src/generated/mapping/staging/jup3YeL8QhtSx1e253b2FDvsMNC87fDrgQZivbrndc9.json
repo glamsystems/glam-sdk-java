@@ -6,7 +6,7 @@
   "provenance": {
     "generator": "idl-src-gen@6765bd8b9837e3c1af0a4d7e6465751fbf29a3a7",
     "source_idl": "glam managed anchor_v1/idls/external/jupiter_lending (idl fe9ba7063fcb)",
-    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_jupiter_staging (idl f424fb73040c)",
+    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_jupiter_staging (idl 90b7776b7a96)",
     "config_revision": 1
   },
   "instructions": [
