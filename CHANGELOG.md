@@ -1,5 +1,16 @@
 # Changelog
 
+## [25.22.0](https://github.com/glamsystems/glam-sdk-java/compare/25.21.0...25.22.0) (2026-10-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* **idl:** the staging mint ObservationState is a plain type; its account readers, filters, discriminator and FACTORY are gone, and its remaining read(byte[], int) and offsets address the plain layout.
+
+### Bug Fixes
+
+* **idl:** sync idls/src ([5a1a46b](https://github.com/glamsystems/glam-sdk-java/commit/5a1a46b05748c20e5d846b8397c282342a53d968))
+
 ## [25.21.0](https://github.com/glamsystems/glam-sdk-java/compare/25.20.0...25.21.0) (2026-10-10)
 
 
