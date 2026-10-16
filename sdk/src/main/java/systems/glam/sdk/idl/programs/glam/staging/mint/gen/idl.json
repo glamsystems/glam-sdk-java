@@ -8259,32 +8259,6 @@
   ],
   "accounts": [
     {
-      "name": "GlobalConfig",
-      "discriminator": [
-        149,
-        8,
-        156,
-        202,
-        160,
-        252,
-        176,
-        217
-      ]
-    },
-    {
-      "name": "ObservationState",
-      "discriminator": [
-        122,
-        174,
-        197,
-        53,
-        129,
-        9,
-        165,
-        132
-      ]
-    },
-    {
       "name": "RequestQueue",
       "discriminator": [
         172,
@@ -8295,19 +8269,6 @@
         63,
         70,
         234
-      ]
-    },
-    {
-      "name": "StateAccount",
-      "discriminator": [
-        142,
-        247,
-        54,
-        95,
-        85,
-        133,
-        249,
-        103
       ]
     }
   ],

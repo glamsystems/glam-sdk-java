@@ -5,12 +5,14 @@ import software.sava.idl.clients.core.gen.ProgramError;
 
 public sealed interface ExtLoopscaleError extends ProgramError permits
     ExtLoopscaleError.AutoCloseLoanNotSupported,
-    ExtLoopscaleError.InvalidVaultTokenAccount {
+    ExtLoopscaleError.InvalidVaultTokenAccount,
+    ExtLoopscaleError.VaultPaidRent {
 
   static ExtLoopscaleError getInstance(final int errorCode) {
     return switch (errorCode) {
       case 6000 -> AutoCloseLoanNotSupported.INSTANCE;
       case 6001 -> InvalidVaultTokenAccount.INSTANCE;
+      case 6002 -> VaultPaidRent.INSTANCE;
       default -> null;
     };
   }
@@ -26,6 +28,13 @@ public sealed interface ExtLoopscaleError extends ProgramError permits
 
     public static final InvalidVaultTokenAccount INSTANCE = new InvalidVaultTokenAccount(
         6001, "Vault token account must be the GLAM vault ATA for the expected mint"
+    );
+  }
+
+  record VaultPaidRent(int code, String msg) implements ExtLoopscaleError {
+
+    public static final VaultPaidRent INSTANCE = new VaultPaidRent(
+        6002, "The vault's SOL paid for an account Loopscale created; the signer creates it first"
     );
   }
 }

@@ -8,7 +8,7 @@ its members and changes only when that membership does, while the volatile count
 versions stay on the console summaries and the movement log. Ordered by program and channel,
 and carrying no timestamp.
 
-== Next gap (12) ==
+== Next gap (15) ==
 
 GLAM Config: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_config.json differs from the deployed idl.json
   instructions added (2): deprecate_asset_meta, update_fee_authority
@@ -42,13 +42,20 @@ GLAM Staging Jupiter: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext
   instructions removed (2): price_jupiter_borrow_positions, price_jupiter_earn_positions
   accounts added (1): StateAccount
 
+GLAM Staging Kamino: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_kamino-staging.json differs from the deployed idl.json
+  accounts added (1): StateAccount
+
 GLAM Staging Loopscale: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_loopscale-staging.json differs from the deployed idl.json
   instructions removed (3): price_loopscale_loans, price_loopscale_strategies, price_loopscale_vault_positions
   accounts added (1): StateAccount
+  errors added (1): VaultPaidRent
 
 GLAM Staging MarginFi: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_marginfi-staging.json differs from the deployed idl.json
   instructions removed (1): price_marginfi_accounts
   accounts added (1): StateAccount
+
+GLAM Staging Mint: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/glam_mint-staging.json differs from the deployed idl.json
+  accounts added (3): GlobalConfig, ObservationState, StateAccount
 
 GLAM Staging Neutral Trade: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_neutral-staging.json differs from the deployed idl.json
   instructions removed (1): price_neutral_bundle_depositors
@@ -69,4 +76,7 @@ GLAM Staging Phoenix: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext
 
 GLAM Staging Registered Positions: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_rpi-staging.json differs from the deployed idl.json
   instructions removed (1): price_registered_positions
+  accounts added (1): StateAccount
+
+GLAM Staging SPL: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_spl-staging.json differs from the deployed idl.json
   accounts added (1): StateAccount

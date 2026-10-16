@@ -1,23 +1,24 @@
 {
   "program": "gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq",
-  "deployed": "anchor",
-  "lastDeploySlot": 450444025,
+  "deployed": "metadata",
+  "lastDeploySlot": 457065973,
   "programDataState": "upgradeable",
   "programDataStateSlot": 439884391,
-  "programDataPayloadSha256": "a1ef3120b2a04e43974a185b57e0472ec36a422d959b94da4ae96c734fc6627c",
+  "programDataPayloadSha256": "970971882e0b5afa89400559f685274bed9e73132a455f153bb64809a9c27556",
   "programDataPayloadLength": 697448,
   "channels": {
-    "anchor": {
-      "origin": "7ayMH9cApsJFnGhDfPFJdmMwFFKPMEaLRYyYCWmWoj4N",
-      "hash": "8e3bd6f28eddd32a3a15cd62f07789a0cd542c24a413dafafa455308508f0070",
+    "metadata": {
+      "origin": "FBZEi7nEcNi5VrgdRhvKwcQ5tDoaqcHeYf3wQ7TY4DDs",
+      "hash": "fc5b7b2c0d475f91e54c5a3016d951271518a827a313df34979a56bfdd89a6e0",
       "matchesDeployed": true,
       "verbatim": "idl.json"
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_kamino-staging.json",
       "hash": "8e3bd6f28eddd32a3a15cd62f07789a0cd542c24a413dafafa455308508f0070",
-      "matchesDeployed": true,
-      "verbatim": "vcs.original.json"
+      "matchesDeployed": false,
+      "file": "vcs.json",
+      "verbatim": "vcs.json"
     }
   }
 }

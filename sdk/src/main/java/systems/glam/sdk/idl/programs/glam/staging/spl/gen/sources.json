@@ -1,23 +1,24 @@
 {
   "program": "gstgs9nJgX8PmRHWAAEP9H7xT3ZkaPWSGPYbj3mXdTa",
-  "deployed": "anchor",
-  "lastDeploySlot": 445449015,
+  "deployed": "metadata",
+  "lastDeploySlot": 457064386,
   "programDataState": "upgradeable",
   "programDataStateSlot": 439884391,
-  "programDataPayloadSha256": "32f658469b0cff64a4949230dafb76cd1af79a53c3e8cf6c17cf81140a47bd9e",
+  "programDataPayloadSha256": "074b90bcc0413516f185dd0d0f8c5d6554701c3ddc7fba36522bc9291c21b53c",
   "programDataPayloadLength": 344536,
   "channels": {
-    "anchor": {
-      "origin": "HcpCvC6FFGKSjSFRZXLS9P1HT9YARBF86oaLayiVJHPi",
-      "hash": "14ab61002604fa2b9e380f63e1ceda73ae592a6906202948fc731d0f2364f514",
+    "metadata": {
+      "origin": "2DMKJoGovT1zNZKUAMjKAfqtAUhdpD5njCxwJDzKir88",
+      "hash": "27f9e4d5d93fd21fd7a20f8fe2593ac193d3156776c8c3b47588b6ee39130e7b",
       "matchesDeployed": true,
       "verbatim": "idl.json"
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_spl-staging.json",
       "hash": "14ab61002604fa2b9e380f63e1ceda73ae592a6906202948fc731d0f2364f514",
-      "matchesDeployed": true,
-      "verbatim": "vcs.original.json"
+      "matchesDeployed": false,
+      "file": "vcs.json",
+      "verbatim": "vcs.json"
     }
   }
 }

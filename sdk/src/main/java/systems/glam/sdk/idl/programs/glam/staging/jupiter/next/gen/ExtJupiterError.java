@@ -12,7 +12,9 @@ public sealed interface ExtJupiterError extends ProgramError permits
     ExtJupiterError.InvalidRemainingAccountIndices,
     ExtJupiterError.RemainingAccountsCountMismatch,
     ExtJupiterError.NoopOperate,
-    ExtJupiterError.GlamAccountInRemainingAccounts {
+    ExtJupiterError.GlamAccountInRemainingAccounts,
+    ExtJupiterError.VaultPaidRent,
+    ExtJupiterError.PositionRentMismatch {
 
   static ExtJupiterError getInstance(final int errorCode) {
     return switch (errorCode) {
@@ -25,6 +27,8 @@ public sealed interface ExtJupiterError extends ProgramError permits
       case 6006 -> RemainingAccountsCountMismatch.INSTANCE;
       case 6007 -> NoopOperate.INSTANCE;
       case 6008 -> GlamAccountInRemainingAccounts.INSTANCE;
+      case 6009 -> VaultPaidRent.INSTANCE;
+      case 6010 -> PositionRentMismatch.INSTANCE;
       default -> null;
     };
   }
@@ -89,6 +93,20 @@ public sealed interface ExtJupiterError extends ProgramError permits
 
     public static final GlamAccountInRemainingAccounts INSTANCE = new GlamAccountInRemainingAccounts(
         6008, "Remaining accounts must not include the GLAM state, the vault, the integration authority, or a token account the vault owns"
+    );
+  }
+
+  record VaultPaidRent(int code, String msg) implements ExtJupiterError {
+
+    public static final VaultPaidRent INSTANCE = new VaultPaidRent(
+        6009, "The vault's SOL paid for an account Jupiter created; the signer provides it first"
+    );
+  }
+
+  record PositionRentMismatch(int code, String msg) implements ExtJupiterError {
+
+    public static final PositionRentMismatch INSTANCE = new PositionRentMismatch(
+        6010, "The rent Jupiter took for the new position differs from the signer's prefund"
     );
   }
 }

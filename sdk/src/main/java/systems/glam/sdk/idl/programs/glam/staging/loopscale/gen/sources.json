@@ -15,7 +15,7 @@
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_loopscale-staging.json",
-      "hash": "9885d9e39d419ee9e63d654f87497a92bb0620e0aea0f2bc72130e0d0d995deb",
+      "hash": "b85d0fd532e041c5d8b2fb777de33f71f40b5138a83cfdf4578ac5c1ce322488",
       "matchesDeployed": false,
       "file": "vcs.json",
       "verbatim": "vcs.json"
