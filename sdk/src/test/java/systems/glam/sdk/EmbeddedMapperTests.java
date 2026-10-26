@@ -13,7 +13,11 @@ import systems.glam.ix.proxy.MapResult;
 import systems.glam.ix.proxy.UnsupportedReason;
 import systems.glam.sdk.idl.programs.glam.cctp.gen.ExtCctpProgram;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolProgram;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.ExtBridgePDAs;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.ExtBridgeProgram;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.CctpDepositForBurnArgs;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.DepositForBurnParams;
+import systems.glam.sdk.mapping.GlamSuppliedAccounts;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,6 +25,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static software.sava.core.accounts.PublicKey.fromBase58Encoded;
+import static systems.glam.sdk.tests.MappingFixtures.globalConfig;
+import static systems.glam.sdk.tests.MappingFixtures.key;
 
 /// What a consumer sees with only the sdk on its module path: a mapper built from the
 /// documents the jar embeds, with no directory to mount, mapping a native instruction onto
@@ -34,6 +40,7 @@ final class EmbeddedMapperTests {
   private static final PublicKey PYUSD = fromBase58Encoded("2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo");
   private static final PublicKey KAMINO_LENDING = fromBase58Encoded("KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD");
   private static final PublicKey CCTP_TOKEN_MESSENGER = fromBase58Encoded("CCTPV2vPZJS2u2BBsUoscuikbYjnpFmbFsvVuJdgUMQe");
+  private static final PublicKey CCTP_MESSAGE_TRANSMITTER = fromBase58Encoded("CCTPV2Sm4AdWt5296sk4P66VBZ7bEhcARwFaaS9YPbeC");
   private static final PublicKey PHOENIX = fromBase58Encoded("EtrnLzgbS7nMMy5fbD42kXiUzGg8XQzJ972Xtk1cjWih");
   // the token messenger's deposit_for_burn, as the documents carry it
   private static final byte[] NATIVE_DEPOSIT_FOR_BURN = {(byte) 215, 60, 61, 46, 114, 55, (byte) 128, (byte) 176};
@@ -161,13 +168,21 @@ final class EmbeddedMapperTests {
 
   /// CCTP's token messenger is proxied by the program each deployment carries the bridge path
   /// in: ext_cctp in production, ext_bridge on staging, where the native deposit_for_burn maps
-  /// onto cctp_deposit_for_burn and not onto the managed handler.
+  /// onto cctp_deposit_for_burn and not onto the managed handler. Mapped, the burn is the
+  /// instruction the deployment's generated client builds for it: the GLAM seats, then the
+  /// native accounts in the handler's order, the vault seated unsigned and the caller's
+  /// event-data keypair still signing. On staging the handler also reads the vault's CCTP route
+  /// set, which the document derives and the supplier answers for, so the plain context is
+  /// refused rather than mapped one account short.
   @Test
   void theCctpTokenMessengerIsProxiedByEachDeploymentsBridgeProgram() {
+    final var solana = SolanaAccounts.MAIN_NET;
+    final var params = new DepositForBurnParams(1_000_000L, 6L, key(50), key(51), 2_500L, 1_000L);
     for (final var env : GlamEnv.values()) {
       final var glamAccounts = env.glamAccounts();
       final var production = env == GlamEnv.PRODUCTION;
-      final var document = glamAccounts.createMapper().documentOf(CCTP_TOKEN_MESSENGER);
+      final var mapper = glamAccounts.createMapper();
+      final var document = mapper.documentOf(CCTP_TOKEN_MESSENGER);
       assertNotNull(document, env + ": no CCTP token messenger document");
       assertEquals(
           production ? glamAccounts.cctpIntegrationProgram() : glamAccounts.bridgeIntegrationProgram(),
@@ -181,7 +196,86 @@ final class EmbeddedMapperTests {
           entry.handler().discriminator(),
           env + ": deposit_for_burn maps onto the wrong handler"
       );
+
+      final var vaultAccounts = GlamVaultAccounts.createAccounts(glamAccounts, FEE_PAYER, STATE_KEY);
+      final var vault = vaultAccounts.vaultPublicKey();
+      final var deposit = depositForBurn(vault, params);
+      final Instruction expected;
+      final MapResult result;
+      if (production) {
+        expected = ExtCctpProgram.depositForBurn(
+            glamAccounts.invokedCctpIntegrationProgram(), solana, STATE_KEY, vault, FEE_PAYER,
+            glamAccounts.readCctpIntegrationAuthority().publicKey(), CCTP_TOKEN_MESSENGER, glamAccounts.protocolProgram(),
+            key(40), key(41), key(42), key(43), key(44), key(45), key(46), key(47), key(48), key(49),
+            CCTP_MESSAGE_TRANSMITTER, CCTP_TOKEN_MESSENGER, solana.tokenProgram(), key(52),
+            new systems.glam.sdk.idl.programs.glam.cctp.gen.types.DepositForBurnParams(
+                params.amount(), params.destinationDomain(), params.mintRecipient(), params.destinationCaller(),
+                params.maxFee(), params.minFinalityThreshold()
+            )
+        );
+        result = mapper.map(deposit, vaultAccounts.mappingContext());
+      } else {
+        expected = ExtBridgeProgram.cctpDepositForBurn(
+            glamAccounts.invokedBridgeIntegrationProgram(), solana, STATE_KEY, vault, FEE_PAYER,
+            glamAccounts.readBridgeIntegrationAuthority().publicKey(), CCTP_TOKEN_MESSENGER, glamAccounts.protocolProgram(),
+            ExtBridgePDAs.bridgeRoutes1PDA(glamAccounts.bridgeIntegrationProgram(), STATE_KEY).publicKey(),
+            key(40), key(41), key(42), key(43), key(44), key(45), key(46), key(47), key(48), key(49),
+            CCTP_MESSAGE_TRANSMITTER, CCTP_TOKEN_MESSENGER, solana.tokenProgram(), key(52),
+            new CctpDepositForBurnArgs(params)
+        );
+        final var refused = assertInstanceOf(MapResult.Unsupported.class, mapper.map(deposit, vaultAccounts.mappingContext()),
+            "staging: the route set needs a supplier");
+        assertEquals(UnsupportedReason.CONTEXT, refused.reason(), "staging: refused for want of the supplier");
+        result = mapper.map(deposit, vaultAccounts.mappingContext(GlamSuppliedAccounts.create(globalConfig())));
+      }
+      final var mapped = assertInstanceOf(MapResult.Mapped.class, result, () -> env + ": " + result).instruction();
+      assertEquals(expected.programId(), mapped.programId(), env + ": the deployment's bridge program");
+      assertEquals(expected.accounts(), mapped.accounts(), env + ": the accounts the generated client seats");
+      assertArrayEquals(
+          Arrays.copyOfRange(expected.data(), expected.offset(), expected.offset() + expected.len()),
+          Arrays.copyOfRange(mapped.data(), mapped.offset(), mapped.offset() + mapped.len()),
+          env + ": the handler's discriminator, then the burn's params"
+      );
+      assertEquals(
+          List.of(FEE_PAYER, key(49)),
+          mapped.accounts().stream().filter(AccountMeta::signer).map(AccountMeta::publicKey).toList(),
+          env + ": the fee payer and the event-data keypair sign; the vault does not"
+      );
     }
+  }
+
+  /// The token messenger's deposit_for_burn as the documents list its accounts: the vault owns the
+  /// burn account and signs for it, the fee payer pays the event's rent, and the CCTP accounts of
+  /// the transfer follow, each distinguishable by key, with the programs the document expects.
+  private static Instruction depositForBurn(final PublicKey vault, final DepositForBurnParams params) {
+    final var solana = SolanaAccounts.MAIN_NET;
+    final byte[] data = new byte[NATIVE_DEPOSIT_FOR_BURN.length + DepositForBurnParams.BYTES];
+    System.arraycopy(NATIVE_DEPOSIT_FOR_BURN, 0, data, 0, NATIVE_DEPOSIT_FOR_BURN.length);
+    params.write(data, NATIVE_DEPOSIT_FOR_BURN.length);
+    return Instruction.createInstruction(
+        CCTP_TOKEN_MESSENGER,
+        List.of(
+            AccountMeta.createReadOnlySigner(vault),          // owner
+            AccountMeta.createWritableSigner(FEE_PAYER),      // event_rent_payer
+            AccountMeta.createRead(key(40)),                  // sender_authority_pda
+            AccountMeta.createWrite(key(41)),                 // burn_token_account
+            AccountMeta.createRead(key(42)),                  // denylist_account
+            AccountMeta.createWrite(key(43)),                 // message_transmitter
+            AccountMeta.createRead(key(44)),                  // token_messenger
+            AccountMeta.createRead(key(45)),                  // remote_token_messenger
+            AccountMeta.createRead(key(46)),                  // token_minter
+            AccountMeta.createWrite(key(47)),                 // local_token
+            AccountMeta.createWrite(key(48)),                 // burn_token_mint
+            AccountMeta.createWritableSigner(key(49)),        // message_sent_event_data
+            AccountMeta.createRead(CCTP_MESSAGE_TRANSMITTER), // message_transmitter_program
+            AccountMeta.createRead(CCTP_TOKEN_MESSENGER),     // token_messenger_minter_program
+            AccountMeta.createRead(solana.tokenProgram()),
+            AccountMeta.createRead(solana.systemProgram()),
+            AccountMeta.createRead(key(52)),                  // event_authority
+            AccountMeta.createRead(CCTP_TOKEN_MESSENGER)      // program
+        ),
+        data
+    );
   }
 
   /// ext_phoenix takes the native accounts as remaining accounts after its own seven and

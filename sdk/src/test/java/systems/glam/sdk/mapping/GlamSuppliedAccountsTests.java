@@ -12,12 +12,14 @@ import systems.glam.sdk.GlamVaultAccounts;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.AssetMeta;
 import systems.glam.sdk.idl.programs.glam.config.gen.types.OracleSource;
 import systems.glam.sdk.idl.programs.glam.jupiter.KaminoReserveRefresh;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.ExtBridgePDAs;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.jupiter.api.Assertions.*;
 import static software.sava.core.accounts.PublicKey.fromBase58Encoded;
 import static systems.glam.sdk.mapping.LoopscaleStrategyMarketResolverTests.params;
@@ -31,6 +33,7 @@ final class GlamSuppliedAccountsTests {
   private static final PublicKey ORCA_PROXY = GlamAccounts.MAIN_NET_STAGING.orcaIntegrationProgram();
   private static final PublicKey WHIRLPOOL = fromBase58Encoded("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc");
   private static final PublicKey LOOPSCALE = LoopscaleAccounts.MAIN_NET.loopscaleProgram();
+  private static final PublicKey CCTP_TOKEN_MESSENGER = fromBase58Encoded("CCTPV2vPZJS2u2BBsUoscuikbYjnpFmbFsvVuJdgUMQe");
   private static final List<Role> MARKET_ROLE = List.of(new Role(LoopscaleStrategyMarketResolver.LOOPSCALE_STRATEGY_MARKET, List.of(STRATEGY_KEY), false));
 
   private static SuppliedAccountsRequest orcaRequest(final PublicKey mintA, final PublicKey mintB) {
@@ -82,6 +85,22 @@ final class GlamSuppliedAccountsTests {
         List.of(new Role("strategy_authority", List.of(), false)), updateStrategy(STRATEGY_KEY, params(null))
     );
     assertNull(supplier.apply(otherRole));
+
+    // the staging bridge's bridge_routes seat is derived as the document states it, under the bridge
+    // program from the seeds the mapper resolved; the instruction is not read
+    final var extBridge = GlamAccounts.MAIN_NET_STAGING.bridgeIntegrationProgram();
+    final var bridgeRoutes = new Role("bridge_routes", List.of(), false, new SuppliedAccountsRequest.Derivation(extBridge, List.of(
+        new SuppliedAccountsRequest.Const("bridge-routes".getBytes(US_ASCII)),
+        new SuppliedAccountsRequest.Account(STATE_KEY),
+        new SuppliedAccountsRequest.Const(new byte[]{1, 0})
+    )));
+    final var deposit = new SuppliedAccountsRequest(extBridge, CCTP_TOKEN_MESSENGER, "deposit_for_burn", "cctp_deposit_for_burn",
+        List.of(bridgeRoutes), updateStrategy(STRATEGY_KEY, null));
+    assertEquals(List.of(ExtBridgePDAs.bridgeRoutes1PDA(extBridge, STATE_KEY).publicKey()), supplier.apply(deposit));
+    // a derived seat beside a listed role is served by no resolver
+    final var mixed = new SuppliedAccountsRequest(extBridge, CCTP_TOKEN_MESSENGER, "deposit_for_burn", "cctp_deposit_for_burn",
+        List.of(bridgeRoutes, MARKET_ROLE.getFirst()), updateStrategy(STRATEGY_KEY, null));
+    assertNull(supplier.apply(mixed));
 
     // without a strategy lookup, an update naming its market is served and one naming none is not
     final var noLookup = GlamSuppliedAccounts.create(globalConfig());

@@ -13,8 +13,37 @@ public final class ExtBridgePDAs {
   public static ProgramDerivedAddress bridgeRegistryPDA(final PublicKey program,
                                                         final PublicKey glamStateAccount) {
     return PublicKey.findProgramAddress(List.of(
-      "bridge-registry".getBytes(US_ASCII),
+      "bridge-registry-v2".getBytes(US_ASCII),
       glamStateAccount.toByteArray()
+    ), program);
+  }
+
+  /// @param protocol u16 seed value encoding is program-specific — commonly its little-endian bytes (`SerDeUtil` `*LESeed` helpers) or its decimal string (`SerDeUtil.asciiSeed`); verify against the program source.
+  public static ProgramDerivedAddress bridgeRoutesPDA(final PublicKey program,
+                                                      final PublicKey glamStateAccount,
+                                                      final byte[] protocol) {
+    return PublicKey.findProgramAddress(List.of(
+      "bridge-routes".getBytes(US_ASCII),
+      glamStateAccount.toByteArray(),
+      protocol
+    ), program);
+  }
+
+  public static ProgramDerivedAddress bridgeRoutes1PDA(final PublicKey program,
+                                                       final PublicKey glamStateAccount) {
+    return PublicKey.findProgramAddress(List.of(
+      "bridge-routes".getBytes(US_ASCII),
+      glamStateAccount.toByteArray(),
+      "\u0001\u0000".getBytes(US_ASCII)
+    ), program);
+  }
+
+  public static ProgramDerivedAddress bridgeRoutes2PDA(final PublicKey program,
+                                                       final PublicKey glamStateAccount) {
+    return PublicKey.findProgramAddress(List.of(
+      "bridge-routes".getBytes(US_ASCII),
+      glamStateAccount.toByteArray(),
+      "\u0004\u0000".getBytes(US_ASCII)
     ), program);
   }
 

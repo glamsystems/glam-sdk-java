@@ -38,7 +38,9 @@ plus service components for operating against it.
     a handler reads that a native instruction never carries),
     `mapping/` (`GlamSuppliedAccounts` and the resolvers behind it: the Orca
     liquidity handlers' oracle prefix under GLAM's one oracle-selection rule,
-    and the Loopscale `update_strategy` market),
+    the Loopscale `update_strategy` market, and `DerivedAccountResolver` for
+    an account a handler seats at an account index and its IDL derives from
+    constant and account seeds, the staging bridge's `bridge_routes` first),
     `EmbeddedMappings` (the documents the jar carries, indexed and held to
     their environment and proxy programs), and the hand-written Jupiter swap
     wrapper in `idl/programs/glam/jupiter/`.
@@ -423,7 +425,12 @@ skips it, so the two answer different halves.
   proxies through a program the deployment's `GlamAccounts` do not hold, and
   `GlamAccounts.createMapper(Path|Collection)` refuses the other
   environment's documents by name. The proxy program ids differ, and a wrong
-  mapper would fail on chain, not here.
+  mapper would fail on chain, not here. A document and the client of its proxy
+  program are regenerated separately (the sync brings one, idl-src-gen the
+  other), so `EmbeddedMappingsProvenanceTests` holds every embedded document
+  to the IDL digest its proxy program's `gen/idl.json` carries: the one behind
+  a redeploy fails `check` here instead of seating a handler's old accounts on
+  chain.
 - Every long-running `services` loop (`BatchSqlExecutor`, `AccountFetcher`,
   `GlobalConfigCache`, `StakePoolCache`) takes a trailing
   `systems.glam.services.LoopHeartbeat` through a factory overload and ticks

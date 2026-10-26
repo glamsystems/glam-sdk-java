@@ -8,10 +8,10 @@ import software.sava.core.programs.Discriminator;
 import software.sava.core.tx.Instruction;
 import software.sava.idl.clients.core.gen.SerDe;
 
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.BridgeRoute;
+import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.BridgeRouteIdentity;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.CctpDepositForBurnArgs;
-import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.CctpPolicy;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.CommitOftTransferArgs;
-import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.LayerzeroOftRoute;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.ManagedCctpDepositForBurnArgs;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.PrepareOftTransferArgs;
 import systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types.SettleManagedTransferArgs;
@@ -23,76 +23,102 @@ import static software.sava.core.accounts.meta.AccountMeta.createRead;
 import static software.sava.core.accounts.meta.AccountMeta.createReadOnlySigner;
 import static software.sava.core.accounts.meta.AccountMeta.createWritableSigner;
 import static software.sava.core.accounts.meta.AccountMeta.createWrite;
+import static software.sava.core.encoding.ByteUtil.getInt16LE;
+import static software.sava.core.encoding.ByteUtil.putInt16LE;
 import static software.sava.core.programs.Discriminator.createAnchorDiscriminator;
 import static software.sava.core.programs.Discriminator.toDiscriminator;
 
 public final class ExtBridgeProgram {
 
-  public static final Discriminator ADD_LAYERZERO_OFT_ROUTE_DISCRIMINATOR = toDiscriminator(53, 181, 204, 38, 240, 57, 218, 148);
+  public static final Discriminator ADD_BRIDGE_ROUTE_DISCRIMINATOR = toDiscriminator(185, 38, 47, 76, 170, 103, 115, 198);
 
-  public static List<AccountMeta> addLayerzeroOftRouteKeys(final PublicKey glamStateKey,
-                                                           final PublicKey glamSignerKey,
-                                                           final PublicKey glamProtocolProgramKey) {
+  /// Adds a route with a new identity and commits the result.
+  ///
+  public static List<AccountMeta> addBridgeRouteKeys(final SolanaAccounts solanaAccounts,
+                                                     final PublicKey glamStateKey,
+                                                     final PublicKey glamSignerKey,
+                                                     final PublicKey bridgeRoutesKey,
+                                                     final PublicKey glamProtocolProgramKey) {
     return List.of(
       createWrite(glamStateKey),
       createWritableSigner(glamSignerKey),
-      createRead(glamProtocolProgramKey)
+      createWrite(bridgeRoutesKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram())
     );
   }
 
-  public static Instruction addLayerzeroOftRoute(final AccountMeta invokedExtBridgeProgramMeta,
-                                                 final PublicKey glamStateKey,
-                                                 final PublicKey glamSignerKey,
-                                                 final PublicKey glamProtocolProgramKey,
-                                                 final LayerzeroOftRoute route) {
-    final var keys = addLayerzeroOftRouteKeys(
+  /// Adds a route with a new identity and commits the result.
+  ///
+  /// @param protocol: u16
+  public static Instruction addBridgeRoute(final AccountMeta invokedExtBridgeProgramMeta,
+                                           final SolanaAccounts solanaAccounts,
+                                           final PublicKey glamStateKey,
+                                           final PublicKey glamSignerKey,
+                                           final PublicKey bridgeRoutesKey,
+                                           final PublicKey glamProtocolProgramKey,
+                                           final int protocol,
+                                           final BridgeRoute route) {
+    final var keys = addBridgeRouteKeys(
+      solanaAccounts,
       glamStateKey,
       glamSignerKey,
+      bridgeRoutesKey,
       glamProtocolProgramKey
     );
-    return addLayerzeroOftRoute(invokedExtBridgeProgramMeta, keys, route);
+    return addBridgeRoute(invokedExtBridgeProgramMeta, keys, protocol, route);
   }
 
-  public static Instruction addLayerzeroOftRoute(final AccountMeta invokedExtBridgeProgramMeta,
-                                                 final List<AccountMeta> keys,
-                                                 final LayerzeroOftRoute route) {
-    final byte[] _data = new byte[8 + route.l()];
-    int i = ADD_LAYERZERO_OFT_ROUTE_DISCRIMINATOR.write(_data, 0);
+  /// Adds a route with a new identity and commits the result.
+  ///
+  /// @param protocol: u16
+  public static Instruction addBridgeRoute(final AccountMeta invokedExtBridgeProgramMeta,
+                                           final List<AccountMeta> keys,
+                                           final int protocol,
+                                           final BridgeRoute route) {
+    final byte[] _data = new byte[10 + route.l()];
+    int i = ADD_BRIDGE_ROUTE_DISCRIMINATOR.write(_data, 0);
+    putInt16LE(_data, i, protocol);
+    i += 2;
     route.write(_data, i);
 
     return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
   }
 
-  public record AddLayerzeroOftRouteIxData(Discriminator discriminator, LayerzeroOftRoute route) implements SerDe {
+  /// @param protocol: u16
+  public record AddBridgeRouteIxData(Discriminator discriminator, int protocol, BridgeRoute route) implements SerDe {
 
-    public static AddLayerzeroOftRouteIxData read(final Instruction instruction) {
+    public static AddBridgeRouteIxData read(final Instruction instruction) {
       return read(instruction.copyData(), 0);
     }
 
-    public static final int BYTES = 125;
+    public static final int PROTOCOL_OFFSET = 8;
+    public static final int ROUTE_OFFSET = 10;
 
-    public static final int ROUTE_OFFSET = 8;
-
-    public static AddLayerzeroOftRouteIxData read(final byte[] _data, final int _offset) {
+    public static AddBridgeRouteIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var route = LayerzeroOftRoute.read(_data, i);
-      return new AddLayerzeroOftRouteIxData(discriminator, route);
+      final var protocol = Short.toUnsignedInt(getInt16LE(_data, i));
+      i += 2;
+      final var route = BridgeRoute.read(_data, i);
+      return new AddBridgeRouteIxData(discriminator, protocol, route);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
+      putInt16LE(_data, i, protocol);
+      i += 2;
       i += route.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return BYTES;
+      return 8 + 2 + route.l();
     }
   }
 
@@ -100,6 +126,7 @@ public final class ExtBridgeProgram {
 
   /// Burns tokens through Circle CCTP without creating a managed inflight position.
   ///
+  /// @param bridgeRoutesKey discriminator, the header, the address and the pause, and decodes only the live set.
   public static List<AccountMeta> cctpDepositForBurnKeys(final SolanaAccounts solanaAccounts,
                                                          final PublicKey glamStateKey,
                                                          final PublicKey glamVaultKey,
@@ -107,6 +134,7 @@ public final class ExtBridgeProgram {
                                                          final PublicKey integrationAuthorityKey,
                                                          final PublicKey cpiProgramKey,
                                                          final PublicKey glamProtocolProgramKey,
+                                                         final PublicKey bridgeRoutesKey,
                                                          final PublicKey senderAuthorityPdaKey,
                                                          final PublicKey burnTokenAccountKey,
                                                          final PublicKey denylistAccountKey,
@@ -129,6 +157,7 @@ public final class ExtBridgeProgram {
       createRead(cpiProgramKey),
       createRead(glamProtocolProgramKey),
       createRead(solanaAccounts.systemProgram()),
+      createRead(bridgeRoutesKey),
       createRead(senderAuthorityPdaKey),
       createWrite(burnTokenAccountKey),
       createRead(denylistAccountKey),
@@ -148,6 +177,7 @@ public final class ExtBridgeProgram {
 
   /// Burns tokens through Circle CCTP without creating a managed inflight position.
   ///
+  /// @param bridgeRoutesKey discriminator, the header, the address and the pause, and decodes only the live set.
   public static Instruction cctpDepositForBurn(final AccountMeta invokedExtBridgeProgramMeta,
                                                final SolanaAccounts solanaAccounts,
                                                final PublicKey glamStateKey,
@@ -156,6 +186,7 @@ public final class ExtBridgeProgram {
                                                final PublicKey integrationAuthorityKey,
                                                final PublicKey cpiProgramKey,
                                                final PublicKey glamProtocolProgramKey,
+                                               final PublicKey bridgeRoutesKey,
                                                final PublicKey senderAuthorityPdaKey,
                                                final PublicKey burnTokenAccountKey,
                                                final PublicKey denylistAccountKey,
@@ -179,6 +210,7 @@ public final class ExtBridgeProgram {
       integrationAuthorityKey,
       cpiProgramKey,
       glamProtocolProgramKey,
+      bridgeRoutesKey,
       senderAuthorityPdaKey,
       burnTokenAccountKey,
       denylistAccountKey,
@@ -233,6 +265,84 @@ public final class ExtBridgeProgram {
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
       i += args.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
+  public static final Discriminator CLOSE_BRIDGE_ROUTES_DISCRIMINATOR = toDiscriminator(151, 223, 247, 180, 197, 58, 143, 6);
+
+  /// Closes a provider's route account once no policy references it.
+  ///
+  public static List<AccountMeta> closeBridgeRoutesKeys(final PublicKey glamStateKey,
+                                                        final PublicKey glamSignerKey,
+                                                        final PublicKey bridgeRoutesKey) {
+    return List.of(
+      createRead(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createWrite(bridgeRoutesKey)
+    );
+  }
+
+  /// Closes a provider's route account once no policy references it.
+  ///
+  /// @param protocol: u16
+  public static Instruction closeBridgeRoutes(final AccountMeta invokedExtBridgeProgramMeta,
+                                              final PublicKey glamStateKey,
+                                              final PublicKey glamSignerKey,
+                                              final PublicKey bridgeRoutesKey,
+                                              final int protocol) {
+    final var keys = closeBridgeRoutesKeys(
+      glamStateKey,
+      glamSignerKey,
+      bridgeRoutesKey
+    );
+    return closeBridgeRoutes(invokedExtBridgeProgramMeta, keys, protocol);
+  }
+
+  /// Closes a provider's route account once no policy references it.
+  ///
+  /// @param protocol: u16
+  public static Instruction closeBridgeRoutes(final AccountMeta invokedExtBridgeProgramMeta,
+                                              final List<AccountMeta> keys,
+                                              final int protocol) {
+    final byte[] _data = new byte[10];
+    int i = CLOSE_BRIDGE_ROUTES_DISCRIMINATOR.write(_data, 0);
+    putInt16LE(_data, i, protocol);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  /// @param protocol: u16
+  public record CloseBridgeRoutesIxData(Discriminator discriminator, int protocol) implements SerDe {
+
+    public static CloseBridgeRoutesIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int BYTES = 10;
+
+    public static final int PROTOCOL_OFFSET = 8;
+
+    public static CloseBridgeRoutesIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var protocol = Short.toUnsignedInt(getInt16LE(_data, i));
+      return new CloseBridgeRoutesIxData(discriminator, protocol);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      putInt16LE(_data, i, protocol);
+      i += 2;
       return i - _offset;
     }
 
@@ -353,65 +463,79 @@ public final class ExtBridgeProgram {
     }
   }
 
-  public static final Discriminator DELETE_LAYERZERO_OFT_ROUTE_DISCRIMINATOR = toDiscriminator(122, 191, 90, 182, 160, 67, 86, 227);
+  public static final Discriminator INIT_BRIDGE_ROUTES_DISCRIMINATOR = toDiscriminator(45, 95, 122, 73, 198, 178, 80, 180);
 
-  public static List<AccountMeta> deleteLayerzeroOftRouteKeys(final PublicKey glamStateKey,
-                                                              final PublicKey glamSignerKey,
-                                                              final PublicKey glamProtocolProgramKey) {
+  /// Creates a provider's routes account, empty; the route instructions grow it.
+  ///
+  public static List<AccountMeta> initBridgeRoutesKeys(final SolanaAccounts solanaAccounts,
+                                                       final PublicKey glamStateKey,
+                                                       final PublicKey glamSignerKey,
+                                                       final PublicKey bridgeRoutesKey) {
     return List.of(
-      createWrite(glamStateKey),
+      createRead(glamStateKey),
       createWritableSigner(glamSignerKey),
-      createRead(glamProtocolProgramKey)
+      createWrite(bridgeRoutesKey),
+      createRead(solanaAccounts.systemProgram())
     );
   }
 
-  public static Instruction deleteLayerzeroOftRoute(final AccountMeta invokedExtBridgeProgramMeta,
-                                                    final PublicKey glamStateKey,
-                                                    final PublicKey glamSignerKey,
-                                                    final PublicKey glamProtocolProgramKey,
-                                                    final LayerzeroOftRoute route) {
-    final var keys = deleteLayerzeroOftRouteKeys(
+  /// Creates a provider's routes account, empty; the route instructions grow it.
+  ///
+  /// @param protocol: u16
+  public static Instruction initBridgeRoutes(final AccountMeta invokedExtBridgeProgramMeta,
+                                             final SolanaAccounts solanaAccounts,
+                                             final PublicKey glamStateKey,
+                                             final PublicKey glamSignerKey,
+                                             final PublicKey bridgeRoutesKey,
+                                             final int protocol) {
+    final var keys = initBridgeRoutesKeys(
+      solanaAccounts,
       glamStateKey,
       glamSignerKey,
-      glamProtocolProgramKey
+      bridgeRoutesKey
     );
-    return deleteLayerzeroOftRoute(invokedExtBridgeProgramMeta, keys, route);
+    return initBridgeRoutes(invokedExtBridgeProgramMeta, keys, protocol);
   }
 
-  public static Instruction deleteLayerzeroOftRoute(final AccountMeta invokedExtBridgeProgramMeta,
-                                                    final List<AccountMeta> keys,
-                                                    final LayerzeroOftRoute route) {
-    final byte[] _data = new byte[8 + route.l()];
-    int i = DELETE_LAYERZERO_OFT_ROUTE_DISCRIMINATOR.write(_data, 0);
-    route.write(_data, i);
+  /// Creates a provider's routes account, empty; the route instructions grow it.
+  ///
+  /// @param protocol: u16
+  public static Instruction initBridgeRoutes(final AccountMeta invokedExtBridgeProgramMeta,
+                                             final List<AccountMeta> keys,
+                                             final int protocol) {
+    final byte[] _data = new byte[10];
+    int i = INIT_BRIDGE_ROUTES_DISCRIMINATOR.write(_data, 0);
+    putInt16LE(_data, i, protocol);
 
     return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
   }
 
-  public record DeleteLayerzeroOftRouteIxData(Discriminator discriminator, LayerzeroOftRoute route) implements SerDe {
+  /// @param protocol: u16
+  public record InitBridgeRoutesIxData(Discriminator discriminator, int protocol) implements SerDe {
 
-    public static DeleteLayerzeroOftRouteIxData read(final Instruction instruction) {
+    public static InitBridgeRoutesIxData read(final Instruction instruction) {
       return read(instruction.copyData(), 0);
     }
 
-    public static final int BYTES = 125;
+    public static final int BYTES = 10;
 
-    public static final int ROUTE_OFFSET = 8;
+    public static final int PROTOCOL_OFFSET = 8;
 
-    public static DeleteLayerzeroOftRouteIxData read(final byte[] _data, final int _offset) {
+    public static InitBridgeRoutesIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var route = LayerzeroOftRoute.read(_data, i);
-      return new DeleteLayerzeroOftRouteIxData(discriminator, route);
+      final var protocol = Short.toUnsignedInt(getInt16LE(_data, i));
+      return new InitBridgeRoutesIxData(discriminator, protocol);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += route.write(_data, i);
+      putInt16LE(_data, i, protocol);
+      i += 2;
       return i - _offset;
     }
 
@@ -425,6 +549,7 @@ public final class ExtBridgeProgram {
 
   /// Burns tokens through Circle CCTP and records a managed inflight bridge position.
   ///
+  /// @param bridgeRoutesKey discriminator, the header, the address and the pause, and decodes only the live set.
   public static List<AccountMeta> managedCctpDepositForBurnKeys(final SolanaAccounts solanaAccounts,
                                                                 final PublicKey glamStateKey,
                                                                 final PublicKey glamVaultKey,
@@ -433,6 +558,7 @@ public final class ExtBridgeProgram {
                                                                 final PublicKey cpiProgramKey,
                                                                 final PublicKey glamProtocolProgramKey,
                                                                 final PublicKey bridgeRegistryKey,
+                                                                final PublicKey bridgeRoutesKey,
                                                                 final PublicKey senderAuthorityPdaKey,
                                                                 final PublicKey burnTokenAccountKey,
                                                                 final PublicKey denylistAccountKey,
@@ -456,6 +582,7 @@ public final class ExtBridgeProgram {
       createRead(glamProtocolProgramKey),
       createRead(solanaAccounts.systemProgram()),
       createWrite(bridgeRegistryKey),
+      createRead(bridgeRoutesKey),
       createRead(senderAuthorityPdaKey),
       createWrite(burnTokenAccountKey),
       createRead(denylistAccountKey),
@@ -475,6 +602,7 @@ public final class ExtBridgeProgram {
 
   /// Burns tokens through Circle CCTP and records a managed inflight bridge position.
   ///
+  /// @param bridgeRoutesKey discriminator, the header, the address and the pause, and decodes only the live set.
   public static Instruction managedCctpDepositForBurn(final AccountMeta invokedExtBridgeProgramMeta,
                                                       final SolanaAccounts solanaAccounts,
                                                       final PublicKey glamStateKey,
@@ -484,6 +612,7 @@ public final class ExtBridgeProgram {
                                                       final PublicKey cpiProgramKey,
                                                       final PublicKey glamProtocolProgramKey,
                                                       final PublicKey bridgeRegistryKey,
+                                                      final PublicKey bridgeRoutesKey,
                                                       final PublicKey senderAuthorityPdaKey,
                                                       final PublicKey burnTokenAccountKey,
                                                       final PublicKey denylistAccountKey,
@@ -508,6 +637,7 @@ public final class ExtBridgeProgram {
       cpiProgramKey,
       glamProtocolProgramKey,
       bridgeRegistryKey,
+      bridgeRoutesKey,
       senderAuthorityPdaKey,
       burnTokenAccountKey,
       denylistAccountKey,
@@ -571,10 +701,89 @@ public final class ExtBridgeProgram {
     }
   }
 
+  public static final Discriminator PAUSE_BRIDGE_ROUTES_DISCRIMINATOR = toDiscriminator(62, 252, 48, 65, 79, 190, 236, 165);
+
+  /// Stops a provider's sends at once; the owner or a delegate holding the Pause permission.
+  ///
+  public static List<AccountMeta> pauseBridgeRoutesKeys(final PublicKey glamStateKey,
+                                                        final PublicKey glamSignerKey,
+                                                        final PublicKey bridgeRoutesKey) {
+    return List.of(
+      createRead(glamStateKey),
+      createReadOnlySigner(glamSignerKey),
+      createWrite(bridgeRoutesKey)
+    );
+  }
+
+  /// Stops a provider's sends at once; the owner or a delegate holding the Pause permission.
+  ///
+  /// @param protocol: u16
+  public static Instruction pauseBridgeRoutes(final AccountMeta invokedExtBridgeProgramMeta,
+                                              final PublicKey glamStateKey,
+                                              final PublicKey glamSignerKey,
+                                              final PublicKey bridgeRoutesKey,
+                                              final int protocol) {
+    final var keys = pauseBridgeRoutesKeys(
+      glamStateKey,
+      glamSignerKey,
+      bridgeRoutesKey
+    );
+    return pauseBridgeRoutes(invokedExtBridgeProgramMeta, keys, protocol);
+  }
+
+  /// Stops a provider's sends at once; the owner or a delegate holding the Pause permission.
+  ///
+  /// @param protocol: u16
+  public static Instruction pauseBridgeRoutes(final AccountMeta invokedExtBridgeProgramMeta,
+                                              final List<AccountMeta> keys,
+                                              final int protocol) {
+    final byte[] _data = new byte[10];
+    int i = PAUSE_BRIDGE_ROUTES_DISCRIMINATOR.write(_data, 0);
+    putInt16LE(_data, i, protocol);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  /// @param protocol: u16
+  public record PauseBridgeRoutesIxData(Discriminator discriminator, int protocol) implements SerDe {
+
+    public static PauseBridgeRoutesIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int BYTES = 10;
+
+    public static final int PROTOCOL_OFFSET = 8;
+
+    public static PauseBridgeRoutesIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var protocol = Short.toUnsignedInt(getInt16LE(_data, i));
+      return new PauseBridgeRoutesIxData(discriminator, protocol);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      putInt16LE(_data, i, protocol);
+      i += 2;
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return BYTES;
+    }
+  }
+
   public static final Discriminator PREPARE_OFT_TRANSFER_DISCRIMINATOR = toDiscriminator(192, 75, 97, 92, 178, 246, 220, 8);
 
   /// Prepares the auxiliary token account used by the OFT transfer flow.
   ///
+  /// @param bridgeRoutesKey discriminator, the header, the address and the pause, and decodes only the live set.
   public static List<AccountMeta> prepareOftTransferKeys(final SolanaAccounts solanaAccounts,
                                                          final PublicKey glamStateKey,
                                                          final PublicKey glamVaultKey,
@@ -586,7 +795,8 @@ public final class ExtBridgeProgram {
                                                          final PublicKey sourceMintKey,
                                                          final PublicKey auxiliaryTokenAccountKey,
                                                          final PublicKey cpiProgramKey,
-                                                         final PublicKey glamProtocolProgramKey) {
+                                                         final PublicKey glamProtocolProgramKey,
+                                                         final PublicKey bridgeRoutesKey) {
     return List.of(
       createWrite(glamStateKey),
       createWrite(glamVaultKey),
@@ -600,12 +810,14 @@ public final class ExtBridgeProgram {
       createRead(cpiProgramKey),
       createRead(glamProtocolProgramKey),
       createRead(solanaAccounts.systemProgram()),
+      createRead(bridgeRoutesKey),
       createRead(solanaAccounts.instructionsSysVar())
     );
   }
 
   /// Prepares the auxiliary token account used by the OFT transfer flow.
   ///
+  /// @param bridgeRoutesKey discriminator, the header, the address and the pause, and decodes only the live set.
   public static Instruction prepareOftTransfer(final AccountMeta invokedExtBridgeProgramMeta,
                                                final SolanaAccounts solanaAccounts,
                                                final PublicKey glamStateKey,
@@ -619,6 +831,7 @@ public final class ExtBridgeProgram {
                                                final PublicKey auxiliaryTokenAccountKey,
                                                final PublicKey cpiProgramKey,
                                                final PublicKey glamProtocolProgramKey,
+                                               final PublicKey bridgeRoutesKey,
                                                final PrepareOftTransferArgs args) {
     final var keys = prepareOftTransferKeys(
       solanaAccounts,
@@ -632,7 +845,8 @@ public final class ExtBridgeProgram {
       sourceMintKey,
       auxiliaryTokenAccountKey,
       cpiProgramKey,
-      glamProtocolProgramKey
+      glamProtocolProgramKey,
+      bridgeRoutesKey
     );
     return prepareOftTransfer(invokedExtBridgeProgramMeta, keys, args);
   }
@@ -691,6 +905,7 @@ public final class ExtBridgeProgram {
                                                             final PublicKey integrationAuthorityKey,
                                                             final PublicKey glamProtocolProgramKey,
                                                             final PublicKey glamConfigKey,
+                                                            final PublicKey solUsdOracleKey,
                                                             final PublicKey baseAssetOracleKey) {
     return List.of(
       createWrite(glamStateKey),
@@ -698,6 +913,7 @@ public final class ExtBridgeProgram {
       createRead(integrationAuthorityKey),
       createRead(glamProtocolProgramKey),
       createRead(glamConfigKey),
+      createRead(solUsdOracleKey),
       createRead(baseAssetOracleKey)
     );
   }
@@ -710,6 +926,7 @@ public final class ExtBridgeProgram {
                                                   final PublicKey integrationAuthorityKey,
                                                   final PublicKey glamProtocolProgramKey,
                                                   final PublicKey glamConfigKey,
+                                                  final PublicKey solUsdOracleKey,
                                                   final PublicKey baseAssetOracleKey) {
     final var keys = priceManagedTransfersKeys(
       glamStateKey,
@@ -717,6 +934,7 @@ public final class ExtBridgeProgram {
       integrationAuthorityKey,
       glamProtocolProgramKey,
       glamConfigKey,
+      solUsdOracleKey,
       baseAssetOracleKey
     );
     return priceManagedTransfers(invokedExtBridgeProgramMeta, keys);
@@ -729,69 +947,97 @@ public final class ExtBridgeProgram {
     return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, PRICE_MANAGED_TRANSFERS_DISCRIMINATOR);
   }
 
-  public static final Discriminator SET_CCTP_POLICY_DISCRIMINATOR = toDiscriminator(32, 88, 254, 15, 2, 206, 222, 234);
+  public static final Discriminator REMOVE_BRIDGE_ROUTE_DISCRIMINATOR = toDiscriminator(16, 154, 12, 127, 43, 206, 82, 98);
 
-  public static List<AccountMeta> setCctpPolicyKeys(final PublicKey glamStateKey,
-                                                    final PublicKey glamSignerKey,
-                                                    final PublicKey glamProtocolProgramKey) {
+  /// Removes every route with the identity and commits the result.
+  ///
+  public static List<AccountMeta> removeBridgeRouteKeys(final SolanaAccounts solanaAccounts,
+                                                        final PublicKey glamStateKey,
+                                                        final PublicKey glamSignerKey,
+                                                        final PublicKey bridgeRoutesKey,
+                                                        final PublicKey glamProtocolProgramKey) {
     return List.of(
       createWrite(glamStateKey),
       createWritableSigner(glamSignerKey),
-      createRead(glamProtocolProgramKey)
+      createWrite(bridgeRoutesKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram())
     );
   }
 
-  public static Instruction setCctpPolicy(final AccountMeta invokedExtBridgeProgramMeta,
-                                          final PublicKey glamStateKey,
-                                          final PublicKey glamSignerKey,
-                                          final PublicKey glamProtocolProgramKey,
-                                          final CctpPolicy policy) {
-    final var keys = setCctpPolicyKeys(
+  /// Removes every route with the identity and commits the result.
+  ///
+  /// @param protocol: u16
+  public static Instruction removeBridgeRoute(final AccountMeta invokedExtBridgeProgramMeta,
+                                              final SolanaAccounts solanaAccounts,
+                                              final PublicKey glamStateKey,
+                                              final PublicKey glamSignerKey,
+                                              final PublicKey bridgeRoutesKey,
+                                              final PublicKey glamProtocolProgramKey,
+                                              final int protocol,
+                                              final BridgeRouteIdentity identity) {
+    final var keys = removeBridgeRouteKeys(
+      solanaAccounts,
       glamStateKey,
       glamSignerKey,
+      bridgeRoutesKey,
       glamProtocolProgramKey
     );
-    return setCctpPolicy(invokedExtBridgeProgramMeta, keys, policy);
+    return removeBridgeRoute(invokedExtBridgeProgramMeta, keys, protocol, identity);
   }
 
-  public static Instruction setCctpPolicy(final AccountMeta invokedExtBridgeProgramMeta,
-                                          final List<AccountMeta> keys,
-                                          final CctpPolicy policy) {
-    final byte[] _data = new byte[8 + policy.l()];
-    int i = SET_CCTP_POLICY_DISCRIMINATOR.write(_data, 0);
-    policy.write(_data, i);
+  /// Removes every route with the identity and commits the result.
+  ///
+  /// @param protocol: u16
+  public static Instruction removeBridgeRoute(final AccountMeta invokedExtBridgeProgramMeta,
+                                              final List<AccountMeta> keys,
+                                              final int protocol,
+                                              final BridgeRouteIdentity identity) {
+    final byte[] _data = new byte[10 + identity.l()];
+    int i = REMOVE_BRIDGE_ROUTE_DISCRIMINATOR.write(_data, 0);
+    putInt16LE(_data, i, protocol);
+    i += 2;
+    identity.write(_data, i);
 
     return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
   }
 
-  public record SetCctpPolicyIxData(Discriminator discriminator, CctpPolicy policy) implements SerDe {
+  /// @param protocol: u16
+  public record RemoveBridgeRouteIxData(Discriminator discriminator, int protocol, BridgeRouteIdentity identity) implements SerDe {
 
-    public static SetCctpPolicyIxData read(final Instruction instruction) {
+    public static RemoveBridgeRouteIxData read(final Instruction instruction) {
       return read(instruction.copyData(), 0);
     }
 
-    public static final int POLICY_OFFSET = 8;
+    public static final int BYTES = 106;
 
-    public static SetCctpPolicyIxData read(final byte[] _data, final int _offset) {
+    public static final int PROTOCOL_OFFSET = 8;
+    public static final int IDENTITY_OFFSET = 10;
+
+    public static RemoveBridgeRouteIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var policy = CctpPolicy.read(_data, i);
-      return new SetCctpPolicyIxData(discriminator, policy);
+      final var protocol = Short.toUnsignedInt(getInt16LE(_data, i));
+      i += 2;
+      final var identity = BridgeRouteIdentity.read(_data, i);
+      return new RemoveBridgeRouteIxData(discriminator, protocol, identity);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += policy.write(_data, i);
+      putInt16LE(_data, i, protocol);
+      i += 2;
+      i += identity.write(_data, i);
       return i - _offset;
     }
 
     @Override
     public int l() {
-      return 8 + policy.l();
+      return BYTES;
     }
   }
 
@@ -885,71 +1131,173 @@ public final class ExtBridgeProgram {
     }
   }
 
-  public static final Discriminator UPDATE_LAYERZERO_OFT_ROUTE_DISCRIMINATOR = toDiscriminator(77, 162, 99, 1, 182, 142, 66, 172);
+  public static final Discriminator UNPAUSE_BRIDGE_ROUTES_DISCRIMINATOR = toDiscriminator(69, 88, 140, 22, 84, 85, 51, 96);
 
-  public static List<AccountMeta> updateLayerzeroOftRouteKeys(final PublicKey glamStateKey,
-                                                              final PublicKey glamSignerKey,
-                                                              final PublicKey glamProtocolProgramKey) {
+  /// Resumes a provider's sends; the owner only.
+  ///
+  public static List<AccountMeta> unpauseBridgeRoutesKeys(final PublicKey glamStateKey,
+                                                          final PublicKey glamSignerKey,
+                                                          final PublicKey bridgeRoutesKey) {
     return List.of(
-      createWrite(glamStateKey),
-      createWritableSigner(glamSignerKey),
-      createRead(glamProtocolProgramKey)
+      createRead(glamStateKey),
+      createReadOnlySigner(glamSignerKey),
+      createWrite(bridgeRoutesKey)
     );
   }
 
-  public static Instruction updateLayerzeroOftRoute(final AccountMeta invokedExtBridgeProgramMeta,
-                                                    final PublicKey glamStateKey,
-                                                    final PublicKey glamSignerKey,
-                                                    final PublicKey glamProtocolProgramKey,
-                                                    final LayerzeroOftRoute route) {
-    final var keys = updateLayerzeroOftRouteKeys(
+  /// Resumes a provider's sends; the owner only.
+  ///
+  /// @param protocol: u16
+  public static Instruction unpauseBridgeRoutes(final AccountMeta invokedExtBridgeProgramMeta,
+                                                final PublicKey glamStateKey,
+                                                final PublicKey glamSignerKey,
+                                                final PublicKey bridgeRoutesKey,
+                                                final int protocol) {
+    final var keys = unpauseBridgeRoutesKeys(
       glamStateKey,
       glamSignerKey,
-      glamProtocolProgramKey
+      bridgeRoutesKey
     );
-    return updateLayerzeroOftRoute(invokedExtBridgeProgramMeta, keys, route);
+    return unpauseBridgeRoutes(invokedExtBridgeProgramMeta, keys, protocol);
   }
 
-  public static Instruction updateLayerzeroOftRoute(final AccountMeta invokedExtBridgeProgramMeta,
-                                                    final List<AccountMeta> keys,
-                                                    final LayerzeroOftRoute route) {
-    final byte[] _data = new byte[8 + route.l()];
-    int i = UPDATE_LAYERZERO_OFT_ROUTE_DISCRIMINATOR.write(_data, 0);
-    route.write(_data, i);
+  /// Resumes a provider's sends; the owner only.
+  ///
+  /// @param protocol: u16
+  public static Instruction unpauseBridgeRoutes(final AccountMeta invokedExtBridgeProgramMeta,
+                                                final List<AccountMeta> keys,
+                                                final int protocol) {
+    final byte[] _data = new byte[10];
+    int i = UNPAUSE_BRIDGE_ROUTES_DISCRIMINATOR.write(_data, 0);
+    putInt16LE(_data, i, protocol);
 
     return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
   }
 
-  public record UpdateLayerzeroOftRouteIxData(Discriminator discriminator, LayerzeroOftRoute route) implements SerDe {
+  /// @param protocol: u16
+  public record UnpauseBridgeRoutesIxData(Discriminator discriminator, int protocol) implements SerDe {
 
-    public static UpdateLayerzeroOftRouteIxData read(final Instruction instruction) {
+    public static UnpauseBridgeRoutesIxData read(final Instruction instruction) {
       return read(instruction.copyData(), 0);
     }
 
-    public static final int BYTES = 125;
+    public static final int BYTES = 10;
 
-    public static final int ROUTE_OFFSET = 8;
+    public static final int PROTOCOL_OFFSET = 8;
 
-    public static UpdateLayerzeroOftRouteIxData read(final byte[] _data, final int _offset) {
+    public static UnpauseBridgeRoutesIxData read(final byte[] _data, final int _offset) {
       if (_data == null || _data.length == 0) {
         return null;
       }
       final var discriminator = createAnchorDiscriminator(_data, _offset);
       int i = _offset + discriminator.length();
-      final var route = LayerzeroOftRoute.read(_data, i);
-      return new UpdateLayerzeroOftRouteIxData(discriminator, route);
+      final var protocol = Short.toUnsignedInt(getInt16LE(_data, i));
+      return new UnpauseBridgeRoutesIxData(discriminator, protocol);
     }
 
     @Override
     public int write(final byte[] _data, final int _offset) {
       int i = _offset + discriminator.write(_data, _offset);
-      i += route.write(_data, i);
+      putInt16LE(_data, i, protocol);
+      i += 2;
       return i - _offset;
     }
 
     @Override
     public int l() {
       return BYTES;
+    }
+  }
+
+  public static final Discriminator UPDATE_BRIDGE_ROUTE_DISCRIMINATOR = toDiscriminator(124, 132, 202, 107, 210, 121, 209, 204);
+
+  /// Replaces the route with the same mint, recipient and provider and commits the result.
+  ///
+  public static List<AccountMeta> updateBridgeRouteKeys(final SolanaAccounts solanaAccounts,
+                                                        final PublicKey glamStateKey,
+                                                        final PublicKey glamSignerKey,
+                                                        final PublicKey bridgeRoutesKey,
+                                                        final PublicKey glamProtocolProgramKey) {
+    return List.of(
+      createWrite(glamStateKey),
+      createWritableSigner(glamSignerKey),
+      createWrite(bridgeRoutesKey),
+      createRead(glamProtocolProgramKey),
+      createRead(solanaAccounts.systemProgram())
+    );
+  }
+
+  /// Replaces the route with the same mint, recipient and provider and commits the result.
+  ///
+  /// @param protocol: u16
+  public static Instruction updateBridgeRoute(final AccountMeta invokedExtBridgeProgramMeta,
+                                              final SolanaAccounts solanaAccounts,
+                                              final PublicKey glamStateKey,
+                                              final PublicKey glamSignerKey,
+                                              final PublicKey bridgeRoutesKey,
+                                              final PublicKey glamProtocolProgramKey,
+                                              final int protocol,
+                                              final BridgeRoute route) {
+    final var keys = updateBridgeRouteKeys(
+      solanaAccounts,
+      glamStateKey,
+      glamSignerKey,
+      bridgeRoutesKey,
+      glamProtocolProgramKey
+    );
+    return updateBridgeRoute(invokedExtBridgeProgramMeta, keys, protocol, route);
+  }
+
+  /// Replaces the route with the same mint, recipient and provider and commits the result.
+  ///
+  /// @param protocol: u16
+  public static Instruction updateBridgeRoute(final AccountMeta invokedExtBridgeProgramMeta,
+                                              final List<AccountMeta> keys,
+                                              final int protocol,
+                                              final BridgeRoute route) {
+    final byte[] _data = new byte[10 + route.l()];
+    int i = UPDATE_BRIDGE_ROUTE_DISCRIMINATOR.write(_data, 0);
+    putInt16LE(_data, i, protocol);
+    i += 2;
+    route.write(_data, i);
+
+    return Instruction.createInstruction(invokedExtBridgeProgramMeta, keys, _data);
+  }
+
+  /// @param protocol: u16
+  public record UpdateBridgeRouteIxData(Discriminator discriminator, int protocol, BridgeRoute route) implements SerDe {
+
+    public static UpdateBridgeRouteIxData read(final Instruction instruction) {
+      return read(instruction.copyData(), 0);
+    }
+
+    public static final int PROTOCOL_OFFSET = 8;
+    public static final int ROUTE_OFFSET = 10;
+
+    public static UpdateBridgeRouteIxData read(final byte[] _data, final int _offset) {
+      if (_data == null || _data.length == 0) {
+        return null;
+      }
+      final var discriminator = createAnchorDiscriminator(_data, _offset);
+      int i = _offset + discriminator.length();
+      final var protocol = Short.toUnsignedInt(getInt16LE(_data, i));
+      i += 2;
+      final var route = BridgeRoute.read(_data, i);
+      return new UpdateBridgeRouteIxData(discriminator, protocol, route);
+    }
+
+    @Override
+    public int write(final byte[] _data, final int _offset) {
+      int i = _offset + discriminator.write(_data, _offset);
+      putInt16LE(_data, i, protocol);
+      i += 2;
+      i += route.write(_data, i);
+      return i - _offset;
+    }
+
+    @Override
+    public int l() {
+      return 8 + 2 + route.l();
     }
   }
 

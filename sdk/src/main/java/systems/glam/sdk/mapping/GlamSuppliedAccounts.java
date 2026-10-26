@@ -14,10 +14,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.function.Function;
 
-/// The accounts a GLAM handler reads from its remaining accounts that a native instruction never carries,
-/// resolved for the ix-mapper's supplied-account roles: the Orca liquidity handlers' oracle prefix from the
-/// global configuration ([OrcaOracleResolver]) and the Loopscale `update_strategy` market from the update or
-/// the strategy account ([LoopscaleStrategyMarketResolver]). Wire it through
+/// The accounts a GLAM handler reads that a native instruction never carries, from its remaining accounts or
+/// at a seat of its own, resolved for the ix-mapper's supplied-account roles: the Orca liquidity handlers'
+/// oracle prefix from the global configuration ([OrcaOracleResolver]), the Loopscale `update_strategy` market
+/// from the update or the strategy account ([LoopscaleStrategyMarketResolver]), and an account a handler
+/// seats at an account index that the document derives completely, such as the staging bridge handlers'
+/// `bridge_routes` ([DerivedAccountResolver]). Wire it through
 /// [systems.glam.sdk.GlamVaultAccounts#mappingContext(Function)].
 ///
 /// One instance serves one transaction build and is not thread-safe: it records the Kamino reserves it chose
@@ -25,7 +27,8 @@ import java.util.function.Function;
 /// ([#kaminoReserves()], [#kaminoReserveRefresh]); [#reset()] forgets them between builds when one instance
 /// serves several. A reserve is recorded when the supplier answers, so an instruction the mapper refuses
 /// after that (its remaining-accounts rule) leaves its reserves recorded. A role it does not serve is
-/// answered with null, which the mapper refuses with reason `context`; it invents no account.
+/// answered with null, which the mapper refuses with reason `context`; it invents no account. A request that
+/// seats a derived account beside a listed role is served by no resolver, since no handler asks for one.
 public final class GlamSuppliedAccounts implements Function<SuppliedAccountsRequest, List<PublicKey>> {
 
   private final OrcaOracleResolver orca;
@@ -69,6 +72,9 @@ public final class GlamSuppliedAccounts implements Function<SuppliedAccountsRequ
     }
     if (LoopscaleStrategyMarketResolver.serves(roles)) {
       return loopscale.resolve(request);
+    }
+    if (DerivedAccountResolver.serves(roles)) {
+      return DerivedAccountResolver.resolve(roles);
     }
     return null;
   }

@@ -21,78 +21,37 @@ import static software.sava.core.programs.Discriminator.toDiscriminator;
 /// @param protocol: u16
 /// @param sourceDecimals: u8
 /// @param providerInstructionCount: u16
-/// @param sourceAmount: u64
-/// @param quotedOutAmount: u64
 /// @param initialSourceBalance: u64
 /// @param initialProviderSequence: u64
-/// @param destinationChain: u16
-/// @param preparedSlot: u64
 /// @param bump: u8
 public record BridgeSession(PublicKey _address,
                             Discriminator discriminator,
                             PublicKey glamState,
-                            PublicKey signer,
                             PublicKey transferId,
                             int protocol,
-                            boolean managed,
-                            PublicKey sourceMint,
+                            TransferTerms terms,
                             int sourceDecimals,
                             PublicKey sourceTokenAccount,
-                            PublicKey providerProgram,
                             PublicKey providerConfig,
                             PublicKey providerSender,
-                            PublicKey providerDelegate,
                             PublicKey providerReceipt,
                             byte[] providerInstructionHash,
                             int providerInstructionCount,
-                            long sourceAmount,
-                            long quotedOutAmount,
                             long initialSourceBalance,
                             long initialProviderSequence,
-                            int destinationChain,
-                            PublicKey destinationRecipient,
-                            long quoteExpiresAt,
-                            long preparedSlot,
                             int bump) implements SerDe {
 
-  public static final int BYTES = 449;
   public static final int PROVIDER_INSTRUCTION_HASH_LEN = 32;
-  public static final Filter SIZE_FILTER = Filter.createDataSizeFilter(BYTES);
-
   public static final Discriminator DISCRIMINATOR = toDiscriminator(235, 118, 90, 227, 230, 173, 141, 184);
   public static final Filter DISCRIMINATOR_FILTER = Filter.createMemCompFilter(0, DISCRIMINATOR.data());
 
   public static final int GLAM_STATE_OFFSET = 8;
-  public static final int SIGNER_OFFSET = 40;
-  public static final int TRANSFER_ID_OFFSET = 72;
-  public static final int PROTOCOL_OFFSET = 104;
-  public static final int MANAGED_OFFSET = 106;
-  public static final int SOURCE_MINT_OFFSET = 107;
-  public static final int SOURCE_DECIMALS_OFFSET = 139;
-  public static final int SOURCE_TOKEN_ACCOUNT_OFFSET = 140;
-  public static final int PROVIDER_PROGRAM_OFFSET = 172;
-  public static final int PROVIDER_CONFIG_OFFSET = 204;
-  public static final int PROVIDER_SENDER_OFFSET = 236;
-  public static final int PROVIDER_DELEGATE_OFFSET = 268;
-  public static final int PROVIDER_RECEIPT_OFFSET = 300;
-  public static final int PROVIDER_INSTRUCTION_HASH_OFFSET = 332;
-  public static final int PROVIDER_INSTRUCTION_COUNT_OFFSET = 364;
-  public static final int SOURCE_AMOUNT_OFFSET = 366;
-  public static final int QUOTED_OUT_AMOUNT_OFFSET = 374;
-  public static final int INITIAL_SOURCE_BALANCE_OFFSET = 382;
-  public static final int INITIAL_PROVIDER_SEQUENCE_OFFSET = 390;
-  public static final int DESTINATION_CHAIN_OFFSET = 398;
-  public static final int DESTINATION_RECIPIENT_OFFSET = 400;
-  public static final int QUOTE_EXPIRES_AT_OFFSET = 432;
-  public static final int PREPARED_SLOT_OFFSET = 440;
-  public static final int BUMP_OFFSET = 448;
+  public static final int TRANSFER_ID_OFFSET = 40;
+  public static final int PROTOCOL_OFFSET = 72;
+  public static final int TERMS_OFFSET = 74;
 
   public static Filter createGlamStateFilter(final PublicKey glamState) {
     return Filter.createMemCompFilter(GLAM_STATE_OFFSET, glamState);
-  }
-
-  public static Filter createSignerFilter(final PublicKey signer) {
-    return Filter.createMemCompFilter(SIGNER_OFFSET, signer);
   }
 
   public static Filter createTransferIdFilter(final PublicKey transferId) {
@@ -105,96 +64,8 @@ public record BridgeSession(PublicKey _address,
     return Filter.createMemCompFilter(PROTOCOL_OFFSET, _data);
   }
 
-  public static Filter createManagedFilter(final boolean managed) {
-    return Filter.createMemCompFilter(MANAGED_OFFSET, new byte[]{(byte) (managed ? 1 : 0)});
-  }
-
-  public static Filter createSourceMintFilter(final PublicKey sourceMint) {
-    return Filter.createMemCompFilter(SOURCE_MINT_OFFSET, sourceMint);
-  }
-
-  public static Filter createSourceDecimalsFilter(final int sourceDecimals) {
-    return Filter.createMemCompFilter(SOURCE_DECIMALS_OFFSET, new byte[]{(byte) sourceDecimals});
-  }
-
-  public static Filter createSourceTokenAccountFilter(final PublicKey sourceTokenAccount) {
-    return Filter.createMemCompFilter(SOURCE_TOKEN_ACCOUNT_OFFSET, sourceTokenAccount);
-  }
-
-  public static Filter createProviderProgramFilter(final PublicKey providerProgram) {
-    return Filter.createMemCompFilter(PROVIDER_PROGRAM_OFFSET, providerProgram);
-  }
-
-  public static Filter createProviderConfigFilter(final PublicKey providerConfig) {
-    return Filter.createMemCompFilter(PROVIDER_CONFIG_OFFSET, providerConfig);
-  }
-
-  public static Filter createProviderSenderFilter(final PublicKey providerSender) {
-    return Filter.createMemCompFilter(PROVIDER_SENDER_OFFSET, providerSender);
-  }
-
-  public static Filter createProviderDelegateFilter(final PublicKey providerDelegate) {
-    return Filter.createMemCompFilter(PROVIDER_DELEGATE_OFFSET, providerDelegate);
-  }
-
-  public static Filter createProviderReceiptFilter(final PublicKey providerReceipt) {
-    return Filter.createMemCompFilter(PROVIDER_RECEIPT_OFFSET, providerReceipt);
-  }
-
-  public static Filter createProviderInstructionCountFilter(final int providerInstructionCount) {
-    final byte[] _data = new byte[2];
-    putInt16LE(_data, 0, providerInstructionCount);
-    return Filter.createMemCompFilter(PROVIDER_INSTRUCTION_COUNT_OFFSET, _data);
-  }
-
-  public static Filter createSourceAmountFilter(final long sourceAmount) {
-    final byte[] _data = new byte[8];
-    putInt64LE(_data, 0, sourceAmount);
-    return Filter.createMemCompFilter(SOURCE_AMOUNT_OFFSET, _data);
-  }
-
-  public static Filter createQuotedOutAmountFilter(final long quotedOutAmount) {
-    final byte[] _data = new byte[8];
-    putInt64LE(_data, 0, quotedOutAmount);
-    return Filter.createMemCompFilter(QUOTED_OUT_AMOUNT_OFFSET, _data);
-  }
-
-  public static Filter createInitialSourceBalanceFilter(final long initialSourceBalance) {
-    final byte[] _data = new byte[8];
-    putInt64LE(_data, 0, initialSourceBalance);
-    return Filter.createMemCompFilter(INITIAL_SOURCE_BALANCE_OFFSET, _data);
-  }
-
-  public static Filter createInitialProviderSequenceFilter(final long initialProviderSequence) {
-    final byte[] _data = new byte[8];
-    putInt64LE(_data, 0, initialProviderSequence);
-    return Filter.createMemCompFilter(INITIAL_PROVIDER_SEQUENCE_OFFSET, _data);
-  }
-
-  public static Filter createDestinationChainFilter(final int destinationChain) {
-    final byte[] _data = new byte[2];
-    putInt16LE(_data, 0, destinationChain);
-    return Filter.createMemCompFilter(DESTINATION_CHAIN_OFFSET, _data);
-  }
-
-  public static Filter createDestinationRecipientFilter(final PublicKey destinationRecipient) {
-    return Filter.createMemCompFilter(DESTINATION_RECIPIENT_OFFSET, destinationRecipient);
-  }
-
-  public static Filter createQuoteExpiresAtFilter(final long quoteExpiresAt) {
-    final byte[] _data = new byte[8];
-    putInt64LE(_data, 0, quoteExpiresAt);
-    return Filter.createMemCompFilter(QUOTE_EXPIRES_AT_OFFSET, _data);
-  }
-
-  public static Filter createPreparedSlotFilter(final long preparedSlot) {
-    final byte[] _data = new byte[8];
-    putInt64LE(_data, 0, preparedSlot);
-    return Filter.createMemCompFilter(PREPARED_SLOT_OFFSET, _data);
-  }
-
-  public static Filter createBumpFilter(final int bump) {
-    return Filter.createMemCompFilter(BUMP_OFFSET, new byte[]{(byte) bump});
+  public static Filter createTermsFilter(final TransferTerms terms) {
+    return Filter.createMemCompFilter(TERMS_OFFSET, terms.write());
   }
 
   public static BridgeSession read(final byte[] _data, final int _offset) {
@@ -233,27 +104,19 @@ public record BridgeSession(PublicKey _address,
     int i = _offset + discriminator.length();
     final var glamState = readPubKey(_data, i);
     i += 32;
-    final var signer = readPubKey(_data, i);
-    i += 32;
     final var transferId = readPubKey(_data, i);
     i += 32;
     final var protocol = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
-    final var managed = _data[i] == 1;
-    ++i;
-    final var sourceMint = readPubKey(_data, i);
-    i += 32;
+    final var terms = TransferTerms.read(_data, i);
+    i += terms.l();
     final var sourceDecimals = _data[i] & 0xFF;
     ++i;
     final var sourceTokenAccount = readPubKey(_data, i);
     i += 32;
-    final var providerProgram = readPubKey(_data, i);
-    i += 32;
     final var providerConfig = readPubKey(_data, i);
     i += 32;
     final var providerSender = readPubKey(_data, i);
-    i += 32;
-    final var providerDelegate = readPubKey(_data, i);
     i += 32;
     final var providerReceipt = readPubKey(_data, i);
     i += 32;
@@ -261,48 +124,26 @@ public record BridgeSession(PublicKey _address,
     i += SerDeUtil.readArray(providerInstructionHash, _data, i);
     final var providerInstructionCount = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
-    final var sourceAmount = getInt64LE(_data, i);
-    i += 8;
-    final var quotedOutAmount = getInt64LE(_data, i);
-    i += 8;
     final var initialSourceBalance = getInt64LE(_data, i);
     i += 8;
     final var initialProviderSequence = getInt64LE(_data, i);
-    i += 8;
-    final var destinationChain = Short.toUnsignedInt(getInt16LE(_data, i));
-    i += 2;
-    final var destinationRecipient = readPubKey(_data, i);
-    i += 32;
-    final var quoteExpiresAt = getInt64LE(_data, i);
-    i += 8;
-    final var preparedSlot = getInt64LE(_data, i);
     i += 8;
     final var bump = _data[i] & 0xFF;
     return new BridgeSession(_address,
                              discriminator,
                              glamState,
-                             signer,
                              transferId,
                              protocol,
-                             managed,
-                             sourceMint,
+                             terms,
                              sourceDecimals,
                              sourceTokenAccount,
-                             providerProgram,
                              providerConfig,
                              providerSender,
-                             providerDelegate,
                              providerReceipt,
                              providerInstructionHash,
                              providerInstructionCount,
-                             sourceAmount,
-                             quotedOutAmount,
                              initialSourceBalance,
                              initialProviderSequence,
-                             destinationChain,
-                             destinationRecipient,
-                             quoteExpiresAt,
-                             preparedSlot,
                              bump);
   }
 
@@ -311,48 +152,27 @@ public record BridgeSession(PublicKey _address,
     int i = _offset + discriminator.write(_data, _offset);
     glamState.write(_data, i);
     i += 32;
-    signer.write(_data, i);
-    i += 32;
     transferId.write(_data, i);
     i += 32;
     putInt16LE(_data, i, protocol);
     i += 2;
-    _data[i] = (byte) (managed ? 1 : 0);
-    ++i;
-    sourceMint.write(_data, i);
-    i += 32;
+    i += terms.write(_data, i);
     _data[i] = (byte) sourceDecimals;
     ++i;
     sourceTokenAccount.write(_data, i);
     i += 32;
-    providerProgram.write(_data, i);
-    i += 32;
     providerConfig.write(_data, i);
     i += 32;
     providerSender.write(_data, i);
-    i += 32;
-    providerDelegate.write(_data, i);
     i += 32;
     providerReceipt.write(_data, i);
     i += 32;
     i += SerDeUtil.writeArrayChecked(providerInstructionHash, 32, _data, i);
     putInt16LE(_data, i, providerInstructionCount);
     i += 2;
-    putInt64LE(_data, i, sourceAmount);
-    i += 8;
-    putInt64LE(_data, i, quotedOutAmount);
-    i += 8;
     putInt64LE(_data, i, initialSourceBalance);
     i += 8;
     putInt64LE(_data, i, initialProviderSequence);
-    i += 8;
-    putInt16LE(_data, i, destinationChain);
-    i += 2;
-    destinationRecipient.write(_data, i);
-    i += 32;
-    putInt64LE(_data, i, quoteExpiresAt);
-    i += 8;
-    putInt64LE(_data, i, preparedSlot);
     i += 8;
     _data[i] = (byte) bump;
     ++i;
@@ -361,6 +181,19 @@ public record BridgeSession(PublicKey _address,
 
   @Override
   public int l() {
-    return BYTES;
+    return 8 + 32
+         + 32
+         + 2
+         + terms.l()
+         + 1
+         + 32
+         + 32
+         + 32
+         + 32
+         + SerDeUtil.lenArray(providerInstructionHash)
+         + 2
+         + 8
+         + 8
+         + 1;
   }
 }

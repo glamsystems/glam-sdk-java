@@ -15,8 +15,8 @@ import static software.sava.core.encoding.ByteUtil.putInt64LE;
 /// @param quotedOutAmount: u64
 /// @param providerSequence: u64
 /// @param committedSlot: u64
+/// @param destinationChain: u64
 /// @param protocol: u16
-/// @param destinationChain: u16
 /// @param sourceDecimals: u8
 /// @param status: u8
 public record BridgeManagedTransfer(PublicKey transferId,
@@ -29,14 +29,16 @@ public record BridgeManagedTransfer(PublicKey transferId,
                                     long quotedOutAmount,
                                     long providerSequence,
                                     long committedSlot,
+                                    long destinationChain,
                                     int protocol,
-                                    int destinationChain,
                                     int sourceDecimals,
                                     int status,
+                                    byte[] padding,
                                     byte[] reserved) implements SerDe {
 
-  public static final int BYTES = 232;
-  public static final int RESERVED_LEN = 2;
+  public static final int BYTES = 272;
+  public static final int PADDING_LEN = 4;
+  public static final int RESERVED_LEN = 32;
 
   public static final int TRANSFER_ID_OFFSET = 0;
   public static final int SOURCE_MINT_OFFSET = 32;
@@ -48,11 +50,12 @@ public record BridgeManagedTransfer(PublicKey transferId,
   public static final int QUOTED_OUT_AMOUNT_OFFSET = 200;
   public static final int PROVIDER_SEQUENCE_OFFSET = 208;
   public static final int COMMITTED_SLOT_OFFSET = 216;
-  public static final int PROTOCOL_OFFSET = 224;
-  public static final int DESTINATION_CHAIN_OFFSET = 226;
-  public static final int SOURCE_DECIMALS_OFFSET = 228;
-  public static final int STATUS_OFFSET = 229;
-  public static final int RESERVED_OFFSET = 230;
+  public static final int DESTINATION_CHAIN_OFFSET = 224;
+  public static final int PROTOCOL_OFFSET = 232;
+  public static final int SOURCE_DECIMALS_OFFSET = 234;
+  public static final int STATUS_OFFSET = 235;
+  public static final int PADDING_OFFSET = 236;
+  public static final int RESERVED_OFFSET = 240;
 
   public static BridgeManagedTransfer read(final byte[] _data, final int _offset) {
     if (_data == null || _data.length == 0) {
@@ -79,15 +82,17 @@ public record BridgeManagedTransfer(PublicKey transferId,
     i += 8;
     final var committedSlot = getInt64LE(_data, i);
     i += 8;
+    final var destinationChain = getInt64LE(_data, i);
+    i += 8;
     final var protocol = Short.toUnsignedInt(getInt16LE(_data, i));
-    i += 2;
-    final var destinationChain = Short.toUnsignedInt(getInt16LE(_data, i));
     i += 2;
     final var sourceDecimals = _data[i] & 0xFF;
     ++i;
     final var status = _data[i] & 0xFF;
     ++i;
-    final var reserved = new byte[2];
+    final var padding = new byte[4];
+    i += SerDeUtil.readArray(padding, _data, i);
+    final var reserved = new byte[32];
     SerDeUtil.readArray(reserved, _data, i);
     return new BridgeManagedTransfer(transferId,
                                      sourceMint,
@@ -99,10 +104,11 @@ public record BridgeManagedTransfer(PublicKey transferId,
                                      quotedOutAmount,
                                      providerSequence,
                                      committedSlot,
-                                     protocol,
                                      destinationChain,
+                                     protocol,
                                      sourceDecimals,
                                      status,
+                                     padding,
                                      reserved);
   }
 
@@ -129,15 +135,16 @@ public record BridgeManagedTransfer(PublicKey transferId,
     i += 8;
     putInt64LE(_data, i, committedSlot);
     i += 8;
+    putInt64LE(_data, i, destinationChain);
+    i += 8;
     putInt16LE(_data, i, protocol);
-    i += 2;
-    putInt16LE(_data, i, destinationChain);
     i += 2;
     _data[i] = (byte) sourceDecimals;
     ++i;
     _data[i] = (byte) status;
     ++i;
-    i += SerDeUtil.writeArrayChecked(reserved, 2, _data, i);
+    i += SerDeUtil.writeArrayChecked(padding, 4, _data, i);
+    i += SerDeUtil.writeArrayChecked(reserved, 32, _data, i);
     return i - _offset;
   }
 

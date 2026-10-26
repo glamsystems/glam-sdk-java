@@ -7,42 +7,26 @@ nobody took. The standing disagreements live beside this file, at its name with 
 before the extension. Ordered by program and channel, and carrying no timestamp, so
 consecutive runs are worth diffing against each other.
 
-== Movement (17) ==
+== Movement (3) ==
 
-GLAM Staging CCTP: its stored program image went from upgradeable to unreadable
+GLAM Staging Bridge: the metadata IDL at 7Pgmy6sMhuGSFtkePZmoASouLMiWSty4sRR2Rcg4NdbZ moved since the last generation, 898f91bc39710bbd23c66de4594f0238098b8665bd0e8f5b1ae9dd0733d4411b -> 7ff9550264a450ad019c61dbabc76b7507a9fd4e4f5d90e49fecea24803f37a5: instructions +7 -4 ~7, accounts +1, types +10 -3 ~3, errors +10
+  instructions added (7): add_bridge_route, close_bridge_routes, init_bridge_routes, pause_bridge_routes, remove_bridge_route, unpause_bridge_routes, update_bridge_route
+  instructions removed (4): add_layerzero_oft_route, delete_layerzero_oft_route, set_cctp_policy, update_layerzero_oft_route
+  instructions changed (7): cctp_deposit_for_burn, commit_oft_transfer, managed_cctp_deposit_for_burn, prepare_oft_transfer, price_managed_transfers, settle_managed_transfer, validate_managed_transfer
+  accounts added (1): BridgeRoutes
+  types added (10): BridgeRoute, BridgeRouteIdentity, BridgeRoutes, ProviderControls, RouteChain, RouteLimits, RouteSet, TightenedSet, TransferControls, TransferTerms
+  types removed (3): CctpDestination, CctpPolicy, LayerzeroOftRoute
+  types changed (3): every one type changed
+  errors added (10): BridgeRoutesPaused, InvalidBridgeRoute, InvalidBridgeRoutes, InvalidTransferTerms, NonCanonicalPolicyList, ProviderControlMismatch, RouteSetInUse, RouteSetNotFound, TransferCostExceedsRoute, VaultSolBalanceDecreased
 
-GLAM Staging CCTP: the anchor IDL at 4u6SrUAwVbSkhFsDsbox9TzroyvTwiHhrNiMRCm6iJ9o disappeared since the last generation
+GLAM Staging Bridge: the program was redeployed at slot 460382853, up from 448900440; the stored program image changed: 716168 payload bytes, was 716168 — review required
 
-GLAM Staging Jupiter: the metadata IDL at H1u4sYrxg7Knb1HYTCZMPkCdanYVAf9tGD5gehqxygJt moved since the last generation, e28ef0352d163990ae644ad7be92a967dd543d7bafa00c7508f5ac5934968ef8 -> b988f8a04893bfc8571c8031d313463d7c193bea1c3eeb0f7fb39492d5f125ca: errors +2
-  errors added (2): PositionRentMismatch, VaultPaidRent
-
-GLAM Staging Jupiter: the program was redeployed at slot 456444528, up from 448883554; the stored program image changed: 572672 payload bytes, was 534568 — review required
-
-GLAM Staging Jupiter: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_jupiter-staging.json moved since the last generation, a232ca613e253c970073d73c880514d2f9ee603a06bf69b85ce881b0595cd5e4 -> 87505bf5f0d43637d9cc18b72fbc630d3003fb4e6b0e4954b5bec413f4a17dac: errors +2
-  errors added (2): PositionRentMismatch, VaultPaidRent
-
-GLAM Staging Kamino: the anchor IDL at 7ayMH9cApsJFnGhDfPFJdmMwFFKPMEaLRYyYCWmWoj4N disappeared since the last generation
-
-GLAM Staging Kamino: the metadata IDL at FBZEi7nEcNi5VrgdRhvKwcQ5tDoaqcHeYf3wQ7TY4DDs appeared since the last generation
-
-GLAM Staging Kamino: the program was redeployed at slot 457065973, up from 450444025; the stored program image changed: 697448 payload bytes, was 697448 — review required
-
-GLAM Staging Loopscale: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_loopscale-staging.json moved since the last generation, 9885d9e39d419ee9e63d654f87497a92bb0620e0aea0f2bc72130e0d0d995deb -> b85d0fd532e041c5d8b2fb777de33f71f40b5138a83cfdf4578ac5c1ce322488: errors +1
-  errors added (1): VaultPaidRent
-
-GLAM Staging Mint: the anchor IDL at 28HSbEepgNUC7f5ceJ1FPacJXNiAo6ScrbXJpQj3EhHv disappeared since the last generation
-
-GLAM Staging Mint: the metadata IDL at 4UoFHn9Z68o8nxXNiMQuj8NFtkowq1ZtNM8vBSH3uWr9 moved since the last generation, 20e980b296645cc7d9de44c6afc5c9fc483309b2a945c6d1557d12dc3f9303d8 -> 018367861b8189d6b23f2956ea0f949d60ddbd44206672775e51b7a748df8a24: accounts -3
-  accounts removed (3): GlobalConfig, ObservationState, StateAccount
-
-GLAM Staging Mint: the program was redeployed at slot 457063078, up from 455014041; the stored program image changed: 2029536 payload bytes, was 2029536 — review required
-
-GLAM Staging Protocol: the anchor IDL at 5UELoo8jJyAqdh3yziYoG3jpWMN9f3ab8wmmKAkP3mqx disappeared since the last generation
-
-GLAM Staging Protocol: the program was redeployed at slot 457059314, up from 455013333; the stored program image changed: 819896 payload bytes, was 819896 — review required
-
-GLAM Staging SPL: the anchor IDL at HcpCvC6FFGKSjSFRZXLS9P1HT9YARBF86oaLayiVJHPi disappeared since the last generation
-
-GLAM Staging SPL: the metadata IDL at 2DMKJoGovT1zNZKUAMjKAfqtAUhdpD5njCxwJDzKir88 appeared since the last generation
-
-GLAM Staging SPL: the program was redeployed at slot 457064386, up from 445449015; the stored program image changed: 344536 payload bytes, was 344536 — review required
+GLAM Staging Bridge: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_bridge-staging.json moved since the last generation, 28bf301a3410d2405241d532517b8ac1f58a7684539c7afba0ae70d178036866 -> ea8dfcf463b295609fdb8f57331df0484febd50c549aa5da98b1c2e8c9dfb9cb: instructions +7 -4 ~7, accounts +1, types +10 -3 ~3, errors +10
+  instructions added (7): add_bridge_route, close_bridge_routes, init_bridge_routes, pause_bridge_routes, remove_bridge_route, unpause_bridge_routes, update_bridge_route
+  instructions removed (4): add_layerzero_oft_route, delete_layerzero_oft_route, set_cctp_policy, update_layerzero_oft_route
+  instructions changed (7): cctp_deposit_for_burn, commit_oft_transfer, managed_cctp_deposit_for_burn, prepare_oft_transfer, price_managed_transfers, settle_managed_transfer, validate_managed_transfer
+  accounts added (1): BridgeRoutes
+  types added (10): BridgeRoute, BridgeRouteIdentity, BridgeRoutes, ProviderControls, RouteChain, RouteLimits, RouteSet, TightenedSet, TransferControls, TransferTerms
+  types removed (3): CctpDestination, CctpPolicy, LayerzeroOftRoute
+  types changed (3): every one type changed
+  errors added (10): BridgeRoutesPaused, InvalidBridgeRoute, InvalidBridgeRoutes, InvalidTransferTerms, NonCanonicalPolicyList, ProviderControlMismatch, RouteSetInUse, RouteSetNotFound, TransferCostExceedsRoute, VaultSolBalanceDecreased

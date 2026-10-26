@@ -435,7 +435,8 @@ final class GlamStagingAccountClientImpl extends GlamAccountClientImpl implement
   }
 
   @Override
-  public Instruction priceBridgeManagedTransfers(final PublicKey baseAssetUsdOracleKey) {
+  public Instruction priceBridgeManagedTransfers(final PublicKey solUSDOracleKey,
+                                                 final PublicKey baseAssetUsdOracleKey) {
     final var invoked = glamAccounts.invokedBridgeIntegrationProgram();
     final var glamStateKey = glamVaultAccounts.glamStateKey();
     return ExtBridgeProgram.priceManagedTransfers(
@@ -445,6 +446,7 @@ final class GlamStagingAccountClientImpl extends GlamAccountClientImpl implement
         glamAccounts.readBridgeIntegrationAuthority().publicKey(),
         invokedProtocolProgram.publicKey(),
         globalConfigKey,
+        solUSDOracleKey,
         baseAssetUsdOracleKey
     );
   }

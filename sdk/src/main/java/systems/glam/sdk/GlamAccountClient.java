@@ -177,9 +177,9 @@ public interface GlamAccountClient extends SPLAccountClient {
   /// ext_jupiter's `price_jupiter_borrow_positions`.
   Instruction priceJupiterBorrowPositions(final PublicKey solUSDOracleKey, final PublicKey baseAssetUsdOracleKey);
 
-  /// ext_bridge's `price_managed_transfers` over this vault's bridge registry. It takes no SOL oracle;
-  /// the caller appends one oracle per active managed transfer, in registry order. With no transfer it
-  /// writes no record. glam_mint's `price_bridge_managed_transfers` always wrote zero and
+  /// ext_bridge's `price_managed_transfers` over this vault's bridge registry. The caller appends
+  /// one oracle per active managed transfer, in registry order. With no transfer it writes no
+  /// record. glam_mint's `price_bridge_managed_transfers` always wrote zero and
   /// no positions, so it could replace a real record, and it is not offered.
-  Instruction priceBridgeManagedTransfers(final PublicKey baseAssetUsdOracleKey);
+  Instruction priceBridgeManagedTransfers(final PublicKey solUSDOracleKey, final PublicKey baseAssetUsdOracleKey);
 }

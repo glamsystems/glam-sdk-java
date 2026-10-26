@@ -176,14 +176,15 @@ final class GlamStagingAccountClientTests {
   }
 
   /// ext_bridge's pricer is not glam_mint's renamed: `price_managed_transfers` over the vault's
-  /// bridge registry, with protocol before config and only the base-asset oracle.
+  /// bridge registry, with protocol before config and the SOL oracle before the base-asset oracle.
   @Test
   void managedTransfersPriceThroughExtBridgeOverTheVaultsRegistry() {
     final var client = createClient();
     final var extBridge = STAGING.bridgeIntegrationProgram();
-    final var baseOracle = key(34);
+    final var solOracle = key(34);
+    final var baseOracle = key(35);
 
-    final var ix = client.priceBridgeManagedTransfers(baseOracle);
+    final var ix = client.priceBridgeManagedTransfers(solOracle, baseOracle);
     assertEquals(extBridge, ix.programId().publicKey());
     assertEquals(
         List.of(
@@ -192,6 +193,7 @@ final class GlamStagingAccountClientTests {
             createRead(ExtBridgePDAs.integrationAuthorityPDA(extBridge).publicKey()),
             createRead(STAGING.protocolProgram()),
             createRead(GlamConfigPDAs.globalConfigPDA(STAGING.configProgram()).publicKey()),
+            createRead(solOracle),
             createRead(baseOracle)
         ),
         ix.accounts()

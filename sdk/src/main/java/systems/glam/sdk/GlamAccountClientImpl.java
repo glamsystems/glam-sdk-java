@@ -448,7 +448,8 @@ class GlamAccountClientImpl implements GlamAccountClient {
   }
 
   @Override
-  public Instruction priceBridgeManagedTransfers(final PublicKey baseAssetUsdOracleKey) {
+  public Instruction priceBridgeManagedTransfers(final PublicKey solUSDOracleKey,
+                                                 final PublicKey baseAssetUsdOracleKey) {
     throw throwStagingOnly();
   }
 }

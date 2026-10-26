@@ -22,9 +22,9 @@ public record BridgeRegistry(PublicKey _address,
                              byte[] reserved,
                              BridgeManagedTransfer[] transfers) implements SerDe {
 
-  public static final int BYTES = 3760;
+  public static final int BYTES = 3856;
   public static final int RESERVED_LEN = 7;
-  public static final int TRANSFERS_LEN = 16;
+  public static final int TRANSFERS_LEN = 14;
   public static final Filter SIZE_FILTER = Filter.createDataSizeFilter(BYTES);
 
   public static final Discriminator DISCRIMINATOR = toDiscriminator(178, 207, 65, 53, 51, 157, 148, 202);
@@ -83,7 +83,7 @@ public record BridgeRegistry(PublicKey _address,
     ++i;
     final var reserved = new byte[7];
     i += SerDeUtil.readArray(reserved, _data, i);
-    final var transfers = new BridgeManagedTransfer[16];
+    final var transfers = new BridgeManagedTransfer[14];
     SerDeUtil.readArray(transfers, BridgeManagedTransfer::read, _data, i);
     return new BridgeRegistry(_address,
                               discriminator,
@@ -101,7 +101,7 @@ public record BridgeRegistry(PublicKey _address,
     _data[i] = (byte) managedTransferCount;
     ++i;
     i += SerDeUtil.writeArrayChecked(reserved, 7, _data, i);
-    i += SerDeUtil.writeArrayChecked(transfers, 16, _data, i);
+    i += SerDeUtil.writeArrayChecked(transfers, 14, _data, i);
     return i - _offset;
   }
 

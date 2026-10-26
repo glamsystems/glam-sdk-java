@@ -29,7 +29,17 @@ public sealed interface ExtBridgeError extends ProgramError permits
     ExtBridgeError.DuplicateTransferRecord,
     ExtBridgeError.TooManyManagedTransfers,
     ExtBridgeError.InvalidBridgeRegistry,
-    ExtBridgeError.InvalidDestinationChain {
+    ExtBridgeError.InvalidDestinationChain,
+    ExtBridgeError.InvalidBridgeRoute,
+    ExtBridgeError.InvalidTransferTerms,
+    ExtBridgeError.TransferCostExceedsRoute,
+    ExtBridgeError.ProviderControlMismatch,
+    ExtBridgeError.InvalidBridgeRoutes,
+    ExtBridgeError.RouteSetNotFound,
+    ExtBridgeError.RouteSetInUse,
+    ExtBridgeError.NonCanonicalPolicyList,
+    ExtBridgeError.BridgeRoutesPaused,
+    ExtBridgeError.VaultSolBalanceDecreased {
 
   static ExtBridgeError getInstance(final int errorCode) {
     return switch (errorCode) {
@@ -59,6 +69,16 @@ public sealed interface ExtBridgeError extends ProgramError permits
       case 6023 -> TooManyManagedTransfers.INSTANCE;
       case 6024 -> InvalidBridgeRegistry.INSTANCE;
       case 6025 -> InvalidDestinationChain.INSTANCE;
+      case 6026 -> InvalidBridgeRoute.INSTANCE;
+      case 6027 -> InvalidTransferTerms.INSTANCE;
+      case 6028 -> TransferCostExceedsRoute.INSTANCE;
+      case 6029 -> ProviderControlMismatch.INSTANCE;
+      case 6030 -> InvalidBridgeRoutes.INSTANCE;
+      case 6031 -> RouteSetNotFound.INSTANCE;
+      case 6032 -> RouteSetInUse.INSTANCE;
+      case 6033 -> NonCanonicalPolicyList.INSTANCE;
+      case 6034 -> BridgeRoutesPaused.INSTANCE;
+      case 6035 -> VaultSolBalanceDecreased.INSTANCE;
       default -> null;
     };
   }
@@ -242,6 +262,76 @@ public sealed interface ExtBridgeError extends ProgramError permits
 
     public static final InvalidDestinationChain INSTANCE = new InvalidDestinationChain(
         6025, "The destination identifier exceeds the supported range"
+    );
+  }
+
+  record InvalidBridgeRoute(int code, String msg) implements ExtBridgeError {
+
+    public static final InvalidBridgeRoute INSTANCE = new InvalidBridgeRoute(
+        6026, "A bridge route is invalid"
+    );
+  }
+
+  record InvalidTransferTerms(int code, String msg) implements ExtBridgeError {
+
+    public static final InvalidTransferTerms INSTANCE = new InvalidTransferTerms(
+        6027, "The transfer terms are invalid"
+    );
+  }
+
+  record TransferCostExceedsRoute(int code, String msg) implements ExtBridgeError {
+
+    public static final TransferCostExceedsRoute INSTANCE = new TransferCostExceedsRoute(
+        6028, "The transfer's cost exceeds the route's bound"
+    );
+  }
+
+  record ProviderControlMismatch(int code, String msg) implements ExtBridgeError {
+
+    public static final ProviderControlMismatch INSTANCE = new ProviderControlMismatch(
+        6029, "The transfer's provider controls do not match the route"
+    );
+  }
+
+  record InvalidBridgeRoutes(int code, String msg) implements ExtBridgeError {
+
+    public static final InvalidBridgeRoutes INSTANCE = new InvalidBridgeRoutes(
+        6030, "The bridge routes account or set is invalid"
+    );
+  }
+
+  record RouteSetNotFound(int code, String msg) implements ExtBridgeError {
+
+    public static final RouteSetNotFound INSTANCE = new RouteSetNotFound(
+        6031, "No stored route set carries the committed hash"
+    );
+  }
+
+  record RouteSetInUse(int code, String msg) implements ExtBridgeError {
+
+    public static final RouteSetInUse INSTANCE = new RouteSetInUse(
+        6032, "The route set is still referenced by the vault's policies"
+    );
+  }
+
+  record NonCanonicalPolicyList(int code, String msg) implements ExtBridgeError {
+
+    public static final NonCanonicalPolicyList INSTANCE = new NonCanonicalPolicyList(
+        6033, "The vault's bridge policy list is not canonical"
+    );
+  }
+
+  record BridgeRoutesPaused(int code, String msg) implements ExtBridgeError {
+
+    public static final BridgeRoutesPaused INSTANCE = new BridgeRoutesPaused(
+        6034, "The provider's routes are paused"
+    );
+  }
+
+  record VaultSolBalanceDecreased(int code, String msg) implements ExtBridgeError {
+
+    public static final VaultSolBalanceDecreased INSTANCE = new VaultSolBalanceDecreased(
+        6035, "The vault SOL balance decreased during the bridge transfer"
     );
   }
 }

@@ -1,21 +1,21 @@
 {
   "program": "gstgxS9yTioViNKdsM4DC33k1TU9un2VCYDQK8fAeSA",
   "deployed": "metadata",
-  "lastDeploySlot": 448900440,
+  "lastDeploySlot": 460382853,
   "programDataState": "upgradeable",
   "programDataStateSlot": 439884391,
-  "programDataPayloadSha256": "9d9f8dd0f41c924cd38ee8a153647a375bee05c7b229ed11aa1a518e8a164e12",
+  "programDataPayloadSha256": "89f5baacfc7578ea4f5ebd0ad3f75ced72e880f4143d781cb3790faaf3207d3e",
   "programDataPayloadLength": 716168,
   "channels": {
     "metadata": {
       "origin": "7Pgmy6sMhuGSFtkePZmoASouLMiWSty4sRR2Rcg4NdbZ",
-      "hash": "898f91bc39710bbd23c66de4594f0238098b8665bd0e8f5b1ae9dd0733d4411b",
+      "hash": "7ff9550264a450ad019c61dbabc76b7507a9fd4e4f5d90e49fecea24803f37a5",
       "matchesDeployed": true,
       "verbatim": "idl.json"
     },
     "vcs": {
       "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_bridge-staging.json",
-      "hash": "28bf301a3410d2405241d532517b8ac1f58a7684539c7afba0ae70d178036866",
+      "hash": "ea8dfcf463b295609fdb8f57331df0484febd50c549aa5da98b1c2e8c9dfb9cb",
       "matchesDeployed": false,
       "file": "vcs.json",
       "verbatim": "vcs.json"

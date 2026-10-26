@@ -411,6 +411,6 @@ final class GlamAccountClientTests {
     assertThrows(IllegalStateException.class, () -> client.priceNeutralBundleDepositors(a, b));
     assertThrows(IllegalStateException.class, () -> client.priceJupiterEarnPositions(a, b));
     assertThrows(IllegalStateException.class, () -> client.priceJupiterBorrowPositions(a, b));
-    assertThrows(IllegalStateException.class, () -> client.priceBridgeManagedTransfers(b));
+    assertThrows(IllegalStateException.class, () -> client.priceBridgeManagedTransfers(a, b));
   }
 }

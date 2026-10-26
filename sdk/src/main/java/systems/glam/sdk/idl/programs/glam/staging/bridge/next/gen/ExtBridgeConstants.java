@@ -3,6 +3,8 @@ package systems.glam.sdk.idl.programs.glam.staging.bridge.next.gen;
 
 public final class ExtBridgeConstants {
 
+  public static final long PROTO_BRIDGE_PERM_PAUSE = 8;
+
   public static final long PROTO_BRIDGE_PERM_SEND = 1;
 
   public static final long PROTO_BRIDGE_PERM_SETTLE = 4;

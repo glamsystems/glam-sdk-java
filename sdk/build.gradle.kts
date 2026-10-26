@@ -140,6 +140,16 @@ tasks.withType<Test>().configureEach {
   providers.gradleProperty("glamMappingsDir").orNull?.let { systemProperty("glam.mappings.dir", File(it).absolutePath) }
 }
 
+// EmbeddedMappingsProvenanceTests hashes each generated tree's gen/idl.json straight from the source
+// tree, which no class or resource on the test classpath carries: declared here so a regeneration
+// that leaves every class byte-identical (an IDL change to metadata alone) still reruns the test
+// instead of serving it from the build cache.
+tasks.named<Test>("test") {
+  inputs.files(fileTree("src/main/java") { include("**/gen/idl.json") })
+      .withPropertyName("generatedIdls")
+      .withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 dependencyAnalysis {
   issues {
     // the scratch suite is git-ignored local code: analysing it would make check compile it
