@@ -6,7 +6,7 @@
   "provenance": {
     "generator": "idl-src-gen@18bae7ba02da093ebf8c4947375563a1c4f6c2e4",
     "source_idl": "glam managed anchor_v1/idls/external/token_messenger_minter_v2 (idl b9ac2aa0ddac)",
-    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_bridge_staging (idl 661e6e913c0e)",
+    "proxy_idl": "glam managed anchor_v1/idls/glam/ext_bridge_staging (idl 8329859b836e)",
     "config_revision": 1
   },
   "instructions": [
@@ -199,97 +199,123 @@
         },
         {
           "index": 7,
+          "kind": "supplied",
+          "role": "bridge_routes",
+          "writable": false,
+          "signer": false,
+          "derivation": {
+            "program": "gstgxS9yTioViNKdsM4DC33k1TU9un2VCYDQK8fAeSA",
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98, 114, 105, 100, 103, 101, 45, 114, 111, 117, 116, 101, 115
+                ]
+              },
+              {
+                "kind": "account",
+                "index": 0
+              },
+              {
+                "kind": "const",
+                "value": [1, 0]
+              }
+            ]
+          }
+        },
+        {
+          "index": 8,
           "kind": "source",
           "source": 2,
           "writable": false,
           "signer": false
         },
         {
-          "index": 8,
+          "index": 9,
           "kind": "source",
           "source": 3,
           "writable": true,
           "signer": false
         },
         {
-          "index": 9,
+          "index": 10,
           "kind": "source",
           "source": 4,
           "writable": false,
           "signer": false
         },
         {
-          "index": 10,
+          "index": 11,
           "kind": "source",
           "source": 5,
           "writable": true,
           "signer": false
         },
         {
-          "index": 11,
+          "index": 12,
           "kind": "source",
           "source": 6,
           "writable": false,
           "signer": false
         },
         {
-          "index": 12,
+          "index": 13,
           "kind": "source",
           "source": 7,
           "writable": false,
           "signer": false
         },
         {
-          "index": 13,
+          "index": 14,
           "kind": "source",
           "source": 8,
           "writable": false,
           "signer": false
         },
         {
-          "index": 14,
+          "index": 15,
           "kind": "source",
           "source": 9,
           "writable": true,
           "signer": false
         },
         {
-          "index": 15,
+          "index": 16,
           "kind": "source",
           "source": 10,
           "writable": true,
           "signer": false
         },
         {
-          "index": 16,
+          "index": 17,
           "kind": "source",
           "source": 11,
           "writable": true,
           "signer": true
         },
         {
-          "index": 17,
+          "index": 18,
           "kind": "static",
           "address": "CCTPV2Sm4AdWt5296sk4P66VBZ7bEhcARwFaaS9YPbeC",
           "writable": false,
           "signer": false
         },
         {
-          "index": 18,
+          "index": 19,
           "kind": "static",
           "address": "CCTPV2vPZJS2u2BBsUoscuikbYjnpFmbFsvVuJdgUMQe",
           "writable": false,
           "signer": false
         },
         {
-          "index": 19,
+          "index": 20,
           "kind": "static",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
           "writable": false,
           "signer": false
         },
         {
-          "index": 20,
+          "index": 21,
           "kind": "source",
           "source": 16,
           "writable": false,
