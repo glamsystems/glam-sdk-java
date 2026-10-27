@@ -427,10 +427,22 @@ skips it, so the two answer different halves.
   environment's documents by name. The proxy program ids differ, and a wrong
   mapper would fail on chain, not here. A document and the client of its proxy
   program are regenerated separately (the sync brings one, idl-src-gen the
-  other), so `EmbeddedMappingsProvenanceTests` holds every embedded document
-  to the IDL digest its proxy program's `gen/idl.json` carries: the one behind
-  a redeploy fails `check` here instead of seating a handler's old accounts on
-  chain.
+  other), so `EmbeddedMappingsHandlerAccountsTests` holds every mapped entry to
+  the handler its proxy program's `gen/idl.json` declares: every declared
+  account seated (an absent optional still takes its slot, since the programs
+  build without Anchor's `allow-missing-optionals`), each seat's flags covering
+  the handler's, names, addresses and derivations agreeing where both sides
+  state them, and sentinel seats at the optional accounts. Whichever side is
+  behind a redeploy, `check` fails here instead of on chain when the
+  disagreement reaches a seat both sides describe: a count the document falls
+  short of, a GLAM or supplied seat meeting another account, a fixed seat
+  meeting an account the handler fixes at another address, a sentinel seat
+  meeting a required account, a flag the handler requires. It cannot see a
+  dropped trailing account, an appended one past seats the entry already has
+  (or, on the client's side, any appended one), a fixed seat meeting an
+  account the handler fixes at no address, or a forwarded seat meeting any
+  other account whose flags it covers; a redeploy that changes only metadata,
+  docs, errors or types fails nothing.
 - Every long-running `services` loop (`BatchSqlExecutor`, `AccountFetcher`,
   `GlobalConfigCache`, `StakePoolCache`) takes a trailing
   `systems.glam.services.LoopHeartbeat` through a factory overload and ticks
