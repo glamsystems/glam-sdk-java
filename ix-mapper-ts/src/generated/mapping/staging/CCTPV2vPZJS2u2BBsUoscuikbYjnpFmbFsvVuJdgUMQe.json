@@ -4,7 +4,7 @@
   "program_id": "CCTPV2vPZJS2u2BBsUoscuikbYjnpFmbFsvVuJdgUMQe",
   "proxy_program_id": "gstgxS9yTioViNKdsM4DC33k1TU9un2VCYDQK8fAeSA",
   "provenance": {
-    "generator": "idl-src-gen@18bae7ba02da093ebf8c4947375563a1c4f6c2e4",
+    "generator": "idl-src-gen@2209045bd8a04875ca36a9a7a4b1f2535eb82226",
     "source_idl": "glam managed anchor_v1/idls/external/token_messenger_minter_v2 (idl b9ac2aa0ddac)",
     "proxy_idl": "glam managed anchor_v1/idls/glam/ext_bridge_staging (idl 8329859b836e)",
     "config_revision": 1
