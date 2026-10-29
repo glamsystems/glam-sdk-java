@@ -1,5 +1,16 @@
 # Changelog
 
+## [25.23.0](https://github.com/glamsystems/glam-sdk-java/compare/25.22.0...25.23.0) (2026-10-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* **sdk:** In the exported staging bridge packages (`systems.glam.sdk.idl.programs.glam.staging.bridge.gen` and `.types`) the types `CctpDestination`, `CctpPolicy` and `LayerzeroOftRoute` and the builders `setCctpPolicy`, `addLayerzeroOftRoute`, `updateLayerzeroOftRoute` and `deleteLayerzeroOftRoute` are gone, replaced by `BridgeRoutes` with its route types and the builders `initBridgeRoutes`, `addBridgeRoute`, `updateBridgeRoute`, `removeBridgeRoute`, `pauseBridgeRoutes`, `unpauseBridgeRoutes` and `closeBridgeRoutes`; `cctpDepositForBurn`, `managedCctpDepositForBurn` and `prepareOftTransfer` take a `bridgeRoutesKey`, and `priceManagedTransfers` a `solUsdOracleKey`; `ExtBridgePDAs.bridgeRegistryPDA` derives under the seed `bridge-registry-v2`, beside the new `bridgeRoutesPDA` helpers; `BridgeRegistry` is 3856 bytes holding 14 transfers (was 3760 and 16), `BridgeManagedTransfer` is 272 bytes with a u64 `destinationChain` ahead of `protocol` and a `padding` field (was 232 and u16), `BridgeSession` has a new layout carrying `TransferTerms`, and `ExtBridgeError` gains ten records (6026 to 6035) that an exhaustive switch must add. `priceBridgeManagedTransfers(PublicKey)` on `GlamAccountClient` and its implementations is now `priceBridgeManagedTransfers(PublicKey solUSDOracleKey, PublicKey baseAssetUsdOracleKey)`.
+
+### Bug Fixes
+
+* **sdk:** regenerate bridge program types from updated staging IDL ([4a578f4](https://github.com/glamsystems/glam-sdk-java/commit/4a578f423e1763ad6b40196143348f3fd401efcf))
+
 ## [25.22.0](https://github.com/glamsystems/glam-sdk-java/compare/25.21.0...25.22.0) (2026-10-16)
 
 
