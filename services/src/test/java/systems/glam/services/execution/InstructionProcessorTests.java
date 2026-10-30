@@ -10,7 +10,15 @@ import software.sava.rpc.json.http.response.TransactionError;
 import software.sava.services.solana.transactions.InstructionService;
 import software.sava.services.solana.transactions.TransactionProcessor;
 import software.sava.services.solana.transactions.TransactionResult;
+import software.sava.services.solana.config.ChainItemFormatter;
+import software.sava.services.solana.epoch.EpochInfoService;
+import software.sava.services.solana.transactions.SendLedger;
+import software.sava.services.solana.transactions.SendTxContext;
+import software.sava.services.solana.transactions.TxMonitorConfig;
+import software.sava.services.solana.transactions.TxMonitorService;
+import software.sava.services.solana.transactions.TxMonitorStoppedException;
 import systems.glam.sdk.GlamAccounts;
+import systems.glam.services.tests.LogCapture;
 
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
@@ -21,6 +29,8 @@ import java.util.function.Function;
 import java.util.logging.Level;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static software.sava.rpc.json.http.request.Commitment.CONFIRMED;
+import static software.sava.rpc.json.http.request.Commitment.FINALIZED;
 
 /// Drives InstructionProcessorImpl against a scripted InstructionService: each
 /// call's batch size is recorded and the next scripted result returned, so the
@@ -585,5 +595,108 @@ final class InstructionProcessorTests {
     assertEquals(1, notify.messages.size());
     assertTrue(notify.messages.getFirst().contains("Failed to process test instructions."),
         notify.messages.getFirst());
+  }
+
+  // ------------------------------------------------------------- a stopped monitor --
+
+  /// A real transaction monitor whose loop has ended: its wait for the epoch info fails, which
+  /// stops it, and a stopped monitor fails every queue and refuses every call. That is the only
+  /// way a consumer comes by a TxMonitorStoppedException, whose constructors are ravina's own.
+  private static TxMonitorService stoppedMonitor() {
+    final var epochInfoService = (EpochInfoService) Proxy.newProxyInstance(
+        EpochInfoService.class.getClassLoader(),
+        new Class<?>[]{EpochInfoService.class},
+        (proxy, method, args) -> {
+          if (method.getName().equals("awaitInitialized")) {
+            throw new IllegalStateException("the epoch info never arrives");
+          }
+          throw new UnsupportedOperationException(method.getName());
+        }
+    );
+    final var monitor = TxMonitorService.createService(
+        ChainItemFormatter.createDefault(), null, epochInfoService, null, TxMonitorConfig.createDefault(), null
+    );
+    // Both loops, on this thread, through the public run(Executor): each wait fails, each
+    // loop's finally stops its monitor, and run returns. Their stop logs are captured here, so
+    // that the ERROR records they write do not reach the console.
+    try (final var log = LogCapture.attach("software.sava.services.solana.transactions.TxCommitmentMonitorService")) {
+      monitor.run(Runnable::run);
+      log.assertLogged(Level.SEVERE, "Transaction monitor stopped");
+    }
+    assertTrue(monitor.stopped());
+    return monitor;
+  }
+
+  /// The failure a stopped monitor hands a caller whose transaction it will never poll: sent,
+  /// outcome unknown.
+  private static TxMonitorStoppedException stoppedWithPending(final TxMonitorService monitor) {
+    final var transaction = Transaction.createTx(FEE_PAYER, List.of(instruction(1, 1)));
+    final var sendTxContext = new SendTxContext(null, new CompletableFuture<>(), transaction, "base64", 4_242L, 0L);
+    final var future = monitor.queueResult(FINALIZED, FINALIZED, "sig", sendTxContext, true, false, new SendLedger("sig"));
+    assertTrue(future.isCompletedExceptionally(), "a stopped monitor fails the queue at once");
+    return assertInstanceOf(TxMonitorStoppedException.class, future.handle((status, failure) -> failure).join());
+  }
+
+  /// A monitor that stopped under the send ends the call as itself, after one page that names
+  /// the transaction that may still land and its block hash's last valid height: the batch's
+  /// outcome is unknown, a rebuild could execute it twice, and the service exits on the rethrow
+  /// rather than re-fetching state and rebuilding as it does for a failed batch.
+  @Test
+  void aStoppedMonitorEndsTheCallAsItselfAndNamesTheTransactionThatMayStillLand() {
+    final var stopped = stoppedWithPending(stoppedMonitor());
+    assertTrue(stopped.sent());
+    final var service = new ScriptedService();
+    final var notify = new RecordingNotify();
+    service.script.add(batch -> {
+      throw stopped;
+    });
+    final var instructions = new ArrayList<>(List.of(instruction(1, 2)));
+
+    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      final var thrown = assertThrows(TxMonitorStoppedException.class, () ->
+          processor(service, notify).processInstructions("test", instructions));
+      assertSame(stopped, thrown, "thrown as itself, not wrapped: the caller tells it apart by type");
+      log.assertLogged(Level.SEVERE, "transaction sig may still land until block height 4242 passes");
+    }
+    assertEquals(1, notify.messages.size());
+    final var msg = notify.messages.getFirst();
+    assertTrue(msg.contains(
+        "Transaction monitor stopped; test transaction sig may still land until block height 4242 passes, so these instructions must not be rebuilt before its status is known."
+    ), msg);
+    assertEquals(List.of(1), service.batchSizes, "nothing more is sent");
+    assertEquals(1, instructions.size(), "the batch is left with the caller, not cleared as a failed batch is");
+  }
+
+  /// A call refused before an attempt, because the monitor had already stopped, sent nothing
+  /// that can land, and the page says so instead of naming a transaction.
+  @Test
+  void aCallRefusedByAStoppedMonitorPagesThatNothingCanLand() {
+    final var monitor = stoppedMonitor();
+    // ravina's own instruction service, refused at its first attempt: the real refusal, with
+    // nothing sent.
+    final var refused = assertThrows(TxMonitorStoppedException.class, () ->
+        InstructionService.createService(null, feePayer(), null, null, monitor).processInstructions(
+            1.2, List.of(instruction(1, 2)), new BigDecimal("0.001"), CONFIRMED, CONFIRMED, true, true, 3, "test"
+        ));
+    assertFalse(refused.sent());
+    assertNull(refused.sig());
+    final var service = new ScriptedService();
+    final var notify = new RecordingNotify();
+    service.script.add(batch -> {
+      throw refused;
+    });
+    final var instructions = new ArrayList<>(List.of(instruction(1, 2)));
+
+    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      final var thrown = assertThrows(TxMonitorStoppedException.class, () ->
+          processor(service, notify).processInstructions("test", instructions));
+      assertSame(refused, thrown);
+      log.assertLogged(Level.SEVERE, "nothing sent for test can still land");
+    }
+    assertEquals(1, notify.messages.size());
+    final var msg = notify.messages.getFirst();
+    assertTrue(msg.contains("Transaction monitor stopped; nothing sent for test can still land."), msg);
+    assertFalse(msg.contains("may still land until"), msg);
+    assertEquals(1, instructions.size());
   }
 }

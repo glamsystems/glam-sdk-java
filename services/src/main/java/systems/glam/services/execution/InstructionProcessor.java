@@ -50,7 +50,13 @@ public interface InstructionProcessor {
   /// and halved on a size refusal; each sent batch is removed from the list. A size-refused batch
   /// is dropped with a warning while the batch bound can still halve, and the rest carries on. Any
   /// other failed batch returns false, and the caller should re-fetch state and rebuild; every such
-  /// failure but a stale price on [#mintProgram()] is also posted to the notify client.
+  /// failure but a stale price on [#mintProgram()] is also posted to the notify client. A
+  /// transaction monitor that has stopped ends the call with
+  /// [software.sava.services.solana.transactions.TxMonitorStoppedException], thrown as itself
+  /// after a post that says whether a transaction of this call may still land (its `sent()`,
+  /// `sig()` and `lastValidBlockHeight()`): with `sent()` that batch's outcome is unknown and the
+  /// caller must not rebuild it, without it nothing of the batch can land, and either way the
+  /// service should exit, since ravina refuses every later call on that monitor the same way.
   boolean processInstructions(final String logContext,
                               final List<Instruction> instructions) throws InterruptedException;
 

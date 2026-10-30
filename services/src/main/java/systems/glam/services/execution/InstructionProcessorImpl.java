@@ -10,6 +10,7 @@ import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.solana.transactions.InstructionService;
 import software.sava.services.solana.transactions.TransactionProcessor;
 import software.sava.services.solana.transactions.TransactionResult;
+import software.sava.services.solana.transactions.TxMonitorStoppedException;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolError;
 
 import java.math.BigDecimal;
@@ -125,6 +126,24 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
             maxRetries,
             logContext
         );
+      } catch (final TxMonitorStoppedException stopped) {
+        // The monitor that would have settled this batch has stopped and does not restart, so
+        // the batch's outcome is unknown: with sent() the transaction named may still land until
+        // its block hash expires, and a rebuild could execute these instructions twice. Reported
+        // as such, and thrown as itself so that the service ends rather than treats the batch as
+        // failed and rebuilds it; ravina refuses every later call on that monitor the same way.
+        final var msg = FormatUtil.formatInstructionException(
+            stopped.sent()
+                ? String.format(
+                "Transaction monitor stopped; %s transaction %s may still land until block height %s passes, so these instructions must not be rebuilt before its status is known.",
+                logContext, stopped.sig(), Long.toUnsignedString(stopped.lastValidBlockHeight())
+            )
+                : String.format("Transaction monitor stopped; nothing sent for %s can still land.", logContext),
+            ixBatch
+        );
+        logger.log(ERROR, msg, stopped);
+        notifyClient.postMsg(msg);
+        throw stopped;
       } catch (final RuntimeException ex) {
         final var msg = FormatUtil.formatInstructionException(
             String.format("Failed to process %s instructions.", logContext),
