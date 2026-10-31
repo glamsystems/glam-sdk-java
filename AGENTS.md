@@ -81,6 +81,25 @@ plus service components for operating against it.
   `~/.gradle/gradle.properties`).
 - `./gradlew check` — full build + tests. CI (reusable workflows from
   sava-build) runs exactly this; keep it green.
+- Every artifact Gradle resolves is verified against `gradle/verification-metadata.xml`, the
+  signatures and checksums policy sava-build's `verificationPolicy` task guards as part of
+  `check`; the rules and the update procedure are sava-build's README, "Verifying sava
+  artifacts", at the pinned sava-build version. Check a dependency or policy change with
+  `./gradlew --no-daemon --no-configuration-cache check resolveVerificationTools`: a reused
+  configuration-cache entry resolves nothing and so verifies nothing. Two entries only an
+  IntelliJ sync with download sources exercises (the `gradle:gradle` rule for the Gradle
+  sources zip and the jmh plugin's sources-jar pin), so sync the IDE after a policy change
+  as well (README step 5; a refusal shows in the sync output and in
+  `~/.gradle/daemon/<version>/daemon-<pid>.out.log`). A refusal names the artifact;
+  sava-build's README step 2 and the section headings of
+  `gradle/verification/version-scoped-keys.txt` say what to do, and the files are only ever
+  edited in their own shape: a key is listed there exactly when its rule carries a version,
+  so a rule's version and the key's line move together. The policy governs the whole
+  composite: an `includeBuild` of a sibling whose own build logic resolves artifacts this
+  policy does not trust (sava's nested `gradle/plugins` build, for one) is refused at
+  configuration; run such an include with `--dependency-verification lenient` and add no
+  trust for it, since CI never resolves that graph. A `-PsavaBuildLocalRepo` build needs
+  the same flag, since the test repo's artifacts are unsigned (step 3 below).
 - Commits follow Conventional Commits (`feat(sdk): ...`, `fix(services): ...`);
   release-please cuts releases from them under `always-bump-patch`, so a
   breaking change is named with a `Release-As: x.y.0` footer on a commit that
@@ -120,9 +139,17 @@ a defect traces into one of the above:
    resolved in `pluginManagement` via its local test repo — run sava-build's
    `publishSavaBuildTestPublicationToSavaTestRepoRepository`, then build here
    with `-PsavaBuildLocalRepo=../sava-build/build/sava-test-repo`, which
-   substitutes sava-build `0.0.0-test`. Confirm from the build's own output
-   that the run really resolved the local repo before trusting a result from
-   it. That publish is not
+   substitutes sava-build `0.0.0-test`. Pass `--dependency-verification lenient`
+   on every command that carries the property (with the property in
+   `~/.gradle/gradle.properties`, that is every command until it is removed),
+   and never a verification mode in `~/.gradle/gradle.properties`, which would
+   relax every build on the machine where `verificationPolicy` cannot see it;
+   lenient mode demotes every refusal to a report, so read each run's
+   "Dependency verification failed" report, where anything refused other than
+   `0.0.0-test` is a refusal to settle, and pass `--no-configuration-cache` on
+   a repeated lenient run, since a reused entry prints no report. Confirm from
+   the build's own output that the run really resolved the local repo before
+   trusting a result from it. That publish is not
    automatic: re-run it after every sava-build edit, or chain the two
    (`(cd ../sava-build && ./gradlew publish...) && ./gradlew check -P...`) so
    the stale case is unreachable. The property lives on the CLI or in
@@ -132,7 +159,11 @@ a defect traces into one of the above:
    sibling checkout, and leaving it in silently builds every developer against
    whatever they happen to have on disk. Publish the dependency, bump
    `solanaBOMVersion`, re-comment the line, and re-run `check` against the
-   published artifact before releasing.
+   published artifact before releasing. A BOM bump is checked with the same
+   `--no-configuration-cache check resolveVerificationTools` command as any
+   dependency change, and a new BOM or parent POM is validated once with an
+   empty `GRADLE_USER_HOME` (sava-build's README, step 4), which proves
+   resolution, not a test run.
 
 A change that spans both repos is therefore two commits and a publish, not
 one. Say so plainly when handing off — the SDK-side commit is not releasable
@@ -265,8 +296,12 @@ every project in one invocation) and the `fuzzAll` campaign are owned by the
 deciding to release. Both run from a clean
 `git worktree add --detach <path> <commit>` of the commit being released, so
 no source input outside that tree reaches them; user-level Gradle properties
-still do, so check that `savaBuildIdentity` reports no local override and that
-no `glamMappingsDir` is set before certifying. `pitestServices` also covers
+still do, so check that `savaBuildIdentity` reports no local override, that
+no `glamMappingsDir` is set and that no `org.gradle.dependency.verification`
+(or `systemProp.org.gradle.dependency.verification`) line sits in
+`~/.gradle/gradle.properties` before certifying: that line decides whether the
+PIT and Jazzer artifacts the campaigns resolve are verified at all, and
+`verificationPolicy` cannot see it. `pitestServices` also covers
 `:sdk` API changes it calls, so a change under `sdk/` that `services` reaches
 owes both suites.
 

@@ -48,6 +48,10 @@
 ### Gradle ###
 !/gradle/
 !/gradle/*.properties
+!/gradle/verification-metadata.xml
+!/gradle/verification-keyring.keys
+!/gradle/verification/
+!/gradle/verification/**
 !/gradle/aggregation/
 !/gradle/aggregation/build.gradle.kts
 !/gradle/wrapper/
