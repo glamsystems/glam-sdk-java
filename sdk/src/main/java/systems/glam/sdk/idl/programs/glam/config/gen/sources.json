@@ -14,7 +14,7 @@
       "verbatim": "idl.json"
     },
     "vcs": {
-      "origin": "github:glamsystems/glam-sdk-ts@main/idl/glam_config.json",
+      "origin": "github:glamsystems/glam-sdk-ts-legacy@main/idl/glam_config.json",
       "hash": "8ab1d7a65e2db9c94c6a674bbc5fb44fdd6601d8f4e06d233750a0b39e1d93ae",
       "matchesDeployed": false,
       "file": "vcs.json",

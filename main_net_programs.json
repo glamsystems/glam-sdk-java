@@ -65,7 +65,7 @@
       "package": "glam.cctp",
       "program": "G1NTcMDYgNLpDwgnrpSZvoSKQuR9NXG7S3DmtNQCDmrK",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_cctp.json"
       },
       "generateNext": true,
@@ -93,7 +93,7 @@
       "module": "sdk",
       "program": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/glam_config.json"
       },
       "generateNext": true,
@@ -114,7 +114,7 @@
       "module": "sdk",
       "program": "G1NTkDEUR3pkEqGCKZtmtmVzCUEdYa86pezHkwYbLyde",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_kamino.json"
       },
       "generateNext": true,
@@ -171,7 +171,7 @@
       "package": "glam.marinade",
       "program": "G1NTMNMgmgJAWAD9G3toFVMtNcc21dEyHf3fTXc3t74t",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_marinade.json"
       },
       "generateNext": true,
@@ -199,7 +199,7 @@
       "package": "glam.mint",
       "program": "GM1NtvvnSXUptTrMCqbogAdZJydZSNv98DoU5AZVLmGh",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/glam_mint.json"
       },
       "generateNext": true,
@@ -227,7 +227,7 @@
       "module": "sdk",
       "program": "GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/glam_protocol.json"
       },
       "generateNext": true,
@@ -240,7 +240,7 @@
       "module": "sdk",
       "program": "po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/glam_policies.json"
       },
       "generateNext": true,
@@ -261,7 +261,7 @@
       "module": "sdk",
       "program": "G1NTsQ36mjPe89HtPYqxKsjY5HmYsDR6CbD2gd2U2pta",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_spl.json"
       },
       "generateNext": true,
@@ -289,36 +289,8 @@
       "program": "gstgxS9yTioViNKdsM4DC33k1TU9un2VCYDQK8fAeSA",
       "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_bridge-staging.json"
-      },
-      "generateNext": true,
-      "typeRefs": [
-        {
-          "refProgram": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
-          "srcMismatch": "WARN_KEEP_LOCAL",
-          "matchOnTypeName": true,
-          "excludeTypes": [],
-          "explicitRules": []
-        },
-        {
-          "refProgram": "gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX",
-          "srcMismatch": "WARN_KEEP_LOCAL",
-          "matchOnTypeName": true,
-          "excludeTypes": [],
-          "explicitRules": []
-        }
-      ]
-    },
-    {
-      "name": "GLAM Staging CCTP",
-      "source": "sdk",
-      "module": "sdk",
-      "package": "glam.staging.cctp",
-      "program": "gstgcuRwiX2FpmtigowB1TnVi3fPkZC9TEmVnc5sdxW",
-      "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
-        "path": "idl/ext_cctp-staging.json"
       },
       "generateNext": true,
       "typeRefs": [
@@ -346,7 +318,7 @@
       "program": "gstgx5AbCFq4mfYKbZP23YDC7XZFUx2EURiG3PcWX6W",
       "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_exponent-staging.json"
       },
       "generateNext": true,
@@ -375,7 +347,7 @@
       "program": "gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX",
       "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_rpi-staging.json"
       },
       "generateNext": true,
@@ -404,7 +376,7 @@
       "program": "gstgJbGqoE3p1SdFA2dET9tcaCzNqGcdD8wpbGctnU9",
       "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_jupiter-staging.json"
       },
       "generateNext": true,
@@ -432,7 +404,7 @@
       "module": "sdk",
       "program": "gstgKa2Gq9wf5hM3DFWx1TvUrGYzDYszyFGq3XBY9Uq",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_kamino-staging.json"
       },
       "generateNext": true,
@@ -490,7 +462,7 @@
       "program": "gstgL6y4uWjsfM3Qjs5euoTDmEcXoUjqx8rkYJhYngG",
       "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_loopscale-staging.json"
       },
       "generateNext": true,
@@ -519,7 +491,7 @@
       "program": "gstgMghFitRBz2GXKwgpMd7L1JXd1sg59q2v5Y83vSY",
       "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_marginfi-staging.json"
       },
       "generateNext": true,
@@ -547,7 +519,7 @@
       "module": "sdk",
       "program": "gstgmvM2o7h7GcScvXymH1oFgWskukWWxRHC1UJJ9FJ",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_marinade-staging.json"
       },
       "generateNext": true,
@@ -575,7 +547,7 @@
       "module": "sdk",
       "program": "gstgm1M39mhgnvgyScGUDRwNn5kNVSd97hTtyow1Et5",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/glam_mint-staging.json"
       },
       "generateNext": true,
@@ -604,7 +576,7 @@
       "program": "gstgNyHgtURH7iuMn19GQczzv6Wc9fhPV2WDySZVyKx",
       "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_neutral-staging.json"
       },
       "generateNext": true,
@@ -633,7 +605,7 @@
       "program": "gstgo1EgmTp2PbLSaL6Qg57P7uADx3aiRZrMsewEdSy",
       "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_orca-staging.json"
       },
       "generateNext": true,
@@ -662,7 +634,7 @@
       "program": "gstgPL7r9aYedDDsXNtLpr4atYtNvY7zubAWWstqS3L",
       "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_phoenix-staging.json"
       },
       "generateNext": true,
@@ -690,7 +662,7 @@
       "module": "sdk",
       "program": "gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/glam_protocol-staging.json"
       },
       "generateNext": true,
@@ -703,7 +675,7 @@
       "module": "sdk",
       "program": "gstgs9nJgX8PmRHWAAEP9H7xT3ZkaPWSGPYbj3mXdTa",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_spl-staging.json"
       },
       "generateNext": true,
@@ -731,7 +703,7 @@
       "program": "gstgS4dNeT3BTEQa1aaTS2b8CsAUz1SmwQDGosHSPsw",
       "idlAccountProgramOwner": "ProgM6JCCvbYkfKqJYHePx4xxSUSqJp7rh8Lyv7nk7S",
       "vcs": {
-        "repo": "glamsystems/glam-sdk-ts",
+        "repo": "glamsystems/glam-sdk-ts-legacy",
         "path": "idl/ext_stake_pool-staging.json"
       },
       "generateNext": true,

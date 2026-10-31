@@ -7,26 +7,6 @@ nobody took. The standing disagreements live beside this file, at its name with 
 before the extension. Ordered by program and channel, and carrying no timestamp, so
 consecutive runs are worth diffing against each other.
 
-== Movement (3) ==
+== Movement (0) ==
 
-GLAM Staging Bridge: the metadata IDL at 7Pgmy6sMhuGSFtkePZmoASouLMiWSty4sRR2Rcg4NdbZ moved since the last generation, 898f91bc39710bbd23c66de4594f0238098b8665bd0e8f5b1ae9dd0733d4411b -> 7ff9550264a450ad019c61dbabc76b7507a9fd4e4f5d90e49fecea24803f37a5: instructions +7 -4 ~7, accounts +1, types +10 -3 ~3, errors +10
-  instructions added (7): add_bridge_route, close_bridge_routes, init_bridge_routes, pause_bridge_routes, remove_bridge_route, unpause_bridge_routes, update_bridge_route
-  instructions removed (4): add_layerzero_oft_route, delete_layerzero_oft_route, set_cctp_policy, update_layerzero_oft_route
-  instructions changed (7): cctp_deposit_for_burn, commit_oft_transfer, managed_cctp_deposit_for_burn, prepare_oft_transfer, price_managed_transfers, settle_managed_transfer, validate_managed_transfer
-  accounts added (1): BridgeRoutes
-  types added (10): BridgeRoute, BridgeRouteIdentity, BridgeRoutes, ProviderControls, RouteChain, RouteLimits, RouteSet, TightenedSet, TransferControls, TransferTerms
-  types removed (3): CctpDestination, CctpPolicy, LayerzeroOftRoute
-  types changed (3): every one type changed
-  errors added (10): BridgeRoutesPaused, InvalidBridgeRoute, InvalidBridgeRoutes, InvalidTransferTerms, NonCanonicalPolicyList, ProviderControlMismatch, RouteSetInUse, RouteSetNotFound, TransferCostExceedsRoute, VaultSolBalanceDecreased
-
-GLAM Staging Bridge: the program was redeployed at slot 460382853, up from 448900440; the stored program image changed: 716168 payload bytes, was 716168 — review required
-
-GLAM Staging Bridge: the vcs IDL at github:glamsystems/glam-sdk-ts@main/idl/ext_bridge-staging.json moved since the last generation, 28bf301a3410d2405241d532517b8ac1f58a7684539c7afba0ae70d178036866 -> ea8dfcf463b295609fdb8f57331df0484febd50c549aa5da98b1c2e8c9dfb9cb: instructions +7 -4 ~7, accounts +1, types +10 -3 ~3, errors +10
-  instructions added (7): add_bridge_route, close_bridge_routes, init_bridge_routes, pause_bridge_routes, remove_bridge_route, unpause_bridge_routes, update_bridge_route
-  instructions removed (4): add_layerzero_oft_route, delete_layerzero_oft_route, set_cctp_policy, update_layerzero_oft_route
-  instructions changed (7): cctp_deposit_for_burn, commit_oft_transfer, managed_cctp_deposit_for_burn, prepare_oft_transfer, price_managed_transfers, settle_managed_transfer, validate_managed_transfer
-  accounts added (1): BridgeRoutes
-  types added (10): BridgeRoute, BridgeRouteIdentity, BridgeRoutes, ProviderControls, RouteChain, RouteLimits, RouteSet, TightenedSet, TransferControls, TransferTerms
-  types removed (3): CctpDestination, CctpPolicy, LayerzeroOftRoute
-  types changed (3): every one type changed
-  errors added (10): BridgeRoutesPaused, InvalidBridgeRoute, InvalidBridgeRoutes, InvalidTransferTerms, NonCanonicalPolicyList, ProviderControlMismatch, RouteSetInUse, RouteSetNotFound, TransferCostExceedsRoute, VaultSolBalanceDecreased
+Nothing moved since the last generation.

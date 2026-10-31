@@ -14,7 +14,7 @@
       "verbatim": "idl.json"
     },
     "vcs": {
-      "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_jupiter-staging.json",
+      "origin": "github:glamsystems/glam-sdk-ts-legacy@main/idl/ext_jupiter-staging.json",
       "hash": "87505bf5f0d43637d9cc18b72fbc630d3003fb4e6b0e4954b5bec413f4a17dac",
       "matchesDeployed": false,
       "file": "vcs.json",

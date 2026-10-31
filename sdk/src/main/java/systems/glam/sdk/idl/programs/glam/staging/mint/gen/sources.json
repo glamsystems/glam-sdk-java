@@ -14,7 +14,7 @@
       "verbatim": "idl.json"
     },
     "vcs": {
-      "origin": "github:glamsystems/glam-sdk-ts@main/idl/glam_mint-staging.json",
+      "origin": "github:glamsystems/glam-sdk-ts-legacy@main/idl/glam_mint-staging.json",
       "hash": "20e980b296645cc7d9de44c6afc5c9fc483309b2a945c6d1557d12dc3f9303d8",
       "matchesDeployed": false,
       "file": "vcs.json",

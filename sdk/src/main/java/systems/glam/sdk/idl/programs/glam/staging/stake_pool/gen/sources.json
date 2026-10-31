@@ -14,7 +14,7 @@
       "verbatim": "idl.json"
     },
     "vcs": {
-      "origin": "github:glamsystems/glam-sdk-ts@main/idl/ext_stake_pool-staging.json",
+      "origin": "github:glamsystems/glam-sdk-ts-legacy@main/idl/ext_stake_pool-staging.json",
       "hash": "4ec90d4f128b5532802e72f2a556f1aed8ca8e0077ac172352fb5ea4a50bfdb5",
       "matchesDeployed": true,
       "verbatim": "idl.json"
