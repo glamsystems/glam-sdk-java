@@ -9,6 +9,7 @@ import software.sava.core.encoding.ByteUtil;
 import software.sava.core.tx.Instruction;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.Context;
+import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.solana.remote.call.RpcCaller;
 import systems.glam.sdk.GlamAccounts;
 import systems.glam.sdk.StateAccountClient;
@@ -23,7 +24,14 @@ import systems.glam.services.mints.MintContext;
 import systems.glam.services.tests.LogCapture;
 import systems.glam.services.tests.Workers;
 
+import java.io.UncheckedIOException;
+import java.net.UnknownServiceException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -107,6 +115,14 @@ final class SingleAssetFulfillmentServiceTests {
     static final class StopRun extends RuntimeException {
     }
 
+    /// Every page posted through [#notifyClient], which the loop reaches only to page its own end.
+    final List<String> pages = new CopyOnWriteArrayList<>();
+    /// Records each page and answers no posts; a test that needs other answers replaces it
+    /// before the loop runs.
+    NotifyClient notifyClient = msg -> {
+      pages.add(msg);
+      return List.of();
+    };
     final Map<PublicKey, AccountInfo<byte[]>> accounts = new HashMap<>();
     final ArrayDeque<Boolean> feePayerLow = new ArrayDeque<>();
     final ArrayDeque<Boolean> processResults = new ArrayDeque<>();
@@ -185,9 +201,20 @@ final class SingleAssetFulfillmentServiceTests {
       throw new UnsupportedOperationException();
     }
 
+    /// A processor that answers only its notify client: the loop sends its instructions through
+    /// [#processInstructions], and reaches the processor itself only to page its own end.
     @Override
     public InstructionProcessor instructionProcessor() {
-      throw new UnsupportedOperationException();
+      return (InstructionProcessor) java.lang.reflect.Proxy.newProxyInstance(
+          InstructionProcessor.class.getClassLoader(),
+          new Class<?>[]{InstructionProcessor.class},
+          (proxy, method, args) -> {
+            if (method.getName().equals("notifyClient")) {
+              return notifyClient;
+            }
+            throw new UnsupportedOperationException(method.getName());
+          }
+      );
     }
 
     @Override
@@ -354,6 +381,36 @@ final class SingleAssetFulfillmentServiceTests {
     }
     assertEquals(3, harness.ctx.fetches);
     assertEquals(List.of(), harness.ctx.processedContexts);
+    // and pages it, once: which vault's loop ended, that the process exits for a supervisor to
+    // restart it, and on what (StopRun carries no message, so its class alone)
+    assertEquals(1, harness.ctx.pages.size(), harness.ctx.pages::toString);
+    final var page = harness.ctx.pages.getFirst();
+    assertTrue(page.startsWith("The Test Vault fulfillment loop has ended"), page);
+    assertTrue(page.contains("the process exits for a supervisor to restart it"), page);
+    assertTrue(page.endsWith("Failure: " + ScriptedContext.StopRun.class.getName()), page);
+  }
+
+  /// A share mint with no supply (an account that exists before the first subscription, or every
+  /// share redeemed and fulfilled) has no NAV to divide out: the cycle says so and goes on to its
+  /// wait and its next fetch, where dividing by the zero supply would end the loop.
+  @Test
+  void aVaultWithNoSharesOutstandingSkipsTheNavAndCarriesOn() {
+    final var harness = harness(NoticePeriodType.Hard, TimeUnit.Second, 100L, false, 5, 30);
+    harness.serveAccounts(500L, 0L, 2_000_000_000L, queueData());
+    harness.ctx.clock = clock(500L, 10_000L);
+    harness.ctx.feePayerLow.add(false);
+
+    try (final var logs = LogCapture.attach(LOGGER_NAME)) {
+      harness.service.run();
+      logs.assertLogged(Level.INFO, "Test Vault has no shares outstanding, so it has no NAV to log.");
+      assertTrue(logs.messages().stream().noneMatch(m -> m != null && m.contains("\"nav\"")), () -> logs.messages().toString());
+      // the loop ended on the script running dry at the second fetch, not on the division
+      logs.assertLogged(Level.SEVERE, "The fulfillment loop has ended: " + ScriptedContext.StopRun.class.getName());
+      assertTrue(logs.messages().stream().noneMatch(m -> m != null && m.contains(ArithmeticException.class.getName())),
+          () -> logs.messages().toString());
+    }
+    assertEquals(2, harness.ctx.fetches);
+    assertEquals(List.of(), harness.ctx.processedContexts);
   }
 
   @Test
@@ -443,6 +500,203 @@ final class SingleAssetFulfillmentServiceTests {
       recovered.service.run();
     }
     assertEquals(List.of(1L, 1L), recovered.ctx.backoffs);
+  }
+
+  // --- the page of the loop's end ---------------------------------------------
+  //
+  // The entrypoint exits the process as soon as the loop's run() returns, so the page of its end
+  // is awaited first. Each harness below runs an empty fee-payer script, which ends the loop at its
+  // first check, before any wait of its own: once the page is posted, the runner's next timed wait
+  // is the page's await.
+
+  /// Returns once `runner` parks in a timed wait. A runner that ends first fails `expectation` at
+  /// once rather than spinning out the deadline.
+  private static void awaitTimedWait(final Thread runner, final String expectation) throws InterruptedException {
+    final long deadline = System.nanoTime() + MILLISECONDS.toNanos(Workers.FIXTURE_DEADLINE_MILLIS);
+    while (runner.getState() != Thread.State.TIMED_WAITING) {
+      assertTrue(runner.isAlive(), expectation);
+      assertTrue(System.nanoTime() < deadline, "the loop never parked to await the page of its end");
+      //noinspection BusyWait
+      Thread.sleep(1L);
+    }
+  }
+
+  /// The post completes only when the test lets it, so run() is parked in its await when the test
+  /// looks, and returns once the post completes.
+  @Test
+  void runAwaitsThePageOfItsEndBeforeItReturns() throws InterruptedException {
+    final var harness = harness(NoticePeriodType.Hard, TimeUnit.Second, 100L, false, 5, 30);
+    final var post = new CompletableFuture<String>();
+    final var posted = new CountDownLatch(1);
+    harness.ctx.notifyClient = msg -> {
+      harness.ctx.pages.add(msg);
+      posted.countDown();
+      return List.of(post);
+    };
+    final var runner = new Thread(harness.service::run, "fulfillment-loop");
+    try (final var logs = LogCapture.attach(LOGGER_NAME)) {
+      runner.start();
+      try {
+        assertTrue(posted.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS), "the loop's end was never paged");
+        awaitTimedWait(runner, "run() returned before the page of its end was delivered");
+        assertFalse(post.isDone(), "the post completes only when this test lets it");
+        post.complete("delivered");
+        Workers.joinWithin(runner, "run() must return once the page of its end is delivered");
+      } finally {
+        runner.interrupt();
+        runner.join(Workers.FIXTURE_DEADLINE_MILLIS);
+      }
+      logs.assertLogged(Level.SEVERE, "The fulfillment loop has ended: " + ScriptedContext.StopRun.class.getName());
+      // a delivered page is no failure of its own
+      assertTrue(logs.messages().stream().noneMatch(m -> m != null && m.contains("may not have been delivered")),
+          () -> logs.messages().toString());
+    }
+    assertEquals(1, harness.ctx.pages.size(), harness.ctx.pages::toString);
+  }
+
+  /// A post that fails is logged at ERROR, and run() still returns: the page may be lost, the end
+  /// is not.
+  @Test
+  void aPageOfTheEndWhosePostFailsIsLogged() {
+    final var harness = harness(NoticePeriodType.Hard, TimeUnit.Second, 100L, false, 5, 30);
+    harness.ctx.notifyClient = msg -> {
+      harness.ctx.pages.add(msg);
+      return List.of(CompletableFuture.failedFuture(new IllegalStateException("the webhook refused the post")));
+    };
+    try (final var logs = LogCapture.attach(LOGGER_NAME)) {
+      harness.service.run();
+      logs.assertLogged(Level.SEVERE, "The page that the fulfillment loop has ended may not have been delivered.");
+    }
+    assertEquals(1, harness.ctx.pages.size(), harness.ctx.pages::toString);
+  }
+
+  /// A notify client that throws, as ravina's does once its executor has shut down, loses the page
+  /// and nothing else: the loss is logged at ERROR beside the end, and run() returns.
+  @Test
+  void aNotifyClientThatThrowsLosesThePageOfTheEndAndNothingElse() {
+    final var harness = harness(NoticePeriodType.Hard, TimeUnit.Second, 100L, false, 5, 30);
+    harness.ctx.notifyClient = msg -> {
+      throw new RejectedExecutionException("the notify executor has shut down");
+    };
+    try (final var logs = LogCapture.attach(LOGGER_NAME)) {
+      harness.service.run();
+      logs.assertLogged(Level.SEVERE, "The fulfillment loop has ended: " + ScriptedContext.StopRun.class.getName());
+      logs.assertLogged(Level.SEVERE, "Failed to post the page that the fulfillment loop has ended.");
+    }
+  }
+
+  /// A null answer from the notify client, or a null post in its answer, is no post: run() awaits
+  /// what posts there are and returns, with nothing more to log.
+  @Test
+  void aNullAnswerFromTheNotifyClientIsNoPost() {
+    final var nullAnswer = harness(NoticePeriodType.Hard, TimeUnit.Second, 100L, false, 5, 30);
+    nullAnswer.ctx.notifyClient = msg -> {
+      nullAnswer.ctx.pages.add(msg);
+      return null;
+    };
+    final var nullPost = harness(NoticePeriodType.Hard, TimeUnit.Second, 100L, false, 5, 30);
+    nullPost.ctx.notifyClient = msg -> {
+      nullPost.ctx.pages.add(msg);
+      return Arrays.asList(null, CompletableFuture.completedFuture("delivered"));
+    };
+    for (final var harness : List.of(nullAnswer, nullPost)) {
+      try (final var logs = LogCapture.attach(LOGGER_NAME)) {
+        harness.service.run();
+        assertEquals(1, logs.messages().size(), () -> logs.messages().toString());
+        logs.assertLogged(Level.SEVERE, "The fulfillment loop has ended: " + ScriptedContext.StopRun.class.getName());
+      }
+      assertEquals(1, harness.ctx.pages.size(), harness.ctx.pages::toString);
+    }
+  }
+
+  /// An interrupt while the page's posts are awaited ends the wait, and run() keeps it for its
+  /// caller, whose own interrupt it is: the entrypoint's shutdown reaches the worker this way.
+  @Test
+  void anInterruptEndsTheAwaitOfThePageAndIsKept() throws InterruptedException {
+    final var harness = harness(NoticePeriodType.Hard, TimeUnit.Second, 100L, false, 5, 30);
+    final var posted = new CountDownLatch(1);
+    harness.ctx.notifyClient = msg -> {
+      harness.ctx.pages.add(msg);
+      posted.countDown();
+      return List.of(new CompletableFuture<>());
+    };
+    final var interruptedAfterRun = new AtomicReference<Boolean>();
+    final var runner = new Thread(() -> {
+      harness.service.run();
+      interruptedAfterRun.set(Thread.currentThread().isInterrupted());
+    }, "fulfillment-loop");
+    try (final var logs = LogCapture.attach(LOGGER_NAME)) {
+      runner.start();
+      try {
+        assertTrue(posted.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS), "the loop's end was never paged");
+        awaitTimedWait(runner, "run() returned before the page of its end was delivered");
+        runner.interrupt();
+        Workers.joinWithin(runner, "an interrupt must end the await of the page");
+      } finally {
+        runner.interrupt();
+        runner.join(Workers.FIXTURE_DEADLINE_MILLIS);
+      }
+      assertEquals(Boolean.TRUE, interruptedAfterRun.get(), "run() must keep the interrupt for its caller");
+      // an interrupted await is a shutdown, not a lost page
+      assertTrue(logs.messages().stream().noneMatch(m -> m != null && m.contains("may not have been delivered")),
+          () -> logs.messages().toString());
+    }
+  }
+
+  /// The page names a failure by its class and the first line of its message: the full failure is
+  /// in the ERROR record beside it.
+  @Test
+  void aFailureIsDescribedByItsClassAndTheFirstLineOfItsMessage() {
+    final var name = IllegalStateException.class.getName();
+    assertEquals(name + ": rpc down", BaseFulfillmentService.describeFailure(
+        new IllegalStateException("rpc down\n\tat the second line")));
+    assertEquals(name + ": first", BaseFulfillmentService.describeFailure(new IllegalStateException("first\rsecond")));
+    // no message, or nothing on its first line: the class alone
+    assertEquals(name, BaseFulfillmentService.describeFailure(new IllegalStateException()));
+    assertEquals(name, BaseFulfillmentService.describeFailure(new IllegalStateException("\nonly a second line")));
+  }
+
+  /// Control characters are stripped: ravina's notify client escapes only quotes and line feeds
+  /// into the webhook's JSON body.
+  @Test
+  void aFailuresControlCharactersAreStripped() {
+    assertEquals(
+        IllegalStateException.class.getName() + ": a tab, an escape, a nul and a C1 control",
+        BaseFulfillmentService.describeFailure(new IllegalStateException(
+            "a tab,\t an escape,\u001B a nul\u0000 and a C1\u0085 control"
+        ))
+    );
+  }
+
+  /// A failed request of sava's HTTP clients carries the response body in its message, wrapped as
+  /// it is here: the page keeps the status and never the body, however short.
+  @Test
+  void anHttpFailureIsDescribedWithoutItsResponseBody() {
+    final var failure = new UncheckedIOException(new UnknownServiceException(
+        "HTTP request failed with [httpCode:401], [body={\"error\":\"invalid api key 5ecret\"}]"
+    ));
+    final var description = BaseFulfillmentService.describeFailure(failure);
+    assertEquals(
+        UncheckedIOException.class.getName() + ": " + UnknownServiceException.class.getName()
+            + ": HTTP request failed with [httpCode:401], [body omitted]",
+        description
+    );
+    assertFalse(description.contains("5ecret"), description);
+  }
+
+  /// At most 200 code points of the message are kept, and a cut message says it was cut; a
+  /// character outside the basic plane counts once and is never split.
+  @Test
+  void aLongMessageIsCutAtTwoHundredCodePoints() {
+    final var name = IllegalStateException.class.getName();
+    final var exactly = "x".repeat(200);
+    assertEquals(name + ": " + exactly, BaseFulfillmentService.describeFailure(new IllegalStateException(exactly)));
+    assertEquals(name + ": " + exactly + "...", BaseFulfillmentService.describeFailure(new IllegalStateException(exactly + "y")));
+    final var grin = new String(Character.toChars(0x1F600));
+    assertEquals(
+        name + ": " + grin.repeat(200) + "...",
+        BaseFulfillmentService.describeFailure(new IllegalStateException(grin.repeat(201)))
+    );
   }
 
   // --- redemption accounting ------------------------------------------------

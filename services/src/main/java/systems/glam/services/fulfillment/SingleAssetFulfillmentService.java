@@ -95,20 +95,26 @@ final class SingleAssetFulfillmentService extends BaseFulfillmentService {
       }
     }
 
-    final var nav = vaultHoldings.divide(vaultMintSupply, 4, RoundingMode.HALF_EVEN).stripTrailingZeros();
-    logger.log(INFO, String.format("""
-                {
-                 "name": "%s",
-                 "mintSupply": %s,
-                 "baseSupply": %s,
-                 "nav": "%s"
-                }""",
-            vaultName,
-            vaultMintSupply.toPlainString(),
-            vaultHoldings.toPlainString(),
-            nav.toPlainString()
-        )
-    );
+    if (vaultMintSupply.signum() == 0) {
+      // no NAV to divide out: a share mint whose account exists before the first subscription,
+      // or whose every share has been redeemed and fulfilled
+      logger.log(INFO, String.format("%s has no shares outstanding, so it has no NAV to log.", vaultName));
+    } else {
+      final var nav = vaultHoldings.divide(vaultMintSupply, 4, RoundingMode.HALF_EVEN).stripTrailingZeros();
+      logger.log(INFO, String.format("""
+                  {
+                   "name": "%s",
+                   "mintSupply": %s,
+                   "baseSupply": %s,
+                   "nav": "%s"
+                  }""",
+              vaultName,
+              vaultMintSupply.toPlainString(),
+              vaultHoldings.toPlainString(),
+              nav.toPlainString()
+          )
+      );
+    }
 
     awaitChange(redemptionAvailableIn(redemptionSummary));
   }

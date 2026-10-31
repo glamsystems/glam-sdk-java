@@ -194,8 +194,8 @@ final class SingleAssetFulfillmentServiceEntrypointTests {
 
   /// Blocks until this thread is interrupted, as a live service loop does, then counts
   /// `interrupted` down: the latch it waits on is never counted down, so only an interrupt ends
-  /// the wait. Each caller runs on the entrypoint's pool, whose close awaits it, and every test
-  /// interrupts its runner in a finally, which makes that close interrupt the pool.
+  /// the wait. Each caller runs on the entrypoint's pool, which run() interrupts on its way out
+  /// without awaiting it, so a test reads `interrupted` with a bounded await, never at once.
   private static void awaitInterrupt(final CountDownLatch interrupted) {
     try {
       new CountDownLatch(1).await();
@@ -270,10 +270,10 @@ final class SingleAssetFulfillmentServiceEntrypointTests {
 
         runner.interrupt();
         Workers.joinWithin(runner, "the monitor loop must exit on interrupt");
-        // the runner has terminated, so its pool's close has awaited every task and its finally
-        // has run
-        assertEquals(0L, fulfillmentServiceInterrupted.getCount(),
-            "an interrupt must stop the fulfillment worker, or the pool's close waits on it for good");
+        // the runner has terminated, so its finally has run: it closed the websocket manager on
+        // its own thread, and interrupted the worker on the pool's, which it does not await
+        assertTrue(fulfillmentServiceInterrupted.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS),
+            "an interrupt of run() must interrupt the fulfillment worker too");
         assertEquals(0L, closed.getCount(), "the websocket manager was not closed on exit");
         // the interrupt ended the first pause, so no second check ever ran
         assertEquals(1, connectionChecks.get(), "the interrupt must end the loop inside its first pause");
@@ -291,7 +291,7 @@ final class SingleAssetFulfillmentServiceEntrypointTests {
   /// service and a monitor that, like the real loops, end only on an interrupt. Then asserts what
   /// every end of the worker must leave: run() returned with no interrupt sent, within the fixture
   /// deadline, and let no exception escape; the epoch service and the monitor were interrupted,
-  /// without which the pool's close would wait on them for good; the websocket manager was closed.
+  /// which ends their loops; the websocket manager was closed.
   private static void runUntilTheFulfillmentServiceEnds(final FulfillmentService fulfillmentService) throws InterruptedException {
     final var closed = new CountDownLatch(1);
     final var webSocketManager = webSocketManager(new AtomicInteger(), closed);
@@ -311,11 +311,11 @@ final class SingleAssetFulfillmentServiceEntrypointTests {
       // nothing interrupts the runner before this join: the worker's end alone must end run()
       Workers.joinWithin(runner, "run() must return by itself once the fulfillment service has ended");
       assertNull(escaped.get(), "run() must return, not throw, once the fulfillment service has ended");
-      // the runner has terminated, so its pool's close has awaited every task and its finally
-      // has run
-      assertEquals(0L, epochServiceInterrupted.getCount(),
+      // the runner has terminated, so its finally has run: it closed the websocket manager on its
+      // own thread, and interrupted the loops on the pool's, which it does not await
+      assertTrue(epochServiceInterrupted.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS),
           "the epoch service must be interrupted once the fulfillment service has ended");
-      assertEquals(0L, monitorInterrupted.getCount(),
+      assertTrue(monitorInterrupted.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS),
           "the transaction monitor must be interrupted once the fulfillment service has ended");
       assertEquals(0L, closed.getCount(), "the websocket manager was not closed on exit");
     } finally {
@@ -326,14 +326,85 @@ final class SingleAssetFulfillmentServiceEntrypointTests {
 
   /// The worker's loop ends for good (as when the transaction monitor has stopped, which never
   /// restarts), so its end is the service's: run() returns by itself, for main to exit the
-  /// process for a supervisor to restart, and says so at ERROR.
+  /// process for a supervisor to restart, and says so at ERROR, pointing at the record that names
+  /// the failure, since a worker that returns has logged it itself.
   @Test
   void runReturnsOnceTheFulfillmentServiceEnds() throws InterruptedException {
     try (final var log = LogCapture.attach(LOGGER_NAME)) {
       // BaseFulfillmentService.run returns once its loop has failed
       runUntilTheFulfillmentServiceEnds(fulfillmentService(() -> {
       }));
-      log.assertLogged(Level.SEVERE, "The fulfillment service has ended, exiting for a supervisor to restart the process.");
+      log.assertLogged(Level.SEVERE,
+          "The fulfillment service has ended, exiting for a supervisor to restart the process; the failure that ended it is named by the worker's own ERROR record, \"The fulfillment loop has ended\".");
+    }
+  }
+
+  /// A loop that swallows its interrupt, as ravina 25.7.0's EpochInfoServiceImpl can (its
+  /// balanced call rethrows the interrupt wrapped, without the flag, and the loop backs off and
+  /// retries), must not hold run() once the worker has ended: run() interrupts it and returns
+  /// without awaiting it, and main exits the process. The stub here catches its interrupt and
+  /// blocks again, on a latch only this test's finally releases.
+  @Test
+  void runReturnsOnceTheFulfillmentServiceEndsThoughALoopSwallowsItsInterrupt() throws InterruptedException {
+    final var closed = new CountDownLatch(1);
+    final var webSocketManager = webSocketManager(new AtomicInteger(), closed);
+    final var release = new CountDownLatch(1);
+    final var epochServiceRunning = new CountDownLatch(1);
+    final var epochServiceSwallowed = new CountDownLatch(1);
+    final var epochServiceEnded = new CountDownLatch(1);
+    final var epochInfoService = epochInfoService(() -> {
+      epochServiceRunning.countDown();
+      try {
+        for (; ; ) {
+          try {
+            release.await();
+            return;
+          } catch (final InterruptedException swallowed) {
+            epochServiceSwallowed.countDown();
+          }
+        }
+      } finally {
+        epochServiceEnded.countDown();
+      }
+    });
+    final var monitorInterrupted = new CountDownLatch(1);
+    final var txMonitorService = txMonitorService(() -> awaitInterrupt(monitorInterrupted));
+    // the worker ends once the epoch loop is running, so that the interrupt reaches a live loop
+    final var fulfillmentService = fulfillmentService(() -> {
+      try {
+        epochServiceRunning.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    });
+    final var entrypoint = new SingleAssetFulfillmentServiceEntrypoint(
+        webSocketManager, epochInfoService, txMonitorService, fulfillmentService
+    );
+
+    final var escaped = new AtomicReference<Throwable>();
+    final var runner = new Thread(entrypoint::run, "fulfillment-entrypoint");
+    runner.setUncaughtExceptionHandler((thread, ex) -> escaped.set(ex));
+    try (final var log = LogCapture.attach(LOGGER_NAME)) {
+      runner.start();
+      try {
+        // nothing interrupts the runner before this join, and nothing ends the epoch loop
+        Workers.joinWithin(runner, "run() must return once the fulfillment service has ended, without awaiting a loop that swallowed its interrupt");
+        assertNull(escaped.get(), "run() must return, not throw, once the fulfillment service has ended");
+        assertTrue(epochServiceSwallowed.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS),
+            "run() must still interrupt the epoch service on its way out");
+        assertEquals(1L, epochServiceEnded.getCount(), "the epoch loop must still be running after run() returned");
+        assertTrue(monitorInterrupted.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS),
+            "the transaction monitor must be interrupted once the fulfillment service has ended");
+        assertEquals(0L, closed.getCount(), "the websocket manager was not closed on exit");
+        log.assertLogged(Level.SEVERE, "The fulfillment service has ended, exiting for a supervisor to restart the process");
+      } finally {
+        // ends the epoch loop, and with it the pool's last thread; under a run() that awaits the
+        // pool this is also what lets the runner end, after the failed join above
+        release.countDown();
+        runner.interrupt();
+        runner.join(Workers.FIXTURE_DEADLINE_MILLIS);
+        epochServiceEnded.await(Workers.FIXTURE_DEADLINE_MILLIS, MILLISECONDS);
+      }
     }
   }
 
