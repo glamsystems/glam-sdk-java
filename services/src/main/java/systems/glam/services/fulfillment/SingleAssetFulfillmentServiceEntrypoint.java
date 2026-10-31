@@ -15,11 +15,14 @@ import systems.glam.services.mints.MintContext;
 
 import java.net.http.HttpClient;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import static java.lang.System.Logger.Level.*;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocketManager,
                                                       EpochInfoService epochInfoService,
@@ -47,11 +50,16 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
       final var service = createService(taskExecutor, httpClient, wsHttpClient);
       if (service != null) {
         service.run();
+        // run() returns only once the service is over: exit non-zero for a supervisor to restart
+        // the process. Exiting here skips the closes, which wait on every task the executor holds,
+        // and a courteous call retrying an unreachable endpoint never ends.
+        System.exit(1);
       }
     } catch (final InterruptedException e) {
       // exit
     } catch (final Throwable e) {
       logger.log(ERROR, "Unexpected service failure.", e);
+      System.exit(1);
     }
   }
 
@@ -202,19 +210,43 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
     }
   }
 
+  /// Runs the services until the fulfillment worker ends, then stops the others and returns, for
+  /// `main` to end the process: nothing restarts the worker, nor a transaction monitor that has
+  /// stopped. An interrupt ends it too, quietly.
   @Override
   public void run() {
     // the epoch service, the transaction monitor's two loops (signature polling and expiry),
     // and the fulfillment service; without the monitor's threads an await that misses the
     // websocket confirmation falls through to a poll nobody serves
     try (final var executorService = Executors.newFixedThreadPool(4)) {
-      executorService.execute(epochInfoService);
-      txMonitorService.run(executorService);
-      executorService.execute(fulfillmentService);
-      for (; ; ) {
-        webSocketManager.checkConnection();
-        //noinspection BusyWait
-        Thread.sleep(3_000);
+      try {
+        executorService.execute(epochInfoService);
+        txMonitorService.run(executorService);
+        final var fulfillment = executorService.submit(fulfillmentService);
+        // Returns as soon as the worker ends, without waiting for a transaction it left pending:
+        // one may still land (TxMonitorStoppedException) while the restarted process rebuilds and
+        // sends fulfill again, and the on-chain fulfill instruction tolerates being executed twice.
+        for (; ; ) {
+          webSocketManager.checkConnection();
+          try {
+            // paces the connection checks, and ends the pause as soon as the worker ends
+            fulfillment.get(3, SECONDS);
+          } catch (final TimeoutException running) {
+            continue;
+          } catch (final ExecutionException failed) {
+            final var cause = failed.getCause();
+            logger.log(ERROR, "The fulfillment service failed, exiting for a supervisor to restart the process: " + cause, cause);
+            return;
+          }
+          logger.log(ERROR, "The fulfillment service has ended, exiting for a supervisor to restart the process.");
+          return;
+        }
+      } finally {
+        // The epoch service's and the monitor's loops end only on an interrupt, and after an
+        // interrupt of this thread so does the worker's. The pool's close interrupts nothing
+        // unless its own wait is interrupted: the InterruptedException out of get has already
+        // consumed this one, so without this the close would wait on them for good.
+        executorService.shutdownNow();
       }
     } catch (final InterruptedException e) {
       // exit.

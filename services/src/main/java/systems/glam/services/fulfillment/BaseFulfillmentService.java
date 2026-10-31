@@ -17,7 +17,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
-import static java.lang.System.Logger.Level.WARNING;
+import static java.lang.System.Logger.Level.ERROR;
 import static java.util.concurrent.TimeUnit.*;
 
 public abstract class BaseFulfillmentService extends BaseDelegateService
@@ -118,7 +118,7 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
     } catch (final InterruptedException ex) {
       Thread.currentThread().interrupt();
     } catch (final Throwable ex) {
-      logger.log(WARNING, "Unexpected service failure.", ex);
+      logger.log(ERROR, "The fulfillment loop has ended: " + ex, ex);
     }
   }
 

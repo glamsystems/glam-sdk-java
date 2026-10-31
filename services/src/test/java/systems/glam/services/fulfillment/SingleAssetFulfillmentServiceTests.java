@@ -24,6 +24,7 @@ import systems.glam.services.tests.LogCapture;
 import systems.glam.services.tests.Workers;
 
 import java.util.*;
+import java.util.logging.Level;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -347,7 +348,9 @@ final class SingleAssetFulfillmentServiceTests {
       // two full awaitChange(max) rounds before the script ran out
       assertTrue(elapsedMillis >= 50, () -> "ran only " + elapsedMillis + "ms");
       logs.assertLogged("Waiting for base asset token account");
-      logs.assertLogged("Unexpected service failure.");
+      // the empty script's StopRun is a failure the loop does not survive: it ends on it, at
+      // ERROR, naming it
+      logs.assertLogged(Level.SEVERE, "The fulfillment loop has ended: " + ScriptedContext.StopRun.class.getName());
     }
     assertEquals(3, harness.ctx.fetches);
     assertEquals(List.of(), harness.ctx.processedContexts);
