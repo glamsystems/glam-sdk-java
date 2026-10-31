@@ -18,8 +18,6 @@ module systems.glam.sdk {
   exports systems.glam.sdk.idl.programs.glam.spl.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.bridge.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.bridge.gen;
-  exports systems.glam.sdk.idl.programs.glam.staging.cctp.gen.types;
-  exports systems.glam.sdk.idl.programs.glam.staging.cctp.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.exponent.gen.types;
   exports systems.glam.sdk.idl.programs.glam.staging.exponent.gen;
   exports systems.glam.sdk.idl.programs.glam.staging.jupiter.gen.types;

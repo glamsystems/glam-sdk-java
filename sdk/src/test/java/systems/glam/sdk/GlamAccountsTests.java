@@ -4,11 +4,11 @@ import org.junit.jupiter.api.Test;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.accounts.SolanaAccounts;
 import software.sava.core.accounts.meta.AccountMeta;
+import systems.glam.sdk.idl.programs.glam.cctp.gen.ExtCctpPDAs;
 import systems.glam.sdk.idl.programs.glam.config.gen.GlamConfigPDAs;
 import systems.glam.sdk.idl.programs.glam.kamino.gen.ExtKaminoPDAs;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintPDAs;
 import systems.glam.sdk.idl.programs.glam.spl.gen.ExtSplPDAs;
-import systems.glam.sdk.idl.programs.glam.staging.cctp.gen.ExtCctpPDAs;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static software.sava.core.accounts.PublicKey.fromBase58Encoded;
@@ -232,7 +232,6 @@ final class GlamAccountsTests {
         .mintProgram("gstgm1M39mhgnvgyScGUDRwNn5kNVSd97hTtyow1Et5")
         .policyProgram("po1iCYakK3gHCLbuju4wGzFowTMpAJxkqK1iwUqMonY")
         .bridgeIntegrationProgram("gstgxS9yTioViNKdsM4DC33k1TU9un2VCYDQK8fAeSA")
-        .cctpIntegrationProgram("gstgcuRwiX2FpmtigowB1TnVi3fPkZC9TEmVnc5sdxW")
         .exponentIntegrationProgram("gstgx5AbCFq4mfYKbZP23YDC7XZFUx2EURiG3PcWX6W")
         .externalPositionProgram("gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX")
         .jupiterIntegrationProgram("gstgJbGqoE3p1SdFA2dET9tcaCzNqGcdD8wpbGctnU9")
@@ -254,7 +253,6 @@ final class GlamAccountsTests {
         .mintProgram(GlamAccounts.MAIN_NET_STAGING.mintProgram())
         .policyProgram(POLICY_PROGRAM)
         .bridgeIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.bridgeIntegrationProgram())
-        .cctpIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.cctpIntegrationProgram())
         .exponentIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.exponentIntegrationProgram())
         .externalPositionProgram(GlamAccounts.MAIN_NET_STAGING.externalPositionProgram())
         .jupiterIntegrationProgram(GlamAccounts.MAIN_NET_STAGING.jupiterIntegrationProgram())
@@ -278,8 +276,11 @@ final class GlamAccountsTests {
         fromBase58Encoded("gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz"),
         staging.protocolProgram()
     );
-    // every staging integration program is present: 15 distinct authorities
-    assertEquals(15, staging.integrationAuthorities().size());
+    // every staging integration program is present: 14 distinct authorities, none for CCTP,
+    // whose staging program is retired
+    assertEquals(14, staging.integrationAuthorities().size());
+    assertEquals(PublicKey.NONE, staging.cctpIntegrationProgram());
+    assertNull(staging.readCctpIntegrationAuthority());
     assertNotNull(staging.readBridgeIntegrationAuthority());
     assertNotNull(staging.readExponentIntegrationAuthority());
     assertNotNull(staging.readExternalPositionAuthority());
