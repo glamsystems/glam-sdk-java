@@ -18,11 +18,13 @@ import java.math.BigDecimal;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
@@ -53,50 +55,119 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
     return true;
   }
 
-  /// How long [#fatalPage] awaits the posts of a page before the failure it reports is thrown: the
+  /// How long [#fatalPost] gives the posts of a page before the failure it reports is thrown: the
   /// fulfillment entrypoint exits the process once its worker ends on such a failure, and ravina's
-  /// NotifyClientImpl posts asynchronously under WebHookClientImpl's 8 s request timeout, so the
-  /// page must leave first, and this bound covers that timeout.
-  private static final long FATAL_PAGE_DELIVERY_SECONDS = 10L;
+  /// NotifyClientImpl posts asynchronously, so the page should leave first. The wait is a best
+  /// effort, not a guarantee. Each post is a courteous call that retries a send that failed (a
+  /// refused connection, a timeout) with the webhook's backoff up to the notify client's
+  /// maxRetries (BaseDelegateServiceConfig builds it with five, over a fibonacci backoff from one
+  /// second by default), each attempt under WebHookClientImpl's 8 s request timeout, so a post can
+  /// legitimately outlast this bound and is then left to complete on its own; and a rejection the
+  /// webhook answers (Slack's 429, a 5xx) completes the post normally, so it is never seen here.
+  private static final long FATAL_PAGE_DELIVERY_SECONDS = 30L;
 
-  /// Formats `event` with the batch, logs it at `level` with `failure` and posts it as a page,
-  /// returning the posts: empty when the notify client threw, since a notify client that throws
-  /// (ravina's does, with RejectedExecutionException, once its executor has shut down) loses the
-  /// page and nothing else: the lost page is logged at ERROR, and `failure` is neither replaced by
-  /// the notify failure nor given it as suppressed, since a ravina exception's instance is not this
+  /// The most of a throwable's message a page carries; see [#summarize].
+  static final int THROWABLE_SUMMARY_LENGTH = 200;
+
+  /// What ravina's NotifyClientImpl.escape leaves as it is although the webhook's JSON cannot carry
+  /// it unescaped: it rewrites only `"` and a newline, so a control character or a backslash in a
+  /// page makes the JSON invalid and the page is lost, while the webhook's 400 completes the post
+  /// normally.
+  private static final Pattern UNESCAPED = Pattern.compile("[\\p{Cntrl}\\\\]");
+
+  /// The status fragment of sava's HTTP failure message, "HTTP request failed with [httpCode:%d],
+  /// [body=%s]", which tells a key to fix (a 401) from a rate to wait out (a 429).
+  private static final Pattern HTTP_CODE = Pattern.compile("\\[httpCode:\\d+]");
+
+  /// A bounded, single-line summary of `failure` for a page, the whole throwable being the log's:
+  /// its simple class name and the first line of its message, less the characters [#UNESCAPED]
+  /// names (sava's HTTP failure message carries the provider's raw body, and a carriage return, a
+  /// tab or a backslash in it would cost the page), cut to [#THROWABLE_SUMMARY_LENGTH] characters
+  /// with the `[httpCode:NNN]` fragment kept past the cut. A throwable with no message, or none
+  /// left, is summarized by its class name alone.
+  static String summarize(final Throwable failure) {
+    final var name = failure.getClass().getSimpleName();
+    final var message = failure.getMessage();
+    if (message == null) {
+      return name;
+    }
+    final var line = UNESCAPED.matcher(message.lines().findFirst().orElse("")).replaceAll("");
+    if (line.isBlank()) {
+      return name;
+    }
+    if (line.length() <= THROWABLE_SUMMARY_LENGTH) {
+      return name + ": " + line;
+    }
+    final var cut = line.substring(0, THROWABLE_SUMMARY_LENGTH) + "...";
+    final var httpCode = HTTP_CODE.matcher(line);
+    return httpCode.find() && httpCode.end() > THROWABLE_SUMMARY_LENGTH
+        ? name + ": " + cut + ' ' + httpCode.group()
+        : name + ": " + cut;
+  }
+
+  /// Logs `msg` at `level` with `failure` and posts it as a page, returning its posts, with none
+  /// for a null list or a null element: the notify client is anyone's implementation, and a null
+  /// out of it must not become a NullPointerException in place of the failure being paged. None
+  /// either when the notify client threw, since a notify client that throws (ravina's does, with
+  /// RejectedExecutionException, once its executor has shut down) loses the page and nothing else:
+  /// the lost page is logged at ERROR under `event`, and `failure` is neither replaced by the
+  /// notify failure nor given it as suppressed, since a ravina exception's instance is not this
   /// call's alone: every dependent of the future the monitor failed sees it.
-  private List<CompletableFuture<String>> page(final System.Logger.Level level,
+  private List<CompletableFuture<String>> post(final System.Logger.Level level,
                                                final String event,
-                                               final List<Instruction> ixBatch,
+                                               final String msg,
                                                final Throwable failure) {
-    final var msg = FormatUtil.formatInstructionException(event, ixBatch);
     logger.log(level, msg, failure);
+    final List<CompletableFuture<String>> posts;
     try {
-      return notifyClient.postMsg(msg);
+      posts = notifyClient.postMsg(msg);
     } catch (final RuntimeException notifyFailure) {
       logger.log(ERROR, String.format("Failed to post the page: %s", event), notifyFailure);
       return List.of();
     }
+    return posts == null ? List.of() : posts.stream().filter(Objects::nonNull).toList();
   }
 
-  /// [#page] at ERROR for a failure the call ends on, returned for the caller to throw once the
-  /// page's posts have completed or [#FATAL_PAGE_DELIVERY_SECONDS] have passed: the caller exits
-  /// the process on these failures, so the page must leave before the throw. A post that fails or
-  /// outlasts the bound is logged at ERROR and changes nothing else; an interrupt ends the wait
-  /// and is kept for the caller.
+  /// [#post] of `event` formatted with the batch.
+  private List<CompletableFuture<String>> page(final System.Logger.Level level,
+                                               final String event,
+                                               final List<Instruction> ixBatch,
+                                               final Throwable failure) {
+    return post(level, event, FormatUtil.formatInstructionException(event, ixBatch), failure);
+  }
+
+  /// [#post] at ERROR for a failure the call ends on, returned for the caller to throw once
+  /// [#awaitPosts] has given the page's posts [#FATAL_PAGE_DELIVERY_SECONDS]: the caller exits the
+  /// process on these failures, so the page should leave before the throw, as far as that bound
+  /// sees to it.
+  private <T extends Throwable> T fatalPost(final String event, final String msg, final T failure) {
+    awaitPosts(event, post(ERROR, event, msg, failure), FATAL_PAGE_DELIVERY_SECONDS, TimeUnit.SECONDS);
+    return failure;
+  }
+
+  /// [#fatalPost] of `event` formatted with the batch.
   private <T extends Throwable> T fatalPage(final String event,
                                             final List<Instruction> ixBatch,
                                             final T failure) {
-    final var posts = page(ERROR, event, ixBatch, failure);
+    return fatalPost(event, FormatUtil.formatInstructionException(event, ixBatch), failure);
+  }
+
+  /// Waits for `posts` (none of them null) to complete, or for `timeout` to pass, whichever comes
+  /// first: a best effort that changes nothing but the time of the throw it precedes. A post that
+  /// failed within the bound or is still running at it is logged at ERROR under `event` and left
+  /// to itself; a rejection the webhook answered completes its post normally and is not seen here;
+  /// an interrupt ends the wait and is kept for the caller.
+  static void awaitPosts(final String event,
+                         final List<CompletableFuture<String>> posts,
+                         final long timeout,
+                         final TimeUnit unit) {
     try {
-      CompletableFuture.allOf(posts.toArray(new CompletableFuture<?>[0]))
-          .get(FATAL_PAGE_DELIVERY_SECONDS, TimeUnit.SECONDS);
+      CompletableFuture.allOf(posts.toArray(new CompletableFuture<?>[0])).get(timeout, unit);
     } catch (final TimeoutException | ExecutionException ex) {
       logger.log(ERROR, String.format("The page may not have been delivered: %s", event), ex);
     } catch (final InterruptedException ex) {
       Thread.currentThread().interrupt();
     }
-    return failure;
   }
 
   @Override
@@ -155,8 +226,9 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
                       .map(PublicKey::toBase58)
                       .collect(Collectors.joining("\",\""))
               );
-              notifyClient.postMsg(msg);
-              throw new IllegalStateException(msg);
+              // no transaction can carry this instruction even alone, so the call ends: paged,
+              // with the post guarded and awaited like every failure the call ends on
+              throw fatalPost("Instruction Exceeds Account Limit", msg, new IllegalStateException(msg));
             }
             ixBatch = ixBatch.subList(0, numInstructions);
             break BATCHED;
@@ -180,13 +252,15 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
       } catch (final TxMonitorStoppedException stopped) {
         // The monitor that would have settled this batch has stopped and does not restart. With
         // sent() the batch's outcome is unknown: the transaction named may still land until its
-        // block hash expires, and a rebuild could execute these instructions twice; without it
-        // nothing sent can land. The page says which, and the exception is thrown as itself so
-        // that the caller tells it apart by type instead of treating the batch as failed and
-        // rebuilding it; ravina refuses every later call on that monitor the same way.
+        // block hash expires, and a rebuild before then can execute these instructions twice;
+        // without it nothing sent can land. The page says which, and the exception is thrown as
+        // itself so that the caller tells it apart by type and decides about a rebuild for itself
+        // rather than treating the batch as failed and rebuilding it as one (the fulfillment
+        // service exits for a supervisor restart, which rebuilds, since the on-chain fulfill
+        // tolerates a duplicate); ravina refuses every later call on that monitor the same way.
         throw fatalPage(stopped.sent()
                 ? String.format(
-                "Transaction monitor stopped; %s transaction %s may still land until block height %s passes, so these instructions must not be rebuilt before its status is known.",
+                "Transaction monitor stopped; %s transaction %s may still land until block height %s passes: a rebuild before then can execute these instructions twice.",
                 logContext,
                 transactionProcessor.formatter().formatSig(stopped.sig()),
                 Long.toUnsignedString(stopped.lastValidBlockHeight())
@@ -208,11 +282,21 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
           // therefore always rebuilds, and the page carrying the cause is what tells an operator
           // a key from a rate limit.
           final var cause = notAccepted.getCause();
+          // ravina's cause is the last failed send; the first is attached as suppressed when it
+          // is another one, and a 401 on one peer followed by 429s on the next must not read as a
+          // rate limit alone
+          final var suppressed = notAccepted.getSuppressed();
+          final var first = suppressed.length == 0 ? null : suppressed[0];
+          final var failures = cause == null
+              ? "no send was answered"
+              : first == null
+              ? summarize(cause)
+              : summarize(cause) + "; first failure: " + summarize(first);
           // posted, not awaited: the worker goes on, to back off and rebuild, and the post
           // completes on its own
           page(WARNING, String.format(
                   "No send of the %s transaction was accepted (%d attempted) and nothing landed: its block hash expired with nothing of this batch on chain, so the caller backs off and rebuilds. Last failure: %s.",
-                  logContext, notAccepted.attempted(), cause == null ? "no send was answered" : cause
+                  logContext, notAccepted.attempted(), failures
               ),
               ixBatch, notAccepted
           );
@@ -227,7 +311,7 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
         // monitor's sent() case: paged with its transaction, left at the head of the list, and the
         // exception thrown as itself.
         throw fatalPage(String.format(
-                "No send of the %s transaction %s was accepted (%d attempted) and its expiry was not verified: this attempt or an earlier one of the call may still land, so these instructions must not be rebuilt before its status is known.",
+                "No send of the %s transaction %s was accepted (%d attempted) and its expiry was not verified: this attempt or an earlier one of the call may still land, and a rebuild before its status is known can execute these instructions twice.",
                 logContext,
                 transactionProcessor.formatter().formatSig(notAccepted.sig()),
                 notAccepted.attempted()
@@ -251,24 +335,26 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
 
       final var error = txResult.error();
       if (error != null) {
+        final var event = String.format("%s Failed", logContext);
         final var msg = String.format("""
-                %s Failed
+                %s
                 %s
                 """,
-            logContext, formattedTxResult
+            event, formattedTxResult
         );
         if (error == SIZE_LIMIT_EXCEEDED) {
           // batchSize bounds the batch, which the account limit may have cut shorter: a bound of
           // one cannot halve, and the refusal falls through to the page below
           if (batchSize > 1) {
             batchSize = (batchSize & 1) == 1 ? (batchSize >> 1) + 1 : batchSize >> 1;
-            logger.log(WARNING, msg);
             if (instructions.isEmpty()) {
               // the refused batch was the whole remaining list: nothing is left to send at the
-              // halved size, and an empty transaction must never go out in its place
-              notifyClient.postMsg(msg);
+              // halved size, and an empty transaction must never go out in its place, so the
+              // call ends on the refusal, logged and paged like a failed batch
+              post(WARNING, event, msg, null);
               return false;
             }
+            logger.log(WARNING, msg);
             continue;
           }
         } else if (error instanceof TransactionError.InstructionError(final int index, final IxError ixError)) {
@@ -287,7 +373,9 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
             }
           }
         }
-        notifyClient.postMsg(msg);
+        // dropped for the caller to re-fetch state and rebuild: logged and paged, the post guarded
+        // so that a notify client that throws cannot turn this false into an exception
+        post(WARNING, event, msg, null);
         return false;
       } else {
         logger.log(INFO, String.format("""

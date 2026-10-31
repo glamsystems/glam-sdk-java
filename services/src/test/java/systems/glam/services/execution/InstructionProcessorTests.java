@@ -40,6 +40,7 @@ import java.math.BigDecimal;
 import java.net.UnknownServiceException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
@@ -226,7 +227,7 @@ final class InstructionProcessorTests {
 
     try (final var log = systems.glam.services.tests.LogCapture.attach(InstructionProcessorImpl.class.getName())) {
       assertFalse(processor(service, notify).processInstructions("test", instructions));
-      log.assertLogged("test Failed");
+      log.assertLogged(Level.WARNING, "test Failed");
     }
     // one send, of the whole list; the scripted service has nothing for a second call
     assertEquals(List.of(2), service.batchSizes);
@@ -396,6 +397,7 @@ final class InstructionProcessorTests {
     assertTrue(notify.messages.getFirst().contains("\"numInstructions\": 3"), notify.messages.getFirst());
   }
 
+  /// A failed batch is dropped with false for the caller to rebuild, logged at WARNING and paged.
   @Test
   void anErrorNotifiesAndStops() throws InterruptedException {
     final var service = new ScriptedService();
@@ -403,7 +405,10 @@ final class InstructionProcessorTests {
     service.script.add(batch -> result(batch, TransactionResult.EXPIRED));
     final var instructions = new ArrayList<>(List.of(instruction(1, 2), instruction(2, 2)));
 
-    assertFalse(processor(service, notify).processInstructions("test", instructions));
+    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      assertFalse(processor(service, notify).processInstructions("test", instructions));
+      log.assertLogged(Level.WARNING, "test Failed");
+    }
     assertEquals(1, notify.messages.size());
     assertTrue(notify.messages.getFirst().contains("test Failed"), notify.messages.getFirst());
   }
@@ -587,11 +592,16 @@ final class InstructionProcessorTests {
     final var notify = new RecordingNotify();
     final var instructions = new ArrayList<>(List.of(instruction(1, 70)));
 
-    final var thrown = assertThrows(IllegalStateException.class, () ->
-        processor(service, notify).processInstructions("test", instructions));
+    final IllegalStateException thrown;
+    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      thrown = assertThrows(IllegalStateException.class, () ->
+          processor(service, notify).processInstructions("test", instructions));
+      // a failure the call ends on: logged at ERROR, as every fatal page is
+      log.assertLogged(Level.SEVERE, "\"numAccounts\": 70");
+    }
     assertTrue(thrown.getMessage().contains("Instruction Exceeds Account Limit"), thrown.getMessage());
     assertTrue(thrown.getMessage().contains("\"numAccounts\": 70"), thrown.getMessage());
-    assertEquals(1, notify.messages.size());
+    assertEquals(List.of(thrown.getMessage()), notify.messages, "the page is the refusal itself");
     assertTrue(service.batchSizes.isEmpty(), "nothing may be sent");
   }
 
@@ -698,10 +708,13 @@ final class InstructionProcessorTests {
     }
     assertEquals(1, notify.messages.size());
     final var msg = notify.messages.getFirst();
+    // the fact, not an instruction: whether to rebuild is the caller's own (the fulfillment
+    // service exits for a restart that rebuilds, since fulfill tolerates a duplicate)
     assertTrue(msg.contains(
         "Transaction monitor stopped; test transaction " + formattedSig
-            + " may still land until block height 4242 passes, so these instructions must not be rebuilt before its status is known."
+            + " may still land until block height 4242 passes: a rebuild before then can execute these instructions twice."
     ), msg);
+    assertFalse(msg.contains("must not"), msg);
     assertEquals(List.of(1), service.batchSizes, "nothing more is sent");
     assertEquals(1, instructions.size(), "the batch is left with the caller, not cleared as a failed batch is");
   }
@@ -974,7 +987,8 @@ final class InstructionProcessorTests {
   /// the catch-all arm ended the service.
   @Test
   void aVerifiedNotAcceptedBatchIsDroppedWithAPageAndTheCallerRebuilds() throws InterruptedException {
-    // the first send paced by a rate limit, its failover refused by the key: the page carries the last
+    // the first send paced by a rate limit, its failover refused by the key: the page carries the
+    // last, then the first, since they differ
     final var sends = new RefusedSends(List.of(
         CompletableFuture.failedFuture(refusal(429)), CompletableFuture.failedFuture(refusal(401))
     ));
@@ -991,8 +1005,13 @@ final class InstructionProcessorTests {
     final var msg = notify.messages.getFirst();
     assertTrue(msg.contains("No send of the test transaction was accepted (2 attempted) and nothing landed"), msg);
     assertTrue(msg.contains("so the caller backs off and rebuilds"), msg);
-    assertTrue(msg.contains("Last failure: " + refusal(401) + "."), msg);
-    assertFalse(msg.contains("httpCode:429"), "the first failure is the exception's suppressed one, not the page's");
+    // each failure as its bounded summary (the wrapper's message is its cause's toString), the
+    // first behind the last: a 401 on one peer behind 429s on another is not read as a rate limit
+    assertTrue(msg.contains(
+        "Last failure: UncheckedIOException: java.net.UnknownServiceException: HTTP request failed with [httpCode:401], [body=upstream unavailable]"
+            + "; first failure: UncheckedIOException: java.net.UnknownServiceException: HTTP request failed with [httpCode:429], [body=upstream unavailable]."
+    ), msg);
+    assertFalse(msg.contains("java.io.UncheckedIOException"), "the summary names the class simply; the log has the throwable");
   }
 
   /// A send that was never answered leaves ravina's exception without a cause, and the page says so
@@ -1013,6 +1032,28 @@ final class InstructionProcessorTests {
     final var msg = notify.messages.getFirst();
     assertTrue(msg.contains("No send of the test transaction was accepted (1 attempted) and nothing landed"), msg);
     assertTrue(msg.contains("Last failure: no send was answered."), msg);
+    assertFalse(msg.contains("first failure"), msg);
+  }
+
+  /// One failed send, recorded once, is ravina's cause alone (it attaches the first failure as
+  /// suppressed only when it is another), and the page names the last failure alone.
+  @Test
+  void aVerifiedNotAcceptedPageNamesTheFirstFailureOnlyWhenItDiffers() throws InterruptedException {
+    final var sends = new RefusedSends(List.of(CompletableFuture.failedFuture(refusal(429))));
+    final var notify = new RecordingNotify();
+    final var instructions = new ArrayList<>(List.of(instruction(1, 2)));
+
+    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      assertFalse(processor(sends, notify).processInstructions("test", instructions));
+      log.assertLogged(Level.WARNING, "(1 attempted) and nothing landed");
+    }
+    assertTrue(instructions.isEmpty());
+    assertEquals(1, notify.messages.size(), () -> notify.messages.toString());
+    final var msg = notify.messages.getFirst();
+    assertTrue(msg.contains(
+        "Last failure: UncheckedIOException: java.net.UnknownServiceException: HTTP request failed with [httpCode:429], [body=upstream unavailable]."
+    ), msg);
+    assertFalse(msg.contains("first failure"), msg);
   }
 
   /// Unreachable from the processor's own call, which verifies every expiry, but not misreported
@@ -1042,7 +1083,7 @@ final class InstructionProcessorTests {
     final var msg = notify.messages.getFirst();
     assertTrue(msg.contains(
         "No send of the test transaction " + formattedSig
-            + " was accepted (1 attempted) and its expiry was not verified: this attempt or an earlier one of the call may still land, so these instructions must not be rebuilt before its status is known."
+            + " was accepted (1 attempted) and its expiry was not verified: this attempt or an earlier one of the call may still land, and a rebuild before its status is known can execute these instructions twice."
     ), msg);
     assertFalse(msg.contains("nothing landed"), msg);
   }
@@ -1128,5 +1169,235 @@ final class InstructionProcessorTests {
     assertEquals(Boolean.FALSE, returned.get());
     assertFalse(post.isDone(), "the post completes on its own, after the call");
     assertTrue(instructions.isEmpty());
+  }
+
+  /// A notify client that returns null, or a list with a null in it, posts nothing as far as the
+  /// await can see: the typed failure is still what ends the call, not a NullPointerException out
+  /// of the await in its place.
+  @Test
+  void aNotifyClientReturningNullPostsNothingAndKeepsTheFailure() {
+    final var stopped = stoppedWithPending(stoppedMonitor());
+    final List<CompletableFuture<String>> withNull = Arrays.asList(CompletableFuture.completedFuture("delivered"), null);
+    final var clients = List.<software.sava.services.core.net.http.NotifyClient>of(msg -> null, msg -> withNull);
+    for (final var notify : clients) {
+      final var service = new ScriptedService();
+      service.script.add(batch -> {
+        throw stopped;
+      });
+      final var processor = new InstructionProcessorImpl(
+          feePayer(), service.service(), GlamAccounts.MAIN_NET.mintProgram(), new BigDecimal("0.001"), notify, 1.2, 3
+      );
+      final var instructions = new ArrayList<>(List.of(instruction(1, 2)));
+
+      try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+        final var thrown = assertThrows(TxMonitorStoppedException.class, () ->
+            processor.processInstructions("test", instructions));
+        assertSame(stopped, thrown, "the stop is the caller's, whatever the notify client returned");
+        log.assertLogged(Level.SEVERE, "may still land until block height 4242 passes");
+      }
+      assertEquals(List.of(1), service.batchSizes, "nothing more is sent");
+      assertEquals(1, instructions.size());
+    }
+  }
+
+  /// The account-limit refusal is a failure the call ends on, so its page goes the way of every
+  /// fatal page: logged at ERROR with the instruction's details, posted and awaited before the
+  /// IllegalStateException is thrown. The post here completes only when the test lets it, so the
+  /// call is parked in its await when the test looks, and ends once the post completes.
+  @Test
+  void anAccountLimitRefusalIsPagedBeforeItIsThrown() throws InterruptedException {
+    final var service = new ScriptedService();
+    final var post = new CompletableFuture<String>();
+    final var messages = new ArrayList<String>();
+    final software.sava.services.core.net.http.NotifyClient notify = msg -> {
+      messages.add(msg);
+      return List.of(post);
+    };
+    final var processor = new InstructionProcessorImpl(
+        feePayer(), service.service(), GlamAccounts.MAIN_NET.mintProgram(), new BigDecimal("0.001"), notify, 1.2, 3
+    );
+    final var instructions = new ArrayList<>(List.of(instruction(1, 70)));
+    final var thrown = new AtomicReference<Throwable>();
+    final var postedWhenThrown = new AtomicBoolean();
+    final var runner = new Thread(() -> {
+      try {
+        processor.processInstructions("test", instructions);
+      } catch (final Throwable failure) {
+        postedWhenThrown.set(post.isDone());
+        thrown.set(failure);
+      }
+    }, "account limit runner");
+    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      runner.start();
+      try {
+        awaitPageAwait(runner, "the call ended before its page was delivered");
+        assertFalse(post.isDone(), "the post completes only when this test lets it");
+        post.complete("delivered");
+        Workers.joinWithin(runner, "the call must end once its page is delivered");
+      } finally {
+        runner.interrupt();
+        runner.join(Workers.FIXTURE_DEADLINE_MILLIS);
+      }
+      log.assertLogged(Level.SEVERE, "\"numAccounts\": 70");
+    }
+    final var failure = assertInstanceOf(IllegalStateException.class, thrown.get());
+    assertTrue(failure.getMessage().contains("Instruction Exceeds Account Limit"), failure.getMessage());
+    assertTrue(postedWhenThrown.get(), "the page must be delivered before the call ends");
+    assertEquals(List.of(failure.getMessage()), messages, "the page is the refusal itself");
+    assertTrue(service.batchSizes.isEmpty(), "nothing may be sent");
+  }
+
+  /// A notify client that throws loses the account-limit page and nothing else: the refusal is
+  /// still thrown, with its details and nothing attached, and the lost page is logged.
+  @Test
+  void aNotifyClientThatThrowsDoesNotReplaceTheAccountLimitRefusal() {
+    final var service = new ScriptedService();
+    final software.sava.services.core.net.http.NotifyClient notify = msg -> {
+      throw new RejectedExecutionException("the notify executor has shut down");
+    };
+    final var processor = new InstructionProcessorImpl(
+        feePayer(), service.service(), GlamAccounts.MAIN_NET.mintProgram(), new BigDecimal("0.001"), notify, 1.2, 3
+    );
+    final var instructions = new ArrayList<>(List.of(instruction(1, 70)));
+
+    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      final var thrown = assertThrows(IllegalStateException.class, () ->
+          processor.processInstructions("test", instructions));
+      assertTrue(thrown.getMessage().contains("\"numAccounts\": 70"), thrown.getMessage());
+      assertEquals(0, thrown.getSuppressed().length);
+      log.assertLogged(Level.SEVERE, "Failed to post the page: Instruction Exceeds Account Limit");
+    }
+    assertTrue(service.batchSizes.isEmpty(), "nothing may be sent");
+  }
+
+  /// The posts of a size refusal that ends the call and of a failed batch are guarded the same
+  /// way: a notify client that throws loses the page, the lost page is logged beside the failure,
+  /// and the call still returns false for the caller to rebuild, as the contract says.
+  @Test
+  void aNotifyClientThatThrowsDoesNotReplaceAFailedBatchsReturn() throws InterruptedException {
+    final software.sava.services.core.net.http.NotifyClient notify = msg -> {
+      throw new RejectedExecutionException("the notify executor has shut down");
+    };
+    for (final var error : List.of(TransactionResult.SIZE_LIMIT_EXCEEDED, TransactionResult.EXPIRED)) {
+      final var service = new ScriptedService();
+      service.script.add(batch -> result(batch, error));
+      final var processor = new InstructionProcessorImpl(
+          feePayer(), service.service(), GlamAccounts.MAIN_NET.mintProgram(), new BigDecimal("0.001"), notify, 1.2, 3
+      );
+      // the whole list in one batch: a size refusal of it leaves nothing to halve for
+      final var instructions = new ArrayList<>(List.of(instruction(1, 2), instruction(2, 2)));
+
+      try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+        assertFalse(processor.processInstructions("test", instructions), error.toString());
+        log.assertLogged(Level.WARNING, "test Failed");
+        log.assertLogged(Level.SEVERE, "Failed to post the page: test Failed");
+      }
+      assertEquals(List.of(2), service.batchSizes, "one send, and nothing after the refusal");
+      assertTrue(instructions.isEmpty(), "the batch is dropped");
+    }
+  }
+
+  // ---------------------------------------------------------------- awaiting posts --
+
+  /// The await of a fatal page is a best effort with four endings. Posts already complete end it
+  /// at once, with nothing logged.
+  @Test
+  void completedPostsAreNotAwaited() throws InterruptedException {
+    final var runner = new Thread(() -> {
+      InstructionProcessorImpl.awaitPosts("the event", List.of(CompletableFuture.completedFuture("delivered")), 30L, TimeUnit.SECONDS);
+      InstructionProcessorImpl.awaitPosts("the event", List.of(), 30L, TimeUnit.SECONDS);
+    }, "completed posts runner");
+    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      runner.start();
+      Workers.joinWithin(runner, "completed posts must not be awaited");
+      assertTrue(log.messages().isEmpty(), () -> "nothing is logged for a delivered page, got " + log.messages());
+    }
+  }
+
+  /// A post that failed within the bound is logged as possibly undelivered and changes nothing
+  /// else; a webhook's own rejection completes its post normally, so only a failure to post at
+  /// all arrives here.
+  @Test
+  void aFailedPostIsLoggedAsPossiblyUndelivered() {
+    final var refused = CompletableFuture.<String>failedFuture(new IllegalStateException("the webhook refused the connection"));
+    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      InstructionProcessorImpl.awaitPosts("the event", List.of(refused), 30L, TimeUnit.SECONDS);
+      log.assertLogged(Level.SEVERE, "The page may not have been delivered: the event");
+    }
+  }
+
+  /// A post still running at the bound is logged the same way and left to itself. A bound of
+  /// zero puts the never-completing post at it already, so nothing here waits.
+  @Test
+  void aPostOutlastingTheBoundIsLoggedAsPossiblyUndelivered() {
+    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      InstructionProcessorImpl.awaitPosts("the event", List.of(new CompletableFuture<>()), 0L, TimeUnit.SECONDS);
+      log.assertLogged(Level.SEVERE, "The page may not have been delivered: the event");
+    }
+  }
+
+  /// An interrupt ends the await, which is not a delivery failure, with the flag kept for the
+  /// caller. A completed post returns before the interrupt is read, so the post here is pending.
+  @Test
+  void anInterruptEndsTheAwaitAndIsKeptForTheCaller() {
+    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      Thread.currentThread().interrupt();
+      InstructionProcessorImpl.awaitPosts("the event", List.of(new CompletableFuture<>()), 30L, TimeUnit.SECONDS);
+      // read and cleared in one, so that no later test inherits the flag
+      assertTrue(Thread.interrupted(), "the interrupt is the caller's to see");
+      assertTrue(log.messages().isEmpty(), () -> "an interrupt is not a delivery failure, got " + log.messages());
+    } finally {
+      Thread.interrupted();
+    }
+  }
+
+  // ------------------------------------------------------------ throwable summaries --
+
+  /// A page carries a throwable as its simple class name and the first line of its message, less
+  /// the characters ravina's webhook escape leaves for the JSON to choke on (a control character,
+  /// a backslash); a throwable without a message, or with nothing left of its first line, is its
+  /// class name alone. The whole throwable is the log's.
+  @Test
+  void aThrowableIsSummarizedByItsClassAndItsFirstLine() {
+    assertEquals("IllegalStateException: rpc down", InstructionProcessorImpl.summarize(new IllegalStateException("rpc down\nsecond line")));
+    assertEquals("IllegalStateException", InstructionProcessorImpl.summarize(new IllegalStateException()));
+    assertEquals("IllegalStateException", InstructionProcessorImpl.summarize(new IllegalStateException("\t\u0001\\")));
+    // a tab, a control character and a backslash dropped; the carriage return ends the first line
+    assertEquals(
+        "IllegalStateException: code7 backslash",
+        InstructionProcessorImpl.summarize(new IllegalStateException("code\t7\u0001 back\\slash\rcarriage\nnext"))
+    );
+    // sava's HTTP failure as the processor meets it: the wrapper's message is its cause's toString
+    assertEquals(
+        "UncheckedIOException: java.net.UnknownServiceException: HTTP request failed with [httpCode:401], [body=upstream unavailable]",
+        InstructionProcessorImpl.summarize(refusal(401))
+    );
+  }
+
+  /// A message is cut at the bound, with sava's `[httpCode:NNN]` fragment kept past it, so that a
+  /// provider's long body never hides the status an operator reads first.
+  @Test
+  void aSummaryIsCutAtTheBoundKeepingTheHttpCode() {
+    final int bound = InstructionProcessorImpl.THROWABLE_SUMMARY_LENGTH;
+    final var atTheBound = "x".repeat(bound);
+    assertEquals("IllegalStateException: " + atTheBound, InstructionProcessorImpl.summarize(new IllegalStateException(atTheBound)));
+    assertEquals("IllegalStateException: " + atTheBound + "...", InstructionProcessorImpl.summarize(new IllegalStateException(atTheBound + "y")));
+    // the fragment past the cut rides after it
+    assertEquals(
+        "IllegalStateException: " + atTheBound + "... [httpCode:503]",
+        InstructionProcessorImpl.summarize(new IllegalStateException("x".repeat(bound + 50) + " [httpCode:503], [body=upstream unavailable]"))
+    );
+    // a fragment the cut keeps, ending exactly at the bound or earlier, is not repeated after it
+    final var fragment = "[httpCode:429]";
+    final var endingAtTheBound = "x".repeat(bound - fragment.length()) + fragment;
+    assertEquals(
+        "IllegalStateException: " + endingAtTheBound + "...",
+        InstructionProcessorImpl.summarize(new IllegalStateException(endingAtTheBound + "y".repeat(50)))
+    );
+    final var leading = fragment + " " + "x".repeat(bound + 100);
+    assertEquals(
+        "IllegalStateException: " + leading.substring(0, bound) + "...",
+        InstructionProcessorImpl.summarize(new IllegalStateException(leading))
+    );
   }
 }

@@ -42,10 +42,14 @@ public interface ExecutionServiceContext {
   /// [InstructionProcessor#processInstructions(String, List)] on [#instructionProcessor()], whose
   /// contract applies here: a transaction monitor that has stopped ends the call with
   /// [software.sava.services.solana.transactions.TxMonitorStoppedException], thrown as itself,
-  /// whose `sent()` says whether the batch at the head of `instructions` may still land, and a
-  /// batch no send of which was accepted ends it with
-  /// [software.sava.services.solana.transactions.SendNotAcceptedException] when its expiry was
-  /// not verified; a catch of `RuntimeException` that retries must exclude both.
+  /// whose `sent()` says whether the batch at the head of `instructions` may still land, until its
+  /// `lastValidBlockHeight()` passes, so that a rebuild before then can execute it twice (whether
+  /// to rebuild is the caller's own; the fulfillment service exits for a supervisor restart, which
+  /// does, since the on-chain fulfill tolerates a duplicate), and a batch no send of which was
+  /// accepted ends it with [software.sava.services.solana.transactions.SendNotAcceptedException]
+  /// when its expiry was not verified; a catch of `RuntimeException` that retries must exclude
+  /// both. Each is thrown after a best-effort wait, of up to thirty seconds, for the posts of its
+  /// page.
   boolean processInstructions(final String logContext,
                               final List<Instruction> instructions) throws InterruptedException;
 
