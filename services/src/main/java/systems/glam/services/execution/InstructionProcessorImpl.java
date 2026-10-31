@@ -127,11 +127,12 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
             logContext
         );
       } catch (final TxMonitorStoppedException stopped) {
-        // The monitor that would have settled this batch has stopped and does not restart, so
-        // the batch's outcome is unknown: with sent() the transaction named may still land until
-        // its block hash expires, and a rebuild could execute these instructions twice. Reported
-        // as such, and thrown as itself so that the service ends rather than treats the batch as
-        // failed and rebuilds it; ravina refuses every later call on that monitor the same way.
+        // The monitor that would have settled this batch has stopped and does not restart. With
+        // sent() the batch's outcome is unknown: the transaction named may still land until its
+        // block hash expires, and a rebuild could execute these instructions twice; without it
+        // nothing sent can land. The page says which, and the exception is thrown as itself so
+        // that the caller tells it apart by type instead of treating the batch as failed and
+        // rebuilding it; ravina refuses every later call on that monitor the same way.
         final var msg = FormatUtil.formatInstructionException(
             stopped.sent()
                 ? String.format(
@@ -142,7 +143,15 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
             ixBatch
         );
         logger.log(ERROR, msg, stopped);
-        notifyClient.postMsg(msg);
+        try {
+          notifyClient.postMsg(msg);
+        } catch (final RuntimeException notifyFailure) {
+          // A page that cannot be posted must not replace the stop: its type, sent(), sig() and
+          // lastValidBlockHeight() are the caller's, and the log above carries what the page
+          // would have said. Not attached as suppressed, since the instance is not this call's
+          // alone: every dependent of the future the monitor failed sees it.
+          logger.log(ERROR, "Failed to post the stopped-monitor page.", notifyFailure);
+        }
         throw stopped;
       } catch (final RuntimeException ex) {
         final var msg = FormatUtil.formatInstructionException(

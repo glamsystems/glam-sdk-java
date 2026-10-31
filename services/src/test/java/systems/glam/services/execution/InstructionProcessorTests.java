@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Function;
 import java.util.logging.Level;
 
@@ -697,6 +698,36 @@ final class InstructionProcessorTests {
     final var msg = notify.messages.getFirst();
     assertTrue(msg.contains("Transaction monitor stopped; nothing sent for test can still land."), msg);
     assertFalse(msg.contains("may still land until"), msg);
+    assertEquals(1, instructions.size());
+  }
+
+  /// A notify client that throws, as ravina's does once its executor has shut down, loses the
+  /// page and nothing else: the call still ends with the monitor's exception, as itself and
+  /// without the notify failure attached, and the lost page is logged beside the stop.
+  @Test
+  void aNotifyClientThatThrowsDoesNotReplaceTheStoppedMonitorException() {
+    final var stopped = stoppedWithPending(stoppedMonitor());
+    final var service = new ScriptedService();
+    service.script.add(batch -> {
+      throw stopped;
+    });
+    final software.sava.services.core.net.http.NotifyClient notify = msg -> {
+      throw new RejectedExecutionException("the notify executor has shut down");
+    };
+    final var processor = new InstructionProcessorImpl(
+        feePayer(), service.service(), GlamAccounts.MAIN_NET.mintProgram(), new BigDecimal("0.001"), notify, 1.2, 3
+    );
+    final var instructions = new ArrayList<>(List.of(instruction(1, 2)));
+
+    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      final var thrown = assertThrows(TxMonitorStoppedException.class, () ->
+          processor.processInstructions("test", instructions));
+      assertSame(stopped, thrown, "the stop is the caller's, whatever became of the page");
+      assertEquals(0, thrown.getSuppressed().length, "not attached to an instance other waiters may hold");
+      log.assertLogged(Level.SEVERE, "transaction sig may still land until block height 4242 passes");
+      log.assertLogged(Level.SEVERE, "Failed to post the stopped-monitor page.");
+    }
+    assertEquals(List.of(1), service.batchSizes, "nothing more is sent");
     assertEquals(1, instructions.size());
   }
 }
