@@ -279,7 +279,9 @@ final class GlamAccountsTests {
     // every staging integration program is present: 14 distinct authorities, none for CCTP,
     // whose staging program is retired
     assertEquals(14, staging.integrationAuthorities().size());
+    // an absent integration reads as the System Program sentinel, invoked meta included
     assertEquals(PublicKey.NONE, staging.cctpIntegrationProgram());
+    assertEquals(AccountMeta.createInvoked(PublicKey.NONE), staging.invokedCctpIntegrationProgram());
     assertNull(staging.readCctpIntegrationAuthority());
     assertNotNull(staging.readBridgeIntegrationAuthority());
     assertNotNull(staging.readExponentIntegrationAuthority());
