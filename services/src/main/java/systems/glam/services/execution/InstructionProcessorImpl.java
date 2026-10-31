@@ -18,13 +18,9 @@ import java.math.BigDecimal;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
@@ -55,77 +51,18 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
     return true;
   }
 
-  /// How long [#fatalPost] gives the posts of a page before the failure it reports is thrown: the
-  /// fulfillment entrypoint exits the process once its worker ends on such a failure, and ravina's
-  /// NotifyClientImpl posts asynchronously, so the page should leave first. The wait is a best
-  /// effort, not a guarantee. Each post is a courteous call that retries a send that failed (a
-  /// refused connection, a timeout) with the webhook's backoff up to the notify client's
-  /// maxRetries (BaseDelegateServiceConfig builds it with five, over a fibonacci backoff from one
-  /// second by default), each attempt under WebHookClientImpl's 8 s request timeout, so a post can
-  /// legitimately outlast this bound and is then left to complete on its own; and a rejection the
-  /// webhook answers (Slack's 429, a 5xx) completes the post normally, so it is never seen here.
-  private static final long FATAL_PAGE_DELIVERY_SECONDS = 30L;
-
-  /// The most of a throwable's message a page carries; see [#summarize].
-  static final int THROWABLE_SUMMARY_LENGTH = 200;
-
-  /// What ravina's NotifyClientImpl.escape leaves as it is although the webhook's JSON cannot carry
-  /// it unescaped: it rewrites only `"` and a newline, so a control character or a backslash in a
-  /// page makes the JSON invalid and the page is lost, while the webhook's 400 completes the post
-  /// normally.
-  private static final Pattern UNESCAPED = Pattern.compile("[\\p{Cntrl}\\\\]");
-
-  /// The status fragment of sava's HTTP failure message, "HTTP request failed with [httpCode:%d],
-  /// [body=%s]", which tells a key to fix (a 401) from a rate to wait out (a 429).
-  private static final Pattern HTTP_CODE = Pattern.compile("\\[httpCode:\\d+]");
-
-  /// A bounded, single-line summary of `failure` for a page, the whole throwable being the log's:
-  /// its simple class name and the first line of its message, less the characters [#UNESCAPED]
-  /// names (sava's HTTP failure message carries the provider's raw body, and a carriage return, a
-  /// tab or a backslash in it would cost the page), cut to [#THROWABLE_SUMMARY_LENGTH] characters
-  /// with the `[httpCode:NNN]` fragment kept past the cut. A throwable with no message, or none
-  /// left, is summarized by its class name alone.
-  static String summarize(final Throwable failure) {
-    final var name = failure.getClass().getSimpleName();
-    final var message = failure.getMessage();
-    if (message == null) {
-      return name;
-    }
-    final var line = UNESCAPED.matcher(message.lines().findFirst().orElse("")).replaceAll("");
-    if (line.isBlank()) {
-      return name;
-    }
-    if (line.length() <= THROWABLE_SUMMARY_LENGTH) {
-      return name + ": " + line;
-    }
-    final var cut = line.substring(0, THROWABLE_SUMMARY_LENGTH) + "...";
-    final var httpCode = HTTP_CODE.matcher(line);
-    return httpCode.find() && httpCode.end() > THROWABLE_SUMMARY_LENGTH
-        ? name + ": " + cut + ' ' + httpCode.group()
-        : name + ": " + cut;
-  }
-
-  /// Logs `msg` at `level` with `failure` and posts it as a page, returning its posts, with none
-  /// for a null list or a null element: the notify client is anyone's implementation, and a null
-  /// out of it must not become a NullPointerException in place of the failure being paged. None
-  /// either when the notify client threw, since a notify client that throws (ravina's does, with
-  /// RejectedExecutionException, once its executor has shut down) loses the page and nothing else:
-  /// the lost page is logged at ERROR under `event`, and `failure` is neither replaced by the
-  /// notify failure nor given it as suppressed, since a ravina exception's instance is not this
-  /// call's alone: every dependent of the future the monitor failed sees it.
+  /// Logs `msg` at `level` with `failure` and posts it as a page through [Pages#post], guarded as
+  /// every page of this module is: a notify client that answers null, or throws (ravina's does,
+  /// with RejectedExecutionException, once its executor has shut down), loses the page and nothing
+  /// else, so that `failure` is neither replaced by the notify failure nor given it as suppressed,
+  /// since a ravina exception's instance is not this call's alone: every dependent of the future
+  /// the monitor failed sees it.
   private List<CompletableFuture<String>> post(final System.Logger.Level level,
                                                final String event,
                                                final String msg,
                                                final Throwable failure) {
     logger.log(level, msg, failure);
-    final List<CompletableFuture<String>> posts;
-    try {
-      posts = notifyClient.postMsg(msg);
-    } catch (final RuntimeException notifyFailure) {
-      logger.log(ERROR, String.format("Failed to post the page: %s", event), notifyFailure);
-      return List.of();
-    }
-    return posts == null ? List.of() : posts.stream().filter(Objects::nonNull).toList();
+    return Pages.post(notifyClient, msg, logger, event);
   }
 
   /// [#post] of `event` formatted with the batch.
@@ -137,11 +74,11 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
   }
 
   /// [#post] at ERROR for a failure the call ends on, returned for the caller to throw once
-  /// [#awaitPosts] has given the page's posts [#FATAL_PAGE_DELIVERY_SECONDS]: the caller exits the
-  /// process on these failures, so the page should leave before the throw, as far as that bound
-  /// sees to it.
+  /// [Pages#awaitDelivery] has given the page's posts [Pages#PAGE_DELIVERY_SECONDS]: the caller
+  /// exits the process on these failures, so the page should leave before the throw, as far as
+  /// that bound sees to it.
   private <T extends Throwable> T fatalPost(final String event, final String msg, final T failure) {
-    awaitPosts(event, post(ERROR, event, msg, failure), FATAL_PAGE_DELIVERY_SECONDS, TimeUnit.SECONDS);
+    Pages.awaitDelivery(event, post(ERROR, event, msg, failure), Pages.PAGE_DELIVERY_SECONDS, TimeUnit.SECONDS, logger);
     return failure;
   }
 
@@ -150,24 +87,6 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
                                             final List<Instruction> ixBatch,
                                             final T failure) {
     return fatalPost(event, FormatUtil.formatInstructionException(event, ixBatch), failure);
-  }
-
-  /// Waits for `posts` (none of them null) to complete, or for `timeout` to pass, whichever comes
-  /// first: a best effort that changes nothing but the time of the throw it precedes. A post that
-  /// failed within the bound or is still running at it is logged at ERROR under `event` and left
-  /// to itself; a rejection the webhook answered completes its post normally and is not seen here;
-  /// an interrupt ends the wait and is kept for the caller.
-  static void awaitPosts(final String event,
-                         final List<CompletableFuture<String>> posts,
-                         final long timeout,
-                         final TimeUnit unit) {
-    try {
-      CompletableFuture.allOf(posts.toArray(new CompletableFuture<?>[0])).get(timeout, unit);
-    } catch (final TimeoutException | ExecutionException ex) {
-      logger.log(ERROR, String.format("The page may not have been delivered: %s", event), ex);
-    } catch (final InterruptedException ex) {
-      Thread.currentThread().interrupt();
-    }
   }
 
   @Override
@@ -290,8 +209,8 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
           final var failures = cause == null
               ? "no send was answered"
               : first == null
-              ? summarize(cause)
-              : summarize(cause) + "; first failure: " + summarize(first);
+              ? Pages.summarize(cause)
+              : Pages.summarize(cause) + "; first failure: " + Pages.summarize(first);
           // posted, not awaited: the worker goes on, to back off and rebuild, and the post
           // completes on its own
           page(WARNING, String.format(
@@ -344,16 +263,12 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
         );
         if (error == SIZE_LIMIT_EXCEEDED) {
           // batchSize bounds the batch, which the account limit may have cut shorter: a bound of
-          // one cannot halve, and the refusal falls through to the page below
-          if (batchSize > 1) {
+          // one cannot halve, and a refused batch that was the whole remaining list leaves
+          // nothing to send at the halved size, where an empty transaction must never go out in
+          // its place; either refusal falls through to the one exit below, logged and paged like
+          // a failed batch. Otherwise the rest carries on under the halved bound, with a warning.
+          if (batchSize > 1 && !instructions.isEmpty()) {
             batchSize = (batchSize & 1) == 1 ? (batchSize >> 1) + 1 : batchSize >> 1;
-            if (instructions.isEmpty()) {
-              // the refused batch was the whole remaining list: nothing is left to send at the
-              // halved size, and an empty transaction must never go out in its place, so the
-              // call ends on the refusal, logged and paged like a failed batch
-              post(WARNING, event, msg, null);
-              return false;
-            }
             logger.log(WARNING, msg);
             continue;
           }

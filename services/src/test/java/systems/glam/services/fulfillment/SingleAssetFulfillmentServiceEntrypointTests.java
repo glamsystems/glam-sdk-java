@@ -3,6 +3,7 @@ package systems.glam.services.fulfillment;
 import org.junit.jupiter.api.Test;
 import software.sava.core.accounts.PublicKey;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
+import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.solana.epoch.EpochInfoService;
 import software.sava.services.solana.transactions.TxMonitorService;
 import software.sava.services.solana.websocket.WebSocketManager;
@@ -15,8 +16,11 @@ import systems.glam.services.tests.LogCapture;
 import systems.glam.services.tests.Workers;
 
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -70,32 +74,47 @@ final class SingleAssetFulfillmentServiceEntrypointTests {
 
   /// The permission gate is what stands between a misconfigured delegate and
   /// a fulfillment run loop that fails on every transaction: misses must be
-  /// reported, not just refused.
+  /// reported, not just refused. Logged, and paged too, since main exits on
+  /// them for a supervisor that reruns the bootstrap for as long as the
+  /// misconfiguration lasts; the page is awaited before that exit.
   @Test
   void delegatePermissionsAreValidatedAndMissesAreNeverSilent() {
     final var mintProgram = GlamAccounts.MAIN_NET.mintIntegrationProgram();
     final long fulfill = GlamMintConstants.PROTO_MINT_PERM_FULFILL;
     final var required = Map.of(mintProgram, Protocol.MINT.permissions(fulfill));
 
-    final var loggerName = SingleAssetFulfillmentServiceEntrypoint.class.getName();
-    // a missing state account is fatal and says so
-    try (final var log = LogCapture.attach(loggerName)) {
-      assertFalse(SingleAssetFulfillmentServiceEntrypoint.validateDelegatePermissions(required, DELEGATE, null));
-      log.assertLogged("Glam account does not exist");
-    }
+    final var pages = new ArrayList<String>();
+    final NotifyClient notifyClient = msg -> {
+      pages.add(msg);
+      // a post that has failed already: the await of the page is seen in the log, without a wait
+      return List.of(CompletableFuture.failedFuture(new IllegalStateException("the webhook refused the post")));
+    };
 
-    // a delegate without the fulfill grant is refused and named
+    final var loggerName = SingleAssetFulfillmentServiceEntrypoint.class.getName();
+    // a missing state account is fatal and says so, in the log and in a page awaited before the exit
+    try (final var log = LogCapture.attach(loggerName)) {
+      assertFalse(SingleAssetFulfillmentServiceEntrypoint.validateDelegatePermissions(required, DELEGATE, null, notifyClient));
+      log.assertLogged(Level.SEVERE, "Glam account does not exist");
+      log.assertLogged(Level.SEVERE, "The page may not have been delivered: Glam account does not exist, exiting.");
+    }
+    assertEquals(List.of("Glam account does not exist, exiting."), pages);
+    pages.clear();
+
+    // a delegate without the fulfill grant is refused and named, in the log and in the page
     final var ungranted = stateClient(new DelegateAcl(
         DELEGATE,
         new IntegrationPermissions[0],
         Long.MAX_VALUE
     ));
     try (final var log = LogCapture.attach(loggerName)) {
-      assertFalse(SingleAssetFulfillmentServiceEntrypoint.validateDelegatePermissions(required, DELEGATE, ungranted));
-      log.assertLogged(DELEGATE + " does not have the required permissions");
+      assertFalse(SingleAssetFulfillmentServiceEntrypoint.validateDelegatePermissions(required, DELEGATE, ungranted, notifyClient));
+      log.assertLogged(Level.SEVERE, DELEGATE + " does not have the required permissions");
+      log.assertLogged(Level.SEVERE, "The page may not have been delivered: Service key " + DELEGATE + " does not have the required permissions.");
     }
+    assertEquals(List.of("Service key " + DELEGATE + " does not have the required permissions."), pages);
+    pages.clear();
 
-    // the granted delegate passes without noise
+    // the granted delegate passes without noise, and without a page
     final var granted = stateClient(new DelegateAcl(
         DELEGATE,
         new IntegrationPermissions[]{
@@ -110,9 +129,10 @@ final class SingleAssetFulfillmentServiceEntrypointTests {
         Long.MAX_VALUE
     ));
     try (final var log = LogCapture.attach(loggerName)) {
-      assertTrue(SingleAssetFulfillmentServiceEntrypoint.validateDelegatePermissions(required, DELEGATE, granted));
+      assertTrue(SingleAssetFulfillmentServiceEntrypoint.validateDelegatePermissions(required, DELEGATE, granted, notifyClient));
       assertTrue(log.messages().isEmpty(), () -> log.messages().toString());
     }
+    assertTrue(pages.isEmpty(), pages::toString);
   }
 
   private static final String LOGGER_NAME = SingleAssetFulfillmentServiceEntrypoint.class.getName();
@@ -335,7 +355,7 @@ final class SingleAssetFulfillmentServiceEntrypointTests {
       runUntilTheFulfillmentServiceEnds(fulfillmentService(() -> {
       }));
       log.assertLogged(Level.SEVERE,
-          "The fulfillment service has ended, exiting for a supervisor to restart the process; the failure that ended it is named by the worker's own ERROR record, \"The fulfillment loop has ended\".");
+          "The fulfillment service has ended, exiting for a supervisor to restart the process; the worker's own record names what ended it.");
     }
   }
 

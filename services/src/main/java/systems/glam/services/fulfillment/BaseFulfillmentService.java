@@ -9,17 +9,16 @@ import systems.glam.sdk.GlamAccountClient;
 import systems.glam.sdk.StateAccountClient;
 import systems.glam.services.BaseDelegateService;
 import systems.glam.services.execution.ExecutionServiceContext;
+import systems.glam.services.execution.Pages;
 import systems.glam.services.fulfillment.accounting.RedemptionSummary;
 import systems.glam.services.mints.MintContext;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
+import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.util.concurrent.TimeUnit.*;
 
@@ -27,19 +26,6 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
     implements FulfillmentService, Consumer<AccountInfo<byte[]>> {
 
   protected static final System.Logger logger = System.getLogger(FulfillmentService.class.getName());
-
-  /// How long [#run] awaits the posts of the page of its end before it returns: the fulfillment
-  /// entrypoint exits the process as soon as run() returns, and ravina's NotifyClientImpl posts
-  /// asynchronously, so the page must leave first.
-  private static final long END_PAGE_DELIVERY_SECONDS = 30L;
-
-  /// The most code points of a failure's message the page of the loop's end carries.
-  private static final int MAX_FAILURE_EXCERPT = 200;
-
-  /// What sava's HTTP clients write before the response body in the message of a failed request:
-  /// `HTTP request failed with [httpCode:%d], [body=%s]`, and `Failed to parse` in its place when
-  /// the body did not parse.
-  private static final String HTTP_BODY_MARKER = "[body=";
 
   protected final ExecutionServiceContext serviceContext;
   protected final List<PublicKey> accountsNeededList;
@@ -122,14 +108,17 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
 
   /// Fetches the accounts, checks the fee payer and handles the vault, round after round, until
   /// the loop fails or this thread is interrupted. An interrupt is a shutdown: the loop ends
-  /// quietly, and the interrupt is kept. Any other end is a failure the loop does not survive:
-  /// it is logged at ERROR, naming it, and posted as one page saying that the loop has ended on
-  /// it and that the process exits for a supervisor to restart it, which is what the fulfillment
-  /// entrypoint does as soon as this returns; the page's posts are awaited for at most
-  /// [#END_PAGE_DELIVERY_SECONDS] first, so that the exit does not cut them off. A failure the
-  /// instruction processor has already paged (a stopped transaction monitor, a send no peer
-  /// accepted whose expiry was not verified, any other failure of a send) is therefore paged
-  /// twice, its own page and then this one: a duplicate the owner accepts.
+  /// quietly, and the interrupt is kept, whether it arrived as an `InterruptedException` or
+  /// wrapped in the failure of a fetch, which [#causedByInterrupt] tells from a failure (ravina's
+  /// balanced call rethrows an interrupt of the fetch as a `RuntimeException` around it, with the
+  /// flag cleared). Any other end is a failure the loop does not survive: it is logged at ERROR,
+  /// naming it, and posted as one page saying that the loop has ended on it and that the process
+  /// exits for a supervisor to restart it, which is what the fulfillment entrypoint does as soon
+  /// as this returns; the page's posts are awaited for at most [Pages#PAGE_DELIVERY_SECONDS]
+  /// first, so that the exit does not cut them off. A failure the instruction processor has
+  /// already paged (a stopped transaction monitor, a send no peer accepted whose expiry was not
+  /// verified, any other failure of a send) is therefore paged twice, its own page and then this
+  /// one: a duplicate the owner accepts.
   @Override
   public final void run() {
     try {
@@ -144,65 +133,48 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
     } catch (final InterruptedException ex) {
       Thread.currentThread().interrupt();
     } catch (final Throwable ex) {
-      logger.log(ERROR, "The fulfillment loop has ended: " + ex, ex);
-      pageTheEnd(ex);
+      if (causedByInterrupt(ex)) {
+        logger.log(DEBUG, "The fulfillment loop was interrupted during a fetch, and ends quietly.", ex);
+        Thread.currentThread().interrupt();
+      } else {
+        logger.log(ERROR, "The fulfillment loop has ended: " + ex, ex);
+        pageTheEnd(ex);
+      }
     }
   }
 
-  /// Posts the page that the loop has ended on `failure` and awaits its posts. A notify client
-  /// that throws (ravina's does, with RejectedExecutionException, once its executor has shut
-  /// down) loses the page and nothing else: the loss is logged at ERROR.
+  /// Whether `failure` is, or wraps at any depth of its cause chain, an `InterruptedException`:
+  /// the shutdown interrupt surfacing through a blocking fetch, which ravina's
+  /// UncheckedBalancedCall rethrows as `RuntimeException(InterruptedException)` with the flag
+  /// cleared, told the way AccountFetcherImpl tells it (ravina's transaction monitor reads only a
+  /// cause and its cause). A cycle in the chain, which `initCause` permits between two or more
+  /// throwables, ends the walk.
+  static boolean causedByInterrupt(final Throwable failure) {
+    return causedByInterrupt(failure, Collections.newSetFromMap(new IdentityHashMap<>()));
+  }
+
+  private static boolean causedByInterrupt(final Throwable cause, final Set<Throwable> seen) {
+    if (cause == null || !seen.add(cause)) {
+      return false;
+    }
+    return cause instanceof InterruptedException || causedByInterrupt(cause.getCause(), seen);
+  }
+
+  /// Posts the page that the loop has ended on `failure` through the context's notify client and
+  /// awaits its posts for [Pages#PAGE_DELIVERY_SECONDS], under this module's one paging policy
+  /// ([Pages]): the failure is named by its bounded summary, the whole of it being the ERROR
+  /// record [#run] wrote beside it; a notify client that throws or answers null loses the page
+  /// and nothing else, and the loss, like a post that fails or outlasts the bound, is logged at
+  /// ERROR.
   private void pageTheEnd(final Throwable failure) {
-    final List<CompletableFuture<String>> posts;
-    try {
-      posts = serviceContext.instructionProcessor().notifyClient().postMsg(String.format(
-          "The %s fulfillment loop has ended, and the process exits for a supervisor to restart it. Failure: %s",
-          vaultName, describeFailure(failure)
-      ));
-    } catch (final RuntimeException notifyFailure) {
-      logger.log(ERROR, "Failed to post the page that the fulfillment loop has ended.", notifyFailure);
-      return;
-    }
-    awaitDelivery(posts);
+    final var event = String.format("The %s fulfillment loop has ended", vaultName);
+    final var posts = Pages.post(
+        serviceContext.notifyClient(),
+        event + ", and the process exits for a supervisor to restart it. Failure: " + Pages.summarize(failure),
+        logger, event
+    );
+    Pages.awaitDelivery(event, posts, Pages.PAGE_DELIVERY_SECONDS, SECONDS, logger);
   }
-
-  /// Awaits `posts` for at most [#END_PAGE_DELIVERY_SECONDS]; a null list, or a null element of
-  /// one, is no post. A post that fails or outlasts the bound is logged at ERROR; an interrupt
-  /// ends the wait and is kept. InstructionProcessorImpl awaits its fatal pages the same way, in a
-  /// helper private to the execution package: these few lines are duplicated rather than shared.
-  private static void awaitDelivery(final List<CompletableFuture<String>> posts) {
-    if (posts == null) {
-      return;
-    }
-    final var delivering = posts.stream().filter(Objects::nonNull).toArray(CompletableFuture<?>[]::new);
-    try {
-      CompletableFuture.allOf(delivering).get(END_PAGE_DELIVERY_SECONDS, SECONDS);
-    } catch (final TimeoutException | ExecutionException ex) {
-      logger.log(ERROR, "The page that the fulfillment loop has ended may not have been delivered.", ex);
-    } catch (final InterruptedException ex) {
-      Thread.currentThread().interrupt();
-    }
-  }
-
-  /// `failure` as the page of the loop's end names it: its class, and the first line of its
-  /// message with any response body sava's HTTP clients wrote into it cut off, its control
-  /// characters stripped and at most [#MAX_FAILURE_EXCERPT] code points of it kept. A page is an
-  /// alert, not a log: the full failure is in the ERROR record [#run] writes beside it. The class
-  /// alone when nothing of the message is left.
-  static String describeFailure(final Throwable failure) {
-    final var className = failure.getClass().getName();
-    var excerpt = Objects.requireNonNullElse(failure.getMessage(), "").lines().findFirst().orElse("");
-    final int body = excerpt.indexOf(HTTP_BODY_MARKER);
-    if (body != -1) {
-      excerpt = excerpt.substring(0, body) + "[body omitted]";
-    }
-    excerpt = excerpt.replaceAll("\\p{Cc}", "");
-    if (excerpt.codePointCount(0, excerpt.length()) > MAX_FAILURE_EXCERPT) {
-      excerpt = excerpt.substring(0, excerpt.offsetByCodePoints(0, MAX_FAILURE_EXCERPT)) + "...";
-    }
-    return excerpt.isEmpty() ? className : className + ": " + excerpt;
-  }
-
 
   protected final void wakeUp() {
     lock.lock();

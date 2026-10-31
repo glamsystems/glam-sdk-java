@@ -24,10 +24,9 @@ import systems.glam.services.mints.MintContext;
 import systems.glam.services.tests.LogCapture;
 import systems.glam.services.tests.Workers;
 
-import java.io.UncheckedIOException;
-import java.net.UnknownServiceException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
@@ -123,6 +122,9 @@ final class SingleAssetFulfillmentServiceTests {
       pages.add(msg);
       return List.of();
     };
+    /// What a fetch throws from the RPC call itself in place of an answer, the way ravina's
+    /// balanced call rethrows an interrupt of the fetch; null for a fetch that answers.
+    RuntimeException fetchFailure;
     final Map<PublicKey, AccountInfo<byte[]>> accounts = new HashMap<>();
     final ArrayDeque<Boolean> feePayerLow = new ArrayDeque<>();
     final ArrayDeque<Boolean> processResults = new ArrayDeque<>();
@@ -145,6 +147,9 @@ final class SingleAssetFulfillmentServiceTests {
           (proxy, method, args) -> {
             if (method.getName().equals("getAccounts")) {
               ++fetches;
+              if (fetchFailure != null) {
+                throw fetchFailure;
+              }
               @SuppressWarnings("unchecked") final var keys = (List<PublicKey>) args[0];
               final var response = new ArrayList<AccountInfo<byte[]>>(keys.size());
               for (final var key : keys) {
@@ -201,20 +206,16 @@ final class SingleAssetFulfillmentServiceTests {
       throw new UnsupportedOperationException();
     }
 
-    /// A processor that answers only its notify client: the loop sends its instructions through
-    /// [#processInstructions], and reaches the processor itself only to page its own end.
+    /// The loop sends its instructions through [#processInstructions] and pages its own end through
+    /// [#notifyClient], so it never reaches the processor itself.
     @Override
     public InstructionProcessor instructionProcessor() {
-      return (InstructionProcessor) java.lang.reflect.Proxy.newProxyInstance(
-          InstructionProcessor.class.getClassLoader(),
-          new Class<?>[]{InstructionProcessor.class},
-          (proxy, method, args) -> {
-            if (method.getName().equals("notifyClient")) {
-              return notifyClient;
-            }
-            throw new UnsupportedOperationException(method.getName());
-          }
-      );
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public NotifyClient notifyClient() {
+      return notifyClient;
     }
 
     @Override
@@ -382,12 +383,13 @@ final class SingleAssetFulfillmentServiceTests {
     assertEquals(3, harness.ctx.fetches);
     assertEquals(List.of(), harness.ctx.processedContexts);
     // and pages it, once: which vault's loop ended, that the process exits for a supervisor to
-    // restart it, and on what (StopRun carries no message, so its class alone)
+    // restart it, and on what, as the module's one summary of a throwable renders it (StopRun
+    // carries no message, so its simple class name alone)
     assertEquals(1, harness.ctx.pages.size(), harness.ctx.pages::toString);
     final var page = harness.ctx.pages.getFirst();
     assertTrue(page.startsWith("The Test Vault fulfillment loop has ended"), page);
     assertTrue(page.contains("the process exits for a supervisor to restart it"), page);
-    assertTrue(page.endsWith("Failure: " + ScriptedContext.StopRun.class.getName()), page);
+    assertTrue(page.endsWith("Failure: " + ScriptedContext.StopRun.class.getSimpleName()), page);
   }
 
   /// A share mint with no supply (an account that exists before the first subscription, or every
@@ -565,7 +567,7 @@ final class SingleAssetFulfillmentServiceTests {
     };
     try (final var logs = LogCapture.attach(LOGGER_NAME)) {
       harness.service.run();
-      logs.assertLogged(Level.SEVERE, "The page that the fulfillment loop has ended may not have been delivered.");
+      logs.assertLogged(Level.SEVERE, "The page may not have been delivered: The Test Vault fulfillment loop has ended");
     }
     assertEquals(1, harness.ctx.pages.size(), harness.ctx.pages::toString);
   }
@@ -581,7 +583,7 @@ final class SingleAssetFulfillmentServiceTests {
     try (final var logs = LogCapture.attach(LOGGER_NAME)) {
       harness.service.run();
       logs.assertLogged(Level.SEVERE, "The fulfillment loop has ended: " + ScriptedContext.StopRun.class.getName());
-      logs.assertLogged(Level.SEVERE, "Failed to post the page that the fulfillment loop has ended.");
+      logs.assertLogged(Level.SEVERE, "Failed to post the page: The Test Vault fulfillment loop has ended");
     }
   }
 
@@ -643,60 +645,49 @@ final class SingleAssetFulfillmentServiceTests {
     }
   }
 
-  /// The page names a failure by its class and the first line of its message: the full failure is
-  /// in the ERROR record beside it.
+  // The page names the failure as the module's one summary of a throwable renders it, held rule by
+  // rule in PagesTests.
+
+  // --- an interrupt during a fetch ------------------------------------------
+  //
+  // ravina's UncheckedBalancedCall.get rethrows an interrupt of the fetch as a RuntimeException
+  // around the InterruptedException, with the flag cleared, so the loop meets a shutdown as the
+  // failure of a fetch: it is a shutdown all the same.
+
+  /// An interrupt wrapped in the fetch's failure ends the loop quietly, with the flag re-set for
+  /// the caller: one DEBUG record, nothing at ERROR, and no page.
   @Test
-  void aFailureIsDescribedByItsClassAndTheFirstLineOfItsMessage() {
-    final var name = IllegalStateException.class.getName();
-    assertEquals(name + ": rpc down", BaseFulfillmentService.describeFailure(
-        new IllegalStateException("rpc down\n\tat the second line")));
-    assertEquals(name + ": first", BaseFulfillmentService.describeFailure(new IllegalStateException("first\rsecond")));
-    // no message, or nothing on its first line: the class alone
-    assertEquals(name, BaseFulfillmentService.describeFailure(new IllegalStateException()));
-    assertEquals(name, BaseFulfillmentService.describeFailure(new IllegalStateException("\nonly a second line")));
+  void anInterruptWrappedInTheFetchsFailureEndsTheLoopQuietly() {
+    final var harness = harness(NoticePeriodType.Hard, TimeUnit.Second, 100L, false, 5, 30);
+    harness.ctx.fetchFailure = new RuntimeException(new InterruptedException("interrupted during the fetch"));
+    try (final var logs = LogCapture.attach(LOGGER_NAME)) {
+      harness.service.run();
+      // read and cleared in one, so that no later test inherits the flag
+      assertTrue(Thread.interrupted(), "run() must re-set the interrupt for its caller");
+      logs.assertLogged(Level.FINE, "The fulfillment loop was interrupted during a fetch");
+      assertEquals(1, logs.messages().size(), () -> "a shutdown is not a failure, got " + logs.messages());
+    } finally {
+      Thread.interrupted();
+    }
+    assertEquals(1, harness.ctx.fetches, "the loop ended on its first fetch");
+    assertTrue(harness.ctx.pages.isEmpty(), harness.ctx.pages::toString);
   }
 
-  /// Control characters are stripped: ravina's notify client escapes only quotes and line feeds
-  /// into the webhook's JSON body.
+  /// The walk finds the interrupt at any depth of the cause chain and nowhere else: a failure
+  /// without one answers false, and so does a chain that cycles, which initCause permits between
+  /// two throwables.
   @Test
-  void aFailuresControlCharactersAreStripped() {
-    assertEquals(
-        IllegalStateException.class.getName() + ": a tab, an escape, a nul and a C1 control",
-        BaseFulfillmentService.describeFailure(new IllegalStateException(
-            "a tab,\t an escape,\u001B a nul\u0000 and a C1\u0085 control"
-        ))
-    );
-  }
-
-  /// A failed request of sava's HTTP clients carries the response body in its message, wrapped as
-  /// it is here: the page keeps the status and never the body, however short.
-  @Test
-  void anHttpFailureIsDescribedWithoutItsResponseBody() {
-    final var failure = new UncheckedIOException(new UnknownServiceException(
-        "HTTP request failed with [httpCode:401], [body={\"error\":\"invalid api key 5ecret\"}]"
-    ));
-    final var description = BaseFulfillmentService.describeFailure(failure);
-    assertEquals(
-        UncheckedIOException.class.getName() + ": " + UnknownServiceException.class.getName()
-            + ": HTTP request failed with [httpCode:401], [body omitted]",
-        description
-    );
-    assertFalse(description.contains("5ecret"), description);
-  }
-
-  /// At most 200 code points of the message are kept, and a cut message says it was cut; a
-  /// character outside the basic plane counts once and is never split.
-  @Test
-  void aLongMessageIsCutAtTwoHundredCodePoints() {
-    final var name = IllegalStateException.class.getName();
-    final var exactly = "x".repeat(200);
-    assertEquals(name + ": " + exactly, BaseFulfillmentService.describeFailure(new IllegalStateException(exactly)));
-    assertEquals(name + ": " + exactly + "...", BaseFulfillmentService.describeFailure(new IllegalStateException(exactly + "y")));
-    final var grin = new String(Character.toChars(0x1F600));
-    assertEquals(
-        name + ": " + grin.repeat(200) + "...",
-        BaseFulfillmentService.describeFailure(new IllegalStateException(grin.repeat(201)))
-    );
+  void anInterruptIsFoundAtAnyDepthOfTheCauseChainAndNowhereElse() {
+    assertTrue(BaseFulfillmentService.causedByInterrupt(new InterruptedException()));
+    assertTrue(BaseFulfillmentService.causedByInterrupt(new RuntimeException(new InterruptedException())));
+    assertTrue(BaseFulfillmentService.causedByInterrupt(
+        new CompletionException(new RuntimeException(new InterruptedException()))));
+    assertFalse(BaseFulfillmentService.causedByInterrupt(new RuntimeException("rpc down")));
+    assertFalse(BaseFulfillmentService.causedByInterrupt(new RuntimeException(new IllegalStateException("rpc down"))));
+    final var first = new RuntimeException("first");
+    final var second = new RuntimeException(first);
+    first.initCause(second);
+    assertFalse(BaseFulfillmentService.causedByInterrupt(first));
   }
 
   // --- redemption accounting ------------------------------------------------

@@ -1,6 +1,7 @@
 package systems.glam.services.execution;
 
 import software.sava.core.tx.Instruction;
+import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.solana.epoch.EpochInfoService;
 import systems.glam.services.ServiceContext;
 
@@ -32,6 +33,11 @@ final class ExecutionServiceContextImpl extends BaseServiceContext implements Ex
   @Override
   public InstructionProcessor instructionProcessor() {
     return instructionProcessor;
+  }
+
+  @Override
+  public NotifyClient notifyClient() {
+    return serviceContext.notifyClient();
   }
 
   @Override

@@ -70,7 +70,7 @@ public interface InstructionProcessor {
   /// transaction may still land until that height passes, and a rebuild of the list it heads
   /// before then can execute the batch twice; without it nothing of the batch can land. Whether a
   /// caller may rebuild is the caller's own: the fulfillment service exits for a supervisor
-  /// restart, which rebuilds within seconds, since the on-chain fulfill tolerates a duplicate.
+  /// restart, which rebuilds after the restart, since the on-chain fulfill tolerates a duplicate.
   /// Either way the service should exit, since ravina refuses every later call on that monitor the
   /// same way. A batch no send of whose transaction was accepted (every send refused, timed out or
   /// unanswered) and whose status then settled as not landed ends ravina's call with
@@ -85,10 +85,12 @@ public interface InstructionProcessor {
   /// transaction, and the batch heads the list like a stopped monitor's `sent()` batch, with the
   /// same rebuild caveat. Every failure the call ends on, these two, the account-limit refusal and
   /// any other exception of the send, is thrown after a best-effort wait for the posts of its page
-  /// of up to thirty seconds, so that a caller that ends the process on it does not cut the page
-  /// off: a rejection the webhook answers (a 429, a 5xx) completes the post and is not seen here,
-  /// and a post still running at the bound is left to complete on its own. A caller that catches
-  /// `RuntimeException` to retry must exclude both exceptions first.
+  /// of up to [Pages#PAGE_DELIVERY_SECONDS], so that a caller that ends the process on it does not
+  /// cut the page off: a rejection the webhook answers (a 429, a 5xx) completes the post and is not
+  /// seen here, and a post still running at the bound is left to complete on its own. A caller
+  /// that catches `RuntimeException` to retry must exclude all three first: the two exceptions
+  /// above and the account-limit `IllegalStateException`, which a check on the instruction alone
+  /// throws before that pass's send, so a rebuilt list meets it again on every pass.
   boolean processInstructions(final String logContext,
                               final List<Instruction> instructions,
                               final double cuBudgetMultiplier,

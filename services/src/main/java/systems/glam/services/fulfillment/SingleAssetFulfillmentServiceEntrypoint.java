@@ -4,12 +4,14 @@ import software.sava.core.accounts.PublicKey;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.ws.SolanaRpcWebsocket;
 import software.sava.services.core.config.ServiceConfigUtil;
+import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.solana.epoch.EpochInfoService;
 import software.sava.services.solana.transactions.InstructionService;
 import software.sava.services.solana.transactions.TxMonitorService;
 import software.sava.services.solana.websocket.WebSocketManager;
 import systems.glam.sdk.*;
 import systems.glam.sdk.idl.programs.glam.mint.gen.GlamMintConstants;
+import systems.glam.services.execution.Pages;
 import systems.glam.services.fulfillment.config.FulfillmentServiceConfig;
 import systems.glam.services.mints.MintContext;
 
@@ -47,26 +49,36 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
     try (final var taskExecutor = Executors.newVirtualThreadPerTaskExecutor();
          final var httpClient = HttpClient.newBuilder().executor(taskExecutor).build();
          final var wsHttpClient = HttpClient.newHttpClient()) {
-      // Every end but an interrupt during startup exits from inside this block, before any close
-      // runs: a close waits on what its resource still holds, the executor on every task it runs
-      // (a courteous call retrying an unreachable endpoint never ends) and the websocket client on
-      // the socket createService opened, so an exit placed after the closes might never be reached.
+      // Every end of the service exits from inside this block, before any close runs: a close
+      // waits on what its resource still holds, the executor on every task it runs (a courteous
+      // call retrying an unreachable endpoint never ends) and the websocket client on the socket
+      // createService opened, so an exit placed after the closes might never be reached. An
+      // interrupt during startup returns instead, quietly, through the closes; a resource
+      // initializer that throws is caught below, after the closes of what was built.
       try {
         final var service = createService(taskExecutor, httpClient, wsHttpClient);
         if (service != null) {
           service.run();
         }
-        // run() returns only once the service is over, and createService answers null only after
-        // logging at ERROR why it refused to start (no state account, or a delegate without the
-        // fulfill permission): either way exit non-zero, for a supervisor to restart the process,
-        // until the account exists or the permission is granted.
-        System.exit(1);
       } catch (final InterruptedException e) {
         // a shutdown: quiet
+        return;
       } catch (final Throwable e) {
         logger.log(ERROR, "Unexpected service failure.", e);
-        System.exit(1);
       }
+      // run() returns only once the service is over, createService answers null only after
+      // logging at ERROR and paging why it refused to start (no state account, or a delegate
+      // without the fulfill permission), and any other failure is logged just above: every one
+      // of them exits non-zero, for a supervisor to restart the process, until the account
+      // exists, the permission is granted or the failure is fixed.
+      System.exit(1);
+    } catch (final Throwable e) {
+      // A resource initializer threw, before anything was started (HttpClient.Builder.build wraps
+      // a TLS misconfiguration as an UncheckedIOException): the closes of what was built ran at
+      // once, since nothing held them, and the failure is recorded and exits like any other.
+      // Nothing else arrives here: every path through the block above exits or returns.
+      logger.log(ERROR, "Unexpected service failure.", e);
+      System.exit(1);
     }
   }
 
@@ -133,9 +145,24 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
 
     final var solanaAccounts = delegateServiceConfig.solanaAccounts();
     final var glamAccountClient = GlamAccountClient.createClient(solanaAccounts, vaultAccounts);
+    final var notifyClient = delegateServiceConfig.notifyClient();
     final var glamAccountInfo = accountsNeededMap.get(stateAccountKey);
-    final var stateAccountClient = glamAccountClient.createStateAccountClient(glamAccountInfo);
-    if (!validateDelegatePermissions(requiredPermissions, serviceKey, stateAccountClient)) {
+    final StateAccountClient stateAccountClient;
+    try {
+      stateAccountClient = glamAccountClient.createStateAccountClient(glamAccountInfo);
+    } catch (final RuntimeException notAStateAccount) {
+      // an account that exists at the configured key but is not a GLAM state account (the vault
+      // PDA, a mint, a token account): a misconfiguration only a human fixes, so paged like the
+      // gate's refusals below rather than left to main's "Unexpected service failure." record
+      refuse(String.format("The account at %s is not a Glam state account: %s", stateAccountKey, Pages.summarize(notAStateAccount)), notifyClient);
+      return null;
+    }
+    if (!validateDelegatePermissions(requiredPermissions, serviceKey, stateAccountClient, notifyClient)) {
+      return null;
+    }
+    final var mintAccountInfo = accountsNeededMap.get(mintKey);
+    if (mintAccountInfo == null) {
+      refuse(String.format("Glam state %s has no share mint at %s, exiting.", stateAccountKey, mintKey), notifyClient);
       return null;
     }
 
@@ -145,7 +172,7 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
         "rpcClient::getBaseAssetAccount"
     );
 
-    final var vaultMintContext = MintContext.createContext(solanaAccounts, accountsNeededMap.get(mintKey));
+    final var vaultMintContext = MintContext.createContext(solanaAccounts, mintAccountInfo);
 
     final var webSocketConsumers = new ArrayList<Consumer<SolanaRpcWebsocket>>();
     final var webSocketManager = delegateServiceConfig.createWebSocketManager(wsHttpClient, webSocketConsumers);
@@ -201,20 +228,32 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
     return new SingleAssetFulfillmentServiceEntrypoint(webSocketManager, epochInfoService, txMonitorService, fulfillmentService);
   }
 
-  // package-private so tests can drive the gate directly (same precedent as
-  // the package-private locks); createService has no seam for a stub client
+  // package-private so tests can drive the gate directly (same precedent as the package-private
+  // locks), with the notify client its refusals page through; createService has no seam for a
+  // stub client and hands in the configuration's
   static boolean validateDelegatePermissions(final Map<PublicKey, ProtocolPermissions> requiredPermissions,
                                              final PublicKey delegateKey,
-                                             final StateAccountClient stateAccountClient) {
+                                             final StateAccountClient stateAccountClient,
+                                             final NotifyClient notifyClient) {
     if (stateAccountClient == null) {
-      logger.log(ERROR, "Glam account does not exist, exiting.");
+      refuse("Glam account does not exist, exiting.", notifyClient);
       return false;
     } else if (!stateAccountClient.delegateHasPermissions(delegateKey, requiredPermissions)) {
-      logger.log(ERROR, String.format("Service key %s does not have the required permissions.", delegateKey));
+      refuse(String.format("Service key %s does not have the required permissions.", delegateKey), notifyClient);
       return false;
     } else {
       return true;
     }
+  }
+
+  /// Logs `refusal` at ERROR, posts it as a page through `notifyClient` and awaits the page for
+  /// [Pages#PAGE_DELIVERY_SECONDS], under this module's one paging policy ([Pages]): main exits
+  /// the process as soon as createService returns null, and a supervisor that restarts it on
+  /// failure reruns this bootstrap, at its own pace, for as long as the misconfiguration lasts, so
+  /// the one end only a human can fix is the one that must not go unpaged.
+  private static void refuse(final String refusal, final NotifyClient notifyClient) {
+    logger.log(ERROR, refusal);
+    Pages.awaitDelivery(refusal, Pages.post(notifyClient, refusal, logger, refusal), Pages.PAGE_DELIVERY_SECONDS, SECONDS, logger);
   }
 
   /// Runs the services until the fulfillment worker ends, then interrupts the others and returns,
@@ -241,14 +280,16 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
         } catch (final TimeoutException running) {
           continue;
         } catch (final ExecutionException failed) {
-          // Unreachable for the shipped worker: BaseFulfillmentService.run, which is final,
-          // catches whatever ends its loop, logs and pages it, and returns. Kept for any other
-          // FulfillmentService, whose run() may throw.
+          // Rare for the shipped worker: BaseFulfillmentService.run, which is final, catches
+          // whatever ends its loop, logs it, pages it unless it was a shutdown, and returns, so only what escapes that
+          // handler's own body arrives here, an Error thrown inside it (an OutOfMemoryError in the
+          // concatenation of its log record, say). Kept for any other FulfillmentService, whose
+          // run() may throw.
           final var cause = failed.getCause();
           logger.log(ERROR, "The fulfillment service failed, exiting for a supervisor to restart the process: " + cause, cause);
           return;
         }
-        logger.log(ERROR, "The fulfillment service has ended, exiting for a supervisor to restart the process; the failure that ended it is named by the worker's own ERROR record, \"The fulfillment loop has ended\".");
+        logger.log(ERROR, "The fulfillment service has ended, exiting for a supervisor to restart the process; the worker's own record names what ended it.");
         return;
       }
     } catch (final InterruptedException e) {

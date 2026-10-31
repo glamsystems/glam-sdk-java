@@ -10,6 +10,7 @@ import software.sava.core.encoding.ByteUtil;
 import software.sava.core.tx.Instruction;
 import software.sava.rpc.json.http.response.AccountInfo;
 import software.sava.rpc.json.http.response.Context;
+import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.core.remote.call.Backoff;
 import software.sava.services.solana.epoch.Epoch;
 import software.sava.services.solana.epoch.EpochInfoService;
@@ -18,6 +19,7 @@ import systems.glam.sdk.GlamAccounts;
 import systems.glam.sdk.GlamEnv;
 import systems.glam.services.ServiceContextImpl;
 
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.math.BigInteger;
 import java.nio.file.Path;
@@ -34,6 +36,8 @@ final class ExecutionServiceContextTests {
 
   private static final PublicKey SERVICE_KEY = fromBase58Encoded("F1oQY1jbdiJyxxeeuMBF2NsUckboyWo6TSXNqzJbrhxs");
   private static final SolanaAccounts SOLANA = SolanaAccounts.MAIN_NET;
+  /// The service context's notify client, an instance a forward is held to by identity.
+  private static final NotifyClient NOTIFY_CLIENT = msg -> List.of();
 
   private static ServiceContextImpl serviceContext(final Path cacheDirectory, final Duration minCheckDelay) {
     final var rpcCaller = new RpcCaller(null, null, null);
@@ -46,7 +50,7 @@ final class ExecutionServiceContextTests {
         Backoff.single(TimeUnit.MILLISECONDS, 1),
         SOLANA,
         GlamAccounts.MAIN_NET, GlamAccounts.MAIN_NET_STAGING,
-        null, rpcCaller, null
+        NOTIFY_CLIENT, rpcCaller, null
     );
   }
 
@@ -94,12 +98,47 @@ final class ExecutionServiceContextTests {
     assertSame(instructionProcessor, context.instructionProcessor());
     assertFalse(context.feePayerBalanceLow());
     assertEquals(411L, context.medianMillisPerSlot());
+    // the pages of a service over this context go through the service context's client, not the
+    // processor's (the same client in a delegate configuration; here the processor answers none)
+    assertSame(NOTIFY_CLIENT, context.notifyClient());
 
     final var instructions = List.<Instruction>of();
     assertTrue(context.processInstructions("first", instructions));
     assertFalse(context.processInstructions("second", instructions));
     assertEquals(List.of("first", "second"), processedContexts);
     assertSame(instructions, processedInstructions.getFirst());
+  }
+
+  /// An implementor that leaves the interface's default in place pages through its instruction
+  /// processor's client, which is where the fulfillment loop reached its client before the
+  /// context answered one: an external implementor is unchanged by the seam.
+  @Test
+  void theDefaultNotifyClientIsTheInstructionProcessors() {
+    final NotifyClient processorsClient = msg -> List.of();
+    final var instructionProcessor = (InstructionProcessor) Proxy.newProxyInstance(
+        InstructionProcessor.class.getClassLoader(),
+        new Class<?>[]{InstructionProcessor.class},
+        (proxy, method, args) -> {
+          if (method.getName().equals("notifyClient")) {
+            return processorsClient;
+          }
+          throw new UnsupportedOperationException(method.getName());
+        }
+    );
+    final var context = (ExecutionServiceContext) Proxy.newProxyInstance(
+        ExecutionServiceContext.class.getClassLoader(),
+        new Class<?>[]{ExecutionServiceContext.class},
+        (proxy, method, args) -> {
+          if (method.isDefault()) {
+            return InvocationHandler.invokeDefault(proxy, method, args);
+          }
+          if (method.getName().equals("instructionProcessor")) {
+            return instructionProcessor;
+          }
+          throw new UnsupportedOperationException(method.getName());
+        }
+    );
+    assertSame(processorsClient, context.notifyClient());
   }
 
   @Test

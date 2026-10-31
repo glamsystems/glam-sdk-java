@@ -1005,12 +1005,14 @@ final class InstructionProcessorTests {
     final var msg = notify.messages.getFirst();
     assertTrue(msg.contains("No send of the test transaction was accepted (2 attempted) and nothing landed"), msg);
     assertTrue(msg.contains("so the caller backs off and rebuilds"), msg);
-    // each failure as its bounded summary (the wrapper's message is its cause's toString), the
-    // first behind the last: a 401 on one peer behind 429s on another is not read as a rate limit
+    // each failure as its bounded summary (the wrapper's message is its cause's toString, and the
+    // provider's body is omitted behind the status), the first behind the last: a 401 on one peer
+    // behind 429s on another is not read as a rate limit
     assertTrue(msg.contains(
-        "Last failure: UncheckedIOException: java.net.UnknownServiceException: HTTP request failed with [httpCode:401], [body=upstream unavailable]"
-            + "; first failure: UncheckedIOException: java.net.UnknownServiceException: HTTP request failed with [httpCode:429], [body=upstream unavailable]."
+        "Last failure: UncheckedIOException: java.net.UnknownServiceException: HTTP request failed with [httpCode:401], [body omitted]"
+            + "; first failure: UncheckedIOException: java.net.UnknownServiceException: HTTP request failed with [httpCode:429], [body omitted]."
     ), msg);
+    assertFalse(msg.contains("upstream unavailable"), "the provider's body is the log's, never the page's");
     assertFalse(msg.contains("java.io.UncheckedIOException"), "the summary names the class simply; the log has the throwable");
   }
 
@@ -1051,7 +1053,7 @@ final class InstructionProcessorTests {
     assertEquals(1, notify.messages.size(), () -> notify.messages.toString());
     final var msg = notify.messages.getFirst();
     assertTrue(msg.contains(
-        "Last failure: UncheckedIOException: java.net.UnknownServiceException: HTTP request failed with [httpCode:429], [body=upstream unavailable]."
+        "Last failure: UncheckedIOException: java.net.UnknownServiceException: HTTP request failed with [httpCode:429], [body omitted]."
     ), msg);
     assertFalse(msg.contains("first failure"), msg);
   }
@@ -1297,107 +1299,6 @@ final class InstructionProcessorTests {
     }
   }
 
-  // ---------------------------------------------------------------- awaiting posts --
-
-  /// The await of a fatal page is a best effort with four endings. Posts already complete end it
-  /// at once, with nothing logged.
-  @Test
-  void completedPostsAreNotAwaited() throws InterruptedException {
-    final var runner = new Thread(() -> {
-      InstructionProcessorImpl.awaitPosts("the event", List.of(CompletableFuture.completedFuture("delivered")), 30L, TimeUnit.SECONDS);
-      InstructionProcessorImpl.awaitPosts("the event", List.of(), 30L, TimeUnit.SECONDS);
-    }, "completed posts runner");
-    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
-      runner.start();
-      Workers.joinWithin(runner, "completed posts must not be awaited");
-      assertTrue(log.messages().isEmpty(), () -> "nothing is logged for a delivered page, got " + log.messages());
-    }
-  }
-
-  /// A post that failed within the bound is logged as possibly undelivered and changes nothing
-  /// else; a webhook's own rejection completes its post normally, so only a failure to post at
-  /// all arrives here.
-  @Test
-  void aFailedPostIsLoggedAsPossiblyUndelivered() {
-    final var refused = CompletableFuture.<String>failedFuture(new IllegalStateException("the webhook refused the connection"));
-    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
-      InstructionProcessorImpl.awaitPosts("the event", List.of(refused), 30L, TimeUnit.SECONDS);
-      log.assertLogged(Level.SEVERE, "The page may not have been delivered: the event");
-    }
-  }
-
-  /// A post still running at the bound is logged the same way and left to itself. A bound of
-  /// zero puts the never-completing post at it already, so nothing here waits.
-  @Test
-  void aPostOutlastingTheBoundIsLoggedAsPossiblyUndelivered() {
-    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
-      InstructionProcessorImpl.awaitPosts("the event", List.of(new CompletableFuture<>()), 0L, TimeUnit.SECONDS);
-      log.assertLogged(Level.SEVERE, "The page may not have been delivered: the event");
-    }
-  }
-
-  /// An interrupt ends the await, which is not a delivery failure, with the flag kept for the
-  /// caller. A completed post returns before the interrupt is read, so the post here is pending.
-  @Test
-  void anInterruptEndsTheAwaitAndIsKeptForTheCaller() {
-    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
-      Thread.currentThread().interrupt();
-      InstructionProcessorImpl.awaitPosts("the event", List.of(new CompletableFuture<>()), 30L, TimeUnit.SECONDS);
-      // read and cleared in one, so that no later test inherits the flag
-      assertTrue(Thread.interrupted(), "the interrupt is the caller's to see");
-      assertTrue(log.messages().isEmpty(), () -> "an interrupt is not a delivery failure, got " + log.messages());
-    } finally {
-      Thread.interrupted();
-    }
-  }
-
-  // ------------------------------------------------------------ throwable summaries --
-
-  /// A page carries a throwable as its simple class name and the first line of its message, less
-  /// the characters ravina's webhook escape leaves for the JSON to choke on (a control character,
-  /// a backslash); a throwable without a message, or with nothing left of its first line, is its
-  /// class name alone. The whole throwable is the log's.
-  @Test
-  void aThrowableIsSummarizedByItsClassAndItsFirstLine() {
-    assertEquals("IllegalStateException: rpc down", InstructionProcessorImpl.summarize(new IllegalStateException("rpc down\nsecond line")));
-    assertEquals("IllegalStateException", InstructionProcessorImpl.summarize(new IllegalStateException()));
-    assertEquals("IllegalStateException", InstructionProcessorImpl.summarize(new IllegalStateException("\t\u0001\\")));
-    // a tab, a control character and a backslash dropped; the carriage return ends the first line
-    assertEquals(
-        "IllegalStateException: code7 backslash",
-        InstructionProcessorImpl.summarize(new IllegalStateException("code\t7\u0001 back\\slash\rcarriage\nnext"))
-    );
-    // sava's HTTP failure as the processor meets it: the wrapper's message is its cause's toString
-    assertEquals(
-        "UncheckedIOException: java.net.UnknownServiceException: HTTP request failed with [httpCode:401], [body=upstream unavailable]",
-        InstructionProcessorImpl.summarize(refusal(401))
-    );
-  }
-
-  /// A message is cut at the bound, with sava's `[httpCode:NNN]` fragment kept past it, so that a
-  /// provider's long body never hides the status an operator reads first.
-  @Test
-  void aSummaryIsCutAtTheBoundKeepingTheHttpCode() {
-    final int bound = InstructionProcessorImpl.THROWABLE_SUMMARY_LENGTH;
-    final var atTheBound = "x".repeat(bound);
-    assertEquals("IllegalStateException: " + atTheBound, InstructionProcessorImpl.summarize(new IllegalStateException(atTheBound)));
-    assertEquals("IllegalStateException: " + atTheBound + "...", InstructionProcessorImpl.summarize(new IllegalStateException(atTheBound + "y")));
-    // the fragment past the cut rides after it
-    assertEquals(
-        "IllegalStateException: " + atTheBound + "... [httpCode:503]",
-        InstructionProcessorImpl.summarize(new IllegalStateException("x".repeat(bound + 50) + " [httpCode:503], [body=upstream unavailable]"))
-    );
-    // a fragment the cut keeps, ending exactly at the bound or earlier, is not repeated after it
-    final var fragment = "[httpCode:429]";
-    final var endingAtTheBound = "x".repeat(bound - fragment.length()) + fragment;
-    assertEquals(
-        "IllegalStateException: " + endingAtTheBound + "...",
-        InstructionProcessorImpl.summarize(new IllegalStateException(endingAtTheBound + "y".repeat(50)))
-    );
-    final var leading = fragment + " " + "x".repeat(bound + 100);
-    assertEquals(
-        "IllegalStateException: " + leading.substring(0, bound) + "...",
-        InstructionProcessorImpl.summarize(new IllegalStateException(leading))
-    );
-  }
+  // The await of a page and the summary of a throwable are the module's one paging policy, held
+  // rule by rule in PagesTests; the arms above hold what the processor does with them.
 }
