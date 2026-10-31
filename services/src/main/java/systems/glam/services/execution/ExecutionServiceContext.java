@@ -42,8 +42,10 @@ public interface ExecutionServiceContext {
   /// [InstructionProcessor#processInstructions(String, List)] on [#instructionProcessor()], whose
   /// contract applies here: a transaction monitor that has stopped ends the call with
   /// [software.sava.services.solana.transactions.TxMonitorStoppedException], thrown as itself,
-  /// which a catch of `RuntimeException` that retries must exclude, and whose `sent()` says
-  /// whether the batch at the head of `instructions` may still land.
+  /// whose `sent()` says whether the batch at the head of `instructions` may still land, and a
+  /// batch no send of which was accepted ends it with
+  /// [software.sava.services.solana.transactions.SendNotAcceptedException] when its expiry was
+  /// not verified; a catch of `RuntimeException` that retries must exclude both.
   boolean processInstructions(final String logContext,
                               final List<Instruction> instructions) throws InterruptedException;
 

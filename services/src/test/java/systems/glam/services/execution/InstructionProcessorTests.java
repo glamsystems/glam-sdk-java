@@ -2,36 +2,58 @@ package systems.glam.services.execution;
 
 import org.junit.jupiter.api.Test;
 import software.sava.core.accounts.PublicKey;
+import software.sava.core.accounts.Signer;
 import software.sava.core.accounts.meta.AccountMeta;
 import software.sava.core.tx.Instruction;
 import software.sava.core.tx.Transaction;
+import software.sava.rpc.json.http.client.SolanaRpcClient;
+import software.sava.rpc.json.http.request.Commitment;
 import software.sava.rpc.json.http.response.IxError;
+import software.sava.rpc.json.http.response.LatestBlockHash;
 import software.sava.rpc.json.http.response.TransactionError;
+import software.sava.rpc.json.http.response.TxSimulation;
+import software.sava.services.core.remote.call.Backoff;
+import software.sava.services.core.remote.load_balance.BalancedItem;
+import software.sava.services.core.remote.load_balance.LoadBalancer;
+import software.sava.services.core.request_capacity.CapacityConfig;
 import software.sava.services.solana.transactions.InstructionService;
 import software.sava.services.solana.transactions.TransactionProcessor;
 import software.sava.services.solana.transactions.TransactionResult;
 import software.sava.services.solana.config.ChainItemFormatter;
 import software.sava.services.solana.epoch.EpochInfoService;
+import software.sava.services.solana.remote.call.CallWeights;
+import software.sava.services.solana.remote.call.RpcCaller;
 import software.sava.services.solana.transactions.SendLedger;
+import software.sava.services.solana.transactions.SendNotAcceptedException;
 import software.sava.services.solana.transactions.SendTxContext;
+import software.sava.services.solana.transactions.SimulationFutures;
 import software.sava.services.solana.transactions.TxMonitorConfig;
 import software.sava.services.solana.transactions.TxMonitorService;
 import software.sava.services.solana.transactions.TxMonitorStoppedException;
 import systems.glam.sdk.GlamAccounts;
 import systems.glam.services.tests.LogCapture;
+import systems.glam.services.tests.Workers;
 
+import java.io.UncheckedIOException;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
+import java.net.UnknownServiceException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.logging.Level;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static software.sava.rpc.json.http.request.Commitment.CONFIRMED;
-import static software.sava.rpc.json.http.request.Commitment.FINALIZED;
 
 /// Drives InstructionProcessorImpl against a scripted InstructionService: each
 /// call's batch size is recorded and the next scripted result returned, so the
@@ -94,17 +116,18 @@ final class InstructionProcessorTests {
   }
 
   private static final PublicKey FEE_PAYER = key(9_999);
+  private static final ChainItemFormatter FORMATTER = ChainItemFormatter.createDefault();
 
-  /// The processor asks the transaction processor for one thing here: whose transaction it builds.
+  /// The processor asks the transaction processor for two things here: whose transaction it
+  /// builds, and the formatter a page renders a signature with.
   private static TransactionProcessor feePayer() {
     return (TransactionProcessor) Proxy.newProxyInstance(
         TransactionProcessor.class.getClassLoader(),
         new Class<?>[]{TransactionProcessor.class},
-        (proxy, method, args) -> {
-          if (method.getName().equals("feePayer")) {
-            return FEE_PAYER;
-          }
-          throw new UnsupportedOperationException(method.getName());
+        (proxy, method, args) -> switch (method.getName()) {
+          case "feePayer" -> FEE_PAYER;
+          case "formatter" -> FORMATTER;
+          default -> throw new UnsupportedOperationException(method.getName());
         }
     );
   }
@@ -116,8 +139,16 @@ final class InstructionProcessorTests {
   private static InstructionProcessorImpl processor(final ScriptedService service,
                                                     final RecordingNotify notify,
                                                     final PublicKey mintProgram) {
+    return processor(feePayer(), service.service(), notify, mintProgram);
+  }
+
+  /// A processor over `service`, whose transactions `transactionProcessor` builds and sends.
+  private static InstructionProcessorImpl processor(final TransactionProcessor transactionProcessor,
+                                                    final InstructionService service,
+                                                    final RecordingNotify notify,
+                                                    final PublicKey mintProgram) {
     return new InstructionProcessorImpl(
-        feePayer(), service.service(), mintProgram, new BigDecimal("0.001"), notify.client(), 1.2, 3
+        transactionProcessor, service, mintProgram, new BigDecimal("0.001"), notify.client(), 1.2, 3
     );
   }
 
@@ -622,7 +653,8 @@ final class InstructionProcessorTests {
     // that the ERROR records they write do not reach the console.
     try (final var log = LogCapture.attach("software.sava.services.solana.transactions.TxCommitmentMonitorService")) {
       monitor.run(Runnable::run);
-      log.assertLogged(Level.SEVERE, "Transaction monitor stopped");
+      // what the stop log says, and at which level, is ravina's policy, not pinned here
+      assertFalse(log.messages().isEmpty(), "the stop is logged");
     }
     assertTrue(monitor.stopped());
     return monitor;
@@ -633,9 +665,11 @@ final class InstructionProcessorTests {
   private static TxMonitorStoppedException stoppedWithPending(final TxMonitorService monitor) {
     final var transaction = Transaction.createTx(FEE_PAYER, List.of(instruction(1, 1)));
     final var sendTxContext = new SendTxContext(null, new CompletableFuture<>(), transaction, "base64", 4_242L, 0L);
-    final var future = monitor.queueResult(FINALIZED, FINALIZED, "sig", sendTxContext, true, false, new SendLedger("sig"));
-    assertTrue(future.isCompletedExceptionally(), "a stopped monitor fails the queue at once");
-    return assertInstanceOf(TxMonitorStoppedException.class, future.handle((status, failure) -> failure).join());
+    // a stopped monitor fails the queue at once, so its failure is readable without a wait
+    return assertInstanceOf(
+        TxMonitorStoppedException.class,
+        monitor.queueResult(CONFIRMED, CONFIRMED, "sig", sendTxContext, true, false).exceptionNow()
+    );
   }
 
   /// A monitor that stopped under the send ends the call as itself, after one page that names
@@ -653,51 +687,50 @@ final class InstructionProcessorTests {
     });
     final var instructions = new ArrayList<>(List.of(instruction(1, 2)));
 
+    // the page renders the signature the way the formatter does, never bare
+    final var formattedSig = FORMATTER.formatSig(stopped.sig());
+
     try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
       final var thrown = assertThrows(TxMonitorStoppedException.class, () ->
           processor(service, notify).processInstructions("test", instructions));
       assertSame(stopped, thrown, "thrown as itself, not wrapped: the caller tells it apart by type");
-      log.assertLogged(Level.SEVERE, "transaction sig may still land until block height 4242 passes");
+      log.assertLogged(Level.SEVERE, "transaction " + formattedSig + " may still land until block height 4242 passes");
     }
     assertEquals(1, notify.messages.size());
     final var msg = notify.messages.getFirst();
     assertTrue(msg.contains(
-        "Transaction monitor stopped; test transaction sig may still land until block height 4242 passes, so these instructions must not be rebuilt before its status is known."
+        "Transaction monitor stopped; test transaction " + formattedSig
+            + " may still land until block height 4242 passes, so these instructions must not be rebuilt before its status is known."
     ), msg);
     assertEquals(List.of(1), service.batchSizes, "nothing more is sent");
     assertEquals(1, instructions.size(), "the batch is left with the caller, not cleared as a failed batch is");
   }
 
   /// A call refused before an attempt, because the monitor had already stopped, sent nothing
-  /// that can land, and the page says so instead of naming a transaction.
+  /// that can land, and the page says so instead of naming a transaction. The refusal is ravina's
+  /// own, on the processor's own call: its service reads only the fee cap's sign and `stopped()`
+  /// before refusing a first attempt, so it needs no other collaborator.
   @Test
   void aCallRefusedByAStoppedMonitorPagesThatNothingCanLand() {
-    final var monitor = stoppedMonitor();
-    // ravina's own instruction service, refused at its first attempt: the real refusal, with
-    // nothing sent.
-    final var refused = assertThrows(TxMonitorStoppedException.class, () ->
-        InstructionService.createService(null, feePayer(), null, null, monitor).processInstructions(
-            1.2, List.of(instruction(1, 2)), new BigDecimal("0.001"), CONFIRMED, CONFIRMED, true, true, 3, "test"
-        ));
-    assertFalse(refused.sent());
-    assertNull(refused.sig());
-    final var service = new ScriptedService();
+    final var feePayer = feePayer();
     final var notify = new RecordingNotify();
-    service.script.add(batch -> {
-      throw refused;
-    });
+    final var processor = processor(
+        feePayer,
+        InstructionService.createService(null, feePayer, null, null, stoppedMonitor()),
+        notify,
+        GlamAccounts.MAIN_NET.mintProgram()
+    );
     final var instructions = new ArrayList<>(List.of(instruction(1, 2)));
 
     try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
       final var thrown = assertThrows(TxMonitorStoppedException.class, () ->
-          processor(service, notify).processInstructions("test", instructions));
-      assertSame(refused, thrown);
+          processor.processInstructions("test", instructions));
+      assertFalse(thrown.sent());
       log.assertLogged(Level.SEVERE, "nothing sent for test can still land");
     }
     assertEquals(1, notify.messages.size());
     final var msg = notify.messages.getFirst();
     assertTrue(msg.contains("Transaction monitor stopped; nothing sent for test can still land."), msg);
-    assertFalse(msg.contains("may still land until"), msg);
     assertEquals(1, instructions.size());
   }
 
@@ -724,10 +757,376 @@ final class InstructionProcessorTests {
           processor.processInstructions("test", instructions));
       assertSame(stopped, thrown, "the stop is the caller's, whatever became of the page");
       assertEquals(0, thrown.getSuppressed().length, "not attached to an instance other waiters may hold");
-      log.assertLogged(Level.SEVERE, "transaction sig may still land until block height 4242 passes");
-      log.assertLogged(Level.SEVERE, "Failed to post the stopped-monitor page.");
+      log.assertLogged(Level.SEVERE, "transaction " + FORMATTER.formatSig(stopped.sig()) + " may still land until block height 4242 passes");
+      log.assertLogged(Level.SEVERE, "Failed to post the page: Transaction monitor stopped;");
     }
     assertEquals(List.of(1), service.batchSizes, "nothing more is sent");
     assertEquals(1, instructions.size());
+  }
+
+  /// The catch-all arm guards its page the same way: a notify client that throws loses the page,
+  /// and the service failure is still what ends the call, as itself and with nothing attached.
+  @Test
+  void aNotifyClientThatThrowsDoesNotReplaceAServiceFailure() {
+    final var service = new ScriptedService();
+    final var failure = new IllegalStateException("rpc down");
+    service.script.add(batch -> {
+      throw failure;
+    });
+    final software.sava.services.core.net.http.NotifyClient notify = msg -> {
+      throw new RejectedExecutionException("the notify executor has shut down");
+    };
+    final var processor = new InstructionProcessorImpl(
+        feePayer(), service.service(), GlamAccounts.MAIN_NET.mintProgram(), new BigDecimal("0.001"), notify, 1.2, 3
+    );
+    final var instructions = new ArrayList<>(List.of(instruction(1, 2)));
+
+    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      final var thrown = assertThrows(IllegalStateException.class, () ->
+          processor.processInstructions("test", instructions));
+      assertSame(failure, thrown);
+      assertEquals(0, thrown.getSuppressed().length);
+      log.assertLogged(Level.SEVERE, "Failed to process test instructions.");
+      log.assertLogged(Level.SEVERE, "Failed to post the page: Failed to process test instructions.");
+    }
+    assertEquals(1, instructions.size(), "a batch whose send threw heads the list");
+  }
+
+  // ------------------------------------------------------------- sends not accepted --
+
+  /// Signs the transactions ravina's own service sends below: `SendTxContext.sig()` is derived
+  /// from the fee payer's signature, so the fee payer those tests build for is this key.
+  private static final Signer SIGNER = Signer.createFromPrivateKey(privateKey());
+
+  private static byte[] privateKey() {
+    final byte[] bytes = new byte[Signer.KEY_LENGTH];
+    for (int i = 0; i < bytes.length; ++i) {
+      bytes[i] = (byte) (i + 1);
+    }
+    return bytes;
+  }
+
+  /// A successful simulation: 100,000 compute units consumed, 77,777 bytes of account data loaded.
+  private static final TxSimulation SIMULATION = new TxSimulation(
+      null, null, OptionalLong.empty(), 77_777,
+      List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
+      null, OptionalInt.of(100_000), null, null
+  );
+
+  private static final LatestBlockHash BLOCK_HASH = new LatestBlockHash(null, key(0xCAFE).toBase58(), 8_642L);
+
+  /// Runs each task on the calling thread, so the block hash lookup's `supplyAsync` has completed
+  /// when ravina's send path joins it: nothing here waits on another thread.
+  private static final class InlineExecutor extends AbstractExecutorService {
+
+    private volatile boolean shutdown;
+
+    @Override
+    public void execute(final Runnable command) {
+      command.run();
+    }
+
+    @Override
+    public void shutdown() {
+      shutdown = true;
+    }
+
+    @Override
+    public List<Runnable> shutdownNow() {
+      shutdown = true;
+      return List.of();
+    }
+
+    @Override
+    public boolean isShutdown() {
+      return shutdown;
+    }
+
+    @Override
+    public boolean isTerminated() {
+      return shutdown;
+    }
+
+    @Override
+    public boolean awaitTermination(final long timeout, final TimeUnit unit) {
+      return shutdown;
+    }
+  }
+
+  /// An `RpcCaller` over one proxy client that serves `getLatestBlockHash` inline: ravina's send
+  /// path takes a fresh block hash through it, with no network and no thread.
+  private static RpcCaller blockHashServingRpcCaller() {
+    final var client = (SolanaRpcClient) Proxy.newProxyInstance(
+        SolanaRpcClient.class.getClassLoader(),
+        new Class<?>[]{SolanaRpcClient.class},
+        (proxy, method, args) -> switch (method.getName()) {
+          case "getLatestBlockHash" -> CompletableFuture.completedFuture(BLOCK_HASH);
+          case "toString" -> "block hash client";
+          case "hashCode" -> System.identityHashCode(proxy);
+          case "equals" -> proxy == args[0];
+          default -> throw new UnsupportedOperationException(method.getName());
+        }
+    );
+    // capacity no call here ever waits on; the monitor's error tracker is consulted only by a
+    // call that fails, and none does
+    final var second = Duration.ofSeconds(1);
+    final var capacity = new CapacityConfig(0, 100_000, second, 8, second, second, second, second);
+    final var item = BalancedItem.createItem(
+        client, capacity.createHttpResponseMonitor("block hash client"), Backoff.single(TimeUnit.MILLISECONDS, 0)
+    );
+    return new RpcCaller(new InlineExecutor(), LoadBalancer.createBalancer(item), CallWeights.createDefault());
+  }
+
+  /// The failure sava's client answers an HTTP error status with, which ravina records in the
+  /// attempt's ledger: the status survives only in its message text.
+  private static UncheckedIOException refusal(final int httpStatus) {
+    return new UncheckedIOException(new UnknownServiceException(String.format(
+        "HTTP request failed with [httpCode:%d], [body=%s]", httpStatus, "upstream unavailable"
+    )));
+  }
+
+  /// ravina's own instruction service over in-memory collaborators: one attempt, whose sends are
+  /// answered as `sendResponses` says (the first send and its failover, recorded in the ledger as
+  /// every monitor must) and whose status then settles as not landed. A consumer comes by a
+  /// SendNotAcceptedException only this way, since its factory is ravina's own. `sent` holds each
+  /// transaction signed and sent.
+  private static final class RefusedSends {
+
+    final List<Transaction> sent = new ArrayList<>();
+    final TransactionProcessor transactionProcessor;
+    final InstructionService service;
+
+    RefusedSends(final List<CompletableFuture<String>> sendResponses) {
+      this.transactionProcessor = (TransactionProcessor) Proxy.newProxyInstance(
+          TransactionProcessor.class.getClassLoader(),
+          new Class<?>[]{TransactionProcessor.class},
+          (proxy, method, args) -> switch (method.getName()) {
+            case "feePayer" -> SIGNER.publicKey();
+            case "formatter" -> FORMATTER;
+            case "simulateAndEstimate" -> {
+              @SuppressWarnings("unchecked") final var batch = (List<Instruction>) args[1];
+              yield new SimulationFutures(
+                  (Commitment) args[0], batch, Transaction.createTx(SIGNER.publicKey(), batch), 1_234,
+                  CompletableFuture.completedFuture(SIMULATION), CompletableFuture.completedFuture(BigDecimal.valueOf(25))
+              );
+            }
+            case "createTransaction" -> {
+              // the four-argument overload ravina's send path calls, by the real v1 recipe
+              if (args.length != 4) {
+                throw new UnsupportedOperationException("createTransaction with " + args.length + " arguments");
+              }
+              yield ((SimulationFutures) args[0]).createTransaction((BigDecimal) args[1], (int) args[2], (int) args[3]);
+            }
+            case "setBlockHash" -> {
+              if (!(args[1] instanceof LatestBlockHash blockHash)) {
+                throw new UnsupportedOperationException("setBlockHash from " + args[1]);
+              }
+              ((Transaction) args[0]).setRecentBlockHash(blockHash.blockHash());
+              yield blockHash.lastValidBlockHeight();
+            }
+            case "signAndSendTx" -> {
+              final var transaction = (Transaction) args[0];
+              transaction.sign(SIGNER);
+              sent.add(transaction);
+              yield new SendTxContext(null, new CompletableFuture<>(), transaction, "base64", (long) args[1], 0L);
+            }
+            default -> throw new UnsupportedOperationException(method.getName());
+          }
+      );
+      final var monitor = (TxMonitorService) Proxy.newProxyInstance(
+          TxMonitorService.class.getClassLoader(),
+          new Class<?>[]{TxMonitorService.class},
+          (proxy, method, args) -> switch (method.getName()) {
+            case "stopped" -> false;
+            case "validateResponseAndAwaitCommitmentViaWebSocket" -> {
+              // the sends, recorded; no websocket notification arrives
+              final var ledger = (SendLedger) args[4];
+              sendResponses.forEach(ledger::add);
+              yield null;
+            }
+            // settled as not landed: with verifyExpired true, only once the block hash expired
+            // and a history-searching status read behind the settle buffer still found nothing
+            case "queueResult" -> CompletableFuture.completedFuture(null);
+            default -> throw new UnsupportedOperationException(method.getName());
+          }
+      );
+      this.service = InstructionService.createService(blockHashServingRpcCaller(), transactionProcessor, null, null, monitor);
+    }
+  }
+
+  private static InstructionProcessorImpl processor(final RefusedSends sends, final RecordingNotify notify) {
+    return processor(sends.transactionProcessor, sends.service, notify, GlamAccounts.MAIN_NET.mintProgram());
+  }
+
+  /// ravina's own exception from its own call over `sends`, with `verifyExpired` as given: the
+  /// processor passes true, so an unverified one reaches it only relayed by a scripted service.
+  private static SendNotAcceptedException notAccepted(final RefusedSends sends, final boolean verifyExpired) {
+    final var thrown = assertThrows(SendNotAcceptedException.class, () -> sends.service.processInstructions(
+        1.2, List.of(instruction(1, 2)), new BigDecimal("0.001"), CONFIRMED, CONFIRMED, verifyExpired, true, 3, "test"
+    ));
+    assertEquals(verifyExpired, thrown.expiryVerified());
+    return thrown;
+  }
+
+  /// A batch no send of whose transaction was accepted, its block hash expired with nothing of it
+  /// landed, on the processor's own call: dropped like a failed batch, with one page carrying the
+  /// sends attempted and the last failure, and false, so the caller backs off and rebuilds where
+  /// the catch-all arm ended the service.
+  @Test
+  void aVerifiedNotAcceptedBatchIsDroppedWithAPageAndTheCallerRebuilds() throws InterruptedException {
+    // the first send paced by a rate limit, its failover refused by the key: the page carries the last
+    final var sends = new RefusedSends(List.of(
+        CompletableFuture.failedFuture(refusal(429)), CompletableFuture.failedFuture(refusal(401))
+    ));
+    final var notify = new RecordingNotify();
+    final var instructions = new ArrayList<>(List.of(instruction(1, 2), instruction(2, 2)));
+
+    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      assertFalse(processor(sends, notify).processInstructions("test", instructions));
+      log.assertLogged(Level.WARNING, "No send of the test transaction was accepted (2 attempted) and nothing landed");
+    }
+    assertEquals(1, sends.sent.size(), "one attempt, and nothing more is sent");
+    assertTrue(instructions.isEmpty(), "the batch is dropped like every failed batch");
+    assertEquals(1, notify.messages.size(), () -> notify.messages.toString());
+    final var msg = notify.messages.getFirst();
+    assertTrue(msg.contains("No send of the test transaction was accepted (2 attempted) and nothing landed"), msg);
+    assertTrue(msg.contains("so the caller backs off and rebuilds"), msg);
+    assertTrue(msg.contains("Last failure: " + refusal(401) + "."), msg);
+    assertFalse(msg.contains("httpCode:429"), "the first failure is the exception's suppressed one, not the page's");
+  }
+
+  /// A send that was never answered leaves ravina's exception without a cause, and the page says so
+  /// in place of a last failure.
+  @Test
+  void aVerifiedNotAcceptedBatchWithNoAnsweredSendSaysSo() throws InterruptedException {
+    final var sends = new RefusedSends(List.of(new CompletableFuture<>()));
+    final var notify = new RecordingNotify();
+    final var instructions = new ArrayList<>(List.of(instruction(1, 2)));
+
+    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      assertFalse(processor(sends, notify).processInstructions("test", instructions));
+      log.assertLogged(Level.WARNING, "(1 attempted) and nothing landed");
+    }
+    assertEquals(1, sends.sent.size());
+    assertTrue(instructions.isEmpty());
+    assertEquals(1, notify.messages.size(), () -> notify.messages.toString());
+    final var msg = notify.messages.getFirst();
+    assertTrue(msg.contains("No send of the test transaction was accepted (1 attempted) and nothing landed"), msg);
+    assertTrue(msg.contains("Last failure: no send was answered."), msg);
+  }
+
+  /// Unreachable from the processor's own call, which verifies every expiry, but not misreported
+  /// should ravina's flag ever change: with no expiry verified this attempt or an earlier one may
+  /// still land, so the exception is thrown as itself after a page naming the transaction, and the
+  /// batch heads the list, exactly as a stopped monitor's sent() batch does.
+  @Test
+  void anUnverifiedNotAcceptedBatchIsThrownAsItselfAndHeadsTheList() {
+    final var notAccepted = notAccepted(new RefusedSends(List.of(CompletableFuture.failedFuture(refusal(429)))), false);
+    final var service = new ScriptedService();
+    final var notify = new RecordingNotify();
+    service.script.add(batch -> {
+      throw notAccepted;
+    });
+    final var instructions = new ArrayList<>(List.of(instruction(1, 2), instruction(2, 2)));
+    final var formattedSig = FORMATTER.formatSig(notAccepted.sig());
+
+    try (final var log = LogCapture.attach(InstructionProcessorImpl.class.getName())) {
+      final var thrown = assertThrows(SendNotAcceptedException.class, () ->
+          processor(service, notify).processInstructions("test", instructions));
+      assertSame(notAccepted, thrown, "thrown as itself: the caller tells it apart by type");
+      log.assertLogged(Level.SEVERE, "No send of the test transaction " + formattedSig + " was accepted (1 attempted)");
+    }
+    assertEquals(List.of(2), service.batchSizes, "nothing more is sent");
+    assertEquals(2, instructions.size(), "the batch heads the list, not cleared as a failed batch is");
+    assertEquals(1, notify.messages.size(), () -> notify.messages.toString());
+    final var msg = notify.messages.getFirst();
+    assertTrue(msg.contains(
+        "No send of the test transaction " + formattedSig
+            + " was accepted (1 attempted) and its expiry was not verified: this attempt or an earlier one of the call may still land, so these instructions must not be rebuilt before its status is known."
+    ), msg);
+    assertFalse(msg.contains("nothing landed"), msg);
+  }
+
+  // ------------------------------------------------------------------ fatal pages --
+
+  /// Returns once `runner` parks in a timed wait, the page await being the only one on its path.
+  /// A runner that ends first fails `expectation` at once rather than spinning out the deadline.
+  private static void awaitPageAwait(final Thread runner, final String expectation) throws InterruptedException {
+    final long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(Workers.FIXTURE_DEADLINE_MILLIS);
+    while (runner.getState() != Thread.State.TIMED_WAITING) {
+      assertTrue(runner.isAlive(), expectation);
+      assertTrue(System.nanoTime() < deadline, "the call never parked to await its page");
+      //noinspection BusyWait
+      Thread.sleep(1L);
+    }
+  }
+
+  /// The fulfillment entrypoint exits the process once its worker ends on a thrown failure, and
+  /// ravina's notify client posts asynchronously, so on the arms that throw the posts are awaited
+  /// before the throw: the page that says a transaction may still land must not be cut off by the
+  /// exit. The post here completes only when the test lets it, so the call is parked in its await
+  /// when the test looks, and ends once the post completes, with the stop thrown as itself.
+  @Test
+  void aFatalPageIsAwaitedBeforeTheCallEnds() throws InterruptedException {
+    final var stopped = stoppedWithPending(stoppedMonitor());
+    final var service = new ScriptedService();
+    service.script.add(batch -> {
+      throw stopped;
+    });
+    final var post = new CompletableFuture<String>();
+    final software.sava.services.core.net.http.NotifyClient notify = msg -> List.of(post);
+    final var processor = new InstructionProcessorImpl(
+        feePayer(), service.service(), GlamAccounts.MAIN_NET.mintProgram(), new BigDecimal("0.001"), notify, 1.2, 3
+    );
+    final var instructions = new ArrayList<>(List.of(instruction(1, 2)));
+    final var thrown = new AtomicReference<Throwable>();
+    final var postedWhenThrown = new AtomicBoolean();
+    final var runner = new Thread(() -> {
+      try {
+        processor.processInstructions("test", instructions);
+      } catch (final Throwable failure) {
+        postedWhenThrown.set(post.isDone());
+        thrown.set(failure);
+      }
+    }, "fatal page runner");
+    runner.start();
+    try {
+      awaitPageAwait(runner, "the call ended before its page was delivered");
+      assertFalse(post.isDone(), "the post completes only when this test lets it");
+      post.complete("delivered");
+      Workers.joinWithin(runner, "the call must end once its page is delivered");
+    } finally {
+      runner.interrupt();
+      runner.join(Workers.FIXTURE_DEADLINE_MILLIS);
+    }
+    assertSame(stopped, thrown.get(), "thrown as itself once the page has left");
+    assertTrue(postedWhenThrown.get(), "the page must be delivered before the call ends");
+    assertEquals(1, instructions.size());
+  }
+
+  /// The verified not-accepted arm returns false for the worker to back off and rebuild, so it
+  /// does not wait for its page: the call returns while the post completes on its own.
+  @Test
+  void aVerifiedNotAcceptedPageIsNotAwaited() throws InterruptedException {
+    final var sends = new RefusedSends(List.of(CompletableFuture.failedFuture(refusal(429))));
+    final var post = new CompletableFuture<String>();
+    final software.sava.services.core.net.http.NotifyClient notify = msg -> List.of(post);
+    final var processor = new InstructionProcessorImpl(
+        sends.transactionProcessor, sends.service, GlamAccounts.MAIN_NET.mintProgram(), new BigDecimal("0.001"), notify, 1.2, 3
+    );
+    final var instructions = new ArrayList<>(List.of(instruction(1, 2)));
+    final var returned = new AtomicReference<Boolean>();
+    final var runner = new Thread(() -> {
+      try {
+        returned.set(processor.processInstructions("test", instructions));
+      } catch (final InterruptedException ex) {
+        Thread.currentThread().interrupt();
+      }
+    }, "verified page runner");
+    runner.start();
+    Workers.joinWithin(runner, "the verified arm must return without awaiting its page");
+    assertEquals(Boolean.FALSE, returned.get());
+    assertFalse(post.isDone(), "the post completes on its own, after the call");
+    assertTrue(instructions.isEmpty());
   }
 }

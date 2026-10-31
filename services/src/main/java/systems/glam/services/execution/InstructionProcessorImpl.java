@@ -8,6 +8,7 @@ import software.sava.rpc.json.http.response.IxError;
 import software.sava.rpc.json.http.response.TransactionError;
 import software.sava.services.core.net.http.NotifyClient;
 import software.sava.services.solana.transactions.InstructionService;
+import software.sava.services.solana.transactions.SendNotAcceptedException;
 import software.sava.services.solana.transactions.TransactionProcessor;
 import software.sava.services.solana.transactions.TransactionResult;
 import software.sava.services.solana.transactions.TxMonitorStoppedException;
@@ -18,6 +19,10 @@ import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
@@ -46,6 +51,52 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
     }
     accounts.add(key);
     return true;
+  }
+
+  /// How long [#fatalPage] awaits the posts of a page before the failure it reports is thrown: the
+  /// fulfillment entrypoint exits the process once its worker ends on such a failure, and ravina's
+  /// NotifyClientImpl posts asynchronously under WebHookClientImpl's 8 s request timeout, so the
+  /// page must leave first, and this bound covers that timeout.
+  private static final long FATAL_PAGE_DELIVERY_SECONDS = 10L;
+
+  /// Formats `event` with the batch, logs it at `level` with `failure` and posts it as a page,
+  /// returning the posts: empty when the notify client threw, since a notify client that throws
+  /// (ravina's does, with RejectedExecutionException, once its executor has shut down) loses the
+  /// page and nothing else: the lost page is logged at ERROR, and `failure` is neither replaced by
+  /// the notify failure nor given it as suppressed, since a ravina exception's instance is not this
+  /// call's alone: every dependent of the future the monitor failed sees it.
+  private List<CompletableFuture<String>> page(final System.Logger.Level level,
+                                               final String event,
+                                               final List<Instruction> ixBatch,
+                                               final Throwable failure) {
+    final var msg = FormatUtil.formatInstructionException(event, ixBatch);
+    logger.log(level, msg, failure);
+    try {
+      return notifyClient.postMsg(msg);
+    } catch (final RuntimeException notifyFailure) {
+      logger.log(ERROR, String.format("Failed to post the page: %s", event), notifyFailure);
+      return List.of();
+    }
+  }
+
+  /// [#page] at ERROR for a failure the call ends on, returned for the caller to throw once the
+  /// page's posts have completed or [#FATAL_PAGE_DELIVERY_SECONDS] have passed: the caller exits
+  /// the process on these failures, so the page must leave before the throw. A post that fails or
+  /// outlasts the bound is logged at ERROR and changes nothing else; an interrupt ends the wait
+  /// and is kept for the caller.
+  private <T extends Throwable> T fatalPage(final String event,
+                                            final List<Instruction> ixBatch,
+                                            final T failure) {
+    final var posts = page(ERROR, event, ixBatch, failure);
+    try {
+      CompletableFuture.allOf(posts.toArray(new CompletableFuture<?>[0]))
+          .get(FATAL_PAGE_DELIVERY_SECONDS, TimeUnit.SECONDS);
+    } catch (final TimeoutException | ExecutionException ex) {
+      logger.log(ERROR, String.format("The page may not have been delivered: %s", event), ex);
+    } catch (final InterruptedException ex) {
+      Thread.currentThread().interrupt();
+    }
+    return failure;
   }
 
   @Override
@@ -133,34 +184,58 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
         // nothing sent can land. The page says which, and the exception is thrown as itself so
         // that the caller tells it apart by type instead of treating the batch as failed and
         // rebuilding it; ravina refuses every later call on that monitor the same way.
-        final var msg = FormatUtil.formatInstructionException(
-            stopped.sent()
+        throw fatalPage(stopped.sent()
                 ? String.format(
                 "Transaction monitor stopped; %s transaction %s may still land until block height %s passes, so these instructions must not be rebuilt before its status is known.",
-                logContext, stopped.sig(), Long.toUnsignedString(stopped.lastValidBlockHeight())
+                logContext,
+                transactionProcessor.formatter().formatSig(stopped.sig()),
+                Long.toUnsignedString(stopped.lastValidBlockHeight())
             )
                 : String.format("Transaction monitor stopped; nothing sent for %s can still land.", logContext),
-            ixBatch
+            ixBatch, stopped
         );
-        logger.log(ERROR, msg, stopped);
-        try {
-          notifyClient.postMsg(msg);
-        } catch (final RuntimeException notifyFailure) {
-          // A page that cannot be posted must not replace the stop: its type, sent(), sig() and
-          // lastValidBlockHeight() are the caller's, and the log above carries what the page
-          // would have said. Not attached as suppressed, since the instance is not this call's
-          // alone: every dependent of the future the monitor failed sees it.
-          logger.log(ERROR, "Failed to post the stopped-monitor page.", notifyFailure);
+      } catch (final SendNotAcceptedException notAccepted) {
+        if (notAccepted.expiryVerified()) {
+          // Every send of this batch's transaction was refused (a 429, a 401, a 5xx), timed out or
+          // went unanswered, and its block hash then expired with nothing of the call landed, so a
+          // rebuild cannot execute these instructions twice: the batch is dropped like any failed
+          // batch, and the caller backs off before it re-fetches state and rebuilds. The cause is
+          // not classified (a 401 to fix against a 429 to wait out): the send clients are a load
+          // balancer that fails a refused send over to the next peer and sinks a peer that keeps
+          // refusing, so this exception means no peer accepted for a whole window, the HTTP status
+          // survives only in the text of sava's exception message, and a rethrow would end the
+          // service, which its supervisor restarts into the same refusal. A verified expiry
+          // therefore always rebuilds, and the page carrying the cause is what tells an operator
+          // a key from a rate limit.
+          final var cause = notAccepted.getCause();
+          // posted, not awaited: the worker goes on, to back off and rebuild, and the post
+          // completes on its own
+          page(WARNING, String.format(
+                  "No send of the %s transaction was accepted (%d attempted) and nothing landed: its block hash expired with nothing of this batch on chain, so the caller backs off and rebuilds. Last failure: %s.",
+                  logContext, notAccepted.attempted(), cause == null ? "no send was answered" : cause
+              ),
+              ixBatch, notAccepted
+          );
+          // dropped like every failed batch, under the invariant the clear below the try states:
+          // the caller re-fetches state and rebuilds, and the size-limit halving never sees it
+          ixBatch.clear();
+          return false;
         }
-        throw stopped;
-      } catch (final RuntimeException ex) {
-        final var msg = FormatUtil.formatInstructionException(
-            String.format("Failed to process %s instructions.", logContext),
-            ixBatch
+        // Unreachable from here, which passes verifyExpired true, but not misreported should that
+        // flag ever change: the attempt's status was only missing, so this attempt or an earlier
+        // one of the call may still land, and the batch is treated exactly like a stopped
+        // monitor's sent() case: paged with its transaction, left at the head of the list, and the
+        // exception thrown as itself.
+        throw fatalPage(String.format(
+                "No send of the %s transaction %s was accepted (%d attempted) and its expiry was not verified: this attempt or an earlier one of the call may still land, so these instructions must not be rebuilt before its status is known.",
+                logContext,
+                transactionProcessor.formatter().formatSig(notAccepted.sig()),
+                notAccepted.attempted()
+            ),
+            ixBatch, notAccepted
         );
-        logger.log(ERROR, msg, ex);
-        notifyClient.postMsg(msg);
-        throw ex;
+      } catch (final RuntimeException ex) {
+        throw fatalPage(String.format("Failed to process %s instructions.", logContext), ixBatch, ex);
       }
 
       // formatted before the batch is cleared below: ravina's result has kept its own copy of the
