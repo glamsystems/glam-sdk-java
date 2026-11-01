@@ -1,12 +1,11 @@
 package systems.glam.services.execution;
 
 import org.junit.jupiter.api.Test;
+import software.sava.rpc.json.http.response.HttpResponseException;
 import software.sava.services.core.net.http.NotifyClient;
 import systems.glam.services.tests.LogCapture;
 import systems.glam.services.tests.Workers;
 
-import java.io.UncheckedIOException;
-import java.net.UnknownServiceException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,7 +31,7 @@ final class PagesTests {
   @Test
   void aThrowableWithNoMessageLeftIsItsClassAlone() {
     assertEquals("IllegalStateException", Pages.summarize(new IllegalStateException()));
-    assertEquals("IllegalStateException", Pages.summarize(new IllegalStateException(" \t\u0001\\ \n")));
+    assertEquals("IllegalStateException", Pages.summarize(new IllegalStateException(" \t\u0001\u0085 \n")));
   }
 
   /// Every run of whitespace, line breaks included, becomes one space, so a multi-line message (the
@@ -48,13 +47,14 @@ final class PagesTests {
     assertEquals("IllegalStateException: rpc down", Pages.summarize(new IllegalStateException("\n  rpc \t\r\n down \n")));
   }
 
-  /// Every control character, C0 and C1, and every backslash is removed, since ravina's webhook
-  /// escape rewrites only the quote and the newline into the webhook's JSON. Whitespace is
-  /// collapsed first, so a tab inside a word becomes a space, not nothing.
+  /// Every control character, C0 and C1, is removed, since a summary is one line of printable
+  /// text (DEL and the C1 controls are valid raw JSON, so they go for the reader, not for the
+  /// webhook); a backslash stays, since ravina's client escapes it for the webhook's JSON.
+  /// Whitespace is collapsed first, so a tab inside a word becomes a space, not nothing.
   @Test
-  void controlCharactersAndBackslashesAreRemoved() {
+  void controlCharactersAreRemovedAndABackslashIsKept() {
     assertEquals(
-        "IllegalStateException: code 7 an escape, a nul and a C1 control backslash",
+        "IllegalStateException: code 7 an escape, a nul and a C1 control back\\slash",
         Pages.summarize(new IllegalStateException(
             "code\t7 an escape,\u001B a nul\u0000 and a C1\u0085 control back\\slash"
         ))
@@ -63,15 +63,13 @@ final class PagesTests {
 
   /// A failed request of sava's HTTP clients carries the provider's body in its message, behind the
   /// status that tells a key to fix from a rate to wait out: the status is kept, the body never,
-  /// however short.
+  /// however short. The failure is sava's typed one, whose message is still its cause's text.
   @Test
   void anHttpFailureIsSummarizedWithoutItsBody() {
-    final var failure = new UncheckedIOException(new UnknownServiceException(
-        "HTTP request failed with [httpCode:401], [body={\"error\":\"invalid api key 5ecret\"}]"
-    ));
+    final var failure = HttpResponseException.of(401, "{\"error\":\"invalid api key 5ecret\"}", null);
     final var summary = Pages.summarize(failure);
     assertEquals(
-        "UncheckedIOException: java.net.UnknownServiceException: HTTP request failed with [httpCode:401], [body omitted]",
+        "HttpResponseException: java.net.UnknownServiceException: HTTP request failed with [httpCode:401], [body omitted]",
         summary
     );
     assertFalse(summary.contains("5ecret"), summary);
@@ -114,17 +112,18 @@ final class PagesTests {
     assertEquals(List.of("the page"), messages);
   }
 
-  /// What the webhook's JSON cannot carry unescaped leaves the page before it is posted: a
-  /// backslash and a C0 control other than the newline, which ravina's escape rewrites.
+  /// A page is posted as it is: a backslash or a control character, which the webhook's JSON
+  /// cannot carry raw, is ravina's client's to escape, not this module's to strip, so a vault's
+  /// on-chain name reaches the page whole.
   @Test
-  void aPostCarriesNoBackslashOrStrayControlCharacter() {
+  void aPostCarriesTheMessageAsGiven() {
     final var messages = new ArrayList<String>();
     final NotifyClient recording = msg -> {
       messages.add(msg);
       return List.of();
     };
     Pages.post(recording, "Alpha\\Beta\tended\r\nline two\u0001", LOGGER, "the event");
-    assertEquals(List.of("AlphaBetaended\nline two"), messages);
+    assertEquals(List.of("Alpha\\Beta\tended\r\nline two\u0001"), messages);
   }
 
   /// A client that throws (ravina's does, with RejectedExecutionException, once its executor has

@@ -110,15 +110,15 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
   /// the loop fails or this thread is interrupted. An interrupt is a shutdown: the loop ends
   /// quietly, and the interrupt is kept, whether it arrived as an `InterruptedException` or
   /// wrapped in the failure of a fetch, which [#causedByInterrupt] tells from a failure (ravina's
-  /// balanced call rethrows an interrupt of the fetch as a `RuntimeException` around it, with the
-  /// flag cleared). Any other end is a failure the loop does not survive: it is logged at ERROR,
+  /// balanced call rethrows an interrupt of the fetch as a `RuntimeException` around it, the flag
+  /// restored). Any other end is a failure the loop does not survive: it is logged at ERROR,
   /// naming it, and posted as one page saying that the loop has ended on it and that the process
   /// exits for a supervisor to restart it, which is what the fulfillment entrypoint does as soon
   /// as this returns; the page's posts are awaited for at most [Pages#PAGE_DELIVERY_SECONDS]
   /// first, so that the exit does not cut them off. A failure the instruction processor has
-  /// already paged (a stopped transaction monitor, a send no peer accepted whose expiry was not
-  /// verified, any other failure of a send) is therefore paged twice, its own page and then this
-  /// one: a duplicate the owner accepts.
+  /// already paged (a publication verdict a transaction of which may still land, a stopped
+  /// transaction monitor, any other failure of a send) is therefore paged twice, its own page and
+  /// then this one: a duplicate the owner accepts.
   @Override
   public final void run() {
     try {
@@ -145,10 +145,10 @@ public abstract class BaseFulfillmentService extends BaseDelegateService
 
   /// Whether `failure` is, or wraps at any depth of its cause chain, an `InterruptedException`:
   /// the shutdown interrupt surfacing through a blocking fetch, which ravina's
-  /// UncheckedBalancedCall rethrows as `RuntimeException(InterruptedException)` with the flag
-  /// cleared, told the way AccountFetcherImpl tells it (ravina's transaction monitor reads only a
-  /// cause and its cause). A cycle in the chain, which `initCause` permits between two or more
-  /// throwables, ends the walk.
+  /// UncheckedBalancedCall rethrows as `RuntimeException(InterruptedException)`, the flag
+  /// restored since ravina 25.8.0 and the cause read here all the same, the way AccountFetcherImpl
+  /// reads it (ravina's transaction monitor reads only a cause and its cause). A cycle in the
+  /// chain, which `initCause` permits between two or more throwables, ends the walk.
   static boolean causedByInterrupt(final Throwable failure) {
     return causedByInterrupt(failure, Collections.newSetFromMap(new IdentityHashMap<>()));
   }

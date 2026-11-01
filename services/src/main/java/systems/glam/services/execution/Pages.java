@@ -47,22 +47,18 @@ public final class Pages {
   /// A run of whitespace, line breaks included, which [#summarize] collapses to one space.
   private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
-  /// What ravina's NotifyClientImpl.escape leaves as it is although the webhook's JSON cannot carry
-  /// it unescaped: it rewrites only `"` and a newline, so a C0 control character other than the
-  /// newline, or a backslash, in a page makes the JSON invalid and the page is lost, while the
-  /// webhook's 400 completes the post normally. [#post] removes these from every page; the
-  /// root fix belongs to ravina's escape.
-  private static final Pattern UNESCAPED = Pattern.compile("[\\x00-\\x09\\x0B-\\x1F\\\\]");
-
-  /// Every control character, C0 and C1, which [#summarize] removes from a throwable's message
-  /// beyond [#UNESCAPED]: a summary is one line of printable text.
+  /// Every control character, C0 and C1, which [#summarize] removes from a throwable's message:
+  /// a summary is one line of printable text. What the webhook's JSON cannot carry raw is
+  /// ravina's to escape, not this module's to strip: its NotifyClientImpl escapes the quote, the
+  /// backslash and every character below U+0020 (since ravina 25.8.0), so [#post] posts a page
+  /// as it is.
   private static final Pattern CONTROLS = Pattern.compile("\\p{Cc}");
 
   /// A bounded, single-line summary of `failure` for a page, the whole throwable being the log's:
   /// its simple class name, then its message cut at [#HTTP_BODY_MARKER] with `[body omitted]` in
   /// the body's place, collapsed to one line (every run of whitespace, line breaks included,
   /// becomes one space, so a multi-line message keeps every line), less every control character
-  /// and backslash, and cut to [#THROWABLE_SUMMARY_LENGTH] code points with an ASCII `...` after
+  /// ([#CONTROLS]), and cut to [#THROWABLE_SUMMARY_LENGTH] code points with an ASCII `...` after
   /// the cut, which never splits a surrogate pair. A throwable with no message, or with nothing
   /// left of it, is summarized by its class name alone.
   public static String summarize(final Throwable failure) {
@@ -76,7 +72,7 @@ public final class Pages {
       message = message.substring(0, body) + "[body omitted]";
     }
     message = WHITESPACE.matcher(message).replaceAll(" ");
-    message = CONTROLS.matcher(UNESCAPED.matcher(message).replaceAll("")).replaceAll("").strip();
+    message = CONTROLS.matcher(message).replaceAll("").strip();
     if (message.isEmpty()) {
       return name;
     }
@@ -86,11 +82,11 @@ public final class Pages {
     return name + ": " + message;
   }
 
-  /// Posts `msg` through `client`, less what the webhook's JSON cannot carry ([#UNESCAPED]: a
-  /// vault's on-chain name or a program log may hold a backslash or a stray control character,
-  /// and a page lost to a 400 is worse than one missing a character), and returns its posts, with
-  /// none for a null list or a null element: the notify client is anyone's implementation, and a null out of it must not become
-  /// a NullPointerException in place of what the caller was about to do. None either when the
+  /// Posts `msg` through `client` as it is (a vault's on-chain name or a program log may hold a
+  /// backslash or a control character, which ravina's client escapes for the webhook's JSON), and
+  /// returns its posts, with none for a null list or a null element: the notify client is
+  /// anyone's implementation, and a null out of it must not become a NullPointerException in
+  /// place of what the caller was about to do. None either when the
   /// client threw, since a client that throws (ravina's does, with RejectedExecutionException,
   /// once its executor has shut down) loses the page and nothing else: the loss is logged at ERROR
   /// to `logger` under `event`, and the caller's own failure, if it has one, is neither replaced
@@ -101,7 +97,7 @@ public final class Pages {
                                                      final String event) {
     final List<CompletableFuture<String>> posts;
     try {
-      posts = client.postMsg(UNESCAPED.matcher(msg).replaceAll(""));
+      posts = client.postMsg(msg);
     } catch (final RuntimeException notifyFailure) {
       logger.log(ERROR, String.format("Failed to post the page: %s", event), notifyFailure);
       return List.of();

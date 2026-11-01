@@ -49,18 +49,19 @@ public interface ExecutionServiceContext {
   long medianMillisPerSlot();
 
   /// [InstructionProcessor#processInstructions(String, List)] on [#instructionProcessor()], whose
-  /// contract applies here: a transaction monitor that has stopped ends the call with
-  /// [software.sava.services.solana.transactions.TxMonitorStoppedException], thrown as itself,
-  /// whose `sent()` says whether the batch at the head of `instructions` may still land, until its
-  /// `lastValidBlockHeight()` passes, so that a rebuild before then can execute it twice (whether
-  /// to rebuild is the caller's own; the fulfillment service exits for a supervisor restart, which
-  /// does, since the on-chain fulfill tolerates a duplicate), a batch no send of which was
-  /// accepted ends it with [software.sava.services.solana.transactions.SendNotAcceptedException]
-  /// when its expiry was not verified, and an instruction that cannot fit a transaction even alone
-  /// ends it with an `IllegalStateException`, thrown by a check on the instruction alone before any
-  /// send, so that a rebuilt list meets it again on every pass; a catch of `RuntimeException` that
-  /// retries must exclude all three. Each is thrown after a best-effort wait, of up to
-  /// [Pages#PAGE_DELIVERY_SECONDS], for the posts of its page.
+  /// contract applies here: a send that ends ravina's call without a result ends this one with
+  /// its sealed [software.sava.services.solana.transactions.PublicationException], thrown as
+  /// itself when its `mayStillLand()` is true, since the batch at the head of `instructions` may
+  /// still land until its `landableUntil()` passes and a rebuild before then can execute it twice
+  /// (whether to rebuild is the caller's own; the fulfillment service exits for a supervisor
+  /// restart, which does, since the on-chain fulfill tolerates a duplicate), and when it is a
+  /// [software.sava.services.solana.transactions.TxMonitorStoppedException], on which the service
+  /// should exit; every other verdict, nothing of whose batch landed or can land, drops the batch
+  /// and returns false for the caller to back off and rebuild. An instruction that cannot fit a
+  /// transaction even alone ends the call with an `IllegalStateException`, thrown by a check on
+  /// the instruction alone before any send, so that a rebuilt list meets it again on every pass.
+  /// A catch of `RuntimeException` that retries must exclude all three. Each is thrown after a
+  /// best-effort wait, of up to [Pages#PAGE_DELIVERY_SECONDS], for the posts of its page.
   boolean processInstructions(final String logContext,
                               final List<Instruction> instructions) throws InterruptedException;
 

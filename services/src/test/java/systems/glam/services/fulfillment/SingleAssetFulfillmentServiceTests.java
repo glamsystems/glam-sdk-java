@@ -651,8 +651,9 @@ final class SingleAssetFulfillmentServiceTests {
   // --- an interrupt during a fetch ------------------------------------------
   //
   // ravina's UncheckedBalancedCall.get rethrows an interrupt of the fetch as a RuntimeException
-  // around the InterruptedException, with the flag cleared, so the loop meets a shutdown as the
-  // failure of a fetch: it is a shutdown all the same.
+  // around the InterruptedException (the flag restored since ravina 25.8.0; the loop reads the
+  // cause either way), so the loop meets a shutdown as the failure of a fetch: it is a shutdown
+  // all the same.
 
   /// An interrupt wrapped in the fetch's failure ends the loop quietly, with the flag re-set for
   /// the caller: one DEBUG record, nothing at ERROR, and no page.

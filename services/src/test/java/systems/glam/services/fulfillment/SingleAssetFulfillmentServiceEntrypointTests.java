@@ -359,11 +359,12 @@ final class SingleAssetFulfillmentServiceEntrypointTests {
     }
   }
 
-  /// A loop that swallows its interrupt, as ravina 25.7.0's EpochInfoServiceImpl can (its
-  /// balanced call rethrows the interrupt wrapped, without the flag, and the loop backs off and
-  /// retries), must not hold run() once the worker has ended: run() interrupts it and returns
-  /// without awaiting it, and main exits the process. The stub here catches its interrupt and
-  /// blocks again, on a latch only this test's finally releases.
+  /// A loop that swallows its interrupt (as ravina's epoch loop could before 25.8.0, when its
+  /// balanced call rethrew the interrupt wrapped without restoring the flag and the loop backed
+  /// off and retried; any loop a deployment adds may) must not hold run() once the worker has
+  /// ended: run() interrupts it and returns without awaiting it, and main exits the process. The
+  /// stub here catches its interrupt and blocks again, on a latch only this test's finally
+  /// releases.
   @Test
   void runReturnsOnceTheFulfillmentServiceEndsThoughALoopSwallowsItsInterrupt() throws InterruptedException {
     final var closed = new CountDownLatch(1);

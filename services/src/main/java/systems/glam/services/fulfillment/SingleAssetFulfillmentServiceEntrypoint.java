@@ -270,8 +270,9 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
       txMonitorService.run(executorService);
       final var fulfillment = executorService.submit(fulfillmentService);
       // Returns as soon as the worker ends, without waiting for a transaction it left pending:
-      // one may still land (TxMonitorStoppedException) while the restarted process rebuilds and
-      // sends fulfill again, and the on-chain fulfill instruction tolerates being executed twice.
+      // one may still land (a publication verdict whose mayStillLand() is true, a stopped
+      // monitor's among them) while the restarted process rebuilds and sends fulfill again, and
+      // the on-chain fulfill instruction tolerates being executed twice.
       for (; ; ) {
         webSocketManager.checkConnection();
         try {
@@ -298,10 +299,7 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
       // Interrupts the epoch service's and the monitor's loops, which end only on an interrupt,
       // and the worker's after an interrupt of this thread, then returns without awaiting any of
       // them: main exits the process as soon as this returns, so nothing a loop still does
-      // matters, and a loop that swallows its interrupt would hold a wait here for good. Ravina
-      // 25.7.0's EpochInfoServiceImpl can: its balanced call rethrows an interrupt wrapped in a
-      // RuntimeException without restoring the flag, which the loop takes for a failed fetch to
-      // back off from and retry.
+      // matters, and a wait here would only hold the exit for it.
       executorService.shutdownNow();
       webSocketManager.close();
     }

@@ -7,10 +7,12 @@ import software.sava.core.tx.Transaction;
 import software.sava.rpc.json.http.response.IxError;
 import software.sava.rpc.json.http.response.TransactionError;
 import software.sava.services.core.net.http.NotifyClient;
+import software.sava.services.solana.config.ChainItemFormatter;
 import software.sava.services.solana.transactions.InstructionService;
-import software.sava.services.solana.transactions.SendNotAcceptedException;
+import software.sava.services.solana.transactions.PublicationException;
 import software.sava.services.solana.transactions.TransactionProcessor;
 import software.sava.services.solana.transactions.TransactionResult;
+import software.sava.services.solana.transactions.TxAttempt;
 import software.sava.services.solana.transactions.TxMonitorStoppedException;
 import systems.glam.sdk.idl.programs.glam.protocol.gen.GlamProtocolError;
 
@@ -54,9 +56,8 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
   /// Logs `msg` at `level` with `failure` and posts it as a page through [Pages#post], guarded as
   /// every page of this module is: a notify client that answers null, or throws (ravina's does,
   /// with RejectedExecutionException, once its executor has shut down), loses the page and nothing
-  /// else, so that `failure` is neither replaced by the notify failure nor given it as suppressed,
-  /// since a ravina exception's instance is not this call's alone: every dependent of the future
-  /// the monitor failed sees it.
+  /// else, so that `failure` is neither replaced by the notify failure nor given it as suppressed:
+  /// the failure is the caller's to throw as it arrived, and a lost page is the log's.
   private List<CompletableFuture<String>> post(final System.Logger.Level level,
                                                final String event,
                                                final String msg,
@@ -87,6 +88,64 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
                                             final List<Instruction> ixBatch,
                                             final T failure) {
     return fatalPost(event, FormatUtil.formatInstructionException(event, ixBatch), failure);
+  }
+
+  /// The level of the page of a batch nothing of which landed or can land, by the verdict's
+  /// reason: ERROR for [PublicationException.Reason#UNAUTHORIZED], a key, plan or allow-list
+  /// refusal that no backoff and no restart clears and an operator must; WARNING for every other
+  /// reason, which the caller's backoff paces (a rate limit, a server error, a peer unreachable
+  /// or unanswering, any other refusal). A refusal that lasts therefore pages once per attempt,
+  /// at the fulfillment loop's cadence, and never more often: the processor keeps no count and
+  /// no clock, and a cap on that cadence is the owner's call, not taken here.
+  /// [PublicationException.Reason#MONITOR_STOPPED] never reaches this choice, since a stopped
+  /// monitor ends the call. Ravina reads the reason from the HTTP status sava-rpc carries since
+  /// 25.13.2, a JSON-RPC error code, or a `retry-after` hint; which statuses read `UNAUTHORIZED`
+  /// (a 401 and a 403 among them) is ravina's table, not this module's.
+  static System.Logger.Level dropLevel(final PublicationException.Reason reason) {
+    return reason == PublicationException.Reason.UNAUTHORIZED ? ERROR : WARNING;
+  }
+
+  /// The failed sends of `failed`'s last attempt for a page, each as its bounded summary (the log
+  /// beside the page has the whole throwable): ravina's cause, the last failed send, then the
+  /// first when ravina attached it as suppressed, since a 401 on one peer behind 429s on the next
+  /// must not read as a rate limit alone; "no send was answered" for a verdict without a cause,
+  /// every send of which went unanswered.
+  static String failures(final PublicationException failed) {
+    final var cause = failed.getCause();
+    if (cause == null) {
+      return "no send was answered";
+    }
+    final var suppressed = failed.getSuppressed();
+    return suppressed.length == 0
+        ? Pages.summarize(cause)
+        : Pages.summarize(cause) + "; first failure: " + Pages.summarize(suppressed[0]);
+  }
+
+  /// `sig` as `formatter` renders it, or bare when the formatter throws: the formatter is
+  /// configuration (a `sigFormat` with the wrong conversion throws on every signature, and ravina
+  /// keeps it out of its verdicts for that reason), and the page that says what may still land
+  /// must not be lost to it.
+  static String formatOrBare(final ChainItemFormatter formatter, final String sig) {
+    try {
+      return formatter.formatSig(sig);
+    } catch (final RuntimeException ex) {
+      return sig;
+    }
+  }
+
+  /// The page of a verdict a transaction of which may still land: `logContext`, ravina's message,
+  /// which says how the call ended and what may land until when, each landable transaction as
+  /// the formatter renders it (ravina prints base58; see [#formatOrBare]), and the rebuild caveat.
+  private String landablePage(final String logContext, final PublicationException failed) {
+    final var formatter = transactionProcessor.formatter();
+    final var landable = failed.landable().stream()
+        .map(TxAttempt::sig)
+        .map(sig -> formatOrBare(formatter, sig))
+        .collect(Collectors.joining(", "));
+    return String.format(
+        "%s: %s May still land: %s. A rebuild before block height %s passes can execute these instructions twice.",
+        logContext, failed.getMessage(), landable, Long.toUnsignedString(failed.landableUntil())
+    );
   }
 
   @Override
@@ -168,75 +227,50 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
             maxRetries,
             logContext
         );
-      } catch (final TxMonitorStoppedException stopped) {
-        // The monitor that would have settled this batch has stopped and does not restart. With
-        // sent() the batch's outcome is unknown: the transaction named may still land until its
-        // block hash expires, and a rebuild before then can execute these instructions twice;
-        // without it nothing sent can land. The page says which, and the exception is thrown as
-        // itself so that the caller tells it apart by type and decides about a rebuild for itself
-        // rather than treating the batch as failed and rebuilding it as one (the fulfillment
-        // service exits for a supervisor restart, which rebuilds, since the on-chain fulfill
-        // tolerates a duplicate); ravina refuses every later call on that monitor the same way.
-        throw fatalPage(stopped.sent()
-                ? String.format(
-                "Transaction monitor stopped; %s transaction %s may still land until block height %s passes: a rebuild before then can execute these instructions twice.",
-                logContext,
-                transactionProcessor.formatter().formatSig(stopped.sig()),
-                Long.toUnsignedString(stopped.lastValidBlockHeight())
-            )
-                : String.format("Transaction monitor stopped; nothing sent for %s can still land.", logContext),
-            ixBatch, stopped
-        );
-      } catch (final SendNotAcceptedException notAccepted) {
-        if (notAccepted.expiryVerified()) {
-          // Every send of this batch's transaction was refused (a 429, a 401, a 5xx), timed out or
-          // went unanswered, and its block hash then expired with nothing of the call landed, so a
-          // rebuild cannot execute these instructions twice: the batch is dropped like any failed
-          // batch, and the caller backs off before it re-fetches state and rebuilds. The cause is
-          // not classified (a 401 to fix against a 429 to wait out): the send clients are a load
-          // balancer that fails a refused send over to the next peer and sinks a peer that keeps
-          // refusing, so this exception means no peer accepted for a whole window, the HTTP status
-          // survives only in the text of sava's exception message, and a rethrow would end the
-          // service, which its supervisor restarts into the same refusal. A verified expiry
-          // therefore always rebuilds, and the page carrying the cause is what tells an operator
-          // a key from a rate limit.
-          final var cause = notAccepted.getCause();
-          // ravina's cause is the last failed send; the first is attached as suppressed when it
-          // is another one, and a 401 on one peer followed by 429s on the next must not read as a
-          // rate limit alone
-          final var suppressed = notAccepted.getSuppressed();
-          final var first = suppressed.length == 0 ? null : suppressed[0];
-          final var failures = cause == null
-              ? "no send was answered"
-              : first == null
-              ? Pages.summarize(cause)
-              : Pages.summarize(cause) + "; first failure: " + Pages.summarize(first);
-          // posted, not awaited: the worker goes on, to back off and rebuild, and the post
-          // completes on its own
-          page(WARNING, String.format(
-                  "No send of the %s transaction was accepted (%d attempted) and nothing landed: its block hash expired with nothing of this batch on chain, so the caller backs off and rebuilds. Last failure: %s.",
-                  logContext, notAccepted.attempted(), failures
-              ),
-              ixBatch, notAccepted
-          );
-          // dropped like every failed batch, under the invariant the clear below the try states:
-          // the caller re-fetches state and rebuilds, and the size-limit halving never sees it
-          ixBatch.clear();
-          return false;
+      } catch (final PublicationException failed) {
+        // ravina's one verdict for a call that ends without a result after a send, or that a
+        // stopped monitor refused. Its accessors decide, in this order: whether anything the call
+        // sent may still land, then whether the monitor stopped, then why nothing landed.
+        if (failed.mayStillLand()) {
+          // The batch's outcome is unknown: a transaction it sent may still land until the
+          // settled block height passes its last valid height, and a rebuild before then can
+          // execute these instructions twice. Thrown as itself, the batch left at the head of
+          // the list, so that the caller tells it apart by type and decides about a rebuild for
+          // itself rather than treating the batch as failed and rebuilding it as one (the
+          // fulfillment service exits for a supervisor restart, which rebuilds, since the
+          // on-chain fulfill tolerates a duplicate).
+          throw fatalPage(landablePage(logContext, failed), ixBatch, failed);
         }
-        // Unreachable from here, which passes verifyExpired true, but not misreported should that
-        // flag ever change: the attempt's status was only missing, so this attempt or an earlier
-        // one of the call may still land, and the batch is treated exactly like a stopped
-        // monitor's sent() case: paged with its transaction, left at the head of the list, and the
-        // exception thrown as itself.
-        throw fatalPage(String.format(
-                "No send of the %s transaction %s was accepted (%d attempted) and its expiry was not verified: this attempt or an earlier one of the call may still land, and a rebuild before its status is known can execute these instructions twice.",
-                logContext,
-                transactionProcessor.formatter().formatSig(notAccepted.sig()),
-                notAccepted.attempted()
+        if (failed instanceof TxMonitorStoppedException) {
+          // Nothing sent can land, but the monitor that would have settled this batch has
+          // stopped and does not restart, and ravina refuses every later call on it the same
+          // way: thrown as itself, for the service to exit.
+          throw fatalPage(String.format("Transaction monitor stopped; nothing sent for %s can still land.", logContext), ixBatch, failed);
+        }
+        // Nothing of this batch landed or can land: no send of its last attempt was accepted
+        // (refused, paced, timed out or unanswered) and its block hash then expired with nothing
+        // of the call on chain, or no send of its last attempt reached a server. Dropped like any failed
+        // batch, so that the caller backs off, re-fetches state and rebuilds, which cannot
+        // execute these instructions twice: the send clients are a load balancer that routes
+        // around a refusing peer, a send that never left arrives within a round of connection
+        // attempts and the loop's backoff paces its retry, and a rethrow would end the service
+        // for a supervisor to restart it into the same refusal or outage. The page is what tells
+        // an operator a key to fix from a rate to wait out, by the verdict's reason, the classes
+        // of the last attempt's failed sends, and the failures it names; posted, not awaited,
+        // since the worker goes on and the post completes on its own.
+        // present on every verdict that reaches here: only a stop refused before the call's first
+        // attempt names no attempt, and the stop was told above
+        final var sends = failed.lastAttempt().orElseThrow().sends();
+        page(dropLevel(failed.reason()), String.format(
+                "Nothing of the %s transaction landed or can land [reason=%s] [failures=%s] [attempted=%d]; the caller backs off and rebuilds. Last failure: %s.",
+                logContext, failed.reason(), sends.failures(), sends.attempted(), failures(failed)
             ),
-            ixBatch, notAccepted
+            ixBatch, failed
         );
+        // dropped like every failed batch, under the invariant the clear below the try states:
+        // the caller re-fetches state and rebuilds, and the size-limit halving never sees it
+        ixBatch.clear();
+        return false;
       } catch (final RuntimeException ex) {
         throw fatalPage(String.format("Failed to process %s instructions.", logContext), ixBatch, ex);
       }
