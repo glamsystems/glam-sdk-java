@@ -301,7 +301,12 @@ no `glamMappingsDir` is set and that no `org.gradle.dependency.verification`
 (or `systemProp.org.gradle.dependency.verification`) line sits in
 `~/.gradle/gradle.properties` before certifying: that line decides whether the
 PIT and Jazzer artifacts the campaigns resolve are verified at all, and
-`verificationPolicy` cannot see it. `pitestServices` also covers
+`verificationPolicy` cannot see it. `verificationKeyStatus` runs beside
+`hardeningCertify` from the same worktree: it asks the key servers about every
+key the committed verification policy trusts, so it needs the network and is
+no CI step; a revoked key still trusted without a version, or a key a server
+left undecided, fails it, and its receipt is
+`build/reports/verification/key-status.tsv`. `pitestServices` also covers
 `:sdk` API changes it calls, so a change under `sdk/` that `services` reaches
 owes both suites.
 
