@@ -1,5 +1,31 @@
 # Changelog
 
+## [25.23.0](https://github.com/glamsystems/glam-sdk-java/compare/25.22.0...25.23.0) (2026-11-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **services:** InstructionProcessor.processInstructions ends a batch on ravina's sealed PublicationException: a verdict whose mayStillLand() is true, and a stopped monitor's, are thrown as themselves; every other, a send that never left included, drops the batch and returns false. The ravina 25.7.0 verdicts and their accessors are gone.
+* **sdk:** retire the staging CCTP integration
+* **sdk:** In the exported staging bridge packages (`systems.glam.sdk.idl.programs.glam.staging.bridge.gen` and `.types`) the types `CctpDestination`, `CctpPolicy` and `LayerzeroOftRoute` and the builders `setCctpPolicy`, `addLayerzeroOftRoute`, `updateLayerzeroOftRoute` and `deleteLayerzeroOftRoute` are gone, replaced by `BridgeRoutes` with its route types and the builders `initBridgeRoutes`, `addBridgeRoute`, `updateBridgeRoute`, `removeBridgeRoute`, `pauseBridgeRoutes`, `unpauseBridgeRoutes` and `closeBridgeRoutes`; `cctpDepositForBurn`, `managedCctpDepositForBurn` and `prepareOftTransfer` take a `bridgeRoutesKey`, and `priceManagedTransfers` a `solUsdOracleKey`; `ExtBridgePDAs.bridgeRegistryPDA` derives under the seed `bridge-registry-v2`, beside the new `bridgeRoutesPDA` helpers; `BridgeRegistry` is 3856 bytes holding 14 transfers (was 3760 and 16), `BridgeManagedTransfer` is 272 bytes with a u64 `destinationChain` ahead of `protocol` and a `padding` field (was 232 and u16), `BridgeSession` has a new layout carrying `TransferTerms`, and `ExtBridgeError` gains ten records (6026 to 6035) that an exhaustive switch must add. `priceBridgeManagedTransfers(PublicKey)` on `GlamAccountClient` and its implementations is now `priceBridgeManagedTransfers(PublicKey solUSDOracleKey, PublicKey baseAssetUsdOracleKey)`.
+
+### Features
+
+* **sdk:** retire the staging CCTP integration ([d2beff4](https://github.com/glamsystems/glam-sdk-java/commit/d2beff456ccd9e04c8c9984e138fe286344d1d8e))
+* **services:** adopt ravina 25.8.0, end a batch on its one publication verdict, and drop a send that never left ([cb5ff50](https://github.com/glamsystems/glam-sdk-java/commit/cb5ff5039dcac7ea708a90a8152f8fcd9e192518))
+* **services:** page every startup refusal, and keep one page policy and one delivery bound for the module ([f6dd1ca](https://github.com/glamsystems/glam-sdk-java/commit/f6dd1ca446148fce76c1f59de718c1c615f2a201))
+
+
+### Bug Fixes
+
+* **sdk:** regenerate bridge program types from updated staging IDL ([4a578f4](https://github.com/glamsystems/glam-sdk-java/commit/4a578f423e1763ad6b40196143348f3fd401efcf))
+* **services:** back off and rebuild a batch no send of which was accepted, and page the cause ([9033cd1](https://github.com/glamsystems/glam-sdk-java/commit/9033cd11be0edf3e054f636cef5b9ac3ad8e5fe1))
+* **services:** end the call on a stopped transaction monitor with a page that says whether its transaction may still land ([d3cc8cf](https://github.com/glamsystems/glam-sdk-java/commit/d3cc8cf673ccdb4e41dbaa457f02b896b0527f8f))
+* **services:** end the process without waiting on its loops, and page the fulfillment loop's end ([7d4eb62](https://github.com/glamsystems/glam-sdk-java/commit/7d4eb6254ac9dbd5ee3d18659ac0728d06a7c49f))
+* **services:** exit the fulfillment process when its worker ends ([28d084b](https://github.com/glamsystems/glam-sdk-java/commit/28d084b4cb58545a68c3cfe0732fe3d66e596727))
+* **services:** keep the stopped-monitor exception when its page cannot be posted, and state its contract where callers read it ([1786e3b](https://github.com/glamsystems/glam-sdk-java/commit/1786e3b9ed52c45bf6c60dcc216d9aa303dc4260))
+* **services:** page a bounded summary of a refused send, guard every post, and wait best effort ([5bd0376](https://github.com/glamsystems/glam-sdk-java/commit/5bd0376a46add90f5ee2114c8de8cc045cf00bf8))
+
 ## [25.22.0](https://github.com/glamsystems/glam-sdk-java/compare/25.21.0...25.22.0) (2026-10-16)
 
 
