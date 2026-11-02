@@ -66,12 +66,13 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
     return Pages.post(notifyClient, msg, logger, event);
   }
 
-  /// [#post] of `event` formatted with the batch.
-  private List<CompletableFuture<String>> page(final System.Logger.Level level,
-                                               final String event,
-                                               final List<Instruction> ixBatch,
-                                               final Throwable failure) {
-    return post(level, event, FormatUtil.formatInstructionException(event, ixBatch), failure);
+  /// [#post] of `event` formatted with the batch, for a page the call does not await: the posts
+  /// complete on their own, so none are returned.
+  private void page(final System.Logger.Level level,
+                    final String event,
+                    final List<Instruction> ixBatch,
+                    final Throwable failure) {
+    post(level, event, FormatUtil.formatInstructionException(event, ixBatch), failure);
   }
 
   /// [#post] at ERROR for a failure the call ends on, returned for the caller to throw once

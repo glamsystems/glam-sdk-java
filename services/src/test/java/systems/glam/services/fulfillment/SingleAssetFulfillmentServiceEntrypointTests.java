@@ -94,6 +94,8 @@ final class SingleAssetFulfillmentServiceEntrypointTests {
     // a missing state account is fatal and says so, in the log and in a page awaited before the exit
     try (final var log = LogCapture.attach(loggerName)) {
       assertFalse(SingleAssetFulfillmentServiceEntrypoint.validateDelegatePermissions(required, DELEGATE, null, notifyClient));
+      // the refusal is an ERROR record of its own, not only the text of the page's delivery record
+      assertTrue(log.messages().contains("Glam account does not exist, exiting."), () -> log.messages().toString());
       log.assertLogged(Level.SEVERE, "Glam account does not exist");
       log.assertLogged(Level.SEVERE, "The page may not have been delivered: Glam account does not exist, exiting.");
     }
@@ -108,6 +110,7 @@ final class SingleAssetFulfillmentServiceEntrypointTests {
     ));
     try (final var log = LogCapture.attach(loggerName)) {
       assertFalse(SingleAssetFulfillmentServiceEntrypoint.validateDelegatePermissions(required, DELEGATE, ungranted, notifyClient));
+      assertTrue(log.messages().contains("Service key " + DELEGATE + " does not have the required permissions."), () -> log.messages().toString());
       log.assertLogged(Level.SEVERE, DELEGATE + " does not have the required permissions");
       log.assertLogged(Level.SEVERE, "The page may not have been delivered: Service key " + DELEGATE + " does not have the required permissions.");
     }
