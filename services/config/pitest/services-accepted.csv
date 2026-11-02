@@ -33,44 +33,44 @@ systems.glam.services.db.sql.BatchSqlExecutorImpl,run,ConditionalsBoundaryMutato
 systems.glam.services.db.sql.BatchSqlExecutorImpl,run,RemoveConditionalMutator_ORDER_IF,SURVIVED # accepted equivalent # line 115
 systems.glam.services.db.sql.BatchSqlExecutorImpl,run,VoidMethodCallMutator,SURVIVED # accepted equivalent # line 116
 systems.glam.services.db.sql.BatchSqlExecutorImpl,run,ConditionalsBoundaryMutator,SURVIVED # accepted equivalent # line 130
-systems.glam.services.execution.ExecutionServiceContext,createContext,NullReturnValsMutator,NO_COVERAGE # untriaged # line 19
+systems.glam.services.execution.ExecutionServiceContext,createContext,NullReturnValsMutator,NO_COVERAGE # untriaged # line 20
 systems.glam.services.execution.FormatUtil,formatTransactionResult,NakedReceiverMutator,SURVIVED # untriaged # line 94
 systems.glam.services.execution.FormatUtil,formatTransactionResult,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 105
 systems.glam.services.execution.FormatUtil,formatTransactionResult,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 131
 systems.glam.services.execution.FormatUtil,formatTransactionResult,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 134
 systems.glam.services.execution.FormatUtil,formatTransactionResult,RemoveConditionalMutator_EQUAL_ELSE,SURVIVED # untriaged # line 134
 systems.glam.services.execution.FormatUtil,formatTransactionResult,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 134
-systems.glam.services.execution.InstructionProcessorImpl,processInstructions,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 190
-systems.glam.services.execution.InstructionProcessorImpl,processInstructions,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 193
-systems.glam.services.execution.InstructionProcessorImpl,processInstructions,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 73
-systems.glam.services.fulfillment.BaseFulfillmentService,awaitChange,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 145
-systems.glam.services.fulfillment.BaseFulfillmentService,awaitChange,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged # line 145
-systems.glam.services.fulfillment.BaseFulfillmentService,run,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 119
+systems.glam.services.execution.InstructionProcessorImpl,processInstructions,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 310
+systems.glam.services.execution.InstructionProcessorImpl,processInstructions,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 313
+systems.glam.services.execution.InstructionProcessorImpl,processInstructions,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 174
+systems.glam.services.fulfillment.BaseFulfillmentService,awaitChange,ConditionalsBoundaryMutator,SURVIVED # untriaged # line 198
+systems.glam.services.fulfillment.BaseFulfillmentService,awaitChange,RemoveConditionalMutator_ORDER_IF,SURVIVED # untriaged # line 198
+systems.glam.services.fulfillment.BaseFulfillmentService,run,VoidMethodCallMutator,NO_COVERAGE # untriaged # line 134
 systems.glam.services.fulfillment.FulfillmentService,validateMintKey,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 63
-systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 168
-systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 175
-systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 191
-systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 198
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap # line 114
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap # line 114
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap # line 123
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap # line 123
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 79
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 184
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,NullReturnValsMutator,NO_COVERAGE # seamless bootstrap # line 186
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 137
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,NakedReceiverMutator,NO_COVERAGE # seamless bootstrap # line 91
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,NakedReceiverMutator,NO_COVERAGE # seamless bootstrap # line 92
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,lambda$createService$0,NullReturnValsMutator,NO_COVERAGE # seamless bootstrap # line 104
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,lambda$createService$1,NullReturnValsMutator,NO_COVERAGE # seamless bootstrap # line 129
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap # line 41
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap # line 41
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 42
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,NakedReceiverMutator,NO_COVERAGE # seamless bootstrap # line 45
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap # line 48
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap # line 48
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 49
-systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 54
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 174
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 181
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 197
+systems.glam.services.fulfillment.SingleAssetFulfillmentService,compareAndSet,RemoveConditionalMutator_EQUAL_IF,SURVIVED # untriaged # line 204
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap # line 141
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap # line 141
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap # line 160
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap # line 160
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 106
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 179
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,NullReturnValsMutator,NO_COVERAGE # seamless bootstrap # line 228
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 157
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,NakedReceiverMutator,NO_COVERAGE # seamless bootstrap # line 118
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,NakedReceiverMutator,NO_COVERAGE # seamless bootstrap # line 119
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,lambda$createService$0,NullReturnValsMutator,NO_COVERAGE # seamless bootstrap # line 131
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,lambda$createService$1,NullReturnValsMutator,NO_COVERAGE # seamless bootstrap # line 171
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap # line 46
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap # line 46
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 47
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,NakedReceiverMutator,NO_COVERAGE # seamless bootstrap # line 50
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap # line 60
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap # line 60
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 61
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 67
 systems.glam.services.fulfillment.config.FulfillmentServiceConfig$Parser,test,BooleanTrueReturnValsMutator,SURVIVED # untriaged # line 63
 systems.glam.services.fulfillment.config.FulfillmentServiceConfig,loadConfig,NullReturnValsMutator,NO_COVERAGE # untriaged # line 27
 systems.glam.services.integrations.IntegrationServiceContext,createContext,NullReturnValsMutator,NO_COVERAGE # untriaged # line 39
@@ -158,3 +158,10 @@ systems.glam.services.state.MinGlamStateAccount,hashCode,MathMutator,SURVIVED # 
 systems.glam.services.state.MinGlamStateAccount,readIntegrationAcls,VoidMethodCallMutator,SURVIVED # untriaged # line 87
 systems.glam.services.state.ProtocolIntegration,compareTo,PrimitiveReturnsMutator,SURVIVED # untriaged # line 10
 systems.glam.services.config.BaseDelegateServiceConfig$ConfigParser,lambda$parseProperties$10,BooleanTrueReturnValsMutator,SURVIVED # untriaged # line 350
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,RemoveConditionalMutator_EQUAL_ELSE,NO_COVERAGE # seamless bootstrap # line 164
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,RemoveConditionalMutator_EQUAL_IF,NO_COVERAGE # seamless bootstrap # line 164
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 165
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,createService,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 226
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 74
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 80
+systems.glam.services.fulfillment.SingleAssetFulfillmentServiceEntrypoint,main,VoidMethodCallMutator,NO_COVERAGE # seamless bootstrap # line 81
