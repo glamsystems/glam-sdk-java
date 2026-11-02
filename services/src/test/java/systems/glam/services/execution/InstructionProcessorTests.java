@@ -23,6 +23,7 @@ import software.sava.services.solana.transactions.PublicationException;
 import software.sava.services.solana.transactions.SendNeverLeftException;
 import software.sava.services.solana.transactions.TransactionProcessor;
 import software.sava.services.solana.transactions.TransactionResult;
+import software.sava.services.solana.transactions.TxConfig;
 import software.sava.services.solana.config.ChainItemFormatter;
 import software.sava.services.solana.epoch.EpochInfoService;
 import software.sava.services.solana.remote.call.CallWeights;
@@ -994,9 +995,10 @@ final class InstructionProcessorTests {
             case "feePayer" -> SIGNER.publicKey();
             case "formatter" -> FORMATTER;
             case "simulateAndEstimate" -> {
+              // the three-argument primary ravina's call makes: the simulation carries the call's TxConfig
               @SuppressWarnings("unchecked") final var batch = (List<Instruction>) args[1];
               yield new SimulationFutures(
-                  (Commitment) args[0], batch, Transaction.createTx(SIGNER.publicKey(), batch), 1_234,
+                  (Commitment) args[0], batch, (TxConfig) args[2], Transaction.createTx(SIGNER.publicKey(), batch), 1_234,
                   CompletableFuture.completedFuture(SIMULATION), CompletableFuture.completedFuture(BigDecimal.valueOf(25))
               );
             }
