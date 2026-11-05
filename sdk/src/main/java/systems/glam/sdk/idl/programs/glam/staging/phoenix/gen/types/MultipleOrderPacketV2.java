@@ -43,7 +43,7 @@ public record MultipleOrderPacketV2(CondensedOrderV2[] bids,
     int i = _offset;
     i += SerDeUtil.writeVector(4, bids, _data, i);
     i += SerDeUtil.writeVector(4, asks, _data, i);
-    if (clientOrderId == null || clientOrderId.length == 0) {
+    if (clientOrderId == null) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
@@ -56,6 +56,6 @@ public record MultipleOrderPacketV2(CondensedOrderV2[] bids,
 
   @Override
   public int l() {
-    return SerDeUtil.lenVector(4, bids) + SerDeUtil.lenVector(4, asks) + (clientOrderId == null || clientOrderId.length == 0 ? 1 : (1 + SerDeUtil.lenArray(clientOrderId))) + 1;
+    return SerDeUtil.lenVector(4, bids) + SerDeUtil.lenVector(4, asks) + (clientOrderId == null ? 1 : (1 + SerDeUtil.lenArray(clientOrderId))) + 1;
   }
 }

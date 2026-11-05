@@ -192,7 +192,7 @@ public record StateModel(AccountType accountType,
   public int write(final byte[] _data, final int _offset) {
     int i = _offset;
     i += SerDeUtil.writeOptional(1, accountType, _data, i);
-    if (name == null || name.length == 0) {
+    if (name == null) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
@@ -200,7 +200,7 @@ public record StateModel(AccountType accountType,
     }
     i += SerDeUtil.writeOptionalVector(1, 4, _uri, _data, i);
     i += SerDeUtil.writeOptional(1, enabled, _data, i);
-    if (assets == null || assets.length == 0) {
+    if (assets == null) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
@@ -208,26 +208,26 @@ public record StateModel(AccountType accountType,
     }
     i += SerDeUtil.writeOptional(1, created, _data, i);
     i += SerDeUtil.writeOptional(1, owner, _data, i);
-    if (portfolioManagerName == null || portfolioManagerName.length == 0) {
+    if (portfolioManagerName == null) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
       i += SerDeUtil.writeArrayChecked(portfolioManagerName, 32, _data, i);
     }
-    if (borrowable == null || borrowable.length == 0) {
+    if (borrowable == null) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
       i += SerDeUtil.writeVector(4, borrowable, _data, i);
     }
     i += SerDeUtil.writeOptionalUnsignedInt(1, timelockDuration, _data, i);
-    if (integrationAcls == null || integrationAcls.length == 0) {
+    if (integrationAcls == null) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
       i += SerDeUtil.writeVector(4, integrationAcls, _data, i);
     }
-    if (delegateAcls == null || delegateAcls.length == 0) {
+    if (delegateAcls == null) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
@@ -239,16 +239,16 @@ public record StateModel(AccountType accountType,
   @Override
   public int l() {
     return (accountType == null ? 1 : (1 + accountType.l()))
-         + (name == null || name.length == 0 ? 1 : (1 + SerDeUtil.lenArray(name)))
-         + (_uri == null || _uri.length == 0 ? 1 : (1 + 4 + _uri.length))
+         + (name == null ? 1 : (1 + SerDeUtil.lenArray(name)))
+         + (_uri == null ? 1 : (1 + 4 + _uri.length))
          + (enabled == null ? 1 : (1 + 1))
-         + (assets == null || assets.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, assets)))
+         + (assets == null ? 1 : (1 + SerDeUtil.lenVector(4, assets)))
          + (created == null ? 1 : (1 + created.l()))
          + (owner == null ? 1 : (1 + 32))
-         + (portfolioManagerName == null || portfolioManagerName.length == 0 ? 1 : (1 + SerDeUtil.lenArray(portfolioManagerName)))
-         + (borrowable == null || borrowable.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, borrowable)))
+         + (portfolioManagerName == null ? 1 : (1 + SerDeUtil.lenArray(portfolioManagerName)))
+         + (borrowable == null ? 1 : (1 + SerDeUtil.lenVector(4, borrowable)))
          + (timelockDuration == null || timelockDuration.isEmpty() ? 1 : (1 + 4))
-         + (integrationAcls == null || integrationAcls.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, integrationAcls)))
-         + (delegateAcls == null || delegateAcls.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, delegateAcls)));
+         + (integrationAcls == null ? 1 : (1 + SerDeUtil.lenVector(4, integrationAcls)))
+         + (delegateAcls == null ? 1 : (1 + SerDeUtil.lenVector(4, delegateAcls)));
   }
 }

@@ -505,3 +505,13 @@ skips it, so the two answer different halves.
   defaults: global config 1m, stake pools 12h -- a cadence no plausible
   threshold covers, so leave such a loop exit-only or override its
   threshold).
+- The sdk takes the commons (`SerDeUtil`, `SerDe`) from the published
+  idl-clients-spl artifact the Solana BOM pins rather than vendoring them, so
+  a generator change that moves a rule the commons share with the generated
+  code (idl-src-gen 36d2bd25: only null is an absent Option) lands here as a
+  regeneration and a BOM bump in one commit. Apart, both halves compile and
+  disagree on the wire alone: a generated record decides presence in its own
+  `l()` while the commons' `writeOptionalVector` writes the optional strings
+  of `StateModel` and `MintModel`. `GeneratedOptionEncodingTests` holds those
+  records to the pinned commons on a `Some("")` round trip, so the halves
+  landing apart fail `check` here instead of a transaction.

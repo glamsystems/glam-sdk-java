@@ -10,10 +10,11 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public final class ExtNeutralPDAs {
 
-  public static ProgramDerivedAddress glamConfigPDA(final PublicKey program) {
+  /// @param gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX the program the address is derived under, gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX
+  public static ProgramDerivedAddress glamConfigPDA(final PublicKey gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX) {
     return PublicKey.findProgramAddress(List.of(
       "global-config".getBytes(US_ASCII)
-    ), program);
+    ), gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX);
   }
 
   public static ProgramDerivedAddress glamVaultPDA(final PublicKey glamProtocolProgram,
@@ -24,12 +25,13 @@ public final class ExtNeutralPDAs {
     ), glamProtocolProgram);
   }
 
-  public static ProgramDerivedAddress glamVault1PDA(final PublicKey program,
+  /// @param glamProtocolProgram the program the address is derived under, gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz
+  public static ProgramDerivedAddress glamVault1PDA(final PublicKey glamProtocolProgram,
                                                     final PublicKey glamStateAccount) {
     return PublicKey.findProgramAddress(List.of(
       "vault".getBytes(US_ASCII),
       glamStateAccount.toByteArray()
-    ), program);
+    ), glamProtocolProgram);
   }
 
   public static ProgramDerivedAddress integrationAuthorityPDA(final PublicKey program) {

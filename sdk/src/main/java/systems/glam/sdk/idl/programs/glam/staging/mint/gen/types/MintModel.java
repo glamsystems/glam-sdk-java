@@ -230,7 +230,7 @@ public record MintModel(String symbol, byte[] _symbol,
   public int write(final byte[] _data, final int _offset) {
     int i = _offset;
     i += SerDeUtil.writeOptionalVector(1, 4, _symbol, _data, i);
-    if (name == null || name.length == 0) {
+    if (name == null) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
@@ -246,13 +246,13 @@ public record MintModel(String symbol, byte[] _symbol,
     i += SerDeUtil.writeOptional(1, maxCap, _data, i);
     i += SerDeUtil.writeOptional(1, minSubscription, _data, i);
     i += SerDeUtil.writeOptional(1, minRedemption, _data, i);
-    if (allowlist == null || allowlist.length == 0) {
+    if (allowlist == null) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
       i += SerDeUtil.writeVector(4, allowlist, _data, i);
     }
-    if (blocklist == null || blocklist.length == 0) {
+    if (blocklist == null) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
@@ -263,9 +263,9 @@ public record MintModel(String symbol, byte[] _symbol,
 
   @Override
   public int l() {
-    return (_symbol == null || _symbol.length == 0 ? 1 : (1 + 4 + _symbol.length))
-         + (name == null || name.length == 0 ? 1 : (1 + SerDeUtil.lenArray(name)))
-         + (_uri == null || _uri.length == 0 ? 1 : (1 + 4 + _uri.length))
+    return (_symbol == null ? 1 : (1 + 4 + _symbol.length))
+         + (name == null ? 1 : (1 + SerDeUtil.lenArray(name)))
+         + (_uri == null ? 1 : (1 + 4 + _uri.length))
          + (yearInSeconds == null || yearInSeconds.isEmpty() ? 1 : (1 + 4))
          + (permanentDelegate == null ? 1 : (1 + 32))
          + (defaultAccountStateFrozen == null ? 1 : (1 + 1))
@@ -275,7 +275,7 @@ public record MintModel(String symbol, byte[] _symbol,
          + (maxCap == null || maxCap.isEmpty() ? 1 : (1 + 8))
          + (minSubscription == null || minSubscription.isEmpty() ? 1 : (1 + 8))
          + (minRedemption == null || minRedemption.isEmpty() ? 1 : (1 + 8))
-         + (allowlist == null || allowlist.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, allowlist)))
-         + (blocklist == null || blocklist.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, blocklist)));
+         + (allowlist == null ? 1 : (1 + SerDeUtil.lenVector(4, allowlist)))
+         + (blocklist == null ? 1 : (1 + SerDeUtil.lenVector(4, blocklist)));
   }
 }

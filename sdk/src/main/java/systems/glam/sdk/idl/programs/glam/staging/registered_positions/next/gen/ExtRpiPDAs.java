@@ -10,10 +10,11 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public final class ExtRpiPDAs {
 
-  public static ProgramDerivedAddress glamConfigPDA(final PublicKey program) {
+  /// @param gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX the program the address is derived under, gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX
+  public static ProgramDerivedAddress glamConfigPDA(final PublicKey gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX) {
     return PublicKey.findProgramAddress(List.of(
       "global-config".getBytes(US_ASCII)
-    ), program);
+    ), gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX);
   }
 
   public static ProgramDerivedAddress glamVaultPDA(final PublicKey glamProtocolProgram,
@@ -24,6 +25,7 @@ public final class ExtRpiPDAs {
     ), glamProtocolProgram);
   }
 
+  /// @param inputPositionId the bytes of input.positionId as the program hashes them
   public static ProgramDerivedAddress hyperliquidConfigPDA(final PublicKey program,
                                                            final PublicKey glamStateAccount,
                                                            final byte[] inputPositionId) {
@@ -58,6 +60,7 @@ public final class ExtRpiPDAs {
     ), program);
   }
 
+  /// @param inputPositionId the bytes of input.positionId as the program hashes them
   public static ProgramDerivedAddress wormholeConfig1PDA(final PublicKey program,
                                                          final PublicKey glamStateAccount,
                                                          final byte[] inputPositionId) {

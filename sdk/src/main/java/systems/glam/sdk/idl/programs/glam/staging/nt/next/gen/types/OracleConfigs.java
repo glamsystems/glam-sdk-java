@@ -27,13 +27,13 @@ public record OracleConfigs(int[][] maxAgesSeconds, byte[] padding) implements S
   @Override
   public int write(final byte[] _data, final int _offset) {
     int i = _offset;
-    i += SerDeUtil.writeVectorArrayChecked(4, maxAgesSeconds, 2, _data, i);
+    i += SerDeUtil.writeUnsignedShortVectorArrayChecked(4, maxAgesSeconds, 2, _data, i);
     i += SerDeUtil.writeArrayChecked(padding, 12, _data, i);
     return i - _offset;
   }
 
   @Override
   public int l() {
-    return SerDeUtil.lenVectorArray(4, maxAgesSeconds) + SerDeUtil.lenArray(padding);
+    return SerDeUtil.lenUnsignedShortVectorArray(4, maxAgesSeconds) + SerDeUtil.lenArray(padding);
   }
 }

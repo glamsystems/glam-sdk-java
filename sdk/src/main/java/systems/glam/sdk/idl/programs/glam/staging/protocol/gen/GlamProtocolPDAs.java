@@ -10,10 +10,11 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public final class GlamProtocolPDAs {
 
-  public static ProgramDerivedAddress glamConfigPDA(final PublicKey program) {
+  /// @param gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX the program the address is derived under, gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX
+  public static ProgramDerivedAddress glamConfigPDA(final PublicKey gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX) {
     return PublicKey.findProgramAddress(List.of(
       "global-config".getBytes(US_ASCII)
-    ), program);
+    ), gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX);
   }
 
   public static ProgramDerivedAddress glamStatePDA(final PublicKey program,

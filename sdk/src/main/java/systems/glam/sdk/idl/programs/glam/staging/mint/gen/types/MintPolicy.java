@@ -92,13 +92,13 @@ public record MintPolicy(long lockupPeriod,
     _data[i] = (byte) pauseOnOverdue;
     ++i;
     i += SerDeUtil.writeArrayChecked(reserved, 7, _data, i);
-    if (allowlist == null || allowlist.length == 0) {
+    if (allowlist == null) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
       i += SerDeUtil.writeVector(4, allowlist, _data, i);
     }
-    if (blocklist == null || blocklist.length == 0) {
+    if (blocklist == null) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
@@ -115,7 +115,7 @@ public record MintPolicy(long lockupPeriod,
          + 8
          + 1
          + SerDeUtil.lenArray(reserved)
-         + (allowlist == null || allowlist.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, allowlist)))
-         + (blocklist == null || blocklist.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, blocklist)));
+         + (allowlist == null ? 1 : (1 + SerDeUtil.lenVector(4, allowlist)))
+         + (blocklist == null ? 1 : (1 + SerDeUtil.lenVector(4, blocklist)));
   }
 }

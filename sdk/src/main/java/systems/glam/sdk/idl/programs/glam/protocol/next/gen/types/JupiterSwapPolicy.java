@@ -42,7 +42,7 @@ public record JupiterSwapPolicy(int maxSlippageBps,
     int i = _offset;
     putInt16LE(_data, i, maxSlippageBps);
     i += 2;
-    if (swapAllowlist == null || swapAllowlist.length == 0) {
+    if (swapAllowlist == null) {
       _data[i++] = 0;
     } else {
       _data[i++] = 1;
@@ -55,6 +55,6 @@ public record JupiterSwapPolicy(int maxSlippageBps,
 
   @Override
   public int l() {
-    return 2 + (swapAllowlist == null || swapAllowlist.length == 0 ? 1 : (1 + SerDeUtil.lenVector(4, swapAllowlist))) + 2;
+    return 2 + (swapAllowlist == null ? 1 : (1 + SerDeUtil.lenVector(4, swapAllowlist))) + 2;
   }
 }

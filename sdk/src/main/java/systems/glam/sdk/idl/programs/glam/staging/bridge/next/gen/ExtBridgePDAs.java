@@ -49,18 +49,20 @@ public final class ExtBridgePDAs {
 
   public static ProgramDerivedAddress bridgeSessionPDA(final PublicKey program,
                                                        final PublicKey glamStateAccount,
-                                                       final byte[] argsTransferId) {
+                                                       final PublicKey argsTransferId) {
+    final byte[] argsTransferIdBytes = argsTransferId.toByteArray();
     return PublicKey.findProgramAddress(List.of(
       "bridge-session".getBytes(US_ASCII),
       glamStateAccount.toByteArray(),
-      argsTransferId
+      argsTransferIdBytes
     ), program);
   }
 
-  public static ProgramDerivedAddress glamConfigPDA(final PublicKey program) {
+  /// @param gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX the program the address is derived under, gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX
+  public static ProgramDerivedAddress glamConfigPDA(final PublicKey gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX) {
     return PublicKey.findProgramAddress(List.of(
       "global-config".getBytes(US_ASCII)
-    ), program);
+    ), gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX);
   }
 
   public static ProgramDerivedAddress glamVaultPDA(final PublicKey glamProtocolProgram,

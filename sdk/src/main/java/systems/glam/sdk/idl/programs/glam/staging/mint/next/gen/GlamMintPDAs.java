@@ -10,7 +10,8 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public final class GlamMintPDAs {
 
-  public static ProgramDerivedAddress claimUserAtaPDA(final PublicKey program,
+  /// @param associatedTokenAccountProgram the program the address is derived under, ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+  public static ProgramDerivedAddress claimUserAtaPDA(final PublicKey associatedTokenAccountProgram,
                                                       final PublicKey claimUserAccount,
                                                       final PublicKey claimTokenProgramAccount,
                                                       final PublicKey claimTokenMintAccount) {
@@ -18,10 +19,11 @@ public final class GlamMintPDAs {
       claimUserAccount.toByteArray(),
       claimTokenProgramAccount.toByteArray(),
       claimTokenMintAccount.toByteArray()
-    ), program);
+    ), associatedTokenAccountProgram);
   }
 
-  public static ProgramDerivedAddress escrowAssetAtaPDA(final PublicKey program,
+  /// @param associatedTokenAccountProgram the program the address is derived under, ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+  public static ProgramDerivedAddress escrowAssetAtaPDA(final PublicKey associatedTokenAccountProgram,
                                                         final PublicKey glamEscrowAccount,
                                                         final PublicKey depositTokenProgramAccount,
                                                         final PublicKey assetAccount) {
@@ -29,10 +31,11 @@ public final class GlamMintPDAs {
       glamEscrowAccount.toByteArray(),
       depositTokenProgramAccount.toByteArray(),
       assetAccount.toByteArray()
-    ), program);
+    ), associatedTokenAccountProgram);
   }
 
-  public static ProgramDerivedAddress escrowAtaPDA(final PublicKey program,
+  /// @param associatedTokenAccountProgram the program the address is derived under, ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+  public static ProgramDerivedAddress escrowAtaPDA(final PublicKey associatedTokenAccountProgram,
                                                    final PublicKey glamEscrowAccount,
                                                    final PublicKey recoverTokenProgramAccount,
                                                    final PublicKey recoverTokenMintAccount) {
@@ -40,10 +43,11 @@ public final class GlamMintPDAs {
       glamEscrowAccount.toByteArray(),
       recoverTokenProgramAccount.toByteArray(),
       recoverTokenMintAccount.toByteArray()
-    ), program);
+    ), associatedTokenAccountProgram);
   }
 
-  public static ProgramDerivedAddress escrowAta1PDA(final PublicKey program,
+  /// @param associatedTokenAccountProgram the program the address is derived under, ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+  public static ProgramDerivedAddress escrowAta1PDA(final PublicKey associatedTokenAccountProgram,
                                                     final PublicKey glamEscrowAccount,
                                                     final PublicKey claimTokenProgramAccount,
                                                     final PublicKey claimTokenMintAccount) {
@@ -51,10 +55,11 @@ public final class GlamMintPDAs {
       glamEscrowAccount.toByteArray(),
       claimTokenProgramAccount.toByteArray(),
       claimTokenMintAccount.toByteArray()
-    ), program);
+    ), associatedTokenAccountProgram);
   }
 
-  public static ProgramDerivedAddress escrowDepositAtaPDA(final PublicKey program,
+  /// @param associatedTokenAccountProgram the program the address is derived under, ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+  public static ProgramDerivedAddress escrowDepositAtaPDA(final PublicKey associatedTokenAccountProgram,
                                                           final PublicKey glamEscrowAccount,
                                                           final PublicKey depositTokenProgramAccount,
                                                           final PublicKey depositAssetAccount) {
@@ -62,10 +67,11 @@ public final class GlamMintPDAs {
       glamEscrowAccount.toByteArray(),
       depositTokenProgramAccount.toByteArray(),
       depositAssetAccount.toByteArray()
-    ), program);
+    ), associatedTokenAccountProgram);
   }
 
-  public static ProgramDerivedAddress escrowMintAtaPDA(final PublicKey program,
+  /// @param associatedTokenAccountProgram the program the address is derived under, ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+  public static ProgramDerivedAddress escrowMintAtaPDA(final PublicKey associatedTokenAccountProgram,
                                                        final PublicKey glamEscrowAccount,
                                                        final PublicKey token2022ProgramAccount,
                                                        final PublicKey glamMintAccount) {
@@ -73,7 +79,7 @@ public final class GlamMintPDAs {
       glamEscrowAccount.toByteArray(),
       token2022ProgramAccount.toByteArray(),
       glamMintAccount.toByteArray()
-    ), program);
+    ), associatedTokenAccountProgram);
   }
 
   public static ProgramDerivedAddress eventAuthorityPDA(final PublicKey program) {
@@ -82,18 +88,20 @@ public final class GlamMintPDAs {
     ), program);
   }
 
-  public static ProgramDerivedAddress extraMetasPDA(final PublicKey program,
+  /// @param tokenAclGateProgram the program the address is derived under, GATEzzqxhJnsWF6vHRsgtixxSB8PaQdcqGEVTEHWiULz
+  public static ProgramDerivedAddress extraMetasPDA(final PublicKey tokenAclGateProgram,
                                                     final PublicKey glamMintAccount) {
     return PublicKey.findProgramAddress(List.of(
       "thaw_extra_account_metas".getBytes(US_ASCII),
       glamMintAccount.toByteArray()
-    ), program);
+    ), tokenAclGateProgram);
   }
 
-  public static ProgramDerivedAddress glamConfigPDA(final PublicKey program) {
+  /// @param gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX the program the address is derived under, gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX
+  public static ProgramDerivedAddress glamConfigPDA(final PublicKey gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX) {
     return PublicKey.findProgramAddress(List.of(
       "global-config".getBytes(US_ASCII)
-    ), program);
+    ), gConFzxKL9USmwTdJoeQJvfKmqhJ2CyUaXTyQ8v9TGX);
   }
 
   public static ProgramDerivedAddress glamEscrowPDA(final PublicKey program,
@@ -104,12 +112,13 @@ public final class GlamMintPDAs {
     ), program);
   }
 
-  public static ProgramDerivedAddress glamVaultPDA(final PublicKey program,
+  /// @param glamProtocol the program the address is derived under, gstgptmbgJVi5f8ZmSRVZjZkDQwqKa3xWuUtD5WmJHz
+  public static ProgramDerivedAddress glamVaultPDA(final PublicKey glamProtocol,
                                                    final PublicKey glamStateAccount) {
     return PublicKey.findProgramAddress(List.of(
       "vault".getBytes(US_ASCII),
       glamStateAccount.toByteArray()
-    ), program);
+    ), glamProtocol);
   }
 
   public static ProgramDerivedAddress integrationAuthorityPDA(final PublicKey program) {
@@ -118,17 +127,19 @@ public final class GlamMintPDAs {
     ), program);
   }
 
-  public static ProgramDerivedAddress listConfigPDA(final PublicKey program,
+  /// @param tokenAclGateProgram the program the address is derived under, GATEzzqxhJnsWF6vHRsgtixxSB8PaQdcqGEVTEHWiULz
+  public static ProgramDerivedAddress listConfigPDA(final PublicKey tokenAclGateProgram,
                                                     final PublicKey glamMintAccount,
                                                     final byte[] seed) {
     return PublicKey.findProgramAddress(List.of(
       "list_config".getBytes(US_ASCII),
       glamMintAccount.toByteArray(),
       seed
-    ), program);
+    ), tokenAclGateProgram);
   }
 
-  public static ProgramDerivedAddress managerFeeAuthorityAtaPDA(final PublicKey program,
+  /// @param associatedTokenAccountProgram the program the address is derived under, ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+  public static ProgramDerivedAddress managerFeeAuthorityAtaPDA(final PublicKey associatedTokenAccountProgram,
                                                                 final PublicKey managerFeeAuthorityAccount,
                                                                 final PublicKey depositTokenProgramAccount,
                                                                 final PublicKey depositAssetAccount) {
@@ -136,18 +147,20 @@ public final class GlamMintPDAs {
       managerFeeAuthorityAccount.toByteArray(),
       depositTokenProgramAccount.toByteArray(),
       depositAssetAccount.toByteArray()
-    ), program);
+    ), associatedTokenAccountProgram);
   }
 
-  public static ProgramDerivedAddress mintConfigPDA(final PublicKey program,
+  /// @param tokenAclProgram the program the address is derived under, TACLkU6CiCdkQN2MjoyDkVg2yAH9zkxiHDsiztQ52TP
+  public static ProgramDerivedAddress mintConfigPDA(final PublicKey tokenAclProgram,
                                                     final PublicKey glamMintAccount) {
     return PublicKey.findProgramAddress(List.of(
       "MINT_CONFIG".getBytes(US_ASCII),
       glamMintAccount.toByteArray()
-    ), program);
+    ), tokenAclProgram);
   }
 
-  public static ProgramDerivedAddress mintToPDA(final PublicKey program,
+  /// @param associatedTokenAccountProgram the program the address is derived under, ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+  public static ProgramDerivedAddress mintToPDA(final PublicKey associatedTokenAccountProgram,
                                                 final PublicKey recipientAccount,
                                                 final PublicKey token2022ProgramAccount,
                                                 final PublicKey glamMintAccount) {
@@ -155,18 +168,20 @@ public final class GlamMintPDAs {
       recipientAccount.toByteArray(),
       token2022ProgramAccount.toByteArray(),
       glamMintAccount.toByteArray()
-    ), program);
+    ), associatedTokenAccountProgram);
   }
 
-  public static ProgramDerivedAddress observationStatePDA(final PublicKey program,
+  /// @param gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX the program the address is derived under, gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX
+  public static ProgramDerivedAddress observationStatePDA(final PublicKey gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX,
                                                           final PublicKey glamStateAccount) {
     return PublicKey.findProgramAddress(List.of(
       "observation-state".getBytes(US_ASCII),
       glamStateAccount.toByteArray()
-    ), program);
+    ), gstge5RzNEGQwpwBPKTJbP9yczoFEzzm5upSSsie9fX);
   }
 
-  public static ProgramDerivedAddress protocolFeeAuthorityAtaPDA(final PublicKey program,
+  /// @param associatedTokenAccountProgram the program the address is derived under, ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+  public static ProgramDerivedAddress protocolFeeAuthorityAtaPDA(final PublicKey associatedTokenAccountProgram,
                                                                  final PublicKey protocolFeeAuthorityAccount,
                                                                  final PublicKey depositTokenProgramAccount,
                                                                  final PublicKey depositAssetAccount) {
@@ -174,7 +189,7 @@ public final class GlamMintPDAs {
       protocolFeeAuthorityAccount.toByteArray(),
       depositTokenProgramAccount.toByteArray(),
       depositAssetAccount.toByteArray()
-    ), program);
+    ), associatedTokenAccountProgram);
   }
 
   public static ProgramDerivedAddress requestQueuePDA(final PublicKey program,
@@ -193,7 +208,8 @@ public final class GlamMintPDAs {
     ), program);
   }
 
-  public static ProgramDerivedAddress signerDepositAtaPDA(final PublicKey program,
+  /// @param associatedTokenAccountProgram the program the address is derived under, ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+  public static ProgramDerivedAddress signerDepositAtaPDA(final PublicKey associatedTokenAccountProgram,
                                                           final PublicKey signerAccount,
                                                           final PublicKey depositTokenProgramAccount,
                                                           final PublicKey depositAssetAccount) {
@@ -201,10 +217,11 @@ public final class GlamMintPDAs {
       signerAccount.toByteArray(),
       depositTokenProgramAccount.toByteArray(),
       depositAssetAccount.toByteArray()
-    ), program);
+    ), associatedTokenAccountProgram);
   }
 
-  public static ProgramDerivedAddress signerMintAtaPDA(final PublicKey program,
+  /// @param associatedTokenAccountProgram the program the address is derived under, ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+  public static ProgramDerivedAddress signerMintAtaPDA(final PublicKey associatedTokenAccountProgram,
                                                        final PublicKey signerAccount,
                                                        final PublicKey token2022ProgramAccount,
                                                        final PublicKey glamMintAccount) {
@@ -212,10 +229,11 @@ public final class GlamMintPDAs {
       signerAccount.toByteArray(),
       token2022ProgramAccount.toByteArray(),
       glamMintAccount.toByteArray()
-    ), program);
+    ), associatedTokenAccountProgram);
   }
 
-  public static ProgramDerivedAddress toAtaPDA(final PublicKey program,
+  /// @param associatedTokenAccountProgram the program the address is derived under, ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+  public static ProgramDerivedAddress toAtaPDA(final PublicKey associatedTokenAccountProgram,
                                                final PublicKey toAccount,
                                                final PublicKey token2022ProgramAccount,
                                                final PublicKey glamMintAccount) {
@@ -223,10 +241,11 @@ public final class GlamMintPDAs {
       toAccount.toByteArray(),
       token2022ProgramAccount.toByteArray(),
       glamMintAccount.toByteArray()
-    ), program);
+    ), associatedTokenAccountProgram);
   }
 
-  public static ProgramDerivedAddress userAtaPDA(final PublicKey program,
+  /// @param associatedTokenAccountProgram the program the address is derived under, ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+  public static ProgramDerivedAddress userAtaPDA(final PublicKey associatedTokenAccountProgram,
                                                  final PublicKey userAccount,
                                                  final PublicKey recoverTokenProgramAccount,
                                                  final PublicKey recoverTokenMintAccount) {
@@ -234,10 +253,11 @@ public final class GlamMintPDAs {
       userAccount.toByteArray(),
       recoverTokenProgramAccount.toByteArray(),
       recoverTokenMintAccount.toByteArray()
-    ), program);
+    ), associatedTokenAccountProgram);
   }
 
-  public static ProgramDerivedAddress vaultAssetAtaPDA(final PublicKey program,
+  /// @param associatedTokenAccountProgram the program the address is derived under, ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+  public static ProgramDerivedAddress vaultAssetAtaPDA(final PublicKey associatedTokenAccountProgram,
                                                        final PublicKey glamVaultAccount,
                                                        final PublicKey depositTokenProgramAccount,
                                                        final PublicKey assetAccount) {
@@ -245,10 +265,11 @@ public final class GlamMintPDAs {
       glamVaultAccount.toByteArray(),
       depositTokenProgramAccount.toByteArray(),
       assetAccount.toByteArray()
-    ), program);
+    ), associatedTokenAccountProgram);
   }
 
-  public static ProgramDerivedAddress vaultDepositAtaPDA(final PublicKey program,
+  /// @param associatedTokenAccountProgram the program the address is derived under, ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+  public static ProgramDerivedAddress vaultDepositAtaPDA(final PublicKey associatedTokenAccountProgram,
                                                          final PublicKey glamVaultAccount,
                                                          final PublicKey depositTokenProgramAccount,
                                                          final PublicKey depositAssetAccount) {
@@ -256,17 +277,18 @@ public final class GlamMintPDAs {
       glamVaultAccount.toByteArray(),
       depositTokenProgramAccount.toByteArray(),
       depositAssetAccount.toByteArray()
-    ), program);
+    ), associatedTokenAccountProgram);
   }
 
-  public static ProgramDerivedAddress walletEntryPDA(final PublicKey program,
+  /// @param tokenAclGateProgram the program the address is derived under, GATEzzqxhJnsWF6vHRsgtixxSB8PaQdcqGEVTEHWiULz
+  public static ProgramDerivedAddress walletEntryPDA(final PublicKey tokenAclGateProgram,
                                                      final PublicKey listConfigAccount,
                                                      final PublicKey walletAccount) {
     return PublicKey.findProgramAddress(List.of(
       "wallet_entry".getBytes(US_ASCII),
       listConfigAccount.toByteArray(),
       walletAccount.toByteArray()
-    ), program);
+    ), tokenAclGateProgram);
   }
 
   private GlamMintPDAs() {
