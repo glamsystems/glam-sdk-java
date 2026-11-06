@@ -1,5 +1,16 @@
 # Changelog
 
+## [25.24.0](https://github.com/glamsystems/glam-sdk-java/compare/25.23.0...25.24.0) (2026-11-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* **sdk:** in the exported staging bridge package `ExtBridgePDAs.bridgeSessionPDA` takes a `PublicKey argsTransferId` where it took `byte[]`. A caller that passed an empty vector or string to `StateModel`, `MintModel`, `MintPolicy` or `JupiterSwapPolicy` to mean `None` must pass `null`, since an empty value is now sent as present; and an empty array given for their sized fixed arrays (`StateModel.name` and `portfolioManagerName`, `MintModel.name`) or for the `clientOrderId` of the staging Phoenix `MultipleOrderPacket` and `MultipleOrderPacketV2` is refused where it encoded `None`. The programs read a present empty list as a list: an empty `MintModel.allowlist` now installs an allowlist that admits no signer, and an empty `StateModel.assets` or `borrowable` replaces the vault's list with an empty one, where each was dropped as `None` before. Through the idl-clients bundle and spl modules the sdk requires transitively, at 25.19.14 or later since an older commons disagrees with the generated code on an empty value, idl-clients 25.19.14's own breaking changes reach callers: its generated builders and records send an empty vector, byte string or string as present (Squads v4 memos, Marginfi V2, Metaplex Token Metadata, Jupiter Offerbook, Loopscale) and refuse an empty array given for a fixed-size optional array (Marginfi V2, Switchboard On-Demand, Phoenix Perpetuals); `denylistAccountPDA`, `tokenPairPDA`, `oraclePDA` and `queuePDA` take a `PublicKey`, and `remoteTokenMessenger1PDA`, `tokenPair1PDA`, `whirlpool1PDA` and `feed1PDA` a `byte[]`; Metaplex's eleven lock, unlock, use and delegate argument variants implement `OptionalSerdeEnum`, so code compiled against an earlier release must be recompiled; and `SIZE_FILTER` is withdrawn from 45 account records whose programs allocate another length (Marginfi `Bank`, Kamino `Obligation`, `FarmState` and `GlobalConfig` among them), which its changelog files as a fix.
+
+### Bug Fixes
+
+* **sdk:** regenerate the clients with idl-src-gen 4659e2e7 and adopt idl-clients 25.19.14 ([db1bfe6](https://github.com/glamsystems/glam-sdk-java/commit/db1bfe65981ec852f06c596ff09189e4b8f11ab4))
+
 ## [25.23.0](https://github.com/glamsystems/glam-sdk-java/compare/25.22.0...25.23.0) (2026-11-02)
 
 
