@@ -1,5 +1,12 @@
 # Changelog
 
+## [25.24.1](https://github.com/glamsystems/glam-sdk-java/compare/25.24.0...25.24.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **build:** upgrade to Gradle 9.9 and scope plugin repositories ([ff2b0c3](https://github.com/glamsystems/glam-sdk-java/commit/ff2b0c3db7ab9dd8062701aac9c02129af29a63e))
+
 ## [25.24.0](https://github.com/glamsystems/glam-sdk-java/compare/25.23.0...25.24.0) (2026-11-05)
 
 
