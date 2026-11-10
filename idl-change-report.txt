@@ -7,6 +7,8 @@ nobody took. The standing disagreements live beside this file, at its name with 
 before the extension. Ordered by program and channel, and carrying no timestamp, so
 consecutive runs are worth diffing against each other.
 
-== Movement (0) ==
+== Movement (2) ==
 
-Nothing moved since the last generation.
+GLAM Staging Kamino: the program was redeployed at slot 466859051, up from 457065973, and no IDL channel moved with it (the metadata IDL was last written at slot 457066039, between the previous deploy and this one; nothing has been written for this deploy); the stored program image changed: 697448 payload bytes, was 697448 — review required
+
+GLAM Staging Protocol: the program was redeployed at slot 467697995, up from 457059314, and no IDL channel moved with it (the metadata IDL was last written at slot 455296213, before the previous deploy); the stored program image changed: 819896 payload bytes, was 819896 — review required

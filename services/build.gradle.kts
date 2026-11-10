@@ -5,6 +5,8 @@ plugins {
 testModuleInfo {
   requires("org.junit.jupiter.api")
   runtimeOnly("org.junit.jupiter.engine")
+  // HikariCP needs a test provider. A JUL provider would loop through Gradle's JUL-to-SLF4J bridge.
+  runtimeOnly("org.slf4j.simple")
 }
 
 // Git-ignored scratch programs (Integ.java and the like, run from the IDE) live in

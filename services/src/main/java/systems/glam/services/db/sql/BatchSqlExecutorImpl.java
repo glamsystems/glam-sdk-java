@@ -105,8 +105,8 @@ final class BatchSqlExecutorImpl<T> implements BatchSqlExecutor<T> {
   @Override
   public void run() {
     try {
-      //noinspection unchecked
-      final T[] batch = (T[]) Array.newInstance(componentType, batchSize);
+      // componentType is the constructor's Class<T>, so this array can only store T values.
+      @SuppressWarnings("unchecked") final T[] batch = (T[]) Array.newInstance(componentType, batchSize);
       // batch[] is indexed by item, densely; numRows drives the executed
       // threshold. Multi-row preparers must not leave gaps in batch[], or the
       // failure requeue below would stop early and drop items from the retry.
