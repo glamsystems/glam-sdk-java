@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
-import static software.sava.rpc.json.http.request.Commitment.CONFIRMED;
+import static software.sava.rpc.json.http.request.Commitment.FINALIZED;
 import static software.sava.services.solana.transactions.TransactionResult.SIZE_LIMIT_EXCEEDED;
 
 public record InstructionProcessorImpl(TransactionProcessor transactionProcessor,
@@ -222,7 +222,7 @@ public record InstructionProcessorImpl(TransactionProcessor transactionProcessor
             cuBudgetMultiplier,
             ixBatch,
             maxLamportPriorityFee,
-            CONFIRMED, CONFIRMED,
+            FINALIZED, FINALIZED,
             true,
             true,
             maxRetries,

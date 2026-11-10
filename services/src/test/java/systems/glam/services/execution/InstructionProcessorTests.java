@@ -58,7 +58,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static software.sava.rpc.json.http.request.Commitment.CONFIRMED;
+import static software.sava.rpc.json.http.request.Commitment.FINALIZED;
 
 /// Drives InstructionProcessorImpl against a scripted InstructionService: each
 /// call's batch size is recorded and the next scripted result returned, so the
@@ -682,7 +682,7 @@ final class InstructionProcessorTests {
     // a stopped monitor fails the queue at once, so its failure is readable without a wait
     return assertInstanceOf(
         TxMonitorStoppedException.class,
-        monitor.queueResult(CONFIRMED, CONFIRMED, "sig", sendTxContext, true, false).exceptionNow()
+        monitor.queueResult(FINALIZED, FINALIZED, "sig", sendTxContext, true, false).exceptionNow()
     );
   }
 
@@ -1052,7 +1052,7 @@ final class InstructionProcessorTests {
   /// processor passes true, so an unverified one reaches it only relayed by a scripted service.
   private static SendNotAcceptedException notAccepted(final RefusedSends sends, final boolean verifyExpired) {
     final var thrown = assertThrows(SendNotAcceptedException.class, () -> sends.service.processInstructions(
-        1.2, List.of(instruction(1, 2)), new BigDecimal("0.001"), CONFIRMED, CONFIRMED, verifyExpired, true, 3, "test"
+        1.2, List.of(instruction(1, 2)), new BigDecimal("0.001"), FINALIZED, FINALIZED, verifyExpired, true, 3, "test"
     ));
     assertEquals(!verifyExpired, thrown.mayStillLand(), "with the expiry verified nothing can land; without it the attempt may");
     return thrown;
