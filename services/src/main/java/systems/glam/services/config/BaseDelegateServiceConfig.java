@@ -45,6 +45,7 @@ import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.http.HttpClient;
+import java.net.http.WebSocket;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
@@ -68,6 +69,8 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
                                         LoadBalancer<SolanaRpcClient> sendClients,
                                         LoadBalancer<HeliusFeeProvider> feeProviders,
                                         RemoteResourceConfig websocketConfig,
+                                        int websocketSubscribeBatchBytes,
+                                        int websocketSingleSubscribeBudget,
                                         EpochServiceConfig epochServiceConfig,
                                         TxMonitorConfig txMonitorConfig,
                                         AccountFetcherConfig accountFetcherConfig,
@@ -83,13 +86,36 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
 
   private static final Backoff DEFAULT_NETWORK_BACKOFF = Backoff.fibonacci(1, 21);
 
+  /// Refuses the subscribe-batching settings sava-rpc refuses, a cap below 0 or above 4,096 and
+  /// a negative budget, where the configuration is built and in sava-rpc's own words, rather
+  /// than where the first websocket prototype is: the bounds are the builder's, asked of a
+  /// builder that is then dropped, so they are stated in one place.
+  public BaseDelegateServiceConfig {
+    SolanaRpcWebsocket.build()
+        .subscribeBatchBytes(websocketSubscribeBatchBytes)
+        .singleSubscribeBudget(websocketSingleSubscribeBudget);
+  }
+
+  @Override
+  public SolanaRpcWebsocket.Builder createWebSocketPrototype(final WebSocket.Builder webSocketBuilder) {
+    final var websocket = Objects.requireNonNull(
+        websocketConfig, "This configuration has no websocket section, so no endpoint to build a websocket for."
+    );
+    return SolanaRpcWebsocket.build()
+        .uri(websocket.endpoint())
+        .webSocketBuilder(webSocketBuilder)
+        .subscribeBatchBytes(websocketSubscribeBatchBytes)
+        .singleSubscribeBudget(websocketSingleSubscribeBudget);
+  }
+
   @Override
   public WebSocketManager createWebSocketManager(final HttpClient wsHttpClient,
                                                  final Collection<Consumer<SolanaRpcWebsocket>> webSocketConsumers) {
+    // first, so a configuration with no websocket section is refused as the prototype refuses it
+    final var prototype = createWebSocketPrototype(wsHttpClient.newWebSocketBuilder());
     return WebSocketManager.createManager(
-        wsHttpClient,
-        websocketConfig.endpoint(),
         websocketConfig.backoff(),
+        prototype,
         websocket -> {
           for (final var webSocketConsumer : webSocketConsumers) {
             webSocketConsumer.accept(websocket);
@@ -229,6 +255,9 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
     private LoadBalancer<SolanaRpcClient> sendClients;
     private LoadBalancer<HeliusFeeProvider> feeProviders;
     private RemoteResourceConfig websocketConfig;
+    // on unless configured off: sava-rpc's ceiling, which is Agave's inbound message limit
+    private int websocketSubscribeBatchBytes = 4_096;
+    private int websocketSingleSubscribeBudget;
     private EpochServiceConfig epochServiceConfig;
     private TxMonitorConfig txMonitorConfig;
     private AccountFetcherConfig accountFetcherConfig;
@@ -334,6 +363,18 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
       final var websocketPrefix = p + "websocket.";
       if (properties.stringPropertyNames().stream().anyMatch(k -> k.startsWith(websocketPrefix))) {
         this.websocketConfig = RemoteResourceConfig.parseConfig(websocketPrefix, properties, null, DEFAULT_NETWORK_BACKOFF);
+      }
+
+      // beside the websocket section, not in it, on both paths: RemoteResourceConfig refuses a
+      // JSON field it does not know and ignores a properties key it does not know
+      final var websocketSubscribeBatchBytesStr = getProperty(properties, p, "websocketSubscribeBatchBytes");
+      if (websocketSubscribeBatchBytesStr != null) {
+        this.websocketSubscribeBatchBytes = Integer.parseInt(websocketSubscribeBatchBytesStr);
+      }
+
+      final var websocketSingleSubscribeBudgetStr = getProperty(properties, p, "websocketSingleSubscribeBudget");
+      if (websocketSingleSubscribeBudgetStr != null) {
+        this.websocketSingleSubscribeBudget = Integer.parseInt(websocketSingleSubscribeBudgetStr);
       }
 
       final var epochServicePrefix = p + "epochService.";
@@ -467,6 +508,8 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
           sendClients,
           feeProviders,
           websocketConfig,
+          websocketSubscribeBatchBytes,
+          websocketSingleSubscribeBudget,
           epochServiceConfig,
           txMonitorConfig,
           accountFetcherConfig,
@@ -508,7 +551,9 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
         "maxCheckStateDelay",
         "defaultCuBudgetMultiplier",
         "maxTransactionRetries",
-        "hikariPropertiesFiles"
+        "hikariPropertiesFiles",
+        "websocketSubscribeBatchBytes",
+        "websocketSingleSubscribeBudget"
     );
 
     @Override
@@ -589,6 +634,8 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
         case 20 -> defaultCuBudgetMultiplier = ji.readDouble();
         case 21 -> maxTransactionRetries = ji.readInt();
         case 22 -> hikariPropertiesFiles = List.copyOf(ji.readList(JsonIterator::readString));
+        case 23 -> websocketSubscribeBatchBytes = ji.readInt();
+        case 24 -> websocketSingleSubscribeBudget = ji.readInt();
         default -> throw new IllegalStateException("Unknown service config field " + new String(buf, offset, len));
       }
       return true;

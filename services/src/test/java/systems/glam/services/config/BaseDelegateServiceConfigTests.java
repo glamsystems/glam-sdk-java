@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import software.sava.core.accounts.PublicKey;
 import software.sava.core.util.LamportDecimal;
+import software.sava.rpc.json.http.request.Commitment;
 import software.sava.services.solana.transactions.InstructionService;
 import software.sava.services.solana.transactions.TransactionProcessor;
 import systems.comodal.jsoniter.JsonIterator;
@@ -128,6 +129,9 @@ final class BaseDelegateServiceConfigTests {
     assertEquals(Duration.ofMinutes(5), config.maxCheckStateDelay());
     assertEquals(1.13, config.defaultCuBudgetMultiplier(), 0.001);
     assertEquals(3, config.maxTransactionRetries());
+    // batching is on unless configured off, at sava-rpc's ceiling, with no budget declared
+    assertEquals(4_096, config.websocketSubscribeBatchBytes());
+    assertEquals(0, config.websocketSingleSubscribeBudget());
     assertEquals(List.of(), config.hikariPropertiesFiles());
     assertNull(config.epochServiceConfig());
     assertNull(config.txMonitorConfig());
@@ -149,6 +153,9 @@ final class BaseDelegateServiceConfigTests {
     assertEquals(Duration.ofMinutes(5), config.maxCheckStateDelay());
     assertEquals(1.13, config.defaultCuBudgetMultiplier(), 0.001);
     assertEquals(3, config.maxTransactionRetries());
+    // batching is on unless configured off, at sava-rpc's ceiling, with no budget declared
+    assertEquals(4_096, config.websocketSubscribeBatchBytes());
+    assertEquals(0, config.websocketSingleSubscribeBudget());
     assertEquals(List.of(), config.hikariPropertiesFiles());
     assertNull(config.epochServiceConfig());
     assertNull(config.txMonitorConfig());
@@ -391,6 +398,8 @@ final class BaseDelegateServiceConfigTests {
           "maxCheckStateDelay": "PT10M",
           "defaultCuBudgetMultiplier": 1.5,
           "maxTransactionRetries": 5,
+          "websocketSubscribeBatchBytes": 2048,
+          "websocketSingleSubscribeBudget": 100,
           "hikariPropertiesFiles": ["db1.properties", "db2.properties"]
         }
         """.formatted(minimalRpcJson(), glamKey);
@@ -405,6 +414,8 @@ final class BaseDelegateServiceConfigTests {
     assertEquals(Duration.ofMinutes(10), config.maxCheckStateDelay());
     assertEquals(1.5, config.defaultCuBudgetMultiplier(), 0.001);
     assertEquals(5, config.maxTransactionRetries());
+    assertEquals(2_048, config.websocketSubscribeBatchBytes());
+    assertEquals(100, config.websocketSingleSubscribeBudget());
     assertEquals(List.of("db1.properties", "db2.properties"), config.hikariPropertiesFiles());
   }
 
@@ -421,6 +432,8 @@ final class BaseDelegateServiceConfigTests {
     properties.setProperty("maxCheckStateDelay", "PT10M");
     properties.setProperty("defaultCuBudgetMultiplier", "1.5");
     properties.setProperty("maxTransactionRetries", "5");
+    properties.setProperty("websocketSubscribeBatchBytes", "2048");
+    properties.setProperty("websocketSingleSubscribeBudget", "100");
     properties.setProperty("hikariPropertiesFiles", "db1.properties,db2.properties");
 
     final var config = parseProperties(properties);
@@ -434,6 +447,8 @@ final class BaseDelegateServiceConfigTests {
     assertEquals(Duration.ofMinutes(10), config.maxCheckStateDelay());
     assertEquals(1.5, config.defaultCuBudgetMultiplier(), 0.001);
     assertEquals(5, config.maxTransactionRetries());
+    assertEquals(2_048, config.websocketSubscribeBatchBytes());
+    assertEquals(100, config.websocketSingleSubscribeBudget());
     assertEquals(List.of("db1.properties", "db2.properties"), config.hikariPropertiesFiles());
   }
 
@@ -446,6 +461,8 @@ final class BaseDelegateServiceConfigTests {
     properties.setProperty("svc.maxSOLPriorityFee", "0.002");
     properties.setProperty("svc.defaultCuBudgetMultiplier", "2.0");
     properties.setProperty("svc.maxTransactionRetries", "7");
+    properties.setProperty("svc.websocketSubscribeBatchBytes", "1024");
+    properties.setProperty("svc.websocketSingleSubscribeBudget", "50");
 
     final var config = parseProperties("svc", properties);
 
@@ -454,6 +471,8 @@ final class BaseDelegateServiceConfigTests {
     assertEquals(LamportDecimal.fromBigDecimal(new BigDecimal("0.002")), config.maxLamportPriorityFee());
     assertEquals(2.0, config.defaultCuBudgetMultiplier(), 0.001);
     assertEquals(7, config.maxTransactionRetries());
+    assertEquals(1_024, config.websocketSubscribeBatchBytes());
+    assertEquals(50, config.websocketSingleSubscribeBudget());
   }
 
   @Test
@@ -627,6 +646,8 @@ final class BaseDelegateServiceConfigTests {
           "maxCheckStateDelay": "PT10M",
           "defaultCuBudgetMultiplier": 1.5,
           "maxTransactionRetries": 5,
+          "websocketSubscribeBatchBytes": 2048,
+          "websocketSingleSubscribeBudget": 100,
           "epochService": {
             "defaultMillisPerSlot": 500,
             "slotSampleWindow": "PT30M",
@@ -660,6 +681,8 @@ final class BaseDelegateServiceConfigTests {
     properties.setProperty("maxCheckStateDelay", "PT10M");
     properties.setProperty("defaultCuBudgetMultiplier", "1.5");
     properties.setProperty("maxTransactionRetries", "5");
+    properties.setProperty("websocketSubscribeBatchBytes", "2048");
+    properties.setProperty("websocketSingleSubscribeBudget", "100");
     properties.setProperty("epochService.defaultMillisPerSlot", "500");
     properties.setProperty("epochService.slotSampleWindow", "PT30M");
     properties.setProperty("epochService.fetchSlotSamplesDelay", "PT10M");
@@ -685,6 +708,8 @@ final class BaseDelegateServiceConfigTests {
     assertEquals(jsonConfig.maxCheckStateDelay(), propsConfig.maxCheckStateDelay());
     assertEquals(jsonConfig.defaultCuBudgetMultiplier(), propsConfig.defaultCuBudgetMultiplier(), 0.001);
     assertEquals(jsonConfig.maxTransactionRetries(), propsConfig.maxTransactionRetries());
+    assertEquals(jsonConfig.websocketSubscribeBatchBytes(), propsConfig.websocketSubscribeBatchBytes());
+    assertEquals(jsonConfig.websocketSingleSubscribeBudget(), propsConfig.websocketSingleSubscribeBudget());
 
     final var jsonEpoch = jsonConfig.epochServiceConfig();
     final var propsEpoch = propsConfig.epochServiceConfig();
@@ -709,6 +734,100 @@ final class BaseDelegateServiceConfigTests {
     final var propsPolling = propsConfig.defensivePollingConfig();
     assertEquals(jsonPolling.globalConfig(), propsPolling.globalConfig());
     assertEquals(jsonPolling.glamStateAccounts(), propsPolling.glamStateAccounts());
+  }
+
+  @Test
+  void theWebSocketPrototypeCarriesTheEndpointTheTransportAndTheConfiguredBatching() {
+    final var properties = minimalRpcProperties("");
+    // away from the parser's defaults (4,096 and 0), from sava-rpc's (0 and 0) and from each other
+    properties.setProperty("websocketSubscribeBatchBytes", "1024");
+    properties.setProperty("websocketSingleSubscribeBudget", "100");
+    final var config = parseProperties(properties);
+    // a client of this test's own: the parse helper closes the one it parses with
+    try (final var wsHttpClient = HttpClient.newHttpClient()) {
+      final var transport = wsHttpClient.newWebSocketBuilder();
+      final var prototype = config.createWebSocketPrototype(transport);
+      assertEquals(WS_ENDPOINT, prototype.wsUri().toString());
+      assertSame(transport, prototype.webSocketBuilder());
+      // the prototype sets no commitment: this holds the one a sava-rpc builder starts with, so
+      // a change of that default fails here instead of moving every subscription
+      assertEquals(Commitment.FINALIZED, prototype.commitment());
+      assertEquals(1_024, prototype.subscribeBatchBytes());
+      assertEquals(100, prototype.singleSubscribeBudget());
+      // a manager consumes the builder it is given, so every call answers its own, over a
+      // transport of its own
+      assertNotSame(prototype, config.createWebSocketPrototype(wsHttpClient.newWebSocketBuilder()));
+    }
+  }
+
+  @Test
+  void aConfigThatNamesNoCapBatchesAtTheCeilingAndZeroTurnsBatchingOff() {
+    final var byDefault = parseJson("""
+        {
+          %s
+        }
+        """.formatted(minimalRpcJson()));
+    final var turnedOff = parseJson("""
+        {
+          %s,
+          "websocketSubscribeBatchBytes": 0
+        }
+        """.formatted(minimalRpcJson()));
+    assertEquals(0, turnedOff.websocketSubscribeBatchBytes());
+    try (final var wsHttpClient = HttpClient.newHttpClient()) {
+      final var batching = byDefault.createWebSocketPrototype(wsHttpClient.newWebSocketBuilder());
+      assertEquals(4_096, batching.subscribeBatchBytes());
+      assertEquals(0, batching.singleSubscribeBudget());
+      // 0 is sava-rpc's own "off", and also what its builder starts with: this leg holds the off
+      // switch as the behaviour it documents, and the legs above hold the call that sets the cap
+      assertEquals(0, turnedOff.createWebSocketPrototype(wsHttpClient.newWebSocketBuilder()).subscribeBatchBytes());
+    }
+  }
+
+  @Test
+  void aSubscribeBatchCapOutsideSavaRpcsBoundsIsRefusedWhenTheConfigIsBuilt() {
+    // one byte over the ceiling, in JSON: refused by createBaseConfig, in sava-rpc's words, and
+    // not left for the first prototype to refuse
+    final var over = assertThrows(IllegalArgumentException.class, () -> parseJson("""
+        {
+          %s,
+          "websocketSubscribeBatchBytes": 4097
+        }
+        """.formatted(minimalRpcJson())));
+    assertTrue(over.getMessage().contains("subscribeBatchBytes"), over.getMessage());
+    assertTrue(over.getMessage().contains("4097"), over.getMessage());
+
+    final var properties = minimalRpcProperties("");
+    properties.setProperty("websocketSubscribeBatchBytes", "-1");
+    final var negative = assertThrows(IllegalArgumentException.class, () -> parseProperties(properties));
+    assertTrue(negative.getMessage().contains("subscribeBatchBytes"), negative.getMessage());
+  }
+
+  @Test
+  void aNegativeSingleSubscribeBudgetIsRefusedWhenTheConfigIsBuilt() {
+    // the cap stays at its valid default, so the refusal is the budget's own
+    final var properties = minimalRpcProperties("");
+    properties.setProperty("websocketSingleSubscribeBudget", "-1");
+    final var error = assertThrows(IllegalArgumentException.class, () -> parseProperties(properties));
+    assertTrue(error.getMessage().contains("singleSubscribeBudget"), error.getMessage());
+  }
+
+  @Test
+  void aPrototypeAndAManagerAreRefusedByNameWithoutAWebsocketSection() {
+    // an rpc-only configuration is legal and leaves websocketConfig null
+    final var properties = new Properties();
+    properties.setProperty("rpc.endpoints.0.url", RPC_ENDPOINT);
+    final var config = parseProperties(properties);
+    try (final var wsHttpClient = HttpClient.newHttpClient()) {
+      final var transport = wsHttpClient.newWebSocketBuilder();
+      final var noPrototype = assertThrows(NullPointerException.class, () -> config.createWebSocketPrototype(transport));
+      assertTrue(noPrototype.getMessage().contains("no websocket section"), noPrototype.getMessage());
+      // the factory builds its prototype before it reads anything else of the section
+      final var noManager = assertThrows(
+          NullPointerException.class, () -> config.createWebSocketManager(wsHttpClient, List.of())
+      );
+      assertTrue(noManager.getMessage().contains("no websocket section"), noManager.getMessage());
+    }
   }
 
   @Test

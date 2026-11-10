@@ -27,6 +27,7 @@ import systems.glam.services.rpc.AccountFetcher;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.http.HttpClient;
+import java.net.http.WebSocket;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
@@ -57,6 +58,35 @@ public interface DelegateServiceConfig {
 
   RemoteResourceConfig websocketConfig();
 
+  /// The cap, in UTF-8 bytes, on one batched subscribe message of every websocket built from
+  /// [#createWebSocketPrototype(WebSocket.Builder)]. With a cap set, sava-rpc sends the typed
+  /// subscribe requests that are due together in one pass of its send loop as JSON-RPC arrays,
+  /// one message per array where each request was a message of its own: what waits when a
+  /// connection opens, a replay after a reconnect, and a burst made on an open connection. 0
+  /// turns batching off. The ceiling is 4,096, Agave's inbound message limit, and a
+  /// configuration that does not name `websocketSubscribeBatchBytes` is parsed with that
+  /// ceiling, so batching is on unless it is turned off. The key sits beside the `websocket`
+  /// section, not in it: inside, it fails a JSON parse and is ignored in properties.
+  ///
+  /// [SolanaRpcWebsocket.Builder#subscribeBatchBytes(int)] is the authority on what shares a
+  /// message and on the two ways sava-rpc falls back to one request per message, neither of
+  /// which covers every endpoint that is not Agave's. One that answers an array with a parse
+  /// error is sent no array again by that websocket. One that drops an array, or closes on it,
+  /// costs the connection that sent it, and only the connection after that one sends one request
+  /// per message, so every second connection is lost the same way. One that reads an array and
+  /// refuses its requests one by one starts neither fallback: those subscriptions are released,
+  /// or retried in arrays, for as long as it does. Against such an endpoint, configure 0.
+  int websocketSubscribeBatchBytes();
+
+  /// How many subscribe requests sent one per message the websocket endpoint accepts on one
+  /// connection before it closes that connection, for an endpoint known to count them; 0, which
+  /// a configuration that does not name `websocketSingleSubscribeBudget` is parsed with,
+  /// declares no such budget. It is a statement about the endpoint, read only while batching is
+  /// on, and declaring it gives up sava-rpc's one-connection fallback for a replay larger than
+  /// the budget, which is then sent in arrays whatever its predecessor was lost to:
+  /// [SolanaRpcWebsocket.Builder#singleSubscribeBudget(int)] says when that is the better trade.
+  int websocketSingleSubscribeBudget();
+
   EpochServiceConfig epochServiceConfig();
 
   TxMonitorConfig txMonitorConfig();
@@ -83,6 +113,30 @@ public interface DelegateServiceConfig {
 
   SequencedCollection<String> hikariPropertiesFiles();
 
+  /// A new sava-rpc websocket builder for the configured endpoint over `webSocketBuilder`, with
+  /// the configured subscribe batching
+  /// ([#websocketSubscribeBatchBytes()], [#websocketSingleSubscribeBudget()]) and nothing else
+  /// set, so its websockets subscribe at the commitment a sava-rpc builder starts with,
+  /// FINALIZED. It is the prototype [#createWebSocketManager(HttpClient, Collection)] hands its
+  /// manager, and what a service that builds its own manager, to add lifecycle handlers, starts
+  /// from before it passes the builder to
+  /// `WebSocketManager.createManager(Backoff, SolanaRpcWebsocket.Builder, Consumer)`; the two
+  /// settings reach no websocket built any other way. Every call answers a builder of its own: a
+  /// manager consumes the one it is given, which must not be changed afterwards or shared with
+  /// another manager. `webSocketBuilder` is kept, not copied, and sava-rpc sets its connect
+  /// timeout and connects through it, so each call takes one of its own as well, a new
+  /// `HttpClient.newWebSocketBuilder()`.
+  ///
+  /// @throws NullPointerException if this configuration has no websocket section
+  SolanaRpcWebsocket.Builder createWebSocketPrototype(final WebSocket.Builder webSocketBuilder);
+
+  /// A manager over [#createWebSocketPrototype(WebSocket.Builder)], so every websocket it
+  /// creates batches its subscribe requests as configured. The manager hands each new websocket
+  /// to every consumer in `webSocketConsumers` before that websocket first connects, so the
+  /// subscriptions they make wait for the connection and, with a cap set, go out as arrays when
+  /// it opens.
+  ///
+  /// @throws NullPointerException if this configuration has no websocket section
   WebSocketManager createWebSocketManager(final HttpClient wsHttpClient,
                                           final Collection<Consumer<SolanaRpcWebsocket>> webSocketConsumers);
 
