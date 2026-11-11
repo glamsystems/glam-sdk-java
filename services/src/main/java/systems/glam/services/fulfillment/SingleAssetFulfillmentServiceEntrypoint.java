@@ -226,11 +226,11 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
 
     webSocketConsumers.add(fulfillmentService::subscribe);
     // The first connection attempt, which nothing here waits on. The service's two subscriptions
-    // wait for it and are sent when it opens, as one message at the default batch cap. A websocket
-    // that cannot be created, or a connection that fails, is the manager's to log and retry, from
-    // its own wake and from run()'s checks, and the service runs on its RPC fetches meanwhile: an
-    // account update only ends the wait between two of them early, and a transaction whose
-    // websocket confirmation is missed is settled by the monitor's polling.
+    // wait for it and are sent when it opens, as one message only at an endpoint known to read a
+    // batch. A websocket that cannot be created, or a connection that fails, is the manager's to
+    // log and retry, from its own wake and from run()'s checks, and the service runs on its RPC
+    // fetches meanwhile: an account update only ends the wait between two of them early, and a
+    // transaction whose websocket confirmation is missed is settled by the monitor's polling.
     webSocketManager.checkConnection();
 
     return new SingleAssetFulfillmentServiceEntrypoint(webSocketManager, epochInfoService, txMonitorService, fulfillmentService);

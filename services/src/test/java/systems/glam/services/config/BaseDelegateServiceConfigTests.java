@@ -736,6 +736,8 @@ final class BaseDelegateServiceConfigTests {
     assertEquals(jsonPolling.glamStateAccounts(), propsPolling.glamStateAccounts());
   }
 
+  /// `WS_ENDPOINT` is the public Agave endpoint, one known to read a batch, so the prototype
+  /// keeps the batching the configuration names; the test after the next holds the other case.
   @Test
   void theWebSocketPrototypeCarriesTheEndpointTheTransportAndTheConfiguredBatching() {
     final var properties = minimalRpcProperties("");
@@ -781,6 +783,41 @@ final class BaseDelegateServiceConfigTests {
       // 0 is sava-rpc's own "off", and also what its builder starts with: this leg holds the off
       // switch as the behaviour it documents, and the legs above hold the call that sets the cap
       assertEquals(0, turnedOff.createWebSocketPrototype(wsHttpClient.newWebSocketBuilder()).subscribeBatchBytes());
+    }
+  }
+
+  /// At an endpoint not known to read a batch, Helius' standard websocket here, the prototype
+  /// batches nothing: under the parser's default cap, and under a cap the configuration names,
+  /// which cannot turn batching on there. The accessors still answer what the configuration
+  /// names, and the budget, which sava-rpc reads only while batching is on, is passed through.
+  @Test
+  void atAnEndpointNotKnownToReadABatchThePrototypeBatchesNothingWhateverIsConfigured() {
+    final var endpoint = "wss://mainnet.helius-rpc.com/?api-key=config-test";
+    final var byDefault = minimalRpcProperties("");
+    byDefault.setProperty("websocket.endpoint", endpoint);
+    final var defaultConfig = parseProperties(byDefault);
+    assertEquals(4_096, defaultConfig.websocketSubscribeBatchBytes());
+
+    final var named = minimalRpcProperties("");
+    named.setProperty("websocket.endpoint", endpoint);
+    named.setProperty("websocketSubscribeBatchBytes", "1024");
+    named.setProperty("websocketSingleSubscribeBudget", "100");
+    final var namedConfig = parseProperties(named);
+    assertEquals(1_024, namedConfig.websocketSubscribeBatchBytes());
+    assertEquals(100, namedConfig.websocketSingleSubscribeBudget());
+
+    try (final var wsHttpClient = HttpClient.newHttpClient()) {
+      final var unbatched = defaultConfig.createWebSocketPrototype(wsHttpClient.newWebSocketBuilder());
+      assertEquals(endpoint, unbatched.wsUri().toString());
+      assertEquals(0, unbatched.subscribeBatchBytes());
+
+      final var transport = wsHttpClient.newWebSocketBuilder();
+      final var stillUnbatched = namedConfig.createWebSocketPrototype(transport);
+      assertEquals(endpoint, stillUnbatched.wsUri().toString());
+      assertSame(transport, stillUnbatched.webSocketBuilder());
+      assertEquals(Commitment.FINALIZED, stillUnbatched.commitment());
+      assertEquals(0, stillUnbatched.subscribeBatchBytes());
+      assertEquals(100, stillUnbatched.singleSubscribeBudget());
     }
   }
 

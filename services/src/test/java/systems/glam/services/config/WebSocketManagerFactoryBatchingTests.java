@@ -31,7 +31,9 @@ import static org.junit.jupiter.api.Assertions.*;
 /// Subscribe batching through [DelegateServiceConfig#createWebSocketManager], on the wire: the
 /// factory's own manager, ravina's, creates sava-rpc's real websocket from the configuration's
 /// prototype, over a scripted JDK transport, so what the transport is asked to send is what a
-/// server would receive.
+/// server would receive. Nothing is connected to: an endpoint is only a name here, and the name
+/// decides whether the prototype batches (`WebSocketBatching`; owner decision, 2026-11-11: batch
+/// at an endpoint known to read a batch, single requests at any other).
 ///
 /// Everything asserted here happens on the test thread. The manager hands a new websocket to the
 /// consumers and then connects it, inside the first `webSocket()` call; the transport opens the
@@ -46,7 +48,10 @@ import static org.junit.jupiter.api.Assertions.*;
 /// stops sava-rpc's loop and cancels the manager's wake.
 final class WebSocketManagerFactoryBatchingTests {
 
-  private static final String WS_ENDPOINT = "wss://ws.example.com";
+  /// The public Agave endpoint, which `WebSocketBatching` knows to read a batch.
+  private static final String READS_A_BATCH = "wss://api.mainnet-beta.solana.com";
+  /// Helius' standard websocket, which it does not: it answered an array with a parse error.
+  private static final String READS_NONE = "wss://mainnet.helius-rpc.com/?api-key=factory-batching-test";
 
   private static final PublicKey KEY_A = PublicKey.fromBase58Encoded("7ubS3GccjhQY99AYNKXjNJqnXjaokEdfdV915xnCb96r");
   private static final PublicKey KEY_B = PublicKey.fromBase58Encoded("So11111111111111111111111111111111111111112");
@@ -228,11 +233,11 @@ final class WebSocketManagerFactoryBatchingTests {
     }
   }
 
-  /// A configuration with a websocket section and, when `subscribeBatchBytes` is given, that cap;
-  /// with none, the cap is the parser's default.
-  private static DelegateServiceConfig config(final String subscribeBatchBytes) {
+  /// A configuration whose websocket section names `endpoint` and, when `subscribeBatchBytes` is
+  /// given, that cap; with none, the cap is the parser's default.
+  private static DelegateServiceConfig config(final String endpoint, final String subscribeBatchBytes) {
     final var properties = new Properties();
-    properties.setProperty("websocket.endpoint", WS_ENDPOINT);
+    properties.setProperty("websocket.endpoint", endpoint);
     if (subscribeBatchBytes != null) {
       properties.setProperty("websocketSubscribeBatchBytes", subscribeBatchBytes);
     }
@@ -291,7 +296,8 @@ final class WebSocketManagerFactoryBatchingTests {
     final var transport = new ScriptedTransport();
     final var accepted = new CopyOnWriteArrayList<Boolean>();
 
-    final var manager = config(null).createWebSocketManager(new ScriptedClient(transport), twoConsumers(accepted));
+    final var manager = config(READS_A_BATCH, null)
+        .createWebSocketManager(new ScriptedClient(transport), twoConsumers(accepted));
     try (manager) {
       assertFalse(manager.closed());
     }
@@ -300,18 +306,20 @@ final class WebSocketManagerFactoryBatchingTests {
     assertEquals(List.of(), accepted, "and handed no websocket to a consumer");
   }
 
-  /// A configuration that names no cap batches: the subscriptions every consumer makes on the new
-  /// websocket wait for its first connection and reach the server as one JSON-RPC array, at the
-  /// endpoint and the commitment the prototype carries.
+  /// At an endpoint known to read a batch, a configuration that names no cap batches: the
+  /// subscriptions every consumer makes on the new websocket wait for its first connection and
+  /// reach the server as one JSON-RPC array, at the endpoint and the commitment the prototype
+  /// carries.
   @Test
   void theConsumersSubscriptionsReachTheServerAsOneArrayWhenTheWebsocketOpens() {
     final var transport = new ScriptedTransport();
     final var accepted = new CopyOnWriteArrayList<Boolean>();
 
-    try (final var manager = config(null).createWebSocketManager(new ScriptedClient(transport), twoConsumers(accepted))) {
+    try (final var manager = config(READS_A_BATCH, null)
+        .createWebSocketManager(new ScriptedClient(transport), twoConsumers(accepted))) {
       openTheWebsocket(manager, accepted);
 
-      assertEquals(URI.create(WS_ENDPOINT), transport.handshakes.getFirst());
+      assertEquals(URI.create(READS_A_BATCH), transport.handshakes.getFirst());
       final var sent = transport.sentOnTheFirstConnection();
       assertEquals(1, sent.size(), "one message for the three subscriptions: " + sent);
       final var frame = sent.getFirst();
@@ -328,17 +336,33 @@ final class WebSocketManagerFactoryBatchingTests {
     }
   }
 
-  /// The control, and the off switch: the same factory, consumers and transport with the cap
-  /// configured to 0 send each subscription as a message of its own. 0 is also the cap sava-rpc's
-  /// builder starts with, so what this holds is that a configured 0 replaces the parser's default.
+  /// The control, and the off switch: the same endpoint, factory, consumers and transport with
+  /// the cap configured to 0 send each subscription as a message of its own. 0 is also the cap
+  /// sava-rpc's builder starts with, so what this holds is that a configured 0 replaces the
+  /// parser's default.
   @Test
   void aCapOfZeroSendsEachSubscriptionAlone() {
+    assertEachSubscriptionIsSentAlone(READS_A_BATCH, "0");
+  }
+
+  /// No array is ever offered to an endpoint not known to read a batch, Helius' here: each
+  /// subscription goes as a message of its own under the parser's default cap, and under a cap
+  /// the configuration names, which cannot turn batching on there.
+  @Test
+  void anEndpointNotKnownToReadABatchIsSentEachSubscriptionAloneWhateverIsConfigured() {
+    assertEachSubscriptionIsSentAlone(READS_NONE, null);
+    assertEachSubscriptionIsSentAlone(READS_NONE, "4096");
+  }
+
+  private static void assertEachSubscriptionIsSentAlone(final String endpoint, final String subscribeBatchBytes) {
     final var transport = new ScriptedTransport();
     final var accepted = new CopyOnWriteArrayList<Boolean>();
 
-    try (final var manager = config("0").createWebSocketManager(new ScriptedClient(transport), twoConsumers(accepted))) {
+    try (final var manager = config(endpoint, subscribeBatchBytes)
+        .createWebSocketManager(new ScriptedClient(transport), twoConsumers(accepted))) {
       openTheWebsocket(manager, accepted);
 
+      assertEquals(URI.create(endpoint), transport.handshakes.getFirst());
       final var sent = transport.sentOnTheFirstConnection();
       final var accounts = List.of(KEY_A, KEY_B, KEY_C);
       assertEquals(accounts.size(), sent.size(), "one message per subscription: " + sent);

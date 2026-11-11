@@ -518,3 +518,15 @@ skips it, so the two answer different halves.
   of `StateModel` and `MintModel`. `GeneratedOptionEncodingTests` holds those
   records to the pinned commons on a `Some("")` round trip, so the halves
   landing apart fail `check` here instead of a transaction.
+- A websocket built from `DelegateServiceConfig.createWebSocketPrototype`, and so
+  every websocket of the manager `createWebSocketManager` answers, batches its
+  subscribe requests only at an endpoint whose host is in
+  `WebSocketBatching.HOSTS_THAT_READ_A_BATCH`: the hosts measured to answer a
+  JSON-RPC array of subscribe requests with an array of results. At any other,
+  Helius' standard websocket included (it answers an array with a parse error),
+  each request goes alone whatever `websocketSubscribeBatchBytes` names: the
+  configuration can lower the cap or turn batching off at a known host and
+  cannot turn it on at another (owner decision, 2026-11-11). A host is added to
+  the set in code once it has been measured, never because it is expected to
+  work, and `WebSocketBatchingTests` holds the set, so adding one changes that
+  test too.

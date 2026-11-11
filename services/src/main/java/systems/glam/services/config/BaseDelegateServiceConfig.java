@@ -101,11 +101,11 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
     final var websocket = Objects.requireNonNull(
         websocketConfig, "This configuration has no websocket section, so no endpoint to build a websocket for."
     );
-    return SolanaRpcWebsocket.build()
+    return WebSocketBatching.onlyWhereRead(SolanaRpcWebsocket.build()
         .uri(websocket.endpoint())
         .webSocketBuilder(webSocketBuilder)
         .subscribeBatchBytes(websocketSubscribeBatchBytes)
-        .singleSubscribeBudget(websocketSingleSubscribeBudget);
+        .singleSubscribeBudget(websocketSingleSubscribeBudget));
   }
 
   @Override
@@ -255,7 +255,7 @@ public record BaseDelegateServiceConfig(PublicKey glamStateKey,
     private LoadBalancer<SolanaRpcClient> sendClients;
     private LoadBalancer<HeliusFeeProvider> feeProviders;
     private RemoteResourceConfig websocketConfig;
-    // on unless configured off: sava-rpc's ceiling, which is Agave's inbound message limit
+    // on at a known endpoint unless configured off: sava-rpc's ceiling, Agave's inbound limit
     private int websocketSubscribeBatchBytes = 4_096;
     private int websocketSingleSubscribeBudget;
     private EpochServiceConfig epochServiceConfig;
