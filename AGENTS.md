@@ -84,17 +84,17 @@ plus service components for operating against it.
 - Every artifact Gradle resolves is verified against `gradle/verification-metadata.xml`, the
   signatures and checksums policy sava-build's `verificationPolicy` task guards as part of
   `check`; the rules and the update procedure are sava-build's README, "Verifying sava
-  artifacts", at the pinned sava-build version. Check a dependency or policy change with
+  artifacts", at sava-build's `main`. Check a dependency or policy change with
   `./gradlew --no-daemon --no-configuration-cache check resolveVerificationTools`: a reused
   configuration-cache entry resolves nothing and so verifies nothing. Some entries only an
-  IntelliJ sync with download sources exercises, among them the `gradle:gradle` rule for the
-  Gradle sources zip and the jmh plugin's sources-jar pin (a refusal of one shows in the
-  sync output and in `~/.gradle/daemon/<version>/daemon-<pid>.out.log`), and a trim keeps
-  them. No IDE sync is owed after a policy change, and a session never asks for one; a
-  session that removes or narrows such an entry, adds or moves an unsigned module's pins
-  without its sources jar's, or bumps the wrapper says so in its report (sava-build's
-  README, "Adopting and updating", closing paragraph). A refusal names the artifact;
-  sava-build's README step 2 and the section headings of
+  IntelliJ sync exercises, among them the `gradle:gradle` rule for the Gradle sources zip (a
+  refusal of one shows in the sync output and in
+  `~/.gradle/daemon/<version>/daemon-<pid>.out.log`), and a trim keeps them. No IDE sync is
+  owed after a policy change, and a session never asks for one; a session that removes or
+  narrows such an entry, adds or moves an unsigned module's pins without its sources jar's,
+  or bumps the wrapper says so in its report, and a report of any other change says nothing
+  about the IDE (sava-build's README, "Adopting and updating", closing paragraph). A refusal
+  names the artifact; sava-build's README step 2 and the section headings of
   `gradle/verification/version-scoped-keys.txt` say what to do, and the files are only ever
   edited in their own shape: a key is listed there exactly when its rule carries a version,
   so a rule's version and the key's line move together. The policy governs the whole
