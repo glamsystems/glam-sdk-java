@@ -1,5 +1,28 @@
 # Changelog
 
+## [25.25.0](https://github.com/glamsystems/glam-sdk-java/compare/25.24.0...25.25.0) (2026-11-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* **services:** `BaseDelegateServiceConfig` has two new record components after `websocketConfig`, `websocketSubscribeBatchBytes` and `websocketSingleSubscribeBudget`, so its canonical constructor changes, and `DelegateServiceConfig` has three new abstract methods, the two accessors and `createWebSocketPrototype(WebSocket.Builder)`, which an implementation outside this repository must add.
+* **deps:** the sdk and services modules require idl-clients and sava-rpc transitively, so their breaking changes reach this SDK's callers. From idl-clients 25.20.0: the deprecated Jupiter Metis v1 and Ultra REST client is gone (`JupiterSwapApiClient`, `JupiterQuoteRequest`, `JupiterSwapRequest`, `JupiterUltraOrderRequest`, `JupiterUltraOrderRequestRecord`, `PriorityFeeLamports`, `JitoTip`); offerbook's `extendLoan` and `extendLoanKeys` take the collateral accounts, `extendLoanKeys` the invoked program as well, and its `Config` and `User` records gain components; and eight sealed or enum types gain variants, which an exhaustive switch must handle: Jupiter Swap's `Swap` and `CandidateSwap`, offerbook's `OfferbookError`, `OfferbookEvent` and `UpdateConfigAction`, Kamino Scope's `OracleType` and `OracleEntry`, and the neutral-trade `NtbundleEvent`. From sava-rpc 25.13.4: an implementation of `SolanaRpcWebsocket` or of its `Builder` must add `registerAll` and the `subscribeBatchBytes` and `singleSubscribeBudget` pairs.
+
+### Features
+
+* **services:** batch websocket subscribe requests ([48ad43a](https://github.com/glamsystems/glam-sdk-java/commit/48ad43ae6a600ba926dfe84e09b78751a9d9476f))
+
+
+### Bug Fixes
+
+* **build:** upgrade to Gradle 9.9 and scope plugin repositories ([ff2b0c3](https://github.com/glamsystems/glam-sdk-java/commit/ff2b0c3db7ab9dd8062701aac9c02129af29a63e))
+* **services:** register the fulfillment subscriber before the first websocket connection ([ea78461](https://github.com/glamsystems/glam-sdk-java/commit/ea784618ceb6cd27e3ae3a794e5be20949a135ef))
+
+
+### Build System
+
+* **deps:** adopt solana-version-catalog 25.30.59 ([9608f2d](https://github.com/glamsystems/glam-sdk-java/commit/9608f2dca4710cc2ea026a364f4640582b3dc43d))
+
 ## [25.24.0](https://github.com/glamsystems/glam-sdk-java/compare/25.23.0...25.24.0) (2026-11-05)
 
 
