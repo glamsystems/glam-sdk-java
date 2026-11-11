@@ -174,9 +174,11 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
 
     final var vaultMintContext = MintContext.createContext(solanaAccounts, mintAccountInfo);
 
+    // The manager creates no websocket before its first checkConnection() or webSocket() call,
+    // which is made below, once the fulfillment service is registered here: every websocket the
+    // manager creates, the first included, is then handed to the service before it connects.
     final var webSocketConsumers = new ArrayList<Consumer<SolanaRpcWebsocket>>();
     final var webSocketManager = delegateServiceConfig.createWebSocketManager(wsHttpClient, webSocketConsumers);
-    webSocketManager.checkConnection();
 
     final var transactionProcessor = delegateServiceConfig.createTransactionProcessor(
         taskExecutor, signingService, serviceKey, webSocketManager
@@ -223,7 +225,13 @@ public record SingleAssetFulfillmentServiceEntrypoint(WebSocketManager webSocket
     );
 
     webSocketConsumers.add(fulfillmentService::subscribe);
-    fulfillmentService.subscribe(webSocketManager.webSocket());
+    // The first connection attempt, which nothing here waits on. The service's two subscriptions
+    // wait for it and are sent when it opens, as one message at the default batch cap. A websocket
+    // that cannot be created, or a connection that fails, is the manager's to log and retry, from
+    // its own wake and from run()'s checks, and the service runs on its RPC fetches meanwhile: an
+    // account update only ends the wait between two of them early, and a transaction whose
+    // websocket confirmation is missed is settled by the monitor's polling.
+    webSocketManager.checkConnection();
 
     return new SingleAssetFulfillmentServiceEntrypoint(webSocketManager, epochInfoService, txMonitorService, fulfillmentService);
   }
