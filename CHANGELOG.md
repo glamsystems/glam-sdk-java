@@ -1,5 +1,16 @@
 # Changelog
 
+## [25.26.0](https://github.com/glamsystems/glam-sdk-java/compare/25.25.0...25.26.0) (2026-11-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* **services:** behaviour only, no signature changes. `createWebSocketPrototype`, and so the manager `createWebSocketManager` answers, no longer batches subscribe requests at an endpoint whose host is not api.mainnet.solana.com or api.mainnet-beta.solana.com: the builder's cap is 0 there, whatever `websocketSubscribeBatchBytes` names. A deployment that batched at another endpoint that reads arrays, a private Agave node for one, sends one request per message, each counted against the endpoint's single-subscribe budget where it has one, until its host is added to `WebSocketBatching.HOSTS_THAT_READ_A_BATCH`.
+
+### Bug Fixes
+
+* **services:** batch websocket subscribes only at an endpoint known to read a batch ([70b1839](https://github.com/glamsystems/glam-sdk-java/commit/70b183903c584d86c4c5e08a1c32e88d1a9544f4))
+
 ## [25.25.0](https://github.com/glamsystems/glam-sdk-java/compare/25.24.0...25.25.0) (2026-11-11)
 
 
